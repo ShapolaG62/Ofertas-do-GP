@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  ofertas-do-gp:
+    build: .
+    container_name: ofertas-do-gp
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    volumes:
+      - ./offers.db:/usr/src/app/offers.db

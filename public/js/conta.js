@@ -596,6 +596,36 @@
     ME = null; location.hash = ''; route();
   });
 
+  // ── Mostrar/ocultar senha ──────────────────────────────────────────────────
+  const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.6 3.5M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m2 2 20 20"/></svg>';
+
+  function setPassVisible(btn, input, visible) {
+    input.type = visible ? 'text' : 'password';
+    btn.innerHTML = visible ? EYE_OFF : EYE;
+    btn.setAttribute('aria-label', visible ? 'Ocultar senha' : 'Mostrar senha');
+    btn.setAttribute('aria-pressed', String(visible));
+  }
+
+  $$('input[type=password]').forEach(input => {
+    const wrap = document.createElement('span');
+    wrap.className = 'pass-wrap';
+    input.replaceWith(wrap);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pass-toggle';
+    wrap.appendChild(btn);
+    setPassVisible(btn, input, false);
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      setPassVisible(btn, input, input.type === 'password');
+      input.focus();
+    });
+    // Ao limpar o formulário (depois de enviar), a senha volta a ficar oculta.
+    input.form?.addEventListener('reset', () => setPassVisible(btn, input, false));
+  });
+
   // ── Início ─────────────────────────────────────────────────────────────────
   (async () => {
     INFO = { ...INFO, ...(await api('/api/conta/cadastro-info').catch(() => ({}))) };

@@ -185,5 +185,5 @@ function setHidden(lojaId, oculta) {
 }
 
 module.exports = {
-  getByUser, saveLoja, listProducts, addProduct, deleteProduct, setFeed, syncFeed, syncAllFeeds, publicStore, setHidden,
+  getByUser, pseudoStore, assertCanPublishUser: assertCanPublish, saveLoja, listProducts, addProduct, deleteProduct, setFeed, syncFeed, syncAllFeeds, publicStore, setHidden,
 };

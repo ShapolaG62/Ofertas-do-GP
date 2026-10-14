@@ -176,6 +176,12 @@ function purgeOld() {
   return db.run(`DELETE FROM offers WHERE fonte = 'auto' AND last_seen_at < datetime('now', '-30 days')`).changes;
 }
 
+// Recalcula o tipo de produto de uma oferta (após mudar a categoria).
+function reclassifyOne(id) {
+  const r = db.get('SELECT produto, categoria FROM offers WHERE id = ?', id);
+  if (r) db.run('UPDATE offers SET subcategoria = ? WHERE id = ?', classifySubcategory(r.produto, r.categoria), id);
+}
+
 // Reaplica as regras de categoria e tipo de produto (rodado ao iniciar, para valer também para ofertas antigas).
 function reclassifyAll() {
   const rows = db.all('SELECT id, produto, categoria, fonte FROM offers');
@@ -190,5 +196,5 @@ function reclassifyAll() {
 }
 
 module.exports = {
-  saveDeal, listActive, featured, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld, reclassifyAll,
+  saveDeal, listActive, featured, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld, reclassifyAll, reclassifyOne,
 };

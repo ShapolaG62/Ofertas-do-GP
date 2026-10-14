@@ -8,7 +8,8 @@
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)}-${o.id}`;
 
   function card(o) {
-    return `<a class="card" href="/oferta/${slugOf(o)}" target="_blank" rel="noopener">
+    const link = o.fonte === 'empresa' ? `href="/anuncio/${o.id}"` : `href="/oferta/${slugOf(o)}" target="_blank" rel="noopener"`;
+    return `<a class="card" ${link}>
       <div class="card-media">
         <img src="/api/img/${o.id}" alt="" loading="lazy" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
         <span class="card-off">-${Math.round(o.desconto_pct)}%</span>

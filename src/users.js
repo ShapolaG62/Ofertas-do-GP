@@ -34,6 +34,7 @@ function publicUser(u) {
   const out = {
     id: u.id, tipo: u.tipo, email: u.email, cpf: u.cpf, cnpj: u.cnpj,
     status: u.status, bloqueio_publicacao: Boolean(u.bloqueio_publicacao), created_at: u.created_at,
+    avatar_url: u.avatar_url, google: Boolean(u.google_id), tem_senha: Boolean(u.senha_hash),
   };
   for (const k of [...PESSOA_FIELDS, ...(u.tipo === 'empresa' ? EMPRESA_FIELDS : [])]) out[k] = u[k] ?? null;
   return out;
@@ -42,42 +43,80 @@ function publicUser(u) {
 // e-mails, CPFs e CNPJs bloqueados pelo administrador ficam na mesma tabela ("cpf:...", "cnpj:...").
 const isBlocked = key => Boolean(db.get('SELECT 1 FROM blocked_emails WHERE email = ?', key));
 
-function register(body) {
-  const tipo = String(body.tipo || '');
-  if (!TIPOS.includes(tipo)) throw new Error('Escolha o tipo de conta: consumidor ou empresa.');
-  const mode = signupMode(tipo);
-  if (mode === 'fechado') throw new Error(`Os cadastros de ${tipo === 'empresa' ? 'empresas' : 'consumidores'} estão fechados no momento.`);
+const allSignupsClosed = () => TIPOS.every(t => signupMode(t) === 'fechado');
+const nowSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 
+// Passo 1: cria a conta só com e-mail e senha. O perfil (consumidor/empresa) e os dados vêm no primeiro acesso.
+function register(body) {
+  if (allSignupsClosed()) throw new Error('Os cadastros estão fechados no momento.');
   const email = normalizeEmail(body.email);
   const senha = String(body.senha || '');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) throw new Error('Informe um e-mail válido.');
   if (senha.length < MIN_PASSWORD || senha.length > 200) throw new Error(`A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.`);
   if (body.senha_confirmacao !== undefined && body.senha_confirmacao !== senha) throw new Error('As senhas não conferem.');
+  if (isBlocked(email)) throw new Error('Não é possível criar uma conta com este e-mail. Fale com o administrador.');
+  const existing = db.get('SELECT google_id FROM users WHERE email = ?', email);
+  if (existing) {
+    throw new Error(existing.google_id
+      ? 'Já existe uma conta com este e-mail criada pelo Google. Use "Entrar com Google".'
+      : 'Já existe uma conta com este e-mail. Use "Entrar".');
+  }
+  const res = db.run(`INSERT INTO users (email, senha_hash, status) VALUES (?, ?, 'onboarding')`, email, hashPassword(senha));
+  return getById(Number(res.lastInsertRowid));
+}
+
+// Login/cadastro com Google: acha pela conta Google, depois pelo e-mail (vincula) ou cria uma conta nova.
+function loginWithGoogle(profile) {
+  let u = db.get('SELECT * FROM users WHERE google_id = ?', profile.sub)
+    || db.get('SELECT * FROM users WHERE email = ?', profile.email);
+  if (u && !u.google_id) {
+    db.run('UPDATE users SET google_id = ?, avatar_url = COALESCE(avatar_url, ?) WHERE id = ?', profile.sub, profile.picture, u.id);
+    u = getById(u.id);
+  }
+  if (!u) {
+    if (allSignupsClosed()) throw new Error('Os cadastros estão fechados no momento.');
+    if (isBlocked(profile.email)) throw new Error('Não é possível criar uma conta com este e-mail. Fale com o administrador.');
+    const res = db.run(
+      `INSERT INTO users (email, google_id, avatar_url, nome, status) VALUES (?, ?, ?, ?, 'onboarding')`,
+      profile.email, profile.sub, profile.picture, String(profile.name || '').slice(0, 100) || null
+    );
+    u = getById(Number(res.lastInsertRowid));
+  }
+  const reason = blockedReason(u);
+  if (reason) throw Object.assign(new Error(reason), { status: 403 });
+  db.run(`UPDATE users SET last_login_at = datetime('now') WHERE id = ?`, u.id);
+  return u;
+}
+
+// Passo 2 (primeiro acesso): escolhe o perfil e informa os dados cadastrais.
+function completeProfile(u, body) {
+  if (u.status !== 'onboarding') throw new Error('Seu perfil já foi definido.');
+  const tipo = String(body.tipo || '');
+  if (!TIPOS.includes(tipo)) throw new Error('Escolha o perfil: consumidor ou empresarial.');
+  const mode = signupMode(tipo);
+  if (mode === 'fechado') throw new Error(`Os cadastros de ${tipo === 'empresa' ? 'empresas' : 'consumidores'} estão fechados no momento.`);
   if (!(body.aceite_termos === true || body.aceite_termos === 'on' || body.aceite_termos === '1')) {
     throw new Error('É preciso aceitar os Termos de uso e a Política de privacidade.');
   }
-
   const dados = { ...cadastro.dadosPessoa(body), ...(tipo === 'empresa' ? cadastro.dadosEmpresa(body) : {}) };
-
-  if (isBlocked(email) || isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) {
-    throw new Error('Não é possível criar uma conta com estes dados. Fale com o administrador.');
+  if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) {
+    throw new Error('Não é possível concluir o cadastro com estes dados. Fale com o administrador.');
   }
-  if (db.get('SELECT 1 FROM users WHERE email = ?', email)) throw new Error('Já existe uma conta com este e-mail.');
-  if (db.get('SELECT 1 FROM users WHERE cpf = ?', dados.cpf)) throw new Error('Já existe uma conta com este CPF.');
-  if (dados.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ?', dados.cnpj)) throw new Error('Já existe uma conta com este CNPJ.');
+  if (db.get('SELECT 1 FROM users WHERE cpf = ? AND id <> ?', dados.cpf, u.id)) throw new Error('Já existe uma conta com este CPF.');
+  if (dados.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ? AND id <> ?', dados.cnpj, u.id)) throw new Error('Já existe uma conta com este CNPJ.');
 
   const status = mode === 'aberto' ? 'active' : 'pending';
-  const cols = ['tipo', 'email', 'senha_hash', 'status', 'aceite_termos_em', ...Object.keys(dados)];
-  const vals = [tipo, email, hashPassword(senha), status, new Date().toISOString().replace('T', ' ').slice(0, 19), ...Object.values(dados)];
-  const res = db.run(`INSERT INTO users (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, ...vals);
-  return getById(Number(res.lastInsertRowid));
+  const cols = { tipo, status, aceite_termos_em: nowSql(), ...dados };
+  db.run(`UPDATE users SET ${Object.keys(cols).map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(cols), u.id);
+  logAction(getById(u.id), 'cadastro_concluido', `perfil ${tipo}${status === 'pending' ? ', aguardando aprovação' : ''}`);
+  return getById(u.id);
 }
 
 const getById = id => db.get('SELECT * FROM users WHERE id = ?', id);
 
-// Explica por que a conta não pode entrar (ou null se pode).
+// Explica por que a conta não pode entrar (ou null se pode). Contas em cadastro ou aguardando
+// aprovação podem entrar, mas só enxergam a tela de cadastro/espera (ver requireActive).
 function blockedReason(u) {
-  if (u.status === 'pending') return 'Seu cadastro está aguardando aprovação do administrador.';
   if (u.status === 'rejected') return `Seu cadastro não foi aprovado.${u.status_motivo ? ` Motivo: ${u.status_motivo}` : ''}`;
   if (u.status === 'banned') return `Esta conta foi banida.${u.status_motivo ? ` Motivo: ${u.status_motivo}` : ''}`;
   if (u.status === 'suspended') {
@@ -93,6 +132,7 @@ function blockedReason(u) {
 
 function login(email, senha) {
   const u = db.get('SELECT * FROM users WHERE email = ?', normalizeEmail(email));
+  if (u && !u.senha_hash) throw new Error('Esta conta foi criada com o Google. Use "Entrar com Google".');
   if (!u || !verifyPassword(String(senha || ''), u.senha_hash)) throw new Error('E-mail ou senha incorretos.');
   const reason = blockedReason(u);
   if (reason) throw Object.assign(new Error(reason), { status: 403 });
@@ -115,7 +155,7 @@ function destroySession(req, res) {
   res.setHeader('Set-Cookie', `${COOKIE}=; Max-Age=0; ${cookieFlags(req)}`);
 }
 
-// Usuário da sessão atual; sessões de contas bloqueadas deixam de valer na hora.
+// Usuário da sessão atual; sessões de contas banidas/suspensas/recusadas deixam de valer na hora.
 function currentUser(req) {
   const token = parseCookies(req.headers.cookie)[COOKIE];
   if (!token) return null;
@@ -134,6 +174,14 @@ function requireUser(req, res, next) {
   next();
 }
 
+// Ferramentas (loja, anúncios, dados) só para contas com perfil definido e liberadas.
+function requireActive(req, res, next) {
+  const u = req.user;
+  if (u.status === 'onboarding') return res.status(403).json({ error: 'Conclua seu cadastro escolhendo o perfil.' });
+  if (u.status === 'pending') return res.status(403).json({ error: 'Seu cadastro está aguardando aprovação do administrador.' });
+  next();
+}
+
 // Atualiza os dados cadastrais (CPF, CNPJ e e-mail não podem ser trocados pelo próprio usuário).
 function updateProfile(u, body) {
   const dados = {
@@ -144,17 +192,22 @@ function updateProfile(u, body) {
   db.run(`UPDATE users SET ${cols.map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(dados), u.id);
 }
 
+// Contas criadas pelo Google podem definir uma senha sem informar a atual.
 function changePassword(u, atual, nova) {
-  if (!verifyPassword(String(atual || ''), u.senha_hash)) throw new Error('Senha atual incorreta.');
+  if (u.senha_hash && !verifyPassword(String(atual || ''), u.senha_hash)) throw new Error('Senha atual incorreta.');
   if (String(nova || '').length < MIN_PASSWORD) throw new Error(`A nova senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.`);
   db.run('UPDATE users SET senha_hash = ? WHERE id = ?', hashPassword(nova), u.id);
   db.run('DELETE FROM user_sessions WHERE user_id = ?', u.id);
 }
 
-function deleteOwnAccount(u, senha) {
-  if (!verifyPassword(String(senha || ''), u.senha_hash)) throw new Error('Senha incorreta.');
+function deleteOwnAccount(u, body) {
+  if (u.senha_hash) {
+    if (!verifyPassword(String(body.senha || ''), u.senha_hash)) throw new Error('Senha incorreta.');
+  } else if (String(body.confirmacao || '').trim().toUpperCase() !== 'EXCLUIR') {
+    throw new Error('Digite EXCLUIR para confirmar.');
+  }
   logAction(u, 'conta_excluida_pelo_usuario', null);
-  db.run('DELETE FROM users WHERE id = ?', u.id); // loja, produtos e sessões saem junto (ON DELETE CASCADE)
+  db.run('DELETE FROM users WHERE id = ?', u.id); // loja, anúncios e sessões saem junto (ON DELETE CASCADE)
 }
 
 // ── Moderação (usado pelo painel do administrador) ────────────────────────────
@@ -246,7 +299,7 @@ function listForAdmin({ q = '', tipo = '', status = '', page = 1, perPage = 30 }
             l.id AS loja_id, l.nome AS loja_nome, l.slug AS loja_slug, l.oculta AS loja_oculta,
             (SELECT COUNT(*) FROM offers o WHERE o.loja_id = l.id) AS produtos
      ${from} ${whereSql}
-     ORDER BY CASE u.status WHEN 'pending' THEN 0 ELSE 1 END, u.created_at DESC
+     ORDER BY CASE u.status WHEN 'pending' THEN 0 WHEN 'onboarding' THEN 2 ELSE 1 END, u.created_at DESC
      LIMIT ? OFFSET ?`,
     ...params, perPage, (page - 1) * perPage
   );
@@ -270,6 +323,6 @@ function detailForAdmin(id) {
 
 module.exports = {
   ACTIVE_SQL, TIPOS, SIGNUP_MODES, signupMode, register, login, createSession, destroySession, currentUser,
-  requireUser, publicUser, updateProfile, changePassword, deleteOwnAccount, moderate, listForAdmin, detailForAdmin,
+  requireUser, requireActive, loginWithGoogle, completeProfile, publicUser, updateProfile, changePassword, deleteOwnAccount, moderate, listForAdmin, detailForAdmin,
   getById, logAction,
 };

@@ -336,13 +336,34 @@
         </div>
       </form>
 
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Login com Google</h2>
+          <p class="hint">Permite entrar e criar conta com a conta Google. Sem estes dados, o botão do Google não aparece no site.</p>
+          <ol class="hint" style="padding-left:18px;line-height:1.7">
+            <li>Acesse <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">console.cloud.google.com → APIs e serviços → Credenciais</a> (crie um projeto se pedir).</li>
+            <li>Em <b>Tela de consentimento OAuth</b>, configure o nome "Ofertas do GP", seu e-mail e o tipo <b>Externo</b>.</li>
+            <li>Em <b>Criar credenciais → ID do cliente OAuth</b>, escolha <b>Aplicativo da Web</b>.</li>
+            <li>Em <b>URIs de redirecionamento autorizados</b>, cole exatamente: <code id="google-redirect"></code> <button class="btn small" type="button" id="copy-redirect">Copiar</button></li>
+            <li>Copie o <b>ID do cliente</b> e a <b>Chave secreta do cliente</b> para os campos abaixo e salve.</li>
+          </ol>
+          <div class="grid">
+            <label class="field">ID do cliente <input type="text" name="google_client_id" placeholder="xxxx.apps.googleusercontent.com"></label>
+            <label class="field">Chave secreta do cliente <input type="password" name="google_client_secret" autocomplete="off" data-secret></label>
+            <label class="field">Endereço público do site <input type="url" name="site_url" placeholder="Vazio = usa o endereço atual (ex.: https://ofertasdogp.com.br)"></label>
+          </div>
+          <p class="hint">Quando o site for para a VPS com domínio, preencha o endereço público e cadastre também o novo endereço de retorno no Google.</p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar login com Google</button></div>
+        </div>
+      </form>
+
       <div class="panel">
         <div class="row" style="margin-bottom:10px">
           <h2 style="flex:1">Usuários</h2>
           <input type="text" id="u-q" placeholder="Nome, e-mail, CPF, CNPJ ou loja..." style="width:220px">
           <select id="u-tipo" style="width:150px"><option value="">Todos os tipos</option><option value="consumidor">Consumidores</option><option value="empresa">Empresas</option></select>
           <select id="u-status" style="width:170px">
-            <option value="">Todas as situações</option><option value="pending">Aguardando aprovação</option><option value="active">Ativos</option>
+            <option value="">Todas as situações</option><option value="pending">Aguardando aprovação</option><option value="onboarding">Cadastro incompleto</option><option value="active">Ativos</option>
             <option value="suspended">Suspensos</option><option value="banned">Banidos</option><option value="rejected">Recusados</option>
           </select>
         </div>
@@ -518,6 +539,7 @@ $('#quick-mine').addEventListener('submit', async e => {
 // ── Configurações ─────────────────────────────────────────────────────────────
 async function loadSettings() {
   SETTINGS = await api('/api/admin/settings');
+  if (typeof updateRedirectUri === 'function') updateRedirectUri();
   $$('.settings-form').forEach(form => {
     for (const el of form.elements) {
       if (!el.name) continue;
@@ -619,7 +641,7 @@ $('#pass-form').addEventListener('submit', async e => {
 boot().catch(err => { document.body.innerHTML = `<p style="padding:20px">Erro ao abrir o painel: ${esc(err.message)}</p>`; });
 
 // ── Usuários do site ──────────────────────────────────────────────────────────
-const U_STATUS = { pending: 'Aguardando aprovação', active: 'Ativo', suspended: 'Suspenso', banned: 'Banido', rejected: 'Recusado' };
+const U_STATUS = { onboarding: 'Cadastro incompleto', pending: 'Aguardando aprovação', active: 'Ativo', suspended: 'Suspenso', banned: 'Banido', rejected: 'Recusado' };
 let userPage = 1;
 
 async function loadUsers() {
@@ -629,7 +651,7 @@ async function loadUsers() {
   $('#users-body').innerHTML = data.rows.length ? data.rows.map(u => `
     <tr>
       <td><b>${esc(u.tipo === 'empresa' ? (u.empresa_nome || u.nome) : u.nome)}</b><br><span class="hint" style="margin:0">${esc(u.email)}</span></td>
-      <td>${u.tipo === 'empresa' ? 'Empresa' : 'Consumidor'}</td>
+      <td>${tipoLabel(u.tipo)}</td>
       <td><span class="badge b-${u.status}">${esc(U_STATUS[u.status] || u.status)}</span>${u.bloqueio_publicacao ? ' <span class="tag">sem publicar</span>' : ''}</td>
       <td class="hide-sm">${u.loja_nome ? `<a href="/loja/${esc(u.loja_slug)}" target="_blank">${esc(u.loja_nome)}</a>${u.loja_oculta ? ' <span class="tag">oculta</span>' : ''}<br><span class="hint" style="margin:0">${u.produtos} produto(s)</span>` : '—'}</td>
       <td class="hide-sm num">${fmtDate(u.created_at)}</td>
@@ -643,6 +665,15 @@ async function loadUsers() {
     <button class="btn small" ${data.page <= 1 ? 'disabled' : ''} data-upage="${data.page - 1}">←</button>
     <button class="btn small" ${data.page >= pages ? 'disabled' : ''} data-upage="${data.page + 1}">→</button>`;
 }
+
+const tipoLabel = t => (t === 'empresa' ? 'Empresa' : t === 'consumidor' ? 'Consumidor' : 'Não escolhido');
+
+// Endereço de retorno do Google, para copiar e colar no Google Cloud.
+function updateRedirectUri() {
+  const base = (SETTINGS.site_url || location.origin).replace(/\/+$/, '');
+  $('#google-redirect').textContent = `${base}/auth/google/callback`;
+}
+$('#copy-redirect').addEventListener('click', () => navigator.clipboard.writeText($('#google-redirect').textContent).then(() => globalMsg('Endereço copiado.')));
 
 function setPendingBadge(n) {
   $('#pending-badge').textContent = n;
@@ -735,7 +766,7 @@ async function openUser(id) {
 
   $('#ud-body').innerHTML = `
     <dl class="kv">
-      <dt>Tipo</dt><dd>${u.tipo === 'empresa' ? 'Empresa' : 'Consumidor'}</dd>
+      <dt>Tipo</dt><dd>${tipoLabel(u.tipo)}</dd>
       <dt>Nome completo</dt><dd>${esc(u.nome)}</dd>
       <dt>CPF</dt><dd>${fmtDoc(u.cpf, 'cpf')}</dd>
       <dt>Nascimento</dt><dd>${fmtBirth(u.data_nascimento)}</dd>

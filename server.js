@@ -1,7 +1,7 @@
 const path = require('path');
 const express = require('express');
 
-require('./src/db');
+const { UPLOADS_DIR } = require('./src/db');
 const auth = require('./src/auth');
 const miner = require('./src/miner');
 const offers = require('./src/offers');
@@ -33,6 +33,16 @@ app.use(express.json({ limit: '100kb' }));
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.
 app.use(express.static(PUBLIC_DIR, { index: 'index.html', extensions: ['html'] }));
 
+// Fotos enviadas pelas empresas: só imagens já verificadas, sem execução de nada.
+app.use('/uploads', express.static(UPLOADS_DIR, {
+  index: false,
+  dotfiles: 'deny',
+  setHeaders: res => {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  },
+}));
+
 app.use(publicRoutes);
 app.use(adminRoutes);
 app.use(contaRoutes);
@@ -41,6 +51,7 @@ app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));
 app.get('/privacidade', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'privacidade.html')));
 app.get('/loja/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'loja.html')));
+app.get('/anuncio/:id', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'anuncio.html')));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
 app.get('*', (req, res) => {
   if (path.extname(req.path)) return res.status(404).send('Não encontrado');

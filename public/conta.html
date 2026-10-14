@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Minha conta — Ofertas do GP</title>
+<title>Entrar — Ofertas do GP</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0c8f4f">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261014">
+<link rel="stylesheet" href="/css/site.css?v=20261015">
 </head>
 <body>
 <header class="site-header">
@@ -30,132 +30,253 @@
 <main class="page">
   <div class="container">
 
-    <!-- Entrar -->
-    <section id="view-entrar" class="narrow" hidden>
-      <div class="panel-card">
-        <h1>Entrar</h1>
-        <p class="muted">Acesse sua conta de consumidor ou de empresa.</p>
+    <!-- ── Login / criar conta ── -->
+    <section id="view-login" class="auth-wrap" hidden>
+      <div class="auth-brand">
+        <img src="/images/pet-capi.png" alt="" width="190" height="262">
+        <h1>Ofertas reais, num só lugar.</h1>
+        <ul>
+          <li>Descontos verificados das maiores lojas do Brasil</li>
+          <li>Empresas criam a própria loja e anunciam promoções</li>
+          <li>Conta gratuita para consumidores e empresas</li>
+        </ul>
+      </div>
+      <div class="panel-card auth-card">
+        <div class="tabs-line" role="tablist">
+          <button type="button" role="tab" data-auth="entrar" aria-selected="true">Entrar</button>
+          <button type="button" role="tab" data-auth="criar" aria-selected="false">Criar conta</button>
+        </div>
+        <div class="form-msg err" id="auth-error" hidden></div>
+
+        <a class="btn btn-google btn-block" id="google-btn" href="/auth/google" hidden>
+          <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          <span id="google-label">Entrar com Google</span>
+        </a>
+        <div class="divider" id="google-divider" hidden><span>ou</span></div>
+
         <form class="form" id="form-entrar">
-          <label class="field">E-mail <input type="email" name="email" autocomplete="email" required></label>
-          <label class="field">Senha <input type="password" name="senha" autocomplete="current-password" required></label>
+          <label class="field"><span>E-mail</span><input type="email" name="email" autocomplete="email" required></label>
+          <label class="field"><span>Senha</span><input type="password" name="senha" autocomplete="current-password" required></label>
           <div class="form-msg" hidden></div>
           <button class="btn btn-primary btn-block" type="submit">Entrar</button>
         </form>
-        <p class="form-switch">Ainda não tem conta? <a class="link-btn" href="#cadastro">Criar conta</a></p>
+
+        <form class="form" id="form-criar" hidden>
+          <label class="field"><span>E-mail</span><input type="email" name="email" autocomplete="email" maxlength="120" required></label>
+          <div class="form-row">
+            <label class="field"><span>Senha <small class="hint-inline">mín. 8 caracteres</small></span><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
+            <label class="field"><span>Confirme a senha</span><input type="password" name="senha_confirmacao" autocomplete="new-password" minlength="8" required></label>
+          </div>
+          <div class="form-msg" hidden></div>
+          <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
+          <p class="muted" style="margin:0;font-size:13px">No próximo passo você escolhe se a conta é de consumidor ou de empresa.</p>
+        </form>
       </div>
     </section>
 
-    <!-- Cadastro -->
-    <section id="view-cadastro" class="wide-form" hidden>
+    <!-- ── Primeiro acesso: escolha do perfil ── -->
+    <section id="view-perfil" class="wide-form" hidden>
       <div class="panel-card">
-        <h1>Criar conta</h1>
-        <p class="muted" id="signup-note">Escolha o tipo de conta.</p>
-        <form class="form" id="form-cadastro" novalidate>
-          <div class="type-choice" role="radiogroup" aria-label="Tipo de conta">
-            <label><input type="radio" name="tipo" value="consumidor" checked><strong>Consumidor</strong><span>Acompanhe as ofertas com desconto.</span></label>
-            <label><input type="radio" name="tipo" value="empresa"><strong>Empresa</strong><span>Veja as ofertas e crie sua loja com seus produtos em promoção.</span></label>
-          </div>
+        <p class="step-label">Passo 1 de 2</p>
+        <h1>Como você quer usar o Ofertas do GP?</h1>
+        <p class="muted">Escolha o perfil da sua conta. Ele define as ferramentas que você terá.</p>
+        <div class="profile-choice">
+          <button type="button" class="profile-card" data-tipo="consumidor">
+            <span class="profile-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+            </span>
+            <strong>Consumidor</strong>
+            <span>Acompanhe as ofertas com desconto das maiores lojas e das lojas parceiras.</span>
+            <small class="profile-note" data-note="consumidor"></small>
+          </button>
+          <button type="button" class="profile-card" data-tipo="empresa">
+            <span class="profile-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+            </span>
+            <strong>Empresarial</strong>
+            <span>Veja as ofertas e crie sua loja no site: anuncie seus produtos em promoção ou importe pelo link da sua loja virtual.</span>
+            <small class="profile-note" data-note="empresa"></small>
+          </button>
+        </div>
+      </div>
+    </section>
 
+    <!-- ── Primeiro acesso: dados cadastrais ── -->
+    <section id="view-dados" class="wide-form" hidden>
+      <div class="panel-card">
+        <p class="step-label">Passo 2 de 2</p>
+        <h1 id="dados-title">Seus dados</h1>
+        <p class="muted"><span id="dados-sub"></span> <button class="link-btn" type="button" id="trocar-perfil">Trocar perfil</button></p>
+        <form class="form" id="form-dados" novalidate>
           <div data-fields="pessoa" data-mode="cadastro"></div>
           <div data-fields="empresa" data-mode="cadastro" data-empresa hidden></div>
-
-          <fieldset class="form-section">
-            <legend>Acesso à conta</legend>
-            <label class="field">E-mail <input type="email" name="email" autocomplete="email" maxlength="120" required></label>
-            <div class="form-row">
-              <label class="field">Senha <small>mínimo 8 caracteres</small><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
-              <label class="field">Confirme a senha <input type="password" name="senha_confirmacao" autocomplete="new-password" minlength="8" required></label>
-            </div>
-          </fieldset>
-
           <label class="check-line"><input type="checkbox" name="aceite_termos" required>
             <span>Li e aceito os <a href="/privacidade" target="_blank">Termos de uso e a Política de privacidade</a>, e confirmo que as informações são verdadeiras.</span></label>
           <div class="form-msg" hidden></div>
-          <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
+          <button class="btn btn-primary btn-block" type="submit">Concluir cadastro</button>
         </form>
-        <p class="form-switch">Já tem conta? <a class="link-btn" href="#entrar">Entrar</a></p>
       </div>
     </section>
 
-    <!-- Área do usuário -->
+    <!-- ── Aguardando aprovação ── -->
+    <section id="view-aguardando" class="narrow" hidden>
+      <div class="panel-card" style="text-align:center">
+        <img src="/images/pet-capi.png" alt="" width="120" style="margin:0 auto 12px">
+        <h1>Cadastro enviado!</h1>
+        <p class="muted" id="aguardando-text">Seu cadastro está aguardando a aprovação do administrador. Assim que for aprovado, as ferramentas da sua conta serão liberadas aqui.</p>
+        <a class="btn btn-primary" href="/">Ver ofertas enquanto isso</a>
+      </div>
+    </section>
+
+    <!-- ── Área do usuário ── -->
     <section id="view-conta" hidden>
       <div class="account-grid">
         <aside class="account-side panel-card">
-          <div class="who" id="who-name"></div>
-          <div class="muted" id="who-type" style="margin:2px 0 0"></div>
+          <div class="who-row"><img id="who-avatar" alt="" hidden referrerpolicy="no-referrer"><div>
+            <div class="who" id="who-name"></div>
+            <div class="muted" id="who-type" style="margin:2px 0 0"></div>
+          </div></div>
           <nav class="account-nav" id="account-nav"></nav>
         </aside>
 
         <div>
-          <!-- Visão geral -->
           <div class="tab-pane" data-pane="inicio">
             <div class="panel-card">
               <h2>Olá, <span id="hello-name"></span></h2>
               <p class="muted" id="hello-text"></p>
-              <a class="btn btn-primary" href="/">Ver ofertas com desconto</a>
-              <a class="btn" id="hello-store" href="#" hidden>Ver minha loja</a>
+              <div class="row-actions">
+                <a class="btn btn-primary" href="/">Ver ofertas com desconto</a>
+                <button class="btn" type="button" id="hello-new-ad" hidden>Criar anúncio</button>
+                <a class="btn" id="hello-store" href="#" hidden>Ver minha loja</a>
+              </div>
             </div>
           </div>
 
-          <!-- Minha loja (empresa) -->
+          <!-- Minha loja -->
           <div class="tab-pane" data-pane="loja" hidden>
             <div class="panel-card">
               <h2>Minha loja</h2>
-              <p class="muted">Sua loja ganha uma página no site com os seus produtos em promoção.</p>
+              <p class="muted">Sua loja ganha uma página no site com todos os seus anúncios.</p>
               <form class="form" id="form-loja">
-                <label class="field">Nome da loja <input name="nome" maxlength="60" required></label>
-                <label class="field">Descrição <textarea name="descricao" maxlength="500"></textarea></label>
+                <label class="field"><span>Nome da loja</span><input name="nome" maxlength="60" required></label>
+                <label class="field"><span>Descrição</span><textarea name="descricao" maxlength="500"></textarea></label>
                 <div class="form-row">
-                  <label class="field">Logo (link da imagem) <input type="url" name="logo_url" placeholder="https://"></label>
-                  <label class="field">Site da loja <input type="url" name="site_url" placeholder="https://"></label>
+                  <label class="field"><span>Logo (link da imagem)</span><input type="url" name="logo_url" placeholder="https://"></label>
+                  <label class="field"><span>Site da loja</span><input type="url" name="site_url" placeholder="https://"></label>
                 </div>
                 <div class="form-msg" hidden></div>
-                <div><button class="btn btn-primary" type="submit">Salvar loja</button> <a class="btn" id="store-link" href="#" target="_blank" hidden>Ver página da loja</a></div>
+                <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar loja</button> <a class="btn" id="store-link" href="#" target="_blank" hidden>Ver página da loja</a></div>
               </form>
             </div>
           </div>
 
-          <!-- Produtos (empresa) -->
-          <div class="tab-pane" data-pane="produtos" hidden>
-            <div class="panel-card">
-              <h2>Cadastrar produto com desconto</h2>
-              <p class="muted">Informe o preço anterior e o preço com desconto exatamente como aparecem na sua loja.</p>
-              <form class="form" id="form-produto">
-                <label class="field">Nome do produto <input name="produto" maxlength="200" required></label>
-                <label class="field">Link do produto na sua loja <input type="url" name="url" placeholder="https://" required></label>
-                <div class="form-row">
-                  <label class="field">Preço anterior (R$) <input name="preco_anterior" inputmode="decimal" placeholder="299,90" required></label>
-                  <label class="field">Preço com desconto (R$) <input name="preco_atual" inputmode="decimal" placeholder="199,90" required></label>
-                </div>
-                <div class="form-row">
-                  <label class="field">Imagem (link) <input type="url" name="imagem" placeholder="https://"></label>
-                  <label class="field">Ficar no ar por <select name="dias"><option value="3">3 dias</option><option value="7" selected>7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></label>
-                </div>
-                <div class="form-msg" hidden></div>
-                <div><button class="btn btn-primary" type="submit">Publicar produto</button></div>
-              </form>
+          <!-- Anúncios -->
+          <div class="tab-pane" data-pane="anuncios" hidden>
+            <div class="panel-card" id="ads-list-card">
+              <div class="row-between">
+                <h2>Meus anúncios <span class="muted" id="prod-count" style="font-weight:500"></span></h2>
+                <button class="btn btn-primary" type="button" id="new-ad">+ Criar anúncio</button>
+              </div>
+              <div class="prod-list" id="prod-list" style="margin-top:14px"></div>
             </div>
-            <div class="panel-card">
-              <h2>Meus produtos <span class="muted" id="prod-count" style="font-weight:500"></span></h2>
-              <div class="prod-list" id="prod-list"></div>
+
+            <!-- Criador de anúncios -->
+            <div id="ad-editor" hidden>
+              <div class="row-between" style="margin-bottom:12px">
+                <h2 id="ad-editor-title" style="margin:0">Criar anúncio</h2>
+                <button class="btn" type="button" id="ad-cancel">Voltar aos anúncios</button>
+              </div>
+              <div class="ad-layout">
+                <form class="form" id="form-ad" novalidate>
+                  <fieldset class="form-section panel-card">
+                    <legend>Fotos do produto</legend>
+                    <p class="muted" style="margin:0">Até <span id="max-fotos">6</span> fotos em JPG, PNG ou WEBP (até 3 MB cada). A primeira é a capa; arraste para reordenar.</p>
+                    <div class="photo-grid" id="photo-grid"></div>
+                    <div class="row-actions">
+                      <label class="btn"><input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" multiple hidden>Enviar fotos</label>
+                      <button class="btn" type="button" id="photo-link">Adicionar por link</button>
+                    </div>
+                  </fieldset>
+
+                  <fieldset class="form-section panel-card">
+                    <legend>Informações do produto</legend>
+                    <label class="field"><span>Título do anúncio <small class="hint-inline" data-count="titulo"></small></span><input name="titulo" maxlength="150" placeholder="Ex.: Tênis de corrida Leve Pro 2 masculino"></label>
+                    <div class="form-row-3">
+                      <label class="field"><span>Categoria</span><select name="categoria" id="ad-categoria"></select></label>
+                      <label class="field"><span>Condição</span><select name="condicao" id="ad-condicao"></select></label>
+                      <label class="field"><span>Marca <small class="hint-inline">(opcional)</small></span><input name="marca" maxlength="60"></label>
+                    </div>
+                    <label class="field"><span>Modelo / variação <small class="hint-inline">(opcional — ex.: tamanho 42, cor preta)</small></span><input name="modelo" maxlength="80"></label>
+                    <label class="field"><span>Descrição <small class="hint-inline" data-count="descricao"></small></span><textarea name="descricao" maxlength="3000" rows="6" placeholder="Detalhes, materiais, medidas, o que vem na caixa..."></textarea></label>
+                  </fieldset>
+
+                  <fieldset class="form-section panel-card">
+                    <legend>Preço e condições</legend>
+                    <div class="form-row">
+                      <label class="field"><span>Preço normal (R$)</span><input name="preco_anterior" inputmode="decimal" placeholder="399,90"></label>
+                      <label class="field"><span>Preço promocional (R$) <small class="hint-inline" id="ad-discount"></small></span><input name="preco_atual" inputmode="decimal" placeholder="279,90"></label>
+                    </div>
+                    <label class="field"><span>Parcelamento <small class="hint-inline">(opcional)</small></span><input name="parcelamento" maxlength="80" placeholder="Ex.: até 6x sem juros"></label>
+                    <div class="form-row">
+                      <label class="field"><span>Cupom de desconto <small class="hint-inline">(opcional)</small></span><input name="cupom_codigo" maxlength="30" placeholder="Ex.: GP10" style="text-transform:uppercase"></label>
+                      <label class="field"><span>O que o cupom dá</span><input name="cupom_descricao" maxlength="120" placeholder="Ex.: 10% extra na primeira compra"></label>
+                    </div>
+                  </fieldset>
+
+                  <fieldset class="form-section panel-card">
+                    <legend>Entrega, estoque e garantia</legend>
+                    <div class="form-row">
+                      <label class="field"><span>Frete</span><select name="frete" id="ad-frete"></select></label>
+                      <label class="field" id="frete-valor-field" hidden><span>Valor do frete (R$) <small class="hint-inline">(opcional)</small></span><input name="frete_valor" inputmode="decimal" placeholder="19,90"></label>
+                    </div>
+                    <div class="form-row-3">
+                      <label class="field"><span>Prazo de entrega <small class="hint-inline">(opcional)</small></span><input name="prazo_entrega" maxlength="80" placeholder="Ex.: 3 a 7 dias úteis"></label>
+                      <label class="field"><span>Estoque <small class="hint-inline">(opcional)</small></span><input name="estoque" type="number" min="0" step="1"></label>
+                      <label class="field"><span>Garantia <small class="hint-inline">(opcional)</small></span><input name="garantia" maxlength="80" placeholder="Ex.: 90 dias"></label>
+                    </div>
+                    <div class="form-row">
+                      <label class="field"><span>Código interno (SKU) <small class="hint-inline">(opcional)</small></span><input name="sku" maxlength="40"></label>
+                      <label class="field"><span>Código de barras (EAN) <small class="hint-inline">(opcional)</small></span><input name="ean" inputmode="numeric" maxlength="14"></label>
+                    </div>
+                  </fieldset>
+
+                  <fieldset class="form-section panel-card">
+                    <legend>Venda e publicação</legend>
+                    <label class="field"><span>Link para comprar</span><input name="url" type="url" maxlength="500" placeholder="https://sualoja.com.br/produto"></label>
+                    <div class="form-row">
+                      <label class="field"><span>WhatsApp para dúvidas <small class="hint-inline">(opcional)</small></span><input name="whatsapp" inputmode="tel" data-mask="tel" maxlength="15" placeholder="(11) 90000-0000"></label>
+                      <label class="field"><span>Anúncio fica no ar por</span><select name="dias"><option value="3">3 dias</option><option value="7" selected>7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></label>
+                    </div>
+                  </fieldset>
+
+                  <div class="form-msg" hidden></div>
+                  <button class="btn btn-primary btn-block" type="submit" id="ad-submit">Publicar anúncio</button>
+                </form>
+
+                <aside class="ad-preview">
+                  <p class="filter-title">Prévia no site</p>
+                  <div id="ad-preview-card"></div>
+                  <p class="muted" style="font-size:12.5px;margin-top:10px">Ao clicar, o cliente vê a página completa do anúncio com fotos, descrição, frete, cupom e o botão para comprar na sua loja.</p>
+                </aside>
+              </div>
             </div>
           </div>
 
-          <!-- Importação automática (empresa) -->
+          <!-- Importação -->
           <div class="tab-pane" data-pane="importar" hidden>
             <div class="panel-card">
               <h2>Importar produtos automaticamente</h2>
               <p class="muted">Informe o endereço da sua loja virtual. Buscamos sozinhos os produtos em promoção (com preço normal e preço promocional) e atualizamos a cada 2 horas. Funciona com lojas <b>Shopify</b>, <b>WooCommerce</b> e com <b>feed XML do Google Shopping</b> (Nuvemshop, Tray, Loja Integrada, VTEX e outras geram esse feed).</p>
               <form class="form" id="form-feed">
-                <label class="field">Endereço da loja ou do feed <input type="url" name="feed_url" placeholder="https://minhaloja.com.br"></label>
+                <label class="field"><span>Endereço da loja ou do feed</span><input type="url" name="feed_url" placeholder="https://minhaloja.com.br"></label>
                 <div class="form-msg" hidden></div>
-                <div><button class="btn btn-primary" type="submit">Salvar link</button> <button class="btn" type="button" id="feed-sync">Sincronizar agora</button></div>
+                <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar link</button> <button class="btn" type="button" id="feed-sync">Sincronizar agora</button></div>
               </form>
               <p class="muted" id="feed-status" style="margin:14px 0 0"></p>
             </div>
           </div>
 
-          <!-- Perfil -->
+          <!-- Meus dados -->
           <div class="tab-pane" data-pane="perfil" hidden>
             <div class="panel-card">
               <h2>Meus dados</h2>
@@ -163,25 +284,31 @@
               <form class="form" id="form-perfil" novalidate>
                 <div data-fields="pessoa" data-mode="perfil"></div>
                 <div data-fields="empresa" data-mode="perfil" data-empresa hidden></div>
-                <label class="field">E-mail <input name="email" disabled></label>
+                <label class="field"><span>E-mail</span><input name="email" disabled></label>
                 <div class="form-msg" hidden></div>
                 <div><button class="btn btn-primary" type="submit">Salvar</button></div>
               </form>
             </div>
+          </div>
+
+          <!-- Segurança -->
+          <div class="tab-pane" data-pane="seguranca" hidden>
             <div class="panel-card">
-              <h2>Trocar senha</h2>
-              <form class="form" id="form-senha" style="margin-top:12px">
-                <label class="field">Senha atual <input type="password" name="atual" autocomplete="current-password" required></label>
-                <label class="field">Nova senha <input type="password" name="nova" autocomplete="new-password" minlength="8" required></label>
+              <h2 id="senha-title">Trocar senha</h2>
+              <p class="muted" id="senha-note" hidden>Sua conta entra pelo Google. Se quiser, defina uma senha para entrar também com e-mail.</p>
+              <form class="form" id="form-senha">
+                <label class="field" id="senha-atual-field"><span>Senha atual</span><input type="password" name="atual" autocomplete="current-password"></label>
+                <label class="field"><span>Nova senha</span><input type="password" name="nova" autocomplete="new-password" minlength="8" required></label>
                 <div class="form-msg" hidden></div>
-                <div><button class="btn" type="submit">Trocar senha</button></div>
+                <div><button class="btn" type="submit">Salvar senha</button></div>
               </form>
             </div>
             <div class="panel-card">
               <h2>Excluir conta</h2>
-              <p class="muted">Apaga sua conta, sua loja e todos os seus produtos. Não dá para desfazer.</p>
+              <p class="muted">Apaga sua conta, sua loja e todos os seus anúncios. Não dá para desfazer.</p>
               <form class="form" id="form-excluir">
-                <label class="field">Confirme sua senha <input type="password" name="senha" autocomplete="current-password" required></label>
+                <label class="field" id="excluir-senha"><span>Confirme sua senha</span><input type="password" name="senha" autocomplete="current-password"></label>
+                <label class="field" id="excluir-confirma" hidden><span>Digite EXCLUIR para confirmar</span><input name="confirmacao"></label>
                 <div class="form-msg" hidden></div>
                 <div><button class="btn" type="submit" style="color:var(--deal)">Excluir minha conta</button></div>
               </form>
@@ -194,6 +321,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261014" defer></script>
+<script src="/js/conta.js?v=20261015" defer></script>
 </body>
 </html>

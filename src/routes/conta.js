@@ -1,38 +1,62 @@
-// API das contas de usuários do site (consumidor e empresa) e das páginas públicas de lojas.
+// API das contas de usuários do site (consumidor e empresa), login com Google, anúncios e lojas públicas.
 const express = require('express');
 const users = require('../users');
 const lojas = require('../lojas');
+const anuncios = require('../anuncios');
+const google = require('../google');
 const cadastro = require('../cadastro');
+const { CATEGORIES } = require('../categorize');
 const { createLimiter } = require('../ratelimit');
 
 const router = express.Router();
 const loginLimiter = createLimiter(8, 15);    // 8 tentativas por 15 min por IP
-const signupLimiter = createLimiter(5, 60);   // 5 cadastros por hora por IP
+const signupLimiter = createLimiter(5, 60);   // 5 contas novas por hora por IP
 const syncLimiter = createLimiter(6, 60);     // 6 sincronizações manuais por hora por loja
+const uploadLimiter = createLimiter(60, 60);  // 60 fotos por hora por usuário
 
 const sendError = (res, err) => res.status(err.status || 400).json({ error: err.message });
 
-// Informa ao site como estão os cadastros (para mostrar "aguardando aprovação" ou "fechado").
+// Informações para as telas de login, primeiro acesso e criador de anúncios.
 router.get('/api/conta/cadastro-info', (req, res) => {
   res.json({
     consumidor: users.signupMode('consumidor'),
     empresa: users.signupMode('empresa'),
+    google: google.isEnabled(),
     ufs: cadastro.UFS,
     ramos: cadastro.RAMOS,
     idade_minima: cadastro.IDADE_MINIMA,
+    categorias: CATEGORIES,
+    condicoes: anuncios.CONDICOES,
+    fretes: anuncios.FRETES,
+    max_fotos: anuncios.MAX_IMAGES,
   });
 });
 
+// ── Login com Google ─────────────────────────────────────────────────────────
+router.get('/auth/google', (req, res) => {
+  if (!google.isEnabled()) return res.redirect('/conta?erro=' + encodeURIComponent('Login com Google não está disponível.'));
+  res.redirect(google.startUrl(req, res));
+});
+
+router.get('/auth/google/callback', async (req, res) => {
+  try {
+    const profile = await google.finish(req, res);
+    const u = users.loginWithGoogle(profile);
+    users.createSession(req, res, u.id);
+    res.redirect('/conta');
+  } catch (err) {
+    res.redirect('/conta?erro=' + encodeURIComponent(err.message));
+  }
+});
+
+// ── E-mail e senha ───────────────────────────────────────────────────────────
 router.post('/api/conta/cadastro', (req, res) => {
   const wait = signupLimiter.hit(req.ip);
   if (wait) return res.status(429).json({ error: `Muitos cadastros deste endereço. Tente de novo em ${wait} min.` });
   try {
     const u = users.register(req.body || {});
-    if (u.status === 'active') {
-      users.createSession(req, res, u.id);
-      return res.json({ ok: true, status: 'active' });
-    }
-    res.json({ ok: true, status: 'pending' });
+    users.createSession(req, res, u.id);
+    res.json({ ok: true });
   } catch (err) { sendError(res, err); }
 });
 
@@ -52,7 +76,7 @@ router.post('/api/conta/sair', (req, res) => {
   res.json({ ok: true });
 });
 
-// Sessão atual (não exige login: responde null quando ninguém está logado).
+// Sessão atual (não exige login: responde user null quando ninguém está logado).
 router.get('/api/conta/me', (req, res) => {
   const u = users.currentUser(req);
   if (!u) return res.json({ user: null });
@@ -61,8 +85,12 @@ router.get('/api/conta/me', (req, res) => {
 
 router.use('/api/conta', users.requireUser);
 
-router.put('/api/conta/perfil', (req, res) => {
-  try { users.updateProfile(req.user, req.body || {}); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+// Primeiro acesso: escolha do perfil + dados cadastrais.
+router.post('/api/conta/perfil-inicial', (req, res) => {
+  try {
+    const u = users.completeProfile(req.user, req.body || {});
+    res.json({ ok: true, status: u.status });
+  } catch (err) { sendError(res, err); }
 });
 
 router.post('/api/conta/senha', (req, res) => {
@@ -75,13 +103,20 @@ router.post('/api/conta/senha', (req, res) => {
 
 router.post('/api/conta/excluir', (req, res) => {
   try {
-    users.deleteOwnAccount(req.user, req.body?.senha);
+    users.deleteOwnAccount(req.user, req.body || {});
     users.destroySession(req, res);
     res.json({ ok: true });
   } catch (err) { sendError(res, err); }
 });
 
-// ── Loja (somente empresas) ───────────────────────────────────────────────────
+// Daqui para baixo: só contas com perfil definido e liberadas.
+router.use('/api/conta', users.requireActive);
+
+router.put('/api/conta/perfil', (req, res) => {
+  try { users.updateProfile(req.user, req.body || {}); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+});
+
+// ── Loja (somente empresas) ──────────────────────────────────────────────────
 router.put('/api/conta/loja', (req, res) => {
   try { res.json({ ok: true, loja: lojas.saveLoja(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
 });
@@ -91,12 +126,30 @@ router.get('/api/conta/produtos', (req, res) => {
   res.json(loja ? lojas.listProducts(loja.id) : []);
 });
 
-router.post('/api/conta/produtos', (req, res) => {
-  try { res.json({ ok: true, id: lojas.addProduct(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
-});
-
 router.delete('/api/conta/produtos/:id', (req, res) => {
   try { lojas.deleteProduct(req.user, Number(req.params.id)); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+});
+
+// Fotos dos anúncios: corpo binário (image/jpeg, image/png ou image/webp), até 3 MB.
+router.post('/api/conta/upload',
+  express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '3mb' }),
+  (req, res) => {
+    if (req.user.tipo !== 'empresa') return res.status(403).json({ error: 'Somente empresas enviam fotos.' });
+    const wait = uploadLimiter.hit(`u:${req.user.id}`);
+    if (wait) return res.status(429).json({ error: `Muitas fotos enviadas. Tente de novo em ${wait} min.` });
+    try { res.json({ ok: true, url: anuncios.saveUpload(req.body) }); } catch (err) { sendError(res, err); }
+  });
+
+router.get('/api/conta/anuncios/:id', (req, res) => {
+  try { res.json(anuncios.getOwnAd(req.user, Number(req.params.id))); } catch (err) { sendError(res, err); }
+});
+
+router.post('/api/conta/anuncios', (req, res) => {
+  try { res.json({ ok: true, id: anuncios.saveAd(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
+});
+
+router.put('/api/conta/anuncios/:id', (req, res) => {
+  try { res.json({ ok: true, id: anuncios.saveAd(req.user, req.body || {}, Number(req.params.id)) }); } catch (err) { sendError(res, err); }
 });
 
 router.put('/api/conta/feed', (req, res) => {
@@ -116,11 +169,17 @@ router.post('/api/conta/feed/sincronizar', async (req, res) => {
   } catch (err) { sendError(res, err); }
 });
 
-// ── Páginas públicas das lojas ───────────────────────────────────────────────
+// ── Páginas públicas ─────────────────────────────────────────────────────────
 router.get('/api/lojas/:slug', (req, res) => {
   const data = lojas.publicStore(String(req.params.slug));
   if (!data) return res.status(404).json({ error: 'Loja não encontrada.' });
   res.json(data);
+});
+
+router.get('/api/anuncios/:id', (req, res) => {
+  const ad = anuncios.publicAd(Number(req.params.id));
+  if (!ad) return res.status(404).json({ error: 'Anúncio não encontrado ou encerrado.' });
+  res.json(ad);
 });
 
 module.exports = router;

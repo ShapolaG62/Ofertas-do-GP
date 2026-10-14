@@ -10,6 +10,34 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 const DB_PATH = path.join(DATA_DIR, 'ofertas.db');
 const db = new DatabaseSync(DB_PATH);
 
+// Estrutura atual da tabela de usuários do site (também usada para migrar bancos antigos).
+const USER_DATA_COLUMNS = [
+  'cpf', 'data_nascimento', 'telefone',
+  'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf',
+  'razao_social', 'inscricao_estadual', 'telefone_empresa', 'ramo', 'site_empresa',
+  'emp_cep', 'emp_logradouro', 'emp_numero', 'emp_complemento', 'emp_bairro', 'emp_cidade', 'emp_uf',
+  'aceite_termos_em',
+];
+const USERS_COLUMNS = `
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT CHECK (tipo IS NULL OR tipo IN ('consumidor', 'empresa')),
+    nome TEXT,
+    email TEXT NOT NULL UNIQUE,
+    senha_hash TEXT,
+    google_id TEXT UNIQUE,
+    avatar_url TEXT,
+    empresa_nome TEXT,
+    cnpj TEXT,
+    status TEXT NOT NULL DEFAULT 'onboarding'
+      CHECK (status IN ('onboarding', 'pending', 'active', 'suspended', 'banned', 'rejected')),
+    status_motivo TEXT,
+    suspenso_ate TEXT,
+    bloqueio_publicacao INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_login_at TEXT,
+    ${USER_DATA_COLUMNS.map(c => `${c} TEXT`).join(',\n    ')}
+`;
+
 db.exec(`
   PRAGMA journal_mode = WAL;
   PRAGMA foreign_keys = ON;
@@ -69,21 +97,8 @@ db.exec(`
   );
 
   -- Usuários do site (consumidores e empresas). Não têm acesso ao painel /admin.
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tipo TEXT NOT NULL CHECK (tipo IN ('consumidor', 'empresa')),
-    nome TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    senha_hash TEXT NOT NULL,
-    empresa_nome TEXT,
-    cnpj TEXT,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'suspended', 'banned', 'rejected')),
-    status_motivo TEXT,
-    suspenso_ate TEXT,
-    bloqueio_publicacao INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    last_login_at TEXT
-  );
+  -- tipo fica vazio até a pessoa escolher o perfil no primeiro acesso (status 'onboarding').
+  CREATE TABLE IF NOT EXISTS users (${USERS_COLUMNS});
 
   CREATE TABLE IF NOT EXISTS user_sessions (
     token_hash TEXT PRIMARY KEY,
@@ -134,20 +149,57 @@ if (!offerColumns.includes('loja_id')) {
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_offers_loja ON offers (loja_id)');
 
-// Dados cadastrais completos de pessoas e empresas
-const USER_EXTRA_COLUMNS = [
-  'cpf', 'data_nascimento', 'telefone',
-  'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf',
-  'razao_social', 'inscricao_estadual', 'telefone_empresa', 'ramo', 'site_empresa',
-  'emp_cep', 'emp_logradouro', 'emp_numero', 'emp_complemento', 'emp_bairro', 'emp_cidade', 'emp_uf',
-  'aceite_termos_em',
-];
-const userColumns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
-for (const col of USER_EXTRA_COLUMNS) {
-  if (!userColumns.includes(col)) db.exec(`ALTER TABLE users ADD COLUMN ${col} TEXT`);
+// Bancos antigos: a tabela de usuários exigia tipo e senha. Recria com a estrutura nova copiando os dados.
+const usersSql = db.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'`).get()?.sql || '';
+if (!usersSql.includes("'onboarding'")) {
+  const oldCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec('BEGIN');
+  try {
+    db.exec(`CREATE TABLE users_new (${USERS_COLUMNS})`);
+    const newCols = db.prepare('PRAGMA table_info(users_new)').all().map(c => c.name);
+    const common = oldCols.filter(c => newCols.includes(c)).join(', ');
+    db.exec(`INSERT INTO users_new (${common}) SELECT ${common} FROM users`);
+    db.exec('DROP TABLE users');
+    db.exec('ALTER TABLE users_new RENAME TO users');
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  } finally {
+    db.exec('PRAGMA foreign_keys = ON');
+  }
 }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cpf ON users (cpf) WHERE cpf IS NOT NULL');
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cnpj ON users (cnpj) WHERE cnpj IS NOT NULL');
+
+// Detalhes dos anúncios criados pelas empresas (1 para 1 com a oferta)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ad_details (
+    offer_id INTEGER PRIMARY KEY REFERENCES offers(id) ON DELETE CASCADE,
+    descricao TEXT,
+    marca TEXT,
+    modelo TEXT,
+    condicao TEXT,
+    garantia TEXT,
+    parcelamento TEXT,
+    frete TEXT,
+    frete_valor REAL,
+    prazo_entrega TEXT,
+    estoque INTEGER,
+    sku TEXT,
+    ean TEXT,
+    cupom_codigo TEXT,
+    cupom_descricao TEXT,
+    whatsapp TEXT,
+    imagens TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const all = (sql, ...params) => db.prepare(sql).all(...params);
 const get = (sql, ...params) => db.prepare(sql).get(...params);
@@ -165,4 +217,4 @@ function transaction(fn) {
   }
 }
 
-module.exports = { db, all, get, run, transaction, DB_PATH };
+module.exports = { db, all, get, run, transaction, DB_PATH, UPLOADS_DIR };

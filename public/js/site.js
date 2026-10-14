@@ -229,7 +229,9 @@
 
   function cardHtml(o) {
     const isSel = selected.has(o.id);
-    return `<a class="card${isSel ? ' is-selected' : ''}" href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored" data-id="${o.id}">
+    // Anúncios criados pelas empresas abrem a página do anúncio; o resto vai direto para a loja.
+    const link = o.fonte === 'empresa' ? `href="/anuncio/${o.id}"` : `href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"`;
+    return `<a class="card${isSel ? ' is-selected' : ''}" ${link} data-id="${o.id}">
       <div class="card-media">
         <img src="/api/img/${o.id}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
         <span class="card-off">-${Math.round(o.desconto_pct)}%</span>

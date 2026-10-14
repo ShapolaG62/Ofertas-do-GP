@@ -29,6 +29,7 @@ router.get('/api/price-history/:id', (req, res) => {
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.
 router.get('/api/img/:id', async (req, res) => {
   const row = db.get('SELECT imagem FROM offers WHERE id = ?', Number(req.params.id));
+  if (row && /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(row.imagem || '')) return res.redirect(row.imagem);
   if (!row || !/^https:\/\//i.test(row.imagem || '')) return res.redirect('/images/pet-capi-head.png');
   try {
     const img = await safeGet(row.imagem, {

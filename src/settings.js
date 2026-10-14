@@ -61,13 +61,19 @@ const DEFAULTS = {
   signup_consumidor: 'aprovacao',
   signup_empresa: 'aprovacao',
   loja_max_produtos: '300',
+
+  // Login com Google (Google Cloud > APIs e serviços > Credenciais > ID do cliente OAuth)
+  google_client_id: '',
+  google_client_secret: '',
+  // Endereço público do site (ex.: https://ofertasdogp.com.br). Vazio = usa o endereço acessado.
+  site_url: '',
 };
 
 // Chaves que o site público pode ler.
 const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsense_client', 'ga_id'];
 
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
-const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret'];
+const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
 const INTERNAL_KEYS = ['admin_password_hash'];

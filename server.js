@@ -79,11 +79,16 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: 'Erro interno.' });
 });
 
-app.listen(PORT, HOST, () => {
-  console.log('\n==================================================');
-  console.log('🚀 OFERTAS DO GP RODANDO');
-  console.log(`🌐 Site:   http://localhost:${PORT}`);
-  console.log(`🔐 Painel: http://localhost:${PORT}/admin`);
-  console.log('==================================================\n');
-  if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
-});
+// Na Vercel o servidor não fica ligado: cada acesso executa o app exportado e não há mineração agendada.
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  app.listen(PORT, HOST, () => {
+    console.log('\n==================================================');
+    console.log('🚀 OFERTAS DO GP RODANDO');
+    console.log(`🌐 Site:   http://localhost:${PORT}`);
+    console.log(`🔐 Painel: http://localhost:${PORT}/admin`);
+    console.log('==================================================\n');
+    if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
+  });
+}

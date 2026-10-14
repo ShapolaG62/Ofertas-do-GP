@@ -4,7 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
 
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
+// Na Vercel a pasta do projeto é somente leitura: o banco vai para a pasta temporária (/tmp),
+// que é apagada sempre que a Vercel recicla o servidor. Lá o site funciona só como vitrine de teste.
+const DATA_DIR = process.env.DATA_DIR
+  || (process.env.VERCEL ? path.join(require('os').tmpdir(), 'ofertas-do-gp') : path.join(__dirname, '..', 'data'));
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DB_PATH = path.join(DATA_DIR, 'ofertas.db');

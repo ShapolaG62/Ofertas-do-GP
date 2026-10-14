@@ -12,6 +12,17 @@ const ESPACOS = {
 };
 
 const LOCAL_IMAGE = /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/;
+const settings = require('./settings');
+
+// Link para a conversa no WhatsApp com quem vende a publicidade (número configurado no painel).
+function whatsappLink(espaco) {
+  const numero = String(settings.get('whatsapp_anuncios') || '').replace(/\D/g, '');
+  if (numero.length < 10) return null;
+  const nome = ESPACOS[espaco] ? `, no espaço "${ESPACOS[espaco].nome}"` : '';
+  const texto = `Olá! Vi o Ofertas do GP e quero anunciar minha empresa no site${nome}.`;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
+}
+
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 
 function text(v, label, { min = 0, max = 120, required = false } = {}) {
@@ -130,6 +141,6 @@ const deleteLead = id => db.run('DELETE FROM ad_leads WHERE id = ?', id);
 const newLeadsCount = () => db.get(`SELECT COUNT(*) AS n FROM ad_leads WHERE status = 'novo'`).n;
 
 module.exports = {
-  ESPACOS, saveCampaign, listCampaigns, deleteCampaign, setActive, pick, click,
+  ESPACOS, whatsappLink, saveCampaign, listCampaigns, deleteCampaign, setActive, pick, click,
   saveLead, listLeads, setLeadStatus, deleteLead, newLeadsCount,
 };

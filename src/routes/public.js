@@ -68,14 +68,16 @@ const leadLimiter = createLimiter(5, 60); // 5 pedidos de contato por hora por I
 router.get('/api/publicidade', (req, res) => {
   const espacos = String(req.query.espacos || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
   res.setHeader('Cache-Control', 'no-store');
-  res.json(banners.pick(espacos));
+  // Para cada espaço livre, o convite leva direto à conversa no WhatsApp.
+  const whatsapp = Object.fromEntries(espacos.map(e => [e, banners.whatsappLink(e)]));
+  res.json({ ...banners.pick(espacos), whatsapp });
 });
 
 // Informações da página "Anuncie aqui".
 router.get('/api/anuncie/info', (req, res) => {
   res.json({
     espacos: Object.entries(banners.ESPACOS).map(([id, e]) => ({ id, ...e })),
-    whatsapp_link: settings.get('whatsapp_link') || '',
+    whatsapp: banners.whatsappLink(),
   });
 });
 

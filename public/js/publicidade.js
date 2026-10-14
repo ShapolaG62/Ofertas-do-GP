@@ -27,7 +27,9 @@
 
   // Espaço sem campanha: convite para empresas anunciarem.
   function conviteHtml(espaco) {
-    return `<a class="ad-invite" href="/anuncie?espaco=${espaco}">
+    const wa = /^https:\/\/wa\.me\//.test(cache.whatsapp?.[espaco] || '') ? cache.whatsapp[espaco] : '';
+    const destino = wa ? `href="${esc(wa)}" target="_blank" rel="noopener"` : `href="/anuncie?espaco=${esc(espaco)}"`;
+    return `<a class="ad-invite" ${destino}>
       <span class="ad-invite-icon">${MEGAFONE}</span>
       <span class="ad-invite-text">
         <span class="ad-invite-tag">Espaço publicitário</span>

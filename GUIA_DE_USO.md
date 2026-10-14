@@ -19,7 +19,7 @@ Por segurança, a senha só pode ser criada a partir do próprio computador do s
 | **Afiliados** | Tags e credenciais de cada programa de afiliados. Ao salvar, os links de todas as ofertas são atualizados. |
 | **Mineração** | Lojas ativas, termos de busca, intervalo, desconto mínimo e validade das ofertas. |
 | **Publicidade** | Banners de empresas anunciantes (campanhas com período, visualizações e cliques) e pedidos de quem quer anunciar. |
-| **Site** | Link do grupo do WhatsApp, Telegram, Instagram, Google AdSense e Analytics. |
+| **Site** | Link do grupo do WhatsApp, WhatsApp para anunciantes, Telegram, Instagram, Google AdSense e Analytics. |
 | **Conta** | Trocar a senha. |
 
 ## 3. Programas de afiliados
@@ -119,7 +119,7 @@ O site tem espaços reservados para propaganda de empresas que entrarem em conta
 | Acima dos filtros | Coluna da esquerda, só no computador | 300 x 300 |
 | Páginas de loja e de anúncio | No fim das páginas das lojas parceiras e dos anúncios | 1200 x 200 (celular: 600 x 300) |
 
-- **Espaço livre** mostra o cartão “Anuncie sua marca aqui” com o botão **Quero anunciar**, que leva à página **/anuncie**. Ali a empresa vê os espaços e envia um pedido de contato (nome, empresa, e-mail, WhatsApp e mensagem).
+- **Espaço livre** mostra o cartão “Anuncie sua marca aqui” com o botão **Quero anunciar**, que abre uma conversa no seu WhatsApp (+55 62 8241-7271) com a mensagem já escrita. O número pode ser trocado em **Painel → Site → WhatsApp para anunciantes**. A página **/anuncie** continua disponível, com o formulário e o mesmo botão de WhatsApp. Ali a empresa vê os espaços e envia um pedido de contato (nome, empresa, e-mail, WhatsApp e mensagem).
 - **Pedidos** chegam em **Painel → Publicidade → Pedidos de empresas** (o número vermelho na aba mostra os novos). Clique em **Criar campanha** para já abrir o formulário com os dados da empresa.
 - **Campanha:** anunciante, espaço, link de destino (https), arte para computador e, opcionalmente, para celular (envie o arquivo JPG/PNG/WEBP até 3 MB), datas de início e término. Ela entra no ar sozinha no dia de início e sai no fim do dia de término. Dá para pausar, editar ou excluir a qualquer momento.
 - Com mais de uma campanha no mesmo espaço, elas se **revezam** a cada visita.

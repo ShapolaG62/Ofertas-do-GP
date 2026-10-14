@@ -19,6 +19,7 @@
       info.espacos.map(e => `<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join(''));
     const pre = new URLSearchParams(location.search).get('espaco');
     if (pre && info.espacos.some(e => e.id === pre)) $('#espaco-sel').value = pre;
+    if (/^https:\/\/wa\.me\//.test(info.whatsapp || '')) { $('#lead-wa').href = info.whatsapp; $('#lead-wa').hidden = false; }
   }).catch(() => {});
 
   // Máscara simples de telefone

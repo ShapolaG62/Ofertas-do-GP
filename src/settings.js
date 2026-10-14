@@ -31,6 +31,7 @@ const DEFAULT_SEARCH_TERMS = [
 const DEFAULTS = {
   // Site / redes sociais (públicos)
   whatsapp_link: 'https://chat.whatsapp.com/KRMTOE1KWMzK5CzopNC41e',
+  whatsapp_anuncios: '556282417271', // número que atende empresas interessadas em anunciar
   telegram_link: '',
   instagram_user: '',
   adsense_client: '',

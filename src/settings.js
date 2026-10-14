@@ -38,7 +38,7 @@ const DEFAULTS = {
 
   // Mineração
   search_terms: DEFAULT_SEARCH_TERMS,
-  mining_interval_min: '60',
+  mining_interval_min: '120',
   offer_max_age_hours: '24',
   manual_offer_days: '3',
   min_discount_pct: '5',

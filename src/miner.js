@@ -126,7 +126,7 @@ function startScheduler() {
     clearTimeout(timer);
     timer = setTimeout(async () => {
       try { await runMining(); } catch (err) { console.error('[MINER] erro inesperado:', err); }
-      schedule(Math.max(15, settings.getNumber('mining_interval_min', 60)) * 60 * 1000);
+      schedule(Math.max(15, settings.getNumber('mining_interval_min', 120)) * 60 * 1000);
     }, delayMs);
   };
   schedule(10 * 1000);

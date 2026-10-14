@@ -13,9 +13,12 @@ function parse(html) {
     const asin = card.attr('data-asin');
     if (!asin || !/^[A-Z0-9]{10}$/.test(asin)) return;
 
-    const title = (card.find('h2').attr('aria-label') || card.find('h2 span').first().text() || '')
-      .replace(/^an[úu]ncio patrocinado\s*[–-]\s*/i, '')
-      .trim();
+    // Em moda, a Amazon separa a marca ("Olympikus") e o nome do produto em dois títulos.
+    const parts = card.find('h2').map((__, h) => ($(h).attr('aria-label') || $(h).text() || '')
+      .replace(/^an[úu]ncio patrocinado\s*[–-]\s*/i, '').replace(/\s+/g, ' ').trim()).get().filter(Boolean);
+    let title = parts.reduce((a, b) => (b.length > a.length ? b : a), '');
+    const brand = parts.find(p => p !== title && p.length <= 40);
+    if (brand && !title.toLowerCase().includes(brand.toLowerCase())) title = `${brand} ${title}`;
     const current = parseBRL(card.find('.a-price:not(.a-text-price) .a-offscreen').first().text());
     const previous = parseBRL(card.find('.a-price.a-text-price .a-offscreen').first().text());
     const img = card.find('img.s-image').attr('src');
@@ -37,8 +40,9 @@ async function search(query) {
   const url = `${BASE}/s?k=${encodeURIComponent(query)}`;
   const res = await http.get(url, { validateStatus: () => true });
   const html = String(res.data || '');
-  if (res.status === 503 || /validateCaptcha|captcha/i.test(html.slice(0, 20000)) && !html.includes('s-search-result')) {
-    return { status: 'blocked', message: 'A Amazon pediu verificação (captcha) para este IP.', deals: [] };
+  const challenged = /validateCaptcha|captcha|bm-verify|_sec\/verify/i.test(html.slice(0, 20000));
+  if (res.status === 503 || (challenged && !html.includes('s-search-result'))) {
+    return { status: 'blocked', message: 'A Amazon pediu verificação anti-robô para este IP. Reduza a frequência da mineração ou use a API oficial de associados.', deals: [] };
   }
   if (res.status >= 400) return { status: 'error', message: `HTTP ${res.status}`, deals: [] };
   return { status: 'ok', deals: parse(html) };

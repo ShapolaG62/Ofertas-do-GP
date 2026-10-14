@@ -69,6 +69,10 @@ db.exec(`
   );
 `);
 
+// Migrações simples: colunas adicionadas depois da primeira versão.
+const offerColumns = db.prepare('PRAGMA table_info(offers)').all().map(c => c.name);
+if (!offerColumns.includes('subcategoria')) db.exec('ALTER TABLE offers ADD COLUMN subcategoria TEXT');
+
 const all = (sql, ...params) => db.prepare(sql).all(...params);
 const get = (sql, ...params) => db.prepare(sql).get(...params);
 const run = (sql, ...params) => db.prepare(sql).run(...params);

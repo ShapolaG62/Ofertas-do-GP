@@ -4,6 +4,7 @@ const express = require('express');
 require('./src/db');
 const auth = require('./src/auth');
 const miner = require('./src/miner');
+const offers = require('./src/offers');
 const publicRoutes = require('./src/routes/public');
 const adminRoutes = require('./src/routes/admin');
 
@@ -13,6 +14,7 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 auth.initFromEnv();
 auth.purgeExpiredSessions();
+offers.reclassifyAll();
 
 const app = express();
 app.disable('x-powered-by');

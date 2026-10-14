@@ -26,7 +26,7 @@ router.get('/api/price-history/:id', (req, res) => {
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.
 router.get('/api/img/:id', async (req, res) => {
   const row = db.get('SELECT imagem FROM offers WHERE id = ?', Number(req.params.id));
-  if (!row || !/^https:\/\//i.test(row.imagem || '')) return res.redirect('/images/logo_completo.png');
+  if (!row || !/^https:\/\//i.test(row.imagem || '')) return res.redirect('/images/pet-capi-head.png');
   try {
     const img = await http.get(row.imagem, {
       responseType: 'arraybuffer',
@@ -40,7 +40,7 @@ router.get('/api/img/:id', async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(Buffer.from(img.data));
   } catch {
-    res.redirect('/images/logo_completo.png');
+    res.redirect('/images/pet-capi-head.png');
   }
 });
 

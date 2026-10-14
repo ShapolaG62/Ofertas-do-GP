@@ -44,7 +44,10 @@ src/
   stores/              um arquivo por loja
   routes/              API pública e API do painel
 public/
-  index.html           site
+  index.html           site (estrutura)
+  css/site.css         visual do site
+  js/site.js           filtros, ordenação e ferramentas do admin
+  images/pet-capi*.png mascote Capi (render 3D)
   admin.html           painel administrativo
 scripts/mine-once.js   minera uma vez pelo terminal (npm run mine)
 ```

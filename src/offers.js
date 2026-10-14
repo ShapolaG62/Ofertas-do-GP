@@ -1,7 +1,7 @@
 const db = require('./db');
 const settings = require('./settings');
 const { getStore } = require('./stores');
-const { classifyCategory } = require('./categorize');
+const { classifyCategory, classifySubcategory } = require('./categorize');
 const { discountOf, round2 } = require('./util');
 
 const MAX_DISCOUNT = 95; // acima disso quase sempre é erro de leitura de preço
@@ -42,17 +42,17 @@ function saveDeal(store, deal, opts = {}) {
 
   return db.transaction(() => {
     const existing = db.get(
-      'SELECT id, preco_atual FROM offers WHERE store_id = ? AND store_product_id = ?',
+      'SELECT id, preco_atual, categoria FROM offers WHERE store_id = ? AND store_product_id = ?',
       store.id, String(deal.store_product_id)
     );
     if (existing) {
       db.run(
         `UPDATE offers SET produto = ?, preco_atual = ?, preco_anterior = ?, desconto_pct = ?, imagem = COALESCE(?, imagem),
-           original_url = ?, affiliate_url = ?, aff_fixed = ?, fonte = ?, expires_at = ?,
+           original_url = ?, affiliate_url = ?, aff_fixed = ?, fonte = ?, expires_at = ?, subcategoria = ?,
            updated_at = datetime('now'), last_seen_at = datetime('now')
          WHERE id = ?`,
         produto, atual, anterior, desconto, deal.imagem || null, deal.original_url, affiliate, affFixed,
-        fonte, expiresAt, existing.id
+        fonte, expiresAt, classifySubcategory(produto, existing.categoria), existing.id
       );
       if (Number(existing.preco_atual) !== atual) {
         db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', existing.id, atual);
@@ -61,10 +61,10 @@ function saveDeal(store, deal, opts = {}) {
     }
     const res = db.run(
       `INSERT INTO offers (store_id, store_product_id, plataforma, produto, preco_atual, preco_anterior, desconto_pct,
-         categoria, imagem, original_url, affiliate_url, aff_fixed, fonte, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         categoria, subcategoria, imagem, original_url, affiliate_url, aff_fixed, fonte, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       store.id, String(deal.store_product_id), store.name, produto, atual, anterior, desconto,
-      categoria, deal.imagem || null, deal.original_url, affiliate, affFixed, fonte, expiresAt
+      categoria, classifySubcategory(produto, categoria), deal.imagem || null, deal.original_url, affiliate, affFixed, fonte, expiresAt
     );
     const id = Number(res.lastInsertRowid);
     db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', id, atual);
@@ -73,7 +73,7 @@ function saveDeal(store, deal, opts = {}) {
 }
 
 const PUBLIC_FIELDS = `o.id, o.store_id, o.plataforma, o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct,
-  o.categoria, o.imagem, o.affiliate_url, o.link_clicks, o.fonte, o.created_at, o.last_seen_at`;
+  o.categoria, o.subcategoria, o.imagem, o.affiliate_url, o.link_clicks, o.fonte, o.created_at, o.last_seen_at`;
 
 function listActive(limit = 2000) {
   const active = activeClause();
@@ -166,4 +166,19 @@ function purgeOld() {
   return db.run(`DELETE FROM offers WHERE fonte = 'auto' AND last_seen_at < datetime('now', '-30 days')`).changes;
 }
 
-module.exports = { saveDeal, listActive, featured, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld };
+// Reaplica as regras de categoria e tipo de produto (rodado ao iniciar, para valer também para ofertas antigas).
+function reclassifyAll() {
+  const rows = db.all('SELECT id, produto, categoria, fonte FROM offers');
+  db.transaction(() => {
+    for (const r of rows) {
+      const categoria = r.fonte === 'auto' ? classifyCategory(r.produto, r.categoria) : r.categoria;
+      db.run('UPDATE offers SET categoria = ?, subcategoria = ? WHERE id = ?',
+        categoria, classifySubcategory(r.produto, categoria), r.id);
+    }
+  });
+  return rows.length;
+}
+
+module.exports = {
+  saveDeal, listActive, featured, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld, reclassifyAll,
+};

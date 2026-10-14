@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel — Ofertas do GP</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050807; --surface: #0a1410; --surface-2: #0d1a14; --surface-3: #102018;
+    --border: rgba(255,255,255,.08); --border-strong: rgba(255,255,255,.16);
+    --text: #eef5f0; --muted: #9aa8a0; --dim: #66746c;
+    --green: #6eff00; --green-soft: rgba(110,255,0,.12); --green-line: rgba(110,255,0,.35);
+    --purple: #a855f7; --red: #f87171; --yellow: #facc15; --blue: #60a5fa;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Manrope, system-ui, sans-serif; font-size: 14px; }
+  a { color: var(--green); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 60px; }
+  header.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .logo { font-weight: 800; font-size: 18px; }
+  .logo span { color: var(--green); }
+  .top .spacer { flex: 1; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .tab { background: none; border: 1px solid transparent; padding: 8px 14px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 700; }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--green-soft); border-color: var(--green-line); color: var(--green); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+  .panel h2 { margin: 0 0 4px; font-size: 17px; }
+  .panel h3 { margin: 18px 0 8px; font-size: 14px; }
+  .hint { color: var(--muted); font-size: 12.5px; line-height: 1.55; margin: 4px 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 12.5px; color: var(--muted); }
+  input[type=text], input[type=password], input[type=url], input[type=number], select, textarea {
+    background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 12px; outline: none; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--green-line); }
+  textarea { min-height: 220px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; resize: vertical; }
+  .btn { background: var(--surface-3); border: 1px solid var(--border-strong); padding: 9px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; }
+  .btn:hover { border-color: var(--green-line); }
+  .btn.primary { background: var(--green); border-color: var(--green); color: #061200; }
+  .btn.danger { color: var(--red); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  .store-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface-2); }
+  .store-card h4 { margin: 0 0 4px; display: flex; align-items: center; gap: 8px; font-size: 15px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; border: 1px solid; }
+  .b-ok { color: var(--green); border-color: var(--green-line); background: var(--green-soft); }
+  .b-blocked, .b-error { color: var(--red); border-color: rgba(248,113,113,.4); background: rgba(248,113,113,.1); }
+  .b-not_configured, .b-manual, .b-disabled, .b-none { color: var(--muted); border-color: var(--border-strong); }
+  .b-running { color: var(--yellow); border-color: rgba(250,204,21,.4); background: rgba(250,204,21,.08); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { color: var(--muted); font-size: 12px; font-weight: 700; }
+  td.num { white-space: nowrap; }
+  .offer-img { width: 46px; height: 46px; object-fit: contain; background: #fff; border-radius: 8px; }
+  .offer-title { max-width: 420px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .old { color: var(--dim); text-decoration: line-through; font-size: 12px; }
+  .tag { font-size: 11px; padding: 2px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); }
+  .msg { padding: 10px 14px; border-radius: 10px; margin: 10px 0; font-weight: 600; }
+  .msg.ok { background: var(--green-soft); color: var(--green); }
+  .msg.err { background: rgba(248,113,113,.12); color: var(--red); }
+  .center-box { max-width: 420px; margin: 10vh auto; }
+  .hidden { display: none !important; }
+  .table-wrap { overflow-x: auto; }
+  .check { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+  .check input { width: 18px; height: 18px; accent-color: var(--green); }
+  .pager { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 12px; color: var(--muted); }
+  @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LOGIN / PRIMEIRO ACESSO -->
+  <section id="auth" class="center-box hidden">
+    <div class="panel">
+      <div class="logo" style="margin-bottom:12px">Ofertas do <span>GP</span> · Painel</div>
+      <div id="setup-box" class="hidden">
+        <h2>Criar senha do painel</h2>
+        <p class="hint">Primeiro acesso. Escolha uma senha forte (mínimo <span id="min-pass">8</span> caracteres). Ela protege suas tags de afiliado e o controle do minerador.</p>
+        <form id="setup-form" class="grid" style="grid-template-columns:1fr">
+          <label class="field">Nova senha <input type="password" name="password" autocomplete="new-password" required></label>
+          <label class="field">Repita a senha <input type="password" name="confirm" autocomplete="new-password" required></label>
+          <button class="btn primary" type="submit">Criar senha e entrar</button>
+        </form>
+      </div>
+      <div id="setup-remote" class="hidden">
+        <h2>Senha ainda não criada</h2>
+        <p class="hint">Por segurança, a senha só pode ser criada abrindo o painel no próprio computador onde o site está rodando (http://localhost:3000/admin) ou definindo a variável <code>ADMIN_PASSWORD</code> antes de iniciar o servidor.</p>
+      </div>
+      <div id="login-box" class="hidden">
+        <h2>Entrar</h2>
+        <form id="login-form" class="grid" style="grid-template-columns:1fr;margin-top:10px">
+          <label class="field">Senha <input type="password" name="password" autocomplete="current-password" required autofocus></label>
+          <button class="btn primary" type="submit">Entrar</button>
+        </form>
+      </div>
+      <div id="auth-msg"></div>
+    </div>
+  </section>
+
+  <!-- APLICATIVO -->
+  <section id="app" class="hidden">
+    <header class="top">
+      <div class="logo">Ofertas do <span>GP</span> · Painel</div>
+      <div class="spacer"></div>
+      <a class="btn small" href="/" target="_blank">Ver site ↗</a>
+      <button class="btn small" id="logout">Sair</button>
+    </header>
+
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="dash">Painel</button>
+      <button class="tab" data-tab="offers">Ofertas</button>
+      <button class="tab" data-tab="aff">Afiliados</button>
+      <button class="tab" data-tab="mining">Mineração</button>
+      <button class="tab" data-tab="site">Site</button>
+      <button class="tab" data-tab="account">Conta</button>
+    </nav>
+
+    <div id="global-msg"></div>
+
+    <!-- PAINEL -->
+    <div class="tab-body" data-body="dash">
+      <div class="panel">
+        <div class="row">
+          <div style="flex:1;min-width:220px">
+            <h2>Situação das lojas</h2>
+            <p class="hint" id="last-run">—</p>
+          </div>
+          <button class="btn primary" id="mine-now">⛏️ Minerar agora</button>
+        </div>
+        <div class="grid" id="store-cards" style="margin-top:8px"></div>
+      </div>
+      <div class="panel">
+        <h2>Busca pontual</h2>
+        <p class="hint">Minera um termo específico agora em todas as lojas automáticas (ex.: "fone jbl", "air fryer mondial").</p>
+        <form id="quick-mine" class="row">
+          <input type="text" name="query" placeholder="Termo de busca" style="flex:1;min-width:200px" maxlength="100" required>
+          <button class="btn" type="submit">Buscar ofertas</button>
+        </form>
+        <div id="quick-result" class="hint"></div>
+      </div>
+    </div>
+
+    <!-- OFERTAS -->
+    <div class="tab-body hidden" data-body="offers">
+      <div class="panel">
+        <h2>Adicionar oferta manualmente</h2>
+        <p class="hint">Use para Magalu, Shein, Temu (ou qualquer loja) copiando os dados <b>exatamente como aparecem na página do produto</b>. A oferta sai do ar sozinha após a validade.</p>
+        <form id="manual-form">
+          <div class="grid">
+            <label class="field">Link do produto na loja * <input type="url" name="url" placeholder="https://..." required></label>
+            <label class="field">Loja <select name="store_id" id="manual-store"><option value="">Detectar pelo link</option></select></label>
+            <label class="field" style="grid-column:1/-1">Título do produto * <input type="text" name="produto" maxlength="300" required></label>
+            <label class="field">Preço atual (R$) * <input type="text" name="preco_atual" placeholder="199,90" required></label>
+            <label class="field">Preço anterior riscado (R$) * <input type="text" name="preco_anterior" placeholder="299,90" required></label>
+            <label class="field">Link da imagem (https) <input type="url" name="imagem" placeholder="https://..."></label>
+            <label class="field">Seu link de afiliado (opcional) <input type="url" name="affiliate_url" placeholder="Se vazio, uso a tag configurada"></label>
+            <label class="field">Categoria <select name="categoria" id="manual-cat"><option value="">Detectar pelo título</option></select></label>
+            <label class="field">Validade (dias) <input type="number" name="dias" min="1" max="60" value="3"></label>
+          </div>
+          <div class="actions"><button class="btn primary" type="submit">Adicionar oferta</button></div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="row" style="margin-bottom:10px">
+          <h2 style="flex:1">Ofertas cadastradas</h2>
+          <input type="text" id="f-q" placeholder="Buscar título..." style="width:200px">
+          <select id="f-store" style="width:160px"><option value="">Todas as lojas</option></select>
+          <select id="f-state" style="width:150px">
+            <option value="active">No ar</option>
+            <option value="expired">Expiradas</option>
+            <option value="hidden">Ocultas</option>
+            <option value="all">Todas</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th></th><th>Produto</th><th>Preço</th><th class="hide-sm">Loja</th><th class="hide-sm">Visto em</th><th class="hide-sm">Cliques</th><th></th></tr></thead>
+            <tbody id="offers-body"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="pager"></div>
+      </div>
+    </div>
+
+    <!-- AFILIADOS -->
+    <div class="tab-body hidden" data-body="aff">
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Links de afiliado</h2>
+          <p class="hint">Ao salvar, todos os links das ofertas existentes são atualizados. Campos de senha/segredo ficam guardados no servidor e nunca são exibidos de novo: deixe em branco para manter o valor atual.</p>
+          <div class="grid">
+            <div class="store-card">
+              <h4>Mercado Livre</h4>
+              <p class="hint">Programa: <a href="https://www.mercadolivre.com.br/afiliados" target="_blank" rel="noopener">mercadolivre.com.br/afiliados</a>. Confira no gerador de links do programa os valores de <code>matt_word</code> e <code>matt_tool</code> do seu link e teste um link gerado aqui antes de divulgar.</p>
+              <label class="field">matt_word (sua etiqueta) <input type="text" name="ml_matt_word"></label>
+              <label class="field" style="margin-top:8px">matt_tool (ID da ferramenta) <input type="text" name="ml_matt_tool"></label>
+              <h3>API oficial (recomendado)</h3>
+              <p class="hint">O ML bloqueia a leitura do site por robôs. Crie um aplicativo em <a href="https://developers.mercadolivre.com.br/devcenter" target="_blank" rel="noopener">developers.mercadolivre.com.br</a> e informe as credenciais para buscar pela API oficial.</p>
+              <label class="field">App ID (client_id) <input type="text" name="ml_client_id"></label>
+              <label class="field" style="margin-top:8px">Chave secreta (client_secret) <input type="password" name="ml_client_secret" autocomplete="off" data-secret></label>
+            </div>
+            <div class="store-card">
+              <h4>Amazon</h4>
+              <p class="hint">Programa: <a href="https://associados.amazon.com.br" target="_blank" rel="noopener">associados.amazon.com.br</a>. Sua tag aparece no topo do painel de associados (ex.: <code>ofertasdogp-20</code>).</p>
+              <label class="field">Tag de associado <input type="text" name="amazon_tag" placeholder="seunome-20"></label>
+            </div>
+            <div class="store-card">
+              <h4>Shopee</h4>
+              <p class="hint">Programa: <a href="https://affiliate.shopee.com.br" target="_blank" rel="noopener">affiliate.shopee.com.br</a> → Open API. Sem estas credenciais a Shopee não é minerada (ela bloqueia robôs). Os links gerados pela API já contêm sua comissão.</p>
+              <label class="field">App ID <input type="text" name="shopee_app_id"></label>
+              <label class="field" style="margin-top:8px">Senha da API (secret) <input type="password" name="shopee_app_secret" autocomplete="off" data-secret></label>
+            </div>
+            <div class="store-card">
+              <h4>AliExpress</h4>
+              <p class="hint">Programa: <a href="https://portals.aliexpress.com" target="_blank" rel="noopener">portals.aliexpress.com</a> → Open Platform. Com as credenciais, a mineração usa a API oficial e gera links com comissão; sem elas, lê a busca pública (links sem comissão).</p>
+              <label class="field">App Key <input type="text" name="aliexpress_app_key"></label>
+              <label class="field" style="margin-top:8px">App Secret <input type="password" name="aliexpress_app_secret" autocomplete="off" data-secret></label>
+              <label class="field" style="margin-top:8px">Tracking ID <input type="text" name="aliexpress_tracking_id"></label>
+            </div>
+            <div class="store-card">
+              <h4>Magalu</h4>
+              <p class="hint">Programa Parceiro Magalu / Magazine Você. Informe o nome da sua loja (o que vem depois de <code>magazinevoce.com.br/magazine</code>). Links da Magalu cadastrados manualmente serão convertidos.</p>
+              <label class="field">Nome da sua loja <input type="text" name="magalu_store" placeholder="ofertasdogp"></label>
+            </div>
+            <div class="store-card">
+              <h4>Shein e Temu</h4>
+              <p class="hint">Não há API pública de produtos. Gere o link de afiliado no painel do programa de cada loja e cole no campo "Seu link de afiliado" ao cadastrar a oferta manualmente.</p>
+            </div>
+          </div>
+          <div class="actions"><button class="btn primary" type="submit">Salvar afiliados</button></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- MINERAÇÃO -->
+    <div class="tab-body hidden" data-body="mining">
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Lojas mineradas automaticamente</h2>
+          <div class="row" id="enabled-stores" style="gap:18px;margin:10px 0 4px"></div>
+          <h3>Termos de busca</h3>
+          <p class="hint">Um termo por linha. Opcional: indique a categoria depois de "|" (ex.: <code>air fryer | cozinha</code>). Categorias: <span id="cat-list"></span>.</p>
+          <textarea name="search_terms"></textarea>
+          <div class="grid" style="margin-top:14px">
+            <label class="field">Minerar a cada (minutos) <input type="number" name="mining_interval_min" min="15" max="1440"></label>
+            <label class="field">Tirar do ar se não for vista há (horas) <input type="number" name="offer_max_age_hours" min="1" max="168"></label>
+            <label class="field">Desconto mínimo (%) <input type="number" name="min_discount_pct" min="1" max="90"></label>
+            <label class="field">Validade padrão de ofertas manuais (dias) <input type="number" name="manual_offer_days" min="1" max="60"></label>
+          </div>
+          <p class="hint">Intervalos curtos aumentam o risco de as lojas bloquearem seu IP. Recomendado: 60 minutos ou mais.</p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar mineração</button></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- SITE -->
+    <div class="tab-body hidden" data-body="site">
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Redes sociais e anúncios</h2>
+          <p class="hint">Campos vazios ficam escondidos no site.</p>
+          <div class="grid">
+            <label class="field">Link do grupo do WhatsApp <input type="url" name="whatsapp_link" placeholder="https://chat.whatsapp.com/..."></label>
+            <label class="field">Telegram (link ou @canal) <input type="text" name="telegram_link"></label>
+            <label class="field">Instagram (usuário) <input type="text" name="instagram_user" placeholder="ofertasdogp"></label>
+            <label class="field">Google AdSense (ca-pub-...) <input type="text" name="adsense_client" placeholder="ca-pub-0000000000000000"></label>
+            <label class="field">Google Analytics (G-...) <input type="text" name="ga_id" placeholder="G-XXXXXXXXXX"></label>
+          </div>
+          <div class="actions"><button class="btn primary" type="submit">Salvar site</button></div>
+        </div>
+      </form>
+    </div>
+
+    <!-- CONTA -->
+    <div class="tab-body hidden" data-body="account">
+      <div class="panel" style="max-width:480px">
+        <h2>Trocar senha</h2>
+        <form id="pass-form" class="grid" style="grid-template-columns:1fr;margin-top:10px">
+          <label class="field">Senha atual <input type="password" name="current" autocomplete="current-password" required></label>
+          <label class="field">Nova senha <input type="password" name="next" autocomplete="new-password" required></label>
+          <label class="field">Repita a nova senha <input type="password" name="confirm" autocomplete="new-password" required></label>
+          <button class="btn primary" type="submit">Salvar nova senha</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtDate = s => s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    method: opts.method || 'GET',
+    headers: opts.body ? { 'Content-Type': 'application/json' } : {},
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && !path.includes('/login') && !path.includes('/password')) { showAuth(); throw new Error(data.error || 'Sessão expirada'); }
+  if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+  return data;
+}
+
+function flash(el, text, ok = true) {
+  el.innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${esc(text)}</div>`;
+  if (ok) setTimeout(() => { el.innerHTML = ''; }, 4000);
+}
+const globalMsg = (t, ok) => { flash($('#global-msg'), t, ok); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+
+// ── Autenticação ──────────────────────────────────────────────────────────────
+async function boot() {
+  const s = await api('/api/admin/session');
+  $('#min-pass').textContent = s.minPassword;
+  if (s.loggedIn) return showApp();
+  showAuth(s);
+}
+
+async function showAuth(s) {
+  s = s || await fetch('/api/admin/session').then(r => r.json());
+  $('#app').classList.add('hidden');
+  $('#auth').classList.remove('hidden');
+  $('#setup-box').classList.toggle('hidden', !(s.needsSetup && s.canSetup));
+  $('#setup-remote').classList.toggle('hidden', !(s.needsSetup && !s.canSetup));
+  $('#login-box').classList.toggle('hidden', s.needsSetup);
+}
+
+$('#setup-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.password.value !== f.confirm.value) return flash($('#auth-msg'), 'As senhas não conferem.', false);
+  try { await api('/api/admin/setup', { method: 'POST', body: { password: f.password.value } }); showApp(); }
+  catch (err) { flash($('#auth-msg'), err.message, false); }
+});
+
+$('#login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  try { await api('/api/admin/login', { method: 'POST', body: { password: e.target.password.value } }); e.target.reset(); showApp(); }
+  catch (err) { flash($('#auth-msg'), err.message, false); }
+});
+
+$('#logout').addEventListener('click', async () => { await api('/api/admin/logout', { method: 'POST' }); location.reload(); });
+
+// ── Aplicativo ────────────────────────────────────────────────────────────────
+let STORE_LIST = [], CATEGORIES = [], SETTINGS = {};
+
+async function showApp() {
+  $('#auth').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  STORE_LIST = await api('/api/admin/store-list');
+  for (const sel of ['#manual-store', '#f-store']) {
+    $(sel).insertAdjacentHTML('beforeend', STORE_LIST.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join(''));
+  }
+  await Promise.all([loadStores(), loadSettings()]);
+  $('#manual-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
+  $('#cat-list').textContent = CATEGORIES.join(', ');
+}
+
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.toggle('active', x === t));
+  $$('.tab-body').forEach(b => b.classList.toggle('hidden', b.dataset.body !== t.dataset.tab));
+  if (t.dataset.tab === 'offers') loadOffers();
+  if (t.dataset.tab === 'dash') loadStores();
+}));
+
+// ── Painel / lojas ────────────────────────────────────────────────────────────
+const STATUS_LABEL = {
+  ok: 'Funcionando', blocked: 'Bloqueada pela loja', error: 'Erro', not_configured: 'Falta configurar',
+  manual: 'Somente manual', disabled: 'Desativada', running: 'Minerando...',
+};
+let pollTimer = null;
+
+async function loadStores() {
+  const st = await api('/api/admin/stores');
+  CATEGORIES = st.categories;
+  $('#store-cards').innerHTML = st.stores.map(s => {
+    const status = s.status || 'none';
+    return `<div class="store-card">
+      <h4>${esc(s.name)} <span class="badge b-${status}">${esc(STATUS_LABEL[status] || 'Ainda não rodou')}</span></h4>
+      <div class="hint" style="margin:2px 0 6px">${esc(s.method)}</div>
+      ${s.automatic ? `<div class="hint" style="margin:0">Última execução: ${fmtDate(s.last_run_at)} · ${s.saved || 0} gravadas de ${s.found || 0} encontradas<br>Último sucesso: ${fmtDate(s.last_success_at)}</div>` : ''}
+      ${s.message ? `<div class="hint" style="margin:6px 0 0;color:${status === 'ok' ? 'var(--muted)' : 'var(--yellow)'}">${esc(s.message)}</div>` : ''}
+    </div>`;
+  }).join('');
+  const lr = st.lastRun;
+  $('#last-run').textContent = st.running ? 'Mineração em andamento...' :
+    lr ? `Última mineração terminou em ${new Date(lr.finishedAt).toLocaleString('pt-BR')}.` : 'Nenhuma mineração desde que o servidor iniciou.';
+  $('#mine-now').disabled = st.running;
+  clearTimeout(pollTimer);
+  if (st.running) pollTimer = setTimeout(loadStores, 4000);
+
+  $('#enabled-stores').innerHTML = st.stores.filter(s => s.automatic).map(s => `
+    <label class="check"><input type="checkbox" data-store="${s.id}" ${st.enabled[s.id] !== false ? 'checked' : ''}> ${esc(s.name)}</label>`).join('');
+}
+
+$('#mine-now').addEventListener('click', async () => {
+  try { await api('/api/admin/mine', { method: 'POST', body: {} }); globalMsg('Mineração iniciada. Acompanhe o status abaixo.'); }
+  catch (err) { globalMsg(err.message, false); }
+  setTimeout(loadStores, 800);
+});
+
+$('#quick-mine').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = e.target.query.value.trim();
+  const out = $('#quick-result');
+  out.textContent = `Minerando "${q}"... (pode levar até 1 minuto)`;
+  e.target.querySelector('button').disabled = true;
+  try {
+    const r = await api('/api/admin/mine', { method: 'POST', body: { query: q } });
+    out.innerHTML = (r.results || []).filter(x => x.status !== 'skipped' && x.status !== 'disabled')
+      .map(x => `${esc(STORE_LIST.find(s => s.id === x.store)?.name || x.store)}: <b>${x.saved}</b> gravadas (${esc(STATUS_LABEL[x.status] || x.status)})`).join(' · ') || 'Nenhuma loja automática ativa.';
+    loadStores();
+  } catch (err) { out.textContent = err.message; }
+  e.target.querySelector('button').disabled = false;
+});
+
+// ── Configurações ─────────────────────────────────────────────────────────────
+async function loadSettings() {
+  SETTINGS = await api('/api/admin/settings');
+  $$('.settings-form').forEach(form => {
+    for (const el of form.elements) {
+      if (!el.name) continue;
+      if (el.dataset.secret !== undefined) {
+        el.value = '';
+        el.placeholder = SETTINGS[`${el.name}_set`] ? '•••••••• (configurado — deixe vazio para manter)' : 'não configurado';
+      } else if (el.name in SETTINGS) {
+        el.value = SETTINGS[el.name];
+      }
+    }
+  });
+}
+
+$$('.settings-form').forEach(form => form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = {};
+  for (const el of form.elements) if (el.name) body[el.name] = el.value;
+  const storeChecks = $$('#enabled-stores input', form);
+  if (storeChecks.length) body.stores_enabled = Object.fromEntries(storeChecks.map(c => [c.dataset.store, c.checked]));
+  try {
+    const r = await api('/api/admin/settings', { method: 'PUT', body });
+    globalMsg(r.refreshed ? `Salvo! ${r.refreshed} links de afiliado atualizados.` : 'Configurações salvas!');
+    await loadSettings();
+  } catch (err) { globalMsg(err.message, false); }
+}));
+
+// ── Ofertas ───────────────────────────────────────────────────────────────────
+let offerPage = 1;
+async function loadOffers() {
+  const params = new URLSearchParams({ q: $('#f-q').value, store: $('#f-store').value, state: $('#f-state').value, page: offerPage });
+  const data = await api(`/api/admin/offers?${params}`);
+  $('#offers-body').innerHTML = data.rows.length ? data.rows.map(o => `
+    <tr>
+      <td><img class="offer-img" src="/api/img/${o.id}" alt="" loading="lazy"></td>
+      <td><div class="offer-title" title="${esc(o.produto)}">${esc(o.produto)}</div>
+        <span class="tag">${o.fonte === 'manual' ? 'manual' : 'automática'}</span> <span class="tag">${esc(o.categoria)}</span>
+        ${o.oculto ? '<span class="tag">oculta</span>' : o.ativo ? '' : '<span class="tag">expirada</span>'}</td>
+      <td class="num"><b>${brl(o.preco_atual)}</b><br><span class="old">${brl(o.preco_anterior)}</span> <b style="color:var(--green)">-${o.desconto_pct}%</b></td>
+      <td class="hide-sm">${esc(o.plataforma)}</td>
+      <td class="hide-sm num">${fmtDate(o.last_seen_at)}</td>
+      <td class="hide-sm">${o.link_clicks}</td>
+      <td class="num">
+        <a class="btn small" href="${esc(o.affiliate_url || o.original_url)}" target="_blank" rel="noopener" title="Abrir link de afiliado">↗</a>
+        <button class="btn small" data-act="toggle" data-id="${o.id}" data-hidden="${o.oculto}">${o.oculto ? 'Mostrar' : 'Ocultar'}</button>
+        <button class="btn small danger" data-act="del" data-id="${o.id}">Excluir</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="7" class="hint">Nenhuma oferta nesta lista.</td></tr>';
+  const pages = Math.max(1, Math.ceil(data.total / data.perPage));
+  $('#pager').innerHTML = `${data.total} ofertas · página ${data.page} de ${pages}
+    <button class="btn small" ${data.page <= 1 ? 'disabled' : ''} data-page="${data.page - 1}">←</button>
+    <button class="btn small" ${data.page >= pages ? 'disabled' : ''} data-page="${data.page + 1}">→</button>`;
+}
+
+$('#pager').addEventListener('click', e => {
+  const p = e.target.dataset.page;
+  if (p) { offerPage = Number(p); loadOffers(); }
+});
+let qTimer;
+$('#f-q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(() => { offerPage = 1; loadOffers(); }, 300); });
+$('#f-store').addEventListener('change', () => { offerPage = 1; loadOffers(); });
+$('#f-state').addEventListener('change', () => { offerPage = 1; loadOffers(); });
+
+$('#offers-body').addEventListener('click', async e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  try {
+    if (btn.dataset.act === 'toggle') {
+      await api(`/api/admin/offers/${id}`, { method: 'PATCH', body: { oculto: btn.dataset.hidden !== '1' } });
+    } else if (btn.dataset.act === 'del') {
+      if (!confirm('Excluir esta oferta do banco? Se ela aparecer de novo na loja, será minerada novamente.')) return;
+      await api(`/api/admin/offers/${id}`, { method: 'DELETE' });
+    }
+    loadOffers();
+  } catch (err) { globalMsg(err.message, false); }
+});
+
+$('#manual-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = Object.fromEntries(new FormData(e.target));
+  try {
+    await api('/api/admin/offers', { method: 'POST', body });
+    globalMsg('Oferta adicionada e já está no ar!');
+    e.target.reset();
+    e.target.dias.value = SETTINGS.manual_offer_days || 3;
+    loadOffers();
+  } catch (err) { globalMsg(err.message, false); }
+});
+
+// ── Conta ─────────────────────────────────────────────────────────────────────
+$('#pass-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.next.value !== f.confirm.value) return globalMsg('As senhas novas não conferem.', false);
+  try { await api('/api/admin/password', { method: 'POST', body: { current: f.current.value, next: f.next.value } }); f.reset(); globalMsg('Senha alterada!'); }
+  catch (err) { globalMsg(err.message, false); }
+});
+
+boot().catch(err => { document.body.innerHTML = `<p style="padding:20px">Erro ao abrir o painel: ${esc(err.message)}</p>`; });
+</script>
+</body>
+</html>

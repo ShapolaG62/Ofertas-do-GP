@@ -15,10 +15,10 @@ sudo apt update -y
 echo "📦 Instalando ferramentas essenciais (curl, git, build-essential)..."
 sudo apt install -y curl git build-essential sqlite3
 
-# 3. Verificar e Instalar Node.js (v20 LTS)
+# 3. Verificar e Instalar Node.js (v22 LTS)
 if ! command -v node &> /dev/null; then
-    echo "📦 Instalando Node.js (v20 LTS)..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    echo "📦 Instalando Node.js (v22 LTS)..."
+    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
     sudo apt install -y nodejs
 else
     echo "✅ Node.js já está instalado: $(node -v)"
@@ -36,7 +36,7 @@ fi
 
 # 5. Instalar dependências do projeto
 echo "📦 Instalando dependências do projeto Node.js..."
-npm install --production
+npm ci --omit=dev
 
 # 6. Liberar portas no Firewall UFW (se ativo)
 if command -v ufw &> /dev/null; then
@@ -48,15 +48,18 @@ if command -v ufw &> /dev/null; then
     echo "y" | sudo ufw enable 2>/dev/null || true
 fi
 
-# 7. Iniciar ou reiniciar a aplicação com PM2
-echo "🔄 Iniciando/Atualizando a aplicação Ofertas do GP no PM2..."
-if [ -f "ecosystem.config.js" ]; then
-    pm2 startOrReload ecosystem.config.js
-else
-    pm2 start server.js --name "ofertas-do-gp"
+# 7. Senha do painel /admin (só na primeira instalação)
+if [ ! -f "data/ofertas.db" ] && [ -z "$ADMIN_PASSWORD" ]; then
+    echo "🔐 Defina a senha do painel administrativo (mínimo 8 caracteres):"
+    read -r -s ADMIN_PASSWORD
+    export ADMIN_PASSWORD
 fi
 
-# 8. Configurar PM2 para iniciar no boot da VPS
+# 8. Iniciar ou reiniciar a aplicação com PM2
+echo "🔄 Iniciando/Atualizando a aplicação Ofertas do GP no PM2..."
+pm2 startOrReload ecosystem.config.js --update-env
+
+# 9. Configurar PM2 para iniciar no boot da VPS
 echo "📌 Configurando boot automático no sistema (Reboot)..."
 pm2 save
 sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp $HOME 2>/dev/null || pm2 startup 2>/dev/null || true
@@ -68,7 +71,8 @@ echo ""
 echo "========================================================="
 echo "🎉 OFERTAS DO GP ESTÁ RODANDO NA SUA VPS!"
 echo "========================================================="
-echo "🌐 Acesse no seu navegador: http://${PUBLIC_IP}:3000"
+echo "🌐 Site:   http://${PUBLIC_IP}:3000"
+echo "🔐 Painel: http://${PUBLIC_IP}:3000/admin"
 echo ""
 echo "Comandos úteis para gerenciar seu servidor:"
 echo "  • Status do app:   pm2 status"

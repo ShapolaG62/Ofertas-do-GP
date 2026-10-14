@@ -1,21 +1,22 @@
 {
   "name": "ofertas-do-gp",
-  "version": "1.0.0",
-  "description": "Plataforma completa de mineração de ofertas em tempo real - Ofertas do GP",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Ofertas do GP - mineração de ofertas reais (Mercado Livre, Amazon, Shopee, Magalu, Shein, AliExpress, Temu)",
   "main": "server.js",
+  "engines": {
+    "node": ">=22.13"
+  },
   "scripts": {
     "start": "node server.js",
+    "mine": "node scripts/mine-once.js",
     "start:vps": "pm2 start ecosystem.config.js",
     "stop:vps": "pm2 stop ofertas-do-gp",
-    "logs": "pm2 logs ofertas-do-gp",
-    "mine": "node -e \"require('./miner').mineAll()\""
+    "logs": "pm2 logs ofertas-do-gp"
   },
   "dependencies": {
     "axios": "^1.7.9",
     "cheerio": "^1.0.0",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "node-cron": "^3.0.3",
-    "sqlite3": "^5.1.7"
+    "express": "^4.21.2"
   }
 }

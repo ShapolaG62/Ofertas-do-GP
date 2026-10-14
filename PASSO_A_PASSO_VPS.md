@@ -6,7 +6,7 @@ Este guia ensina como colocar o projeto **Ofertas do GP** para rodar em qualquer
 
 ## 🛠️ Método 1: Instalação Automática via PM2 (Recomendado)
 
-O script [`start-vps.sh`](file:///c:/Users/tiosh/Downloads/Ofertas%20do%20GP/start-vps.sh) instala automaticamente o Node.js v20, PM2, ajusta o firewall e coloca a aplicação para rodar em segundo plano de forma contínua (mesmo se o servidor reiniciar).
+O script `start-vps.sh` instala automaticamente o Node.js v22, PM2, ajusta o firewall e coloca a aplicação para rodar em segundo plano de forma contínua (mesmo se o servidor reiniciar).
 
 ### Passo 1: Conectar na sua VPS via SSH
 No seu terminal (Windows PowerShell ou Git Bash):
@@ -23,7 +23,7 @@ scp -r "c:\Users\tiosh\Downloads\Ofertas do GP" root@SEU_IP_DA_VPS:/var/www/ofer
 Ou se você subiu para o GitHub/GitLab:
 ```bash
 cd /var/www
-git clone https://github.com/seu-usuario/ofertas-do-gp.git
+git clone https://github.com/ShapolaG62/ofertas-do-gp.git
 cd ofertas-do-gp
 ```
 
@@ -34,7 +34,11 @@ chmod +x start-vps.sh
 ./start-vps.sh
 ```
 
-Pronto! A aplicação estará rodando em: `http://SEU_IP_DA_VPS:3000`
+Na primeira vez o script pede a **senha do painel**.
+
+Pronto! Site em `http://SEU_IP_DA_VPS:3000` e painel em `http://SEU_IP_DA_VPS:3000/admin`.
+
+Para atualizar depois: `git pull` e rode `./start-vps.sh` de novo.
 
 ---
 
@@ -43,14 +47,14 @@ Pronto! A aplicação estará rodando em: `http://SEU_IP_DA_VPS:3000`
 Se preferir usar Docker na sua VPS:
 
 ```bash
-# 1. Subir o container
-docker-compose up -d --build
+# 1. Subir o container (defina a senha do painel na primeira vez)
+ADMIN_PASSWORD="sua-senha-forte" docker compose up -d --build
 
 # 2. Ver status do container
-docker-compose ps
+docker compose ps
 
 # 3. Ver logs em tempo real
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ---
@@ -115,3 +119,7 @@ sudo certbot --nginx -d seusite.com.br -d www.seusite.com.br
 | **Monitorar CPU/Memória** | `pm2 monit` |
 
 ---
+
+## 💾 Backup
+
+Todo o conteúdo (ofertas, configurações, senha) fica na pasta `data/`. Copie essa pasta para fazer backup. Ela **não** vai para o GitHub.

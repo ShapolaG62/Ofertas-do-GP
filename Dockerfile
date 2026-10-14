@@ -1,19 +1,17 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
-# Definir diretório de trabalho
 WORKDIR /usr/src/app
+ENV NODE_ENV=production
 
-# Copiar arquivos de dependências
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Instalar dependências de produção
-RUN npm install --production
+COPY server.js ./
+COPY src ./src
+COPY scripts ./scripts
+COPY public ./public
 
-# Copiar todo o código-fonte da aplicação
-COPY . .
-
-# Expor a porta 3000
+# O banco de dados fica em /usr/src/app/data (montado como volume)
+VOLUME ["/usr/src/app/data"]
 EXPOSE 3000
-
-# Comando para iniciar o servidor
 CMD ["node", "server.js"]

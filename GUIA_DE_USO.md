@@ -1,103 +1,49 @@
-# Ofertas do GP - Guia Completo de Locais e Configuração
+# Ofertas do GP — Guia de uso
 
-Guia de referência com os caminhos exatos dos arquivos para configurar os sites de mineração (Mercado Livre, Amazon, etc.) e os links dos grupos (WhatsApp, Telegram, Instagram).
+Tudo é configurado pelo **painel administrativo**: http://localhost:3000/admin (ou `http://SEU_IP:3000/admin` na VPS). Não é preciso editar código.
 
----
+## 1. Primeiro acesso
 
-## 📍 1. Onde Configurar os Sites de Mineração (Amazon, Mercado Livre, etc.)
+1. Rode `npm start` (ou `start.bat` no Windows).
+2. Abra http://localhost:3000/admin **no mesmo computador**.
+3. Crie a senha do painel (mínimo 8 caracteres).
 
-- **Arquivo**: [`miner.js`](file:///c:/Users/tiosh/Downloads/saveweb2zip-com-mineradordeofertasbr-com%20%281%29/miner.js#L8)
-- **Caminho Completo no Windows**:
-  `c:\Users\tiosh\Downloads\saveweb2zip-com-mineradordeofertasbr-com (1)\miner.js`
+Por segurança, a senha só pode ser criada a partir do próprio computador do servidor. Na VPS, defina a variável `ADMIN_PASSWORD` (o script `start-vps.sh` pergunta).
 
-### Como Adicionar Novos Produtos para Minerar Automático (Linha 8):
-Edite a constante `MINING_QUERIES` no arquivo `miner.js`:
+## 2. Abas do painel
 
-```javascript
-const MINING_QUERIES = [
-  // 📱 Celulares & Tablets
-  { query: 'iphone 15 pro max', cat: 'celulares' },
-  // 💻 Informática & PC Gamer
-  { query: 'notebook gamer dell lenovo', cat: 'informatica' },
-  // 🎮 Consoles & Games
-  { query: 'playstation 5 console slim', cat: 'games' },
-  // 🍳 Cozinha & Eletros
-  { query: 'air fryer fritadeira eletrica', cat: 'cozinha' },
-  // 👟 Moda, Saúde, Ferramentas, Pets, etc...
-  { query: 'seu produto desejado', cat: 'sua_categoria' }
-];
+| Aba | Para que serve |
+|---|---|
+| **Painel** | Situação de cada loja (funcionando, bloqueada, falta configurar), botão **Minerar agora** e busca pontual por um termo. |
+| **Ofertas** | Lista de ofertas no ar, expiradas e ocultas. Permite ocultar, excluir e **adicionar oferta manual**. |
+| **Afiliados** | Tags e credenciais de cada programa de afiliados. Ao salvar, os links de todas as ofertas são atualizados. |
+| **Mineração** | Lojas ativas, termos de busca, intervalo, desconto mínimo e validade das ofertas. |
+| **Site** | Link do grupo do WhatsApp, Telegram, Instagram, Google AdSense e Analytics. |
+| **Conta** | Trocar a senha. |
+
+## 3. Programas de afiliados
+
+- **Amazon:** cadastre-se em https://associados.amazon.com.br e cole sua tag (ex.: `seunome-20`).
+- **Mercado Livre:** programa em https://www.mercadolivre.com.br/afiliados. Gere um link no programa, confira os valores de `matt_word` e `matt_tool` nele e preencha no painel. Teste um link antes de divulgar.
+  - Para a mineração funcionar de forma estável, crie um aplicativo em https://developers.mercadolivre.com.br/devcenter e informe o App ID e a Chave secreta.
+- **Shopee:** em https://affiliate.shopee.com.br solicite acesso à **Open API** e informe App ID e senha da API. Sem isso a Shopee não é minerada.
+- **AliExpress:** em https://portals.aliexpress.com crie um app na Open Platform e informe App Key, App Secret e Tracking ID. Sem isso o AliExpress continua sendo minerado, mas os links ficam sem comissão.
+- **Magalu:** informe o nome da sua loja Magazine Você. Links da Magalu cadastrados manualmente são convertidos automaticamente.
+- **Shein e Temu:** gere o link de afiliado no programa da loja e cole no campo "Seu link de afiliado" ao cadastrar a oferta.
+
+## 4. Cadastro manual de ofertas (Magalu, Shein, Temu ou qualquer loja)
+
+Na aba **Ofertas**, preencha com os dados **exatamente como aparecem na página do produto**:
+link do produto, título, preço atual, preço anterior riscado, imagem (opcional), link de afiliado (opcional) e validade em dias.
+A oferta sai do ar sozinha quando a validade termina.
+
+## 5. Postagens para os grupos
+
+Com o painel logado, abra o site: aparecem os botões de seleção nos cards e **📢 Enviar p/ Grupo**, que gera o texto pronto para WhatsApp/Telegram com o link de afiliado e a data em que o preço foi conferido.
+
+## 6. Mineração pelo terminal
+
+```bash
+npm run mine                 # todos os termos configurados
+npm run mine -- "air fryer"  # só um termo
 ```
-
-### Onde estão os Scrapers das Lojas no Código:
-- **Mercado Livre**: Função `mineMercadoLivre` na [Linha 47 de miner.js](file:///c:/Users/tiosh/Downloads/saveweb2zip-com-mineradordeofertasbr-com%20%281%29/miner.js#L47)
-- **Amazon BR**: Função `mineAmazon` na [Linha 113 de miner.js](file:///c:/Users/tiosh/Downloads/saveweb2zip-com-mineradordeofertasbr-com%20%281%29/miner.js#L113)
-
----
-
-## 📍 2. Caminho Exato dos Links dos Grupos (WhatsApp, Telegram, Instagram)
-
-- **Arquivo**: [`db.js`](file:///c:/Users/tiosh/Downloads/saveweb2zip-com-mineradordeofertasbr-com%20%281%29/db.js#L65)
-- **Caminho Completo no Windows**:
-  `c:\Users\tiosh\Downloads\saveweb2zip-com-mineradordeofertasbr-com (1)\db.js`
-
-### Como Alterar no Código (`db.js` - Linha 65):
-Vá até o bloco `const defaults = { ... }`:
-
-```javascript
-const defaults = {
-  telegram_channel_id: "@ofertasdogp",                             // Linha 66: Telegram
-  wa_invite_link: "https://chat.whatsapp.com/KRMTOE1KWMzK5CzopNC41e", // Linha 67: Link do Grupo WhatsApp
-  instagram_username: "ofertasdogp.br",                           // Linha 68: Instagram
-};
-```
-
----
-
-## 🚀 3. Como Operar o Site
-- **Acesse**: `http://localhost:3000`
-- **Minerar ao vivo**: Pressione ENTER na busca ou clique em `⚡ Minerar Ofertas Ao Vivo`.
-- **Selecionar Ofertas**: Use o botão `[✓]` no canto dos cards ou `☑️ Selecionar Visíveis`.
-- **Gerar Postagens**: Na barra inferior flutuante, clique em `📢 Gerar Postagens do Grupo`.
-
----
-
-## 💰 4. Como Pegar e Usar Seus Links de Afiliado para Mineração
-
-O minerador converte automaticamente todos os produtos minerados para os seus links de afiliado com a sua tag associada.
-
-### Onde Pegar seus IDs de Afiliado:
-1. **Amazon Associates (Brasil)**:
-   - Cadastre-se em: `https://associados.amazon.com.br`
-   - O seu ID fica no canto superior direito do painel (exemplo: `ofertasdogp-20`).
-2. **Mercado Livre Afiliados**:
-   - Cadastre-se em: `https://afiliados.mercadolivre.com.br`
-   - O seu ID/ferramenta no painel é conhecido como `matt_tool` (exemplo: `12345678`).
-3. **Shopee Afiliados**:
-   - Cadastre-se em: `https://affiliate.shopee.com.br`
-   - O seu ID de parceiro/UTM (exemplo: `shopee_gp`).
-
-### Como Configurar no Projeto:
-No arquivo [`db.js`](file:///c:/Users/tiosh/Downloads/saveweb2zip-com-mineradordeofertasbr-com%20%281%29/db.js#L65), adicione suas tags no objeto `defaults`:
-
-```javascript
-const defaults = {
-  telegram_channel_id: "@ofertasdogp",
-  wa_invite_link: "https://chat.whatsapp.com/KRMTOE1KWMzK5CzopNC41e",
-  instagram_username: "ofertasdogp.br",
-  amazon_tag: "sua_tag_amazon-20",      // <-- Sua tag da Amazon
-  ml_affiliate_id: "seu_id_ml",          // <-- Seu ID do Mercado Livre
-  shopee_affiliate_id: "seu_id_shopee"   // <-- Seu ID da Shopee
-};
-```
-
-Alternativamente, envie um comando POST para salvar via API:
-```json
-POST http://localhost:3000/api/settings
-{
-  "amazon_tag": "sua_tag_amazon-20",
-  "ml_affiliate_id": "seu_id_ml",
-  "shopee_affiliate_id": "seu_id_shopee"
-}
-```
-Assim que salvas, qualquer oferta minerada receberá sua tag automaticamente!
-

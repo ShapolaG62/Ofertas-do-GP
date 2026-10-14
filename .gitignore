@@ -1,16 +1,17 @@
-# Node dependencies
+# Dependências
 node_modules/
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Environment variables
+# Variáveis de ambiente (senhas)
 .env
 .env.local
 
-# Databases & local data (uncomment if you want offers.db ignored)
-# offers.db
+# Banco de dados e dados locais (nunca enviar ao GitHub: contém senha do painel e chaves de API)
+data/
+*.db
+*.db-wal
+*.db-shm
 
-# OS generated files
+# Sistema
 .DS_Store
 Thumbs.db

@@ -5,6 +5,7 @@ const { UPLOADS_DIR } = require('./src/db');
 const auth = require('./src/auth');
 const miner = require('./src/miner');
 const offers = require('./src/offers');
+const access = require('./src/access');
 const publicRoutes = require('./src/routes/public');
 const adminRoutes = require('./src/routes/admin');
 const contaRoutes = require('./src/routes/conta');
@@ -29,6 +30,9 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '100kb' }));
+
+// Login obrigatório para ver as ofertas (configurável no painel).
+app.use(access.guard);
 
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.
 app.use(express.static(PUBLIC_DIR, { index: 'index.html', extensions: ['html'] }));
@@ -56,6 +60,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrad
 app.get('*', (req, res) => {
   // Arquivos (com extensão) e caminhos ocultos (.env, .git...) inexistentes respondem 404.
   if (path.extname(req.path) || /\/\./.test(req.path)) return res.status(404).send('Não encontrado');
+  if (!access.canSeeOffers(req)) return res.redirect('/conta');
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 

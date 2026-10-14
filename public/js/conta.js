@@ -178,6 +178,10 @@
   function show(view) {
     for (const v of VIEWS) $(`#view-${v}`).hidden = v !== view;
     $('#logout').hidden = view === 'login';
+    // Com login obrigatório, "Ver ofertas" só aparece para contas liberadas.
+    const liberado = ME?.status === 'active';
+    $('#header-offers').hidden = INFO.exigir_login && !liberado;
+    $('#aguardando-offers').hidden = INFO.exigir_login;
     document.title = `${view === 'login' ? 'Entrar' : 'Minha conta'} — Ofertas do GP`;
     window.scrollTo(0, 0);
   }
@@ -203,9 +207,21 @@
       $('#auth-error').hidden = false;
       history.replaceState(null, '', location.pathname + location.hash);
     }
-    $('#google-btn').hidden = !INFO.google;
-    $('#google-divider').hidden = !INFO.google;
     setAuthTab(location.hash === '#cadastro' ? 'criar' : 'entrar');
+  }
+
+  // O botão do Google fica sempre visível; se ainda não foi configurado no painel, avisa em vez de sair da página.
+  $('#google-btn').addEventListener('click', e => {
+    if (INFO.google) return;
+    e.preventDefault();
+    $('#auth-error').textContent = 'O login com Google ainda não foi ativado pelo administrador do site. Por enquanto, use e-mail e senha.';
+    $('#auth-error').hidden = false;
+  });
+
+  // Depois de entrar, uma conta liberada vai direto para as ofertas (ou para a página que tentou abrir).
+  function goToSite() {
+    const voltar = new URLSearchParams(location.search).get('voltar');
+    location.href = voltar && /^\/(?!\/)/.test(voltar) ? voltar : '/';
   }
 
   function setAuthTab(tab) {
@@ -221,6 +237,8 @@
   bind('#form-entrar', async (form, d) => {
     await api('/api/conta/entrar', { method: 'POST', body: d });
     location.hash = '';
+    const me = await api('/api/conta/me');
+    if (me.user?.status === 'active') return goToSite();
     route();
   });
 
@@ -261,6 +279,7 @@
   bind('#form-dados', async (form, d) => {
     const r = await api('/api/conta/perfil-inicial', { method: 'POST', body: { ...d, tipo: chosenTipo } });
     toast(r.status === 'active' ? 'Cadastro concluído!' : 'Cadastro enviado para aprovação.');
+    if (r.status === 'active') return setTimeout(goToSite, 600);
     route();
   });
 

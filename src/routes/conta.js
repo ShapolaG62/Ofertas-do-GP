@@ -5,6 +5,7 @@ const lojas = require('../lojas');
 const anuncios = require('../anuncios');
 const google = require('../google');
 const cadastro = require('../cadastro');
+const settings = require('../settings');
 const { CATEGORIES } = require('../categorize');
 const { createLimiter } = require('../ratelimit');
 
@@ -22,6 +23,7 @@ router.get('/api/conta/cadastro-info', (req, res) => {
     consumidor: users.signupMode('consumidor'),
     empresa: users.signupMode('empresa'),
     google: google.isEnabled(),
+    exigir_login: settings.get('exigir_login') !== '0',
     ufs: cadastro.UFS,
     ramos: cadastro.RAMOS,
     idade_minima: cadastro.IDADE_MINIMA,
@@ -43,7 +45,8 @@ router.get('/auth/google/callback', async (req, res) => {
     const profile = await google.finish(req, res);
     const u = users.loginWithGoogle(profile);
     users.createSession(req, res, u.id);
-    res.redirect('/conta');
+    // Conta liberada vai direto para as ofertas; as demais o site leva para /conta (perfil ou aprovação).
+    res.redirect(u.status === 'active' ? '/' : '/conta');
   } catch (err) {
     res.redirect('/conta?erro=' + encodeURIComponent(err.message));
   }

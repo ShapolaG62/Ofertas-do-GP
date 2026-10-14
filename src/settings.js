@@ -62,6 +62,9 @@ const DEFAULTS = {
   signup_empresa: 'aprovacao',
   loja_max_produtos: '300',
 
+  // '1' = só usuários logados e liberados veem as ofertas (a primeira página vira o login)
+  exigir_login: '1',
+
   // Login com Google (Google Cloud > APIs e serviços > Credenciais > ID do cliente OAuth)
   google_client_id: '',
   google_client_secret: '',

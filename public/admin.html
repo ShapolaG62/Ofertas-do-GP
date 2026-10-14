@@ -331,6 +331,11 @@
                 <option value="fechado">Fechado — ninguém se cadastra</option>
               </select></label>
             <label class="field">Limite de produtos por loja <input type="number" name="loja_max_produtos" min="1" max="5000"></label>
+            <label class="field">Quem pode ver as ofertas
+              <select name="exigir_login">
+                <option value="1">Só usuários logados e liberados (a primeira página é o login)</option>
+                <option value="0">Qualquer visitante (site aberto ao público)</option>
+              </select></label>
           </div>
           <div class="actions"><button class="btn primary" type="submit">Salvar cadastros</button></div>
         </div>

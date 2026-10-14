@@ -564,8 +564,15 @@
 
   fetch('/api/settings/public').then(r => r.json()).then(applySettings).catch(() => {});
   fetch('/api/conta/me').then(r => r.json()).then(d => {
-    if (d.user) $('#account-link').textContent = 'Minha conta';
+    if (d.user) {
+      $('#account-link').textContent = 'Minha conta';
+      $('#logout-site').hidden = false;
+    }
   }).catch(() => {});
+  $('#logout-site').addEventListener('click', async () => {
+    await fetch('/api/conta/sair', { method: 'POST' });
+    location.href = '/conta';
+  });
   fetch('/api/admin/session').then(r => r.json()).then(s => {
     isAdmin = Boolean(s.loggedIn);
     document.body.classList.toggle('is-admin', isAdmin);

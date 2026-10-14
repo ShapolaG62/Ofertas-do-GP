@@ -1,12 +1,10 @@
 /* Ofertas do GP — espaços de publicidade (banners de empresas anunciantes).
    Cada lugar da página marcado com data-espaco="..." recebe a campanha no ar daquele espaço,
-   ou um convite "Anuncie aqui" quando o espaço está livre. */
+   ou o cartão "Anuncie sua marca aqui" quando o espaço está livre. */
 (() => {
   'use strict';
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const okImg = src => /^(\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|https:\/\/)/.test(src || '');
-  // Espaços que mostram o convite quando estão livres (o do meio da lista some para não poluir).
-  const CONVITE = { topo: true, lateral: true, paginas: true };
 
   const espacos = (document.currentScript?.dataset.espacos || '').split(',').filter(Boolean);
   let cache = null;
@@ -25,17 +23,24 @@
       <span class="ad-tag">Patrocinado</span></a>`;
   }
 
+  const MEGAFONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+
+  // Espaço sem campanha: convite para empresas anunciarem.
   function conviteHtml(espaco) {
     return `<a class="ad-invite" href="/anuncie?espaco=${espaco}">
-      <span class="ad-invite-tag">Espaço publicitário</span>
-      <strong>Sua marca aqui</strong>
-      <span>Anuncie para quem está procurando desconto →</span></a>`;
+      <span class="ad-invite-icon">${MEGAFONE}</span>
+      <span class="ad-invite-text">
+        <span class="ad-invite-tag">Espaço publicitário</span>
+        <strong>Anuncie sua marca aqui</strong>
+        <span class="ad-invite-sub">Apareça para quem está procurando desconto.</span>
+      </span>
+      <span class="ad-invite-cta">Quero anunciar</span></a>`;
   }
 
   function fillSlot(el) {
     const espaco = el.dataset.espaco;
     const b = cache[espaco];
-    const html = b ? bannerHtml(b) : CONVITE[espaco] ? conviteHtml(espaco) : '';
+    const html = (b && bannerHtml(b)) || conviteHtml(espaco);
     el.innerHTML = html;
     el.hidden = !html;
     el.classList.toggle('is-filled', Boolean(b));

@@ -119,7 +119,7 @@ O site tem espaços reservados para propaganda de empresas que entrarem em conta
 | Acima dos filtros | Coluna da esquerda, só no computador | 300 x 300 |
 | Páginas de loja e de anúncio | No fim das páginas das lojas parceiras e dos anúncios | 1200 x 200 (celular: 600 x 300) |
 
-- **Espaço livre** mostra um convite discreto “Sua marca aqui”, que leva à página **/anuncie**. Ali a empresa vê os espaços e envia um pedido de contato (nome, empresa, e-mail, WhatsApp e mensagem). O espaço do meio da lista fica escondido enquanto está livre.
+- **Espaço livre** mostra o cartão “Anuncie sua marca aqui” com o botão **Quero anunciar**, que leva à página **/anuncie**. Ali a empresa vê os espaços e envia um pedido de contato (nome, empresa, e-mail, WhatsApp e mensagem).
 - **Pedidos** chegam em **Painel → Publicidade → Pedidos de empresas** (o número vermelho na aba mostra os novos). Clique em **Criar campanha** para já abrir o formulário com os dados da empresa.
 - **Campanha:** anunciante, espaço, link de destino (https), arte para computador e, opcionalmente, para celular (envie o arquivo JPG/PNG/WEBP até 3 MB), datas de início e término. Ela entra no ar sozinha no dia de início e sai no fim do dia de término. Dá para pausar, editar ou excluir a qualquer momento.
 - Com mais de uma campanha no mesmo espaço, elas se **revezam** a cada visita.

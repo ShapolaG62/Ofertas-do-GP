@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minha conta — Ofertas do GP</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c8f4f">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertas do GP — início">
+      <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertas do <b>GP</b></span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-sm" href="/">Ver ofertas</a>
+      <button class="btn btn-sm" id="logout" type="button" hidden>Sair</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container">
+
+    <!-- Entrar -->
+    <section id="view-entrar" class="narrow" hidden>
+      <div class="panel-card">
+        <h1>Entrar</h1>
+        <p class="muted">Acesse sua conta de consumidor ou de empresa.</p>
+        <form class="form" id="form-entrar">
+          <label class="field">E-mail <input type="email" name="email" autocomplete="email" required></label>
+          <label class="field">Senha <input type="password" name="senha" autocomplete="current-password" required></label>
+          <div class="form-msg" hidden></div>
+          <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+        </form>
+        <p class="form-switch">Ainda não tem conta? <a class="link-btn" href="#cadastro">Criar conta</a></p>
+      </div>
+    </section>
+
+    <!-- Cadastro -->
+    <section id="view-cadastro" class="narrow" hidden>
+      <div class="panel-card">
+        <h1>Criar conta</h1>
+        <p class="muted" id="signup-note">Escolha o tipo de conta.</p>
+        <form class="form" id="form-cadastro">
+          <div class="type-choice" role="radiogroup" aria-label="Tipo de conta">
+            <label><input type="radio" name="tipo" value="consumidor" checked><strong>Consumidor</strong><span>Acompanhe as ofertas com desconto.</span></label>
+            <label><input type="radio" name="tipo" value="empresa"><strong>Empresa</strong><span>Veja as ofertas e crie sua loja com seus produtos em promoção.</span></label>
+          </div>
+          <label class="field">Seu nome <input name="nome" autocomplete="name" maxlength="80" required></label>
+          <div class="form-row" data-empresa hidden>
+            <label class="field">Nome da empresa <input name="empresa_nome" maxlength="80"></label>
+            <label class="field">CNPJ <small>(opcional)</small><input name="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
+          </div>
+          <label class="field">E-mail <input type="email" name="email" autocomplete="email" maxlength="120" required></label>
+          <label class="field">Senha <small>mínimo 8 caracteres</small><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
+          <div class="form-msg" hidden></div>
+          <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
+        </form>
+        <p class="form-switch">Já tem conta? <a class="link-btn" href="#entrar">Entrar</a></p>
+      </div>
+    </section>
+
+    <!-- Área do usuário -->
+    <section id="view-conta" hidden>
+      <div class="account-grid">
+        <aside class="account-side panel-card">
+          <div class="who" id="who-name"></div>
+          <div class="muted" id="who-type" style="margin:2px 0 0"></div>
+          <nav class="account-nav" id="account-nav"></nav>
+        </aside>
+
+        <div>
+          <!-- Visão geral -->
+          <div class="tab-pane" data-pane="inicio">
+            <div class="panel-card">
+              <h2>Olá, <span id="hello-name"></span></h2>
+              <p class="muted" id="hello-text"></p>
+              <a class="btn btn-primary" href="/">Ver ofertas com desconto</a>
+              <a class="btn" id="hello-store" href="#" hidden>Ver minha loja</a>
+            </div>
+          </div>
+
+          <!-- Minha loja (empresa) -->
+          <div class="tab-pane" data-pane="loja" hidden>
+            <div class="panel-card">
+              <h2>Minha loja</h2>
+              <p class="muted">Sua loja ganha uma página no site com os seus produtos em promoção.</p>
+              <form class="form" id="form-loja">
+                <label class="field">Nome da loja <input name="nome" maxlength="60" required></label>
+                <label class="field">Descrição <textarea name="descricao" maxlength="500"></textarea></label>
+                <div class="form-row">
+                  <label class="field">Logo (link da imagem) <input type="url" name="logo_url" placeholder="https://"></label>
+                  <label class="field">Site da loja <input type="url" name="site_url" placeholder="https://"></label>
+                </div>
+                <div class="form-msg" hidden></div>
+                <div><button class="btn btn-primary" type="submit">Salvar loja</button> <a class="btn" id="store-link" href="#" target="_blank" hidden>Ver página da loja</a></div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Produtos (empresa) -->
+          <div class="tab-pane" data-pane="produtos" hidden>
+            <div class="panel-card">
+              <h2>Cadastrar produto com desconto</h2>
+              <p class="muted">Informe o preço anterior e o preço com desconto exatamente como aparecem na sua loja.</p>
+              <form class="form" id="form-produto">
+                <label class="field">Nome do produto <input name="produto" maxlength="200" required></label>
+                <label class="field">Link do produto na sua loja <input type="url" name="url" placeholder="https://" required></label>
+                <div class="form-row">
+                  <label class="field">Preço anterior (R$) <input name="preco_anterior" inputmode="decimal" placeholder="299,90" required></label>
+                  <label class="field">Preço com desconto (R$) <input name="preco_atual" inputmode="decimal" placeholder="199,90" required></label>
+                </div>
+                <div class="form-row">
+                  <label class="field">Imagem (link) <input type="url" name="imagem" placeholder="https://"></label>
+                  <label class="field">Ficar no ar por <select name="dias"><option value="3">3 dias</option><option value="7" selected>7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></label>
+                </div>
+                <div class="form-msg" hidden></div>
+                <div><button class="btn btn-primary" type="submit">Publicar produto</button></div>
+              </form>
+            </div>
+            <div class="panel-card">
+              <h2>Meus produtos <span class="muted" id="prod-count" style="font-weight:500"></span></h2>
+              <div class="prod-list" id="prod-list"></div>
+            </div>
+          </div>
+
+          <!-- Importação automática (empresa) -->
+          <div class="tab-pane" data-pane="importar" hidden>
+            <div class="panel-card">
+              <h2>Importar produtos automaticamente</h2>
+              <p class="muted">Informe o endereço da sua loja virtual. Buscamos sozinhos os produtos em promoção (com preço normal e preço promocional) e atualizamos a cada 2 horas. Funciona com lojas <b>Shopify</b>, <b>WooCommerce</b> e com <b>feed XML do Google Shopping</b> (Nuvemshop, Tray, Loja Integrada, VTEX e outras geram esse feed).</p>
+              <form class="form" id="form-feed">
+                <label class="field">Endereço da loja ou do feed <input type="url" name="feed_url" placeholder="https://minhaloja.com.br"></label>
+                <div class="form-msg" hidden></div>
+                <div><button class="btn btn-primary" type="submit">Salvar link</button> <button class="btn" type="button" id="feed-sync">Sincronizar agora</button></div>
+              </form>
+              <p class="muted" id="feed-status" style="margin:14px 0 0"></p>
+            </div>
+          </div>
+
+          <!-- Perfil -->
+          <div class="tab-pane" data-pane="perfil" hidden>
+            <div class="panel-card">
+              <h2>Meus dados</h2>
+              <form class="form" id="form-perfil" style="margin-top:12px">
+                <label class="field">Nome <input name="nome" maxlength="80" required></label>
+                <label class="field" data-empresa hidden>Nome da empresa <input name="empresa_nome" maxlength="80"></label>
+                <label class="field">E-mail <input name="email" disabled></label>
+                <div class="form-msg" hidden></div>
+                <div><button class="btn btn-primary" type="submit">Salvar</button></div>
+              </form>
+            </div>
+            <div class="panel-card">
+              <h2>Trocar senha</h2>
+              <form class="form" id="form-senha" style="margin-top:12px">
+                <label class="field">Senha atual <input type="password" name="atual" autocomplete="current-password" required></label>
+                <label class="field">Nova senha <input type="password" name="nova" autocomplete="new-password" minlength="8" required></label>
+                <div class="form-msg" hidden></div>
+                <div><button class="btn" type="submit">Trocar senha</button></div>
+              </form>
+            </div>
+            <div class="panel-card">
+              <h2>Excluir conta</h2>
+              <p class="muted">Apaga sua conta, sua loja e todos os seus produtos. Não dá para desfazer.</p>
+              <form class="form" id="form-excluir">
+                <label class="field">Confirme sua senha <input type="password" name="senha" autocomplete="current-password" required></label>
+                <div class="form-msg" hidden></div>
+                <div><button class="btn" type="submit" style="color:var(--deal)">Excluir minha conta</button></div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/js/conta.js" defer></script>
+</body>
+</html>

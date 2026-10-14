@@ -5,6 +5,8 @@ const auth = require('../auth');
 const settings = require('../settings');
 const offers = require('../offers');
 const miner = require('../miner');
+const users = require('../users');
+const lojas = require('../lojas');
 const { STORES, getStore, storeFromUrl } = require('../stores');
 const { CATEGORIES } = require('../categorize');
 const { parseBRL } = require('../util');
@@ -161,6 +163,61 @@ router.patch('/api/admin/offers/:id', (req, res) => {
 
 router.delete('/api/admin/offers/:id', (req, res) => {
   db.run('DELETE FROM offers WHERE id = ?', Number(req.params.id));
+  res.json({ ok: true });
+});
+
+// ── Usuários do site e lojas parceiras ────────────────────────────────────────
+router.get('/api/admin/users', (req, res) => {
+  res.json(users.listForAdmin({
+    q: String(req.query.q || '').trim(),
+    tipo: String(req.query.tipo || ''),
+    status: String(req.query.status || ''),
+    page: Math.max(parseInt(req.query.page, 10) || 1, 1),
+  }));
+});
+
+router.get('/api/admin/users/:id', (req, res) => {
+  const data = users.detailForAdmin(Number(req.params.id));
+  if (!data) return res.status(404).json({ error: 'Usuário não encontrado.' });
+  res.json(data);
+});
+
+router.post('/api/admin/users/:id/acao', (req, res) => {
+  const b = req.body || {};
+  try {
+    users.moderate(Number(req.params.id), String(b.acao || ''), {
+      motivo: b.motivo, dias: b.dias, bloquearEmail: Boolean(b.bloquear_email),
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
+router.post('/api/admin/lojas/:id/visibilidade', (req, res) => {
+  const lojaId = Number(req.params.id);
+  const loja = db.get('SELECT l.*, u.email FROM lojas l JOIN users u ON u.id = l.user_id WHERE l.id = ?', lojaId);
+  if (!loja) return res.status(404).json({ error: 'Loja não encontrada.' });
+  const oculta = Boolean(req.body?.oculta);
+  lojas.setHidden(lojaId, oculta);
+  users.logAction(users.getById(loja.user_id), oculta ? 'loja_ocultada' : 'loja_reexibida', String(req.body?.motivo || '').slice(0, 300) || null);
+  res.json({ ok: true });
+});
+
+router.post('/api/admin/lojas/:id/sincronizar', async (req, res) => {
+  res.json(await lojas.syncFeed(Number(req.params.id)));
+});
+
+router.get('/api/admin/moderacao', (req, res) => {
+  res.json(db.all('SELECT * FROM moderation_log ORDER BY id DESC LIMIT 200'));
+});
+
+router.get('/api/admin/emails-bloqueados', (req, res) => {
+  res.json(db.all('SELECT * FROM blocked_emails ORDER BY created_at DESC'));
+});
+
+router.delete('/api/admin/emails-bloqueados', (req, res) => {
+  db.run('DELETE FROM blocked_emails WHERE email = ?', String(req.body?.email || '').toLowerCase());
   res.json({ ok: true });
 });
 

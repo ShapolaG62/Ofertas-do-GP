@@ -11,7 +11,7 @@ const RULES = [
   ['audio_tv', /projetor|c[âa]mera|gopro|\bjbl\b/],
   ['cozinha', /air ?fryer|fritadeira|panela|frigideira|cafeteira|liquidificador|batedeira|sanduicheira|chaleira|micro-?ondas|forno|cozinha|grill|mixer/],
   ['eletrodomesticos', /geladeira|refrigerador|fog[ãa]o|lava(dora|r)|secadora|ar.condicionado|ventilador|aspirador|purificador|lava.lou[cç]as/],
-  ['moda', /t[êe]nis|sapato|sand[áa]lia|chinelo|bota\b|camis[ae]|cal[çc]a|vestido|blusa|jaqueta|moletom|short|bermuda|bolsa|mochila|rel[óo]gio|[óo]culos/],
+  ['moda', /t[êe]nis|sapato|sand[áa]lia|chinelo|bota\b|camis[ae]|cal[çc]a|vestido|blusa|jaqueta|moletom|short|bermuda|bolsa|mochila|rel[óo]gio|[óo]culos|cueca|calcinha|regata|t-shirt|legging|suti[ãa]|\bmeias?\b|cropped|saia|macac[ãa]o|pijama|bon[ée]\b/],
   ['beleza', /perfume|parfum|body splash|\bed[pt]\b|eau de|maquiagem|skincare|batom|shampoo|condicionador|hidratante|s[ée]rum|protetor solar|secador de cabelo|chapinha|barbeador|aparador/],
   ['saude', /whey|creatin|suplemento|vitamina|prote[íi]na|col[áa]geno|term[ôo]metro|medidor de press/],
   ['ferramentas', /ferramenta|maleta|alicate|serra|esmerilhadeira|trena/],
@@ -87,7 +87,8 @@ const SUBCATEGORIES = {
     ['Calçados', /sapato|sand[áa]lia|chinelo|bota\b|sapat[êe]nis/],
     ['Bolsas e mochilas', /bolsa|mochila|carteira/],
     ['Óculos', /[óo]culos/],
-    ['Roupas', /camis|cal[çc]a|vestido|blusa|jaqueta|moletom|short|bermuda|saia|cueca|meia/],
+    ['Roupas íntimas', /cueca|calcinha|suti[ãa]|\bmeias?\b|pijama/],
+    ['Roupas', /camis|cal[çc]a|vestido|blusa|jaqueta|moletom|short|bermuda|saia|regata|t-shirt|legging|cropped|macac[ãa]o/],
   ],
   beleza: [
     ['Perfumes', /perfume|col[ôo]nia|eau de|body splash|parfum|\bed[pt]\b/],

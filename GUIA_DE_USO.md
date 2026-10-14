@@ -47,3 +47,34 @@ Com o painel logado, abra o site: aparecem os botões de seleção nos cards e *
 npm run mine                 # todos os termos configurados
 npm run mine -- "air fryer"  # só um termo
 ```
+
+## 7. Usuários do site (consumidores e empresas)
+
+Qualquer pessoa pode criar conta em **/conta** como:
+
+- **Consumidor**: acessa as ofertas com desconto.
+- **Empresa**: além das ofertas, cria uma **loja dentro do site** (página própria em `/loja/nome-da-loja`) e publica produtos com desconto de duas formas:
+  - **Cadastro manual**: nome, link, preço anterior, preço com desconto, imagem e por quantos dias fica no ar (até 30).
+  - **Importação automática pelo link da loja**: funciona com lojas Shopify, WooCommerce e feed XML do Google Shopping (Nuvemshop, Tray, Loja Integrada, VTEX etc.). Só entram produtos em que a própria loja informa preço normal e promocional, em reais. Atualiza a cada 2 horas; produto que some da loja sai do ar em 3 dias.
+
+Essas contas **não** acessam o painel /admin.
+
+### Liberar cadastros (aba Usuários do painel)
+
+Para consumidores e empresas, separadamente, escolha:
+- **Aberto**: a conta funciona na hora.
+- **Com aprovação** (padrão): você aprova ou recusa cada cadastro. A aba mostra um contador vermelho com os pendentes.
+- **Fechado**: ninguém consegue se cadastrar.
+
+### Gerenciar usuários e lojas
+
+Em **Usuários → Gerenciar** você pode:
+- **Aprovar / recusar** cadastros;
+- **Suspender** por X dias (punição temporária; a conta volta sozinha ao fim do prazo);
+- **Banir** (permanente) e **Reativar**;
+- **Impedir de publicar** (a empresa continua entrando, mas não publica nem importa produtos);
+- **Ocultar a loja** do site;
+- **Ocultar ou excluir** publicações uma a uma, ou **excluir todas**;
+- **Excluir o perfil** (apaga conta, loja e produtos), com opção de **bloquear o e-mail** para não voltar.
+
+Suspensão, banimento e loja oculta tiram os produtos do site na hora. O motivo informado aparece para o usuário quando ele tenta entrar. Todas as ações ficam no **Histórico de moderação**.

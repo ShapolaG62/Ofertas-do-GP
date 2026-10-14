@@ -119,4 +119,5 @@ function purgeExpiredSessions() {
 module.exports = {
   hasPassword, setPassword, verifyPassword, initFromEnv, createSession, destroySession, isLoggedIn,
   requireAdmin, checkRateLimit, registerFailure, clearFailures, isLocalRequest, purgeExpiredSessions, MIN_PASSWORD,
+  hashPassword, tokenHash, parseCookies, cookieFlags,
 };

@@ -126,6 +126,7 @@ function startScheduler() {
     clearTimeout(timer);
     timer = setTimeout(async () => {
       try { await runMining(); } catch (err) { console.error('[MINER] erro inesperado:', err); }
+      try { await require('./lojas').syncAllFeeds(); } catch (err) { console.error('[LOJAS] erro ao sincronizar feeds:', err); }
       schedule(Math.max(15, settings.getNumber('mining_interval_min', 120)) * 60 * 1000);
     }, delayMs);
   };

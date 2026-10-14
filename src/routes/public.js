@@ -2,7 +2,10 @@ const express = require('express');
 const db = require('../db');
 const settings = require('../settings');
 const offers = require('../offers');
-const { http } = require('../util');
+const { safeGet } = require('../net');
+
+// Tipos de imagem aceitos no proxy (SVG fica de fora: pode conter scripts).
+const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 
 const router = express.Router();
 
@@ -28,14 +31,14 @@ router.get('/api/img/:id', async (req, res) => {
   const row = db.get('SELECT imagem FROM offers WHERE id = ?', Number(req.params.id));
   if (!row || !/^https:\/\//i.test(row.imagem || '')) return res.redirect('/images/pet-capi-head.png');
   try {
-    const img = await http.get(row.imagem, {
+    const img = await safeGet(row.imagem, {
       responseType: 'arraybuffer',
       timeout: 8000,
       maxContentLength: 5 * 1024 * 1024,
       headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' },
     });
     const type = String(img.headers['content-type'] || '');
-    if (!type.startsWith('image/')) throw new Error('não é imagem');
+    if (img.status !== 200 || !IMAGE_TYPES.test(type)) throw new Error('não é imagem');
     res.setHeader('Content-Type', type);
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(Buffer.from(img.data));

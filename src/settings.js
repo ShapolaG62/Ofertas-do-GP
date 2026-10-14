@@ -56,6 +56,11 @@ const DEFAULTS = {
   aliexpress_app_secret: '',
   aliexpress_tracking_id: '',
   magalu_store: '',
+
+  // Cadastro de usuários do site: 'aberto' (entra na hora), 'aprovacao' (admin libera) ou 'fechado'
+  signup_consumidor: 'aprovacao',
+  signup_empresa: 'aprovacao',
+  loja_max_produtos: '300',
 };
 
 // Chaves que o site público pode ler.

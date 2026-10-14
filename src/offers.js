@@ -6,13 +6,19 @@ const { discountOf, round2 } = require('./util');
 
 const MAX_DISCOUNT = 95; // acima disso quase sempre é erro de leitura de preço
 
+// Oferta "no ar": não oculta, dentro da validade e, se for de uma loja parceira, com a loja visível
+// e o dono com a conta liberada (banido/suspenso some do site imediatamente).
 function activeClause() {
   const hours = settings.getNumber('offer_max_age_hours', 24);
   return {
     sql: `o.oculto = 0 AND (
       (o.fonte = 'auto' AND o.last_seen_at >= datetime('now', ?)) OR
-      (o.fonte = 'manual' AND o.expires_at > datetime('now'))
-    )`,
+      (o.fonte <> 'auto' AND o.expires_at > datetime('now'))
+    ) AND (o.loja_id IS NULL OR EXISTS (
+      SELECT 1 FROM lojas lj JOIN users uj ON uj.id = lj.user_id
+      WHERE lj.id = o.loja_id AND lj.oculta = 0
+        AND (uj.status = 'active' OR (uj.status = 'suspended' AND uj.suspenso_ate <= datetime('now')))
+    ))`,
     params: [`-${hours} hours`],
   };
 }
@@ -25,7 +31,7 @@ function affiliateFor(store, offer, s) {
 function saveDeal(store, deal, opts = {}) {
   const s = opts.settings || settings.getAll();
   const fonte = opts.fonte || 'auto';
-  const minDiscount = fonte === 'manual' ? 1 : Number(s.min_discount_pct) || 5;
+  const minDiscount = fonte === 'manual' || fonte === 'empresa' ? 1 : Number(s.min_discount_pct) || 5;
 
   const produto = String(deal.produto || '').replace(/\s+/g, ' ').trim();
   const atual = round2(Number(deal.preco_atual));
@@ -38,7 +44,8 @@ function saveDeal(store, deal, opts = {}) {
   const affFixed = deal.affiliate_url ? 1 : 0;
   const affiliate = deal.affiliate_url || affiliateFor(store, offer, s);
   const categoria = deal.categoria || classifyCategory(produto, opts.catHint);
-  const expiresAt = fonte === 'manual' ? opts.expiresAt : null;
+  const expiresAt = fonte === 'auto' ? null : opts.expiresAt;
+  const lojaId = opts.lojaId || null;
 
   return db.transaction(() => {
     const existing = db.get(
@@ -61,10 +68,11 @@ function saveDeal(store, deal, opts = {}) {
     }
     const res = db.run(
       `INSERT INTO offers (store_id, store_product_id, plataforma, produto, preco_atual, preco_anterior, desconto_pct,
-         categoria, subcategoria, imagem, original_url, affiliate_url, aff_fixed, fonte, expires_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         categoria, subcategoria, imagem, original_url, affiliate_url, aff_fixed, fonte, expires_at, loja_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       store.id, String(deal.store_product_id), store.name, produto, atual, anterior, desconto,
-      categoria, classifySubcategory(produto, categoria), deal.imagem || null, deal.original_url, affiliate, affFixed, fonte, expiresAt
+      categoria, classifySubcategory(produto, categoria), deal.imagem || null, deal.original_url, affiliate, affFixed, fonte,
+      expiresAt, lojaId
     );
     const id = Number(res.lastInsertRowid);
     db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', id, atual);
@@ -75,21 +83,23 @@ function saveDeal(store, deal, opts = {}) {
 const PUBLIC_FIELDS = `o.id, o.store_id, o.plataforma, o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct,
   o.categoria, o.subcategoria, o.imagem, o.affiliate_url, o.link_clicks, o.fonte, o.created_at, o.last_seen_at`;
 
-function listActive(limit = 2000) {
+// lojaId: limita às ofertas de uma loja parceira (página da loja).
+function listActive(limit = 2000, lojaId = null) {
   const active = activeClause();
   return db.all(
-    `SELECT ${PUBLIC_FIELDS},
+    `SELECT ${PUBLIC_FIELDS}, l.slug AS loja_slug, l.nome AS loja_nome,
        CASE WHEN h.n >= 2 AND o.created_at <= datetime('now', '-7 days') AND o.preco_atual <= h.min30
             THEN 1 ELSE 0 END AS menor_preco_30d
      FROM offers o
+     LEFT JOIN lojas l ON l.id = o.loja_id
      LEFT JOIN (
        SELECT offer_id, MIN(price) AS min30, COUNT(*) AS n FROM price_history
        WHERE checked_at >= datetime('now', '-30 days') GROUP BY offer_id
      ) h ON h.offer_id = o.id
-     WHERE ${active.sql}
+     WHERE ${active.sql} ${lojaId ? 'AND o.loja_id = ?' : ''}
      ORDER BY o.created_at DESC, o.id DESC
      LIMIT ?`,
-    ...active.params, limit
+    ...active.params, ...(lojaId ? [lojaId] : []), limit
   );
 }
 
@@ -171,7 +181,7 @@ function reclassifyAll() {
   const rows = db.all('SELECT id, produto, categoria, fonte FROM offers');
   db.transaction(() => {
     for (const r of rows) {
-      const categoria = r.fonte === 'auto' ? classifyCategory(r.produto, r.categoria) : r.categoria;
+      const categoria = r.fonte === 'auto' || r.fonte === 'feed' ? classifyCategory(r.produto, r.categoria) : r.categoria;
       db.run('UPDATE offers SET categoria = ?, subcategoria = ? WHERE id = ?',
         categoria, classifySubcategory(r.produto, categoria), r.id);
     }

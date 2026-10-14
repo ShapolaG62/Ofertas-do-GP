@@ -88,7 +88,9 @@
   const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
   function matches(o, skip = '') {
-    if (skip !== 'loja' && state.loja && o.store_id !== state.loja) return false;
+    if (skip !== 'loja' && state.loja) {
+      if (state.loja === 'parceiros' ? !o.loja_slug : o.store_id !== state.loja) return false;
+    }
     if (skip !== 'cat' && state.cat && o.categoria !== state.cat) return false;
     if (skip !== 'tipo' && state.tipo && o.subcategoria !== state.tipo) return false;
     if (state.q) {
@@ -124,21 +126,28 @@
   const countBy = (list, key) => list.reduce((acc, o) => ((acc[o[key]] = (acc[o[key]] || 0) + 1), acc), {});
 
   // ── Renderização ─────────────────────────────────────────────────────────
-  function storeLabel(id, name) {
+  function storeLabel(id, name, lojaSlug) {
+    if (lojaSlug) return `<span class="store-dot" style="background:var(--brand)"></span>Loja parceira · ${esc(name)}`;
     const s = STORE_BY_ID[id];
     return `<span class="store-dot" style="background:${s ? s.color : '#999'}"></span>${esc(s ? s.name : name)}`;
   }
 
+  let STORES_EXTRA = '';
   function renderStoreTabs() {
     const counts = countBy(ALL.filter(o => matches(o, 'loja')), 'store_id');
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const tabs = [`<button class="store-tab" type="button" data-loja="" aria-pressed="${!state.loja}">Todas as lojas <span class="count">${total}</span></button>`];
+    const partners = ALL.filter(o => o.loja_slug && matches(o, 'loja')).length;
+    if (partners || state.loja === 'parceiros') {
+      STORES_EXTRA = `<button class="store-tab" type="button" data-loja="parceiros" aria-pressed="${state.loja === 'parceiros'}">
+        <span class="store-dot" style="background:var(--brand)"></span>Lojas parceiras <span class="count">${partners}</span></button>`;
+    } else STORES_EXTRA = '';
     for (const s of STORES) {
       const n = counts[s.id] || 0;
       tabs.push(`<button class="store-tab" type="button" data-loja="${s.id}" aria-pressed="${state.loja === s.id}" ${n || state.loja === s.id ? '' : 'disabled'}>
         <span class="store-dot" style="background:${s.color}"></span>${esc(s.name)} <span class="count">${n}</span></button>`);
     }
-    $('#store-tabs').innerHTML = tabs.join('');
+    $('#store-tabs').innerHTML = tabs.join('') + STORES_EXTRA;
   }
 
   function filtersHtml() {
@@ -227,14 +236,14 @@
         <button class="card-select admin-only" type="button" data-select="${o.id}" aria-label="Selecionar oferta"><svg><use href="#i-check"/></svg></button>
       </div>
       <div class="card-body">
-        <div class="card-store">${storeLabel(o.store_id, o.plataforma)}</div>
+        <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}</div>
         <h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
         ${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low">Menor preço em 30 dias</span>' : ''}
         <div class="card-prices">
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
           <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div>
         </div>
-        <div class="card-foot"><span>${o.fonte === 'manual' ? 'Oferta selecionada' : `Conferido ${timeAgo(o.last_seen_at)}`}</span></div>
+        <div class="card-foot"><span>${o.loja_slug ? 'Publicado pela loja' : o.fonte === 'manual' ? 'Oferta selecionada' : `Conferido ${timeAgo(o.last_seen_at)}`}</span></div>
       </div>
     </a>`;
   }
@@ -253,7 +262,7 @@
     state.pagina = Math.min(state.pagina, pages);
     const pageItems = list.slice((state.pagina - 1) * PER_PAGE, state.pagina * PER_PAGE);
 
-    const title = state.tipo || (state.cat ? CATEGORIES[state.cat] : state.loja ? STORE_BY_ID[state.loja]?.name : 'Todas as ofertas');
+    const title = state.tipo || (state.cat ? CATEGORIES[state.cat] : state.loja === 'parceiros' ? 'Lojas parceiras' : state.loja ? STORE_BY_ID[state.loja]?.name : 'Todas as ofertas');
     $('#results-title').textContent = state.q ? `Resultados para “${state.q}”` : title;
     $('#results-count').textContent = `${list.length.toLocaleString('pt-BR')} oferta${list.length === 1 ? '' : 's'}`;
 
@@ -552,6 +561,9 @@
   $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join('');
 
   fetch('/api/settings/public').then(r => r.json()).then(applySettings).catch(() => {});
+  fetch('/api/conta/me').then(r => r.json()).then(d => {
+    if (d.user) $('#account-link').textContent = 'Minha conta';
+  }).catch(() => {});
   fetch('/api/admin/session').then(r => r.json()).then(s => {
     isAdmin = Boolean(s.loggedIn);
     document.body.classList.toggle('is-admin', isAdmin);

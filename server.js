@@ -7,6 +7,7 @@ const miner = require('./src/miner');
 const offers = require('./src/offers');
 const publicRoutes = require('./src/routes/public');
 const adminRoutes = require('./src/routes/admin');
+const contaRoutes = require('./src/routes/conta');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -34,8 +35,11 @@ app.use(express.static(PUBLIC_DIR, { index: 'index.html', extensions: ['html'] }
 
 app.use(publicRoutes);
 app.use(adminRoutes);
+app.use(contaRoutes);
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
+app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));
+app.get('/loja/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'loja.html')));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
 app.get('*', (req, res) => {
   if (path.extname(req.path)) return res.status(404).send('Não encontrado');

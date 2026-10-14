@@ -67,11 +67,72 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     expires_at TEXT NOT NULL
   );
+
+  -- Usuários do site (consumidores e empresas). Não têm acesso ao painel /admin.
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT NOT NULL CHECK (tipo IN ('consumidor', 'empresa')),
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    senha_hash TEXT NOT NULL,
+    empresa_nome TEXT,
+    cnpj TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'suspended', 'banned', 'rejected')),
+    status_motivo TEXT,
+    suspenso_ate TEXT,
+    bloqueio_publicacao INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_login_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS user_sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL
+  );
+
+  -- Loja de uma empresa dentro do site
+  CREATE TABLE IF NOT EXISTS lojas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    nome TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    descricao TEXT,
+    logo_url TEXT,
+    site_url TEXT,
+    feed_url TEXT,
+    feed_tipo TEXT,
+    feed_status TEXT,
+    feed_mensagem TEXT,
+    feed_ultima_sync TEXT,
+    oculta INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS moderation_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    user_email TEXT,
+    acao TEXT NOT NULL,
+    detalhe TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS blocked_emails (
+    email TEXT PRIMARY KEY,
+    motivo TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 // Migrações simples: colunas adicionadas depois da primeira versão.
 const offerColumns = db.prepare('PRAGMA table_info(offers)').all().map(c => c.name);
 if (!offerColumns.includes('subcategoria')) db.exec('ALTER TABLE offers ADD COLUMN subcategoria TEXT');
+if (!offerColumns.includes('loja_id')) {
+  db.exec('ALTER TABLE offers ADD COLUMN loja_id INTEGER REFERENCES lojas(id) ON DELETE CASCADE');
+}
+db.exec('CREATE INDEX IF NOT EXISTS idx_offers_loja ON offers (loja_id)');
 
 const all = (sql, ...params) => db.prepare(sql).all(...params);
 const get = (sql, ...params) => db.prepare(sql).get(...params);

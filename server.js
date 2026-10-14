@@ -54,7 +54,8 @@ app.get('/loja/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'loja.ht
 app.get('/anuncio/:id', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'anuncio.html')));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
 app.get('*', (req, res) => {
-  if (path.extname(req.path)) return res.status(404).send('Não encontrado');
+  // Arquivos (com extensão) e caminhos ocultos (.env, .git...) inexistentes respondem 404.
+  if (path.extname(req.path) || /\/\./.test(req.path)) return res.status(404).send('Não encontrado');
   res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 

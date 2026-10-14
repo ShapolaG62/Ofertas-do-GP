@@ -198,6 +198,40 @@ db.exec(`
   );
 `);
 
+// Publicidade: campanhas de empresas que contrataram espaço no site e pedidos de contato.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS banners (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    anunciante TEXT NOT NULL,
+    contato TEXT,
+    espaco TEXT NOT NULL,
+    link TEXT NOT NULL,
+    imagem TEXT NOT NULL,
+    imagem_mobile TEXT,
+    texto_alt TEXT,
+    inicio TEXT NOT NULL,
+    fim TEXT NOT NULL,
+    ativo INTEGER NOT NULL DEFAULT 1,
+    impressoes INTEGER NOT NULL DEFAULT 0,
+    cliques INTEGER NOT NULL DEFAULT 0,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_banners_espaco ON banners (espaco, ativo);
+
+  CREATE TABLE IF NOT EXISTS ad_leads (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    empresa TEXT NOT NULL,
+    email TEXT NOT NULL,
+    telefone TEXT,
+    espaco TEXT,
+    mensagem TEXT,
+    status TEXT NOT NULL DEFAULT 'novo',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 

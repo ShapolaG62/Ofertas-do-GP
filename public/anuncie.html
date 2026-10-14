@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anuncie no Ofertas do GP</title>
+<meta name="description" content="Divulgue sua marca para quem está procurando desconto nas maiores lojas do Brasil.">
+<meta name="theme-color" content="#0c8f4f">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261018">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertas do GP — início">
+      <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertas do <b>GP</b></span>
+    </a>
+    <div class="header-actions"><a class="btn btn-sm" href="/">Ver ofertas</a></div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="container adv-hero">
+    <div class="legal" style="margin:0;max-width:none">
+      <h1>Anuncie no Ofertas do GP</h1>
+      <p>Seu banner aparece para quem entra no site justamente para comprar com desconto. Você escolhe o espaço e o período, e recebe o número de visualizações e de cliques da campanha.</p>
+
+      <h2>Espaços disponíveis</h2>
+      <div class="adv-spaces" id="spaces"></div>
+
+      <h2>Como funciona</h2>
+      <ol class="adv-list">
+        <li>Envie o formulário de contato. Respondemos pelo e-mail ou WhatsApp informado.</li>
+        <li>Combinamos o espaço, o período e o valor.</li>
+        <li>Você envia a arte (JPG, PNG ou WEBP, até 3 MB) e o link de destino.</li>
+        <li>O banner entra no ar com o selo <b>Patrocinado</b> e sai automaticamente no fim do período.</li>
+      </ol>
+      <p style="font-size:13px;color:var(--ink-3)">Não aceitamos anúncios enganosos, de produtos ilegais, apostas, conteúdo adulto ou que imitem outras marcas.</p>
+    </div>
+
+    <form class="panel-card" id="lead-form" novalidate>
+      <h2>Quero anunciar</h2>
+      <p style="margin:0 0 16px;color:var(--ink-3);font-size:14px">Preencha e entraremos em contato.</p>
+      <div style="display:grid;gap:12px">
+        <label class="field">Seu nome<input name="nome" required maxlength="80" autocomplete="name"></label>
+        <label class="field">Empresa<input name="empresa" required maxlength="100" autocomplete="organization"></label>
+        <label class="field">E-mail<input name="email" type="email" required maxlength="120" autocomplete="email"></label>
+        <label class="field">WhatsApp <small>(opcional)</small><input name="telefone" inputmode="tel" maxlength="16" autocomplete="tel" placeholder="(11) 99999-9999"></label>
+        <label class="field">Espaço de interesse<select name="espaco" id="espaco-sel"><option value="">Ainda não sei</option></select></label>
+        <label class="field">Mensagem <small>(opcional)</small><textarea name="mensagem" maxlength="1000" placeholder="Conte o que quer divulgar e o período desejado."></textarea></label>
+        <div class="form-msg" id="lead-msg" hidden></div>
+        <button class="btn btn-primary btn-block" type="submit">Enviar pedido</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="/js/anuncie.js?v=20261018" defer></script>
+</body>
+</html>

@@ -7,6 +7,8 @@ const offers = require('../offers');
 const miner = require('../miner');
 const users = require('../users');
 const lojas = require('../lojas');
+const banners = require('../banners');
+const anuncios = require('../anuncios');
 const { STORES, getStore, storeFromUrl } = require('../stores');
 const { CATEGORIES } = require('../categorize');
 const { parseBRL } = require('../util');
@@ -223,6 +225,52 @@ router.delete('/api/admin/emails-bloqueados', (req, res) => {
 
 router.get('/api/admin/store-list', (req, res) => {
   res.json(STORES.map(s => ({ id: s.id, name: s.name, automatic: s.automatic })));
+});
+
+// ── Publicidade (banners de empresas) ─────────────────────────────────────────
+const sendError = (res, err) => res.status(err.status || 400).json({ error: err.message });
+
+router.get('/api/admin/publicidade', (req, res) => {
+  res.json({
+    espacos: banners.ESPACOS,
+    campanhas: banners.listCampaigns(),
+    pedidos: banners.listLeads(),
+    novos: banners.newLeadsCount(),
+  });
+});
+
+router.post('/api/admin/publicidade/upload',
+  express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '3mb' }),
+  (req, res) => {
+    try { res.json({ ok: true, url: anuncios.saveUpload(req.body) }); } catch (err) { sendError(res, err); }
+  });
+
+router.post('/api/admin/publicidade', (req, res) => {
+  try { res.json({ ok: true, id: banners.saveCampaign(req.body || {}) }); } catch (err) { sendError(res, err); }
+});
+
+router.put('/api/admin/publicidade/:id', (req, res) => {
+  try { res.json({ ok: true, id: banners.saveCampaign(req.body || {}, Number(req.params.id)) }); } catch (err) { sendError(res, err); }
+});
+
+router.patch('/api/admin/publicidade/:id', (req, res) => {
+  banners.setActive(Number(req.params.id), Boolean(req.body?.ativo));
+  res.json({ ok: true });
+});
+
+router.delete('/api/admin/publicidade/:id', (req, res) => {
+  banners.deleteCampaign(Number(req.params.id));
+  res.json({ ok: true });
+});
+
+router.patch('/api/admin/pedidos-publicidade/:id', (req, res) => {
+  banners.setLeadStatus(Number(req.params.id), String(req.body?.status || ''));
+  res.json({ ok: true });
+});
+
+router.delete('/api/admin/pedidos-publicidade/:id', (req, res) => {
+  banners.deleteLead(Number(req.params.id));
+  res.json({ ok: true });
 });
 
 module.exports = router;

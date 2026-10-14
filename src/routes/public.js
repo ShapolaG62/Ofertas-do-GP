@@ -3,6 +3,8 @@ const db = require('../db');
 const settings = require('../settings');
 const offers = require('../offers');
 const { safeGet } = require('../net');
+const banners = require('../banners');
+const { createLimiter } = require('../ratelimit');
 
 // Tipos de imagem aceitos no proxy (SVG fica de fora: pode conter scripts).
 const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
@@ -57,6 +59,41 @@ router.get('/oferta/:slug', (req, res) => {
   if (!offer) return res.redirect('/?expirada=1');
   db.run('UPDATE offers SET link_clicks = link_clicks + 1 WHERE id = ?', id);
   res.redirect(offer.affiliate_url || offer.original_url);
+});
+
+// ── Publicidade ──────────────────────────────────────────────────────────────
+const leadLimiter = createLimiter(5, 60); // 5 pedidos de contato por hora por IP
+
+// Banners no ar para os espaços pedidos (?espacos=topo,meio,lateral). Espaço sem campanha volta null.
+router.get('/api/publicidade', (req, res) => {
+  const espacos = String(req.query.espacos || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(banners.pick(espacos));
+});
+
+// Informações da página "Anuncie aqui".
+router.get('/api/anuncie/info', (req, res) => {
+  res.json({
+    espacos: Object.entries(banners.ESPACOS).map(([id, e]) => ({ id, ...e })),
+    whatsapp_link: settings.get('whatsapp_link') || '',
+  });
+});
+
+router.post('/api/anuncie', (req, res) => {
+  const wait = leadLimiter.hit(req.ip);
+  if (wait) return res.status(429).json({ error: `Muitos envios. Tente de novo em ${wait} min.` });
+  try {
+    banners.saveLead(req.body || {});
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
+// Clique no banner: conta e leva ao site do anunciante.
+router.get('/publicidade/:id', (req, res) => {
+  const link = banners.click(Number(req.params.id));
+  res.redirect(link || '/');
 });
 
 module.exports = router;

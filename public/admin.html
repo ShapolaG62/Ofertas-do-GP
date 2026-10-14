@@ -49,7 +49,7 @@
   .hint { color: var(--muted); font-size: 12.5px; line-height: 1.55; margin: 4px 0 12px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
   label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 12.5px; color: var(--muted); }
-  input[type=text], input[type=password], input[type=url], input[type=number], select, textarea {
+  input[type=text], input[type=password], input[type=url], input[type=number], input[type=date], input[type=email], select, textarea {
     background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 12px; outline: none; width: 100%;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--green-line); }
@@ -98,6 +98,15 @@
   .log-list { font-size: 13px; display: grid; gap: 6px; max-height: 260px; overflow: auto; }
   .log-list div { padding: 6px 10px; background: var(--surface-2); border-radius: 8px; }
   .table-wrap { overflow-x: auto; }
+  .ad-thumb { width: 120px; height: 48px; object-fit: cover; border-radius: 6px; background: var(--surface-3); display: block; }
+  .b-no_ar { color: var(--green); border-color: var(--green-line); background: var(--green-soft); }
+  .b-agendada { color: var(--yellow); border-color: currentColor; }
+  .b-pausada, .b-encerrada { color: var(--muted); border-color: var(--border-strong); }
+  .img-pick { display: flex; gap: 10px; align-items: center; }
+  .img-pick img { width: 140px; height: 56px; object-fit: cover; border-radius: 8px; background: var(--surface-3); flex: none; }
+  .img-pick img:not([src]), .img-pick img[src=""] { visibility: hidden; }
+  .img-pick input[type=text] { flex: 1; }
+  #ad-form textarea { min-height: 70px; font-family: inherit; }
   .check { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
   .check input { width: 18px; height: 18px; accent-color: var(--green); }
   .pager { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 12px; color: var(--muted); }
@@ -150,6 +159,7 @@
       <button class="tab" data-tab="aff">Afiliados</button>
       <button class="tab" data-tab="mining">Mineração</button>
       <button class="tab" data-tab="users">Usuários<span class="count-badge hidden" id="pending-badge">0</span></button>
+      <button class="tab" data-tab="ads">Publicidade<span class="count-badge hidden" id="leads-badge">0</span></button>
       <button class="tab" data-tab="site">Site</button>
       <button class="tab" data-tab="account">Conta</button>
     </nav>
@@ -388,6 +398,35 @@
       </div>
     </div>
 
+    <!-- PUBLICIDADE -->
+    <div class="tab-body hidden" data-body="ads">
+      <div class="panel">
+        <div class="row" style="margin-bottom:6px">
+          <h2 style="flex:1">Campanhas de anunciantes</h2>
+          <a class="btn small" href="/anuncie" target="_blank">Ver página “Anuncie”</a>
+          <button class="btn primary" type="button" id="ad-new">Nova campanha</button>
+        </div>
+        <p class="hint">Banners de empresas que contrataram espaço no site. Entram no ar na data de início e saem sozinhos no fim. Se houver mais de uma campanha no mesmo espaço, elas se revezam. Espaço sem campanha mostra o convite “Anuncie aqui”.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Banner</th><th>Anunciante</th><th>Espaço</th><th>Período</th><th>Situação</th><th>Visualizações</th><th>Cliques</th><th></th></tr></thead>
+            <tbody id="ads-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Pedidos de empresas</h2>
+        <p class="hint">Empresas que preencheram o formulário da página “Anuncie”. Entre em contato, combine o valor e cadastre a campanha.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Empresa</th><th>Contato</th><th>Espaço</th><th>Mensagem</th><th></th></tr></thead>
+            <tbody id="leads-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- CONTA -->
     <div class="tab-body hidden" data-body="account">
       <div class="panel" style="max-width:480px">
@@ -406,6 +445,30 @@
 <dialog id="user-dlg">
   <div class="dlg-head"><h3 id="ud-title">Usuário</h3><button class="btn small" type="button" data-close>Fechar</button></div>
   <div class="dlg-body" id="ud-body"></div>
+</dialog>
+
+<dialog id="ad-dlg">
+  <div class="dlg-head"><h3 id="ad-title">Nova campanha</h3><button class="btn small" type="button" data-close>Fechar</button></div>
+  <form class="dlg-body" id="ad-form" novalidate>
+    <div class="grid">
+      <label class="field">Anunciante (empresa) <input type="text" name="anunciante" maxlength="80" required></label>
+      <label class="field">Contato do anunciante <input type="text" name="contato" maxlength="120" placeholder="E-mail ou telefone"></label>
+      <label class="field">Espaço <select name="espaco" id="ad-espaco" required></select></label>
+      <label class="field">Link de destino <input type="url" name="link" maxlength="500" placeholder="https://..." required></label>
+      <label class="field">Início <input type="date" name="inicio" required></label>
+      <label class="field">Término <input type="date" name="fim" required></label>
+    </div>
+    <div class="field">Imagem para computador <span class="hint" style="margin:0;font-weight:400" id="ad-size-desk"></span>
+      <div class="img-pick"><img id="ad-prev" alt=""><input type="text" name="imagem" placeholder="Envie um arquivo ou cole um link https://"><button class="btn small" type="button" data-upload="imagem">Enviar arquivo</button></div></div>
+    <div class="field" id="ad-mobile-field">Imagem para celular (opcional) <span class="hint" style="margin:0;font-weight:400" id="ad-size-mob"></span>
+      <div class="img-pick"><img id="ad-prev-m" alt=""><input type="text" name="imagem_mobile" placeholder="Vazio = usa a de computador"><button class="btn small" type="button" data-upload="imagem_mobile">Enviar arquivo</button></div></div>
+    <label class="field">Descrição da imagem (acessibilidade) <input type="text" name="texto_alt" maxlength="150" placeholder="Ex.: Loja X — 20% off em tênis"></label>
+    <label class="field">Observações internas (valor combinado, pagamento...) <textarea name="observacoes" maxlength="500"></textarea></label>
+    <label class="check"><input type="checkbox" name="ativo" checked> Campanha ativa</label>
+    <input type="file" id="ad-file" accept="image/jpeg,image/png,image/webp" hidden>
+    <div id="ad-msg"></div>
+    <div class="actions" style="margin-top:0"><button class="btn primary" type="submit">Salvar campanha</button></div>
+  </form>
 </dialog>
 
 <script>
@@ -478,6 +541,7 @@ async function showApp() {
   }
   await Promise.all([loadStores(), loadSettings()]);
   api('/api/admin/users?status=pending').then(d => setPendingBadge(d.pending)).catch(() => {});
+  loadAds().catch(() => {});
   $('#manual-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
   $('#cat-list').textContent = CATEGORIES.join(', ');
 }
@@ -488,6 +552,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'offers') loadOffers();
   if (t.dataset.tab === 'dash') loadStores();
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
+  if (t.dataset.tab === 'ads') loadAds();
 }));
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
@@ -858,6 +923,139 @@ $('#user-dlg').addEventListener('click', async e => {
     } else return;
     await openUser(id);
     loadUsers(); loadModLog();
+  } catch (err) { globalMsg(err.message, false); }
+});
+
+// ── Publicidade ───────────────────────────────────────────────────────────────
+const AD_STATUS = { no_ar: 'No ar', agendada: 'Agendada', encerrada: 'Encerrada', pausada: 'Pausada' };
+let ADS = { espacos: {}, campanhas: [], pedidos: [], novos: 0 };
+const fmtDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '—');
+const isoDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) : '');
+const okAdImg = src => /^(\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|https:\/\/)/.test(src || '');
+
+async function loadAds() {
+  ADS = await api('/api/admin/publicidade');
+  $('#leads-badge').textContent = ADS.novos;
+  $('#leads-badge').classList.toggle('hidden', !ADS.novos);
+  const sel = $('#ad-espaco');
+  if (!sel.options.length) sel.innerHTML = Object.entries(ADS.espacos).map(([id, e]) => `<option value="${id}">${esc(e.nome)}</option>`).join('');
+  $('#ads-body').innerHTML = ADS.campanhas.length ? ADS.campanhas.map(c => {
+    const ctr = c.impressoes ? ((c.cliques / c.impressoes) * 100).toFixed(1).replace('.', ',') + '%' : '—';
+    return `<tr>
+      <td>${okAdImg(c.imagem) ? `<img class="ad-thumb" src="${esc(c.imagem)}" alt="">` : '—'}</td>
+      <td><b>${esc(c.anunciante)}</b>${c.contato ? `<br><span class="hint" style="margin:0">${esc(c.contato)}</span>` : ''}</td>
+      <td>${esc(ADS.espacos[c.espaco]?.nome || c.espaco)}</td>
+      <td class="num">${fmtDay(c.inicio)} a ${fmtDay(c.fim)}</td>
+      <td><span class="badge b-${c.situacao}">${AD_STATUS[c.situacao]}</span></td>
+      <td class="num">${Number(c.impressoes).toLocaleString('pt-BR')}</td>
+      <td class="num">${Number(c.cliques).toLocaleString('pt-BR')} <span class="hint">(${ctr})</span></td>
+      <td class="num">
+        <button class="btn small" data-adedit="${c.id}">Editar</button>
+        <button class="btn small" data-adtoggle="${c.id}" data-ativo="${c.ativo}">${c.ativo ? 'Pausar' : 'Ativar'}</button>
+        <button class="btn small danger" data-addel="${c.id}">Excluir</button>
+      </td></tr>`;
+  }).join('') : '<tr><td colspan="8" class="hint">Nenhuma campanha cadastrada.</td></tr>';
+  $('#leads-body').innerHTML = ADS.pedidos.length ? ADS.pedidos.map(l => `<tr style="${l.status === 'novo' ? '' : 'opacity:.6'}">
+      <td class="num">${fmtDate(l.created_at)}</td>
+      <td><b>${esc(l.empresa)}</b><br><span class="hint" style="margin:0">${esc(l.nome)}</span></td>
+      <td><a href="mailto:${esc(l.email)}">${esc(l.email)}</a>${l.telefone ? `<br><a href="https://wa.me/55${esc(l.telefone)}" target="_blank" rel="noopener">${esc(l.telefone)}</a>` : ''}</td>
+      <td>${esc(ADS.espacos[l.espaco]?.nome || 'Não definido')}</td>
+      <td style="max-width:320px;white-space:pre-wrap">${esc(l.mensagem || '—')}</td>
+      <td class="num">
+        <button class="btn small" data-leadst="${l.id}" data-st="${l.status === 'novo' ? 'atendido' : 'novo'}">${l.status === 'novo' ? 'Marcar atendido' : 'Reabrir'}</button>
+        <button class="btn small" data-leadnew="${l.id}">Criar campanha</button>
+        <button class="btn small danger" data-leaddel="${l.id}">Excluir</button>
+      </td></tr>`).join('') : '<tr><td colspan="6" class="hint">Nenhum pedido recebido.</td></tr>';
+}
+
+let editingAd = null;
+function updateAdForm() {
+  const f = $('#ad-form');
+  const e = ADS.espacos[f.espaco.value] || {};
+  $('#ad-size-desk').textContent = e.tamanho ? `— recomendado ${e.tamanho} px (JPG, PNG ou WEBP até 3 MB)` : '';
+  $('#ad-size-mob').textContent = e.mobile ? `— recomendado ${e.mobile} px` : '';
+  $('#ad-mobile-field').classList.toggle('hidden', !e.mobile);
+  $('#ad-prev').src = okAdImg(f.imagem.value) ? f.imagem.value : '';
+  $('#ad-prev-m').src = okAdImg(f.imagem_mobile.value) ? f.imagem_mobile.value : '';
+}
+
+function openAd(c = null, preset = {}) {
+  const f = $('#ad-form');
+  f.reset();
+  editingAd = c ? c.id : null;
+  $('#ad-title').textContent = c ? `Editar campanha — ${c.anunciante}` : 'Nova campanha';
+  const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const v = c ? { ...c, inicio: isoDay(c.inicio), fim: isoDay(c.fim) } : { inicio: hoje, ativo: 1, ...preset };
+  for (const k of ['anunciante', 'contato', 'espaco', 'link', 'imagem', 'imagem_mobile', 'texto_alt', 'observacoes', 'inicio', 'fim']) {
+    if (v[k] != null) f[k].value = v[k];
+  }
+  f.ativo.checked = Boolean(v.ativo);
+  $('#ad-msg').innerHTML = '';
+  updateAdForm();
+  $('#ad-dlg').showModal();
+}
+
+$('#ad-new').addEventListener('click', () => openAd());
+$('#ad-form').espaco.addEventListener('change', updateAdForm);
+$('#ad-form').imagem.addEventListener('input', updateAdForm);
+$('#ad-form').imagem_mobile.addEventListener('input', updateAdForm);
+$('#ad-dlg').addEventListener('click', e => { if (e.target.closest('[data-close]')) $('#ad-dlg').close(); });
+
+// Envio da arte do banner (arquivo binário, mesmo validador das fotos dos anúncios)
+let uploadTarget = null;
+$('#ad-form').addEventListener('click', e => {
+  const b = e.target.closest('[data-upload]');
+  if (!b) return;
+  uploadTarget = b.dataset.upload;
+  $('#ad-file').value = '';
+  $('#ad-file').click();
+});
+$('#ad-file').addEventListener('change', async () => {
+  const file = $('#ad-file').files[0];
+  if (!file || !uploadTarget) return;
+  if (file.size > 3 * 1024 * 1024) return flash($('#ad-msg'), 'A imagem pode ter no máximo 3 MB.', false);
+  try {
+    const res = await fetch('/api/admin/publicidade/upload', { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'Falha no envio.');
+    $('#ad-form')[uploadTarget].value = d.url;
+    updateAdForm();
+  } catch (err) { flash($('#ad-msg'), err.message, false); }
+});
+
+$('#ad-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  const body = Object.fromEntries(new FormData(f));
+  body.ativo = f.ativo.checked;
+  try {
+    await api(editingAd ? `/api/admin/publicidade/${editingAd}` : '/api/admin/publicidade', { method: editingAd ? 'PUT' : 'POST', body });
+    $('#ad-dlg').close();
+    await loadAds();
+    globalMsg('Campanha salva.');
+  } catch (err) { flash($('#ad-msg'), err.message, false); }
+});
+
+$('[data-body="ads"]').addEventListener('click', async e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const d = b.dataset;
+  try {
+    if (d.adedit) return openAd(ADS.campanhas.find(c => c.id === Number(d.adedit)));
+    if (d.leadnew) {
+      const l = ADS.pedidos.find(x => x.id === Number(d.leadnew));
+      return openAd(null, { anunciante: l.empresa, contato: [l.email, l.telefone].filter(Boolean).join(' · '), espaco: l.espaco || undefined });
+    }
+    if (d.adtoggle) await api(`/api/admin/publicidade/${d.adtoggle}`, { method: 'PATCH', body: { ativo: d.ativo !== '1' } });
+    else if (d.addel) {
+      if (!confirm('Excluir esta campanha? As estatísticas dela também serão apagadas.')) return;
+      await api(`/api/admin/publicidade/${d.addel}`, { method: 'DELETE' });
+    } else if (d.leadst) await api(`/api/admin/pedidos-publicidade/${d.leadst}`, { method: 'PATCH', body: { status: d.st } });
+    else if (d.leaddel) {
+      if (!confirm('Excluir este pedido?')) return;
+      await api(`/api/admin/pedidos-publicidade/${d.leaddel}`, { method: 'DELETE' });
+    } else return;
+    await loadAds();
   } catch (err) { globalMsg(err.message, false); }
 });
 </script>

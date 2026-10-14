@@ -288,6 +288,12 @@
     } else {
       $('#grid').innerHTML = pageItems.map(cardHtml).join('');
     }
+    // Espaço de publicidade no meio da lista (depois da 8ª oferta da página)
+    const cards = $('#grid').querySelectorAll('.card');
+    if (cards.length > 8) {
+      cards[7].insertAdjacentHTML('afterend', '<div class="ad-slot ad-wide ad-in-grid" data-espaco="meio" hidden></div>');
+      window.GPAds?.fill($('#grid'));
+    }
     renderPagination(pages);
   }
 

@@ -2,6 +2,7 @@
 const express = require('express');
 const users = require('../users');
 const lojas = require('../lojas');
+const cadastro = require('../cadastro');
 const { createLimiter } = require('../ratelimit');
 
 const router = express.Router();
@@ -13,7 +14,13 @@ const sendError = (res, err) => res.status(err.status || 400).json({ error: err.
 
 // Informa ao site como estão os cadastros (para mostrar "aguardando aprovação" ou "fechado").
 router.get('/api/conta/cadastro-info', (req, res) => {
-  res.json({ consumidor: users.signupMode('consumidor'), empresa: users.signupMode('empresa') });
+  res.json({
+    consumidor: users.signupMode('consumidor'),
+    empresa: users.signupMode('empresa'),
+    ufs: cadastro.UFS,
+    ramos: cadastro.RAMOS,
+    idade_minima: cadastro.IDADE_MINIMA,
+  });
 });
 
 router.post('/api/conta/cadastro', (req, res) => {

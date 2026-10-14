@@ -134,6 +134,21 @@ if (!offerColumns.includes('loja_id')) {
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_offers_loja ON offers (loja_id)');
 
+// Dados cadastrais completos de pessoas e empresas
+const USER_EXTRA_COLUMNS = [
+  'cpf', 'data_nascimento', 'telefone',
+  'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf',
+  'razao_social', 'inscricao_estadual', 'telefone_empresa', 'ramo', 'site_empresa',
+  'emp_cep', 'emp_logradouro', 'emp_numero', 'emp_complemento', 'emp_bairro', 'emp_cidade', 'emp_uf',
+  'aceite_termos_em',
+];
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+for (const col of USER_EXTRA_COLUMNS) {
+  if (!userColumns.includes(col)) db.exec(`ALTER TABLE users ADD COLUMN ${col} TEXT`);
+}
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cpf ON users (cpf) WHERE cpf IS NOT NULL');
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cnpj ON users (cnpj) WHERE cnpj IS NOT NULL');
+
 const all = (sql, ...params) => db.prepare(sql).all(...params);
 const get = (sql, ...params) => db.prepare(sql).get(...params);
 const run = (sql, ...params) => db.prepare(sql).run(...params);

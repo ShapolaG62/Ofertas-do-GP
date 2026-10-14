@@ -39,6 +39,7 @@ app.use(contaRoutes);
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));
+app.get('/privacidade', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'privacidade.html')));
 app.get('/loja/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'loja.html')));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));
 app.get('*', (req, res) => {

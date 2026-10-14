@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css">
+<link rel="stylesheet" href="/css/site.css?v=20261014">
 </head>
 <body>
 <header class="site-header">
@@ -46,22 +46,30 @@
     </section>
 
     <!-- Cadastro -->
-    <section id="view-cadastro" class="narrow" hidden>
+    <section id="view-cadastro" class="wide-form" hidden>
       <div class="panel-card">
         <h1>Criar conta</h1>
         <p class="muted" id="signup-note">Escolha o tipo de conta.</p>
-        <form class="form" id="form-cadastro">
+        <form class="form" id="form-cadastro" novalidate>
           <div class="type-choice" role="radiogroup" aria-label="Tipo de conta">
             <label><input type="radio" name="tipo" value="consumidor" checked><strong>Consumidor</strong><span>Acompanhe as ofertas com desconto.</span></label>
             <label><input type="radio" name="tipo" value="empresa"><strong>Empresa</strong><span>Veja as ofertas e crie sua loja com seus produtos em promoção.</span></label>
           </div>
-          <label class="field">Seu nome <input name="nome" autocomplete="name" maxlength="80" required></label>
-          <div class="form-row" data-empresa hidden>
-            <label class="field">Nome da empresa <input name="empresa_nome" maxlength="80"></label>
-            <label class="field">CNPJ <small>(opcional)</small><input name="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
-          </div>
-          <label class="field">E-mail <input type="email" name="email" autocomplete="email" maxlength="120" required></label>
-          <label class="field">Senha <small>mínimo 8 caracteres</small><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
+
+          <div data-fields="pessoa" data-mode="cadastro"></div>
+          <div data-fields="empresa" data-mode="cadastro" data-empresa hidden></div>
+
+          <fieldset class="form-section">
+            <legend>Acesso à conta</legend>
+            <label class="field">E-mail <input type="email" name="email" autocomplete="email" maxlength="120" required></label>
+            <div class="form-row">
+              <label class="field">Senha <small>mínimo 8 caracteres</small><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
+              <label class="field">Confirme a senha <input type="password" name="senha_confirmacao" autocomplete="new-password" minlength="8" required></label>
+            </div>
+          </fieldset>
+
+          <label class="check-line"><input type="checkbox" name="aceite_termos" required>
+            <span>Li e aceito os <a href="/privacidade" target="_blank">Termos de uso e a Política de privacidade</a>, e confirmo que as informações são verdadeiras.</span></label>
           <div class="form-msg" hidden></div>
           <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
         </form>
@@ -151,9 +159,10 @@
           <div class="tab-pane" data-pane="perfil" hidden>
             <div class="panel-card">
               <h2>Meus dados</h2>
-              <form class="form" id="form-perfil" style="margin-top:12px">
-                <label class="field">Nome <input name="nome" maxlength="80" required></label>
-                <label class="field" data-empresa hidden>Nome da empresa <input name="empresa_nome" maxlength="80"></label>
+              <p class="muted">E-mail, CPF e CNPJ não podem ser alterados por aqui. Se precisar, fale com o administrador.</p>
+              <form class="form" id="form-perfil" novalidate>
+                <div data-fields="pessoa" data-mode="perfil"></div>
+                <div data-fields="empresa" data-mode="perfil" data-empresa hidden></div>
                 <label class="field">E-mail <input name="email" disabled></label>
                 <div class="form-msg" hidden></div>
                 <div><button class="btn btn-primary" type="submit">Salvar</button></div>
@@ -185,6 +194,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js" defer></script>
+<script src="/js/conta.js?v=20261014" defer></script>
 </body>
 </html>

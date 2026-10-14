@@ -339,7 +339,7 @@
       <div class="panel">
         <div class="row" style="margin-bottom:10px">
           <h2 style="flex:1">Usuários</h2>
-          <input type="text" id="u-q" placeholder="Nome, e-mail ou loja..." style="width:220px">
+          <input type="text" id="u-q" placeholder="Nome, e-mail, CPF, CNPJ ou loja..." style="width:220px">
           <select id="u-tipo" style="width:150px"><option value="">Todos os tipos</option><option value="consumidor">Consumidores</option><option value="empresa">Empresas</option></select>
           <select id="u-status" style="width:170px">
             <option value="">Todas as situações</option><option value="pending">Aguardando aprovação</option><option value="active">Ativos</option>
@@ -694,6 +694,30 @@ $('#users-body').addEventListener('click', async e => {
   } catch (err) { globalMsg(err.message, false); }
 });
 
+function fmtDoc(v, tipo) {
+  if (!v) return '—';
+  return tipo === 'cpf'
+    ? v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    : v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+}
+function fmtPhone(v) {
+  if (!v) return '—';
+  const n = v.slice(2);
+  const tel = `(${v.slice(0, 2)}) ${n.length > 8 ? `${n.slice(0, 5)}-${n.slice(5)}` : `${n.slice(0, 4)}-${n.slice(4)}`}`;
+  return `${esc(tel)} <a href="https://wa.me/55${esc(v)}" target="_blank" rel="noopener">WhatsApp</a>`;
+}
+function fmtBirth(v) {
+  if (!v) return '—';
+  const [y, m, d] = v.split('-');
+  const age = Math.floor((Date.now() - new Date(`${v}T00:00:00Z`)) / 31557600000);
+  return `${d}/${m}/${y} (${age} anos)`;
+}
+function fmtAddr(u, p) {
+  if (!u[`${p}logradouro`]) return '—';
+  const cep = String(u[`${p}cep`] || '').replace(/(\d{5})(\d{3})/, '$1-$2');
+  return esc(`${u[`${p}logradouro`]}, ${u[`${p}numero`]}${u[`${p}complemento`] ? ` — ${u[`${p}complemento`]}` : ''}, ${u[`${p}bairro`]}, ${u[`${p}cidade`]}/${u[`${p}uf`]} — CEP ${cep}`);
+}
+
 async function openUser(id) {
   const d = await api(`/api/admin/users/${id}`);
   const u = d.user, l = d.loja;
@@ -711,10 +735,23 @@ async function openUser(id) {
 
   $('#ud-body').innerHTML = `
     <dl class="kv">
-      <dt>Nome</dt><dd>${esc(u.nome)}</dd>
-      <dt>E-mail</dt><dd>${esc(u.email)}</dd>
       <dt>Tipo</dt><dd>${u.tipo === 'empresa' ? 'Empresa' : 'Consumidor'}</dd>
-      ${u.tipo === 'empresa' ? `<dt>Empresa</dt><dd>${esc(u.empresa_nome || '—')}</dd><dt>CNPJ</dt><dd>${esc(u.cnpj || '—')}</dd>` : ''}
+      <dt>Nome completo</dt><dd>${esc(u.nome)}</dd>
+      <dt>CPF</dt><dd>${fmtDoc(u.cpf, 'cpf')}</dd>
+      <dt>Nascimento</dt><dd>${fmtBirth(u.data_nascimento)}</dd>
+      <dt>E-mail</dt><dd>${esc(u.email)}</dd>
+      <dt>Celular</dt><dd>${fmtPhone(u.telefone)}</dd>
+      <dt>Endereço</dt><dd>${fmtAddr(u, '')}</dd>
+      ${u.tipo === 'empresa' ? `
+      <dt>Razão social</dt><dd>${esc(u.razao_social || '—')}</dd>
+      <dt>Nome fantasia</dt><dd>${esc(u.empresa_nome || '—')}</dd>
+      <dt>CNPJ</dt><dd>${fmtDoc(u.cnpj, 'cnpj')}</dd>
+      <dt>Inscrição estadual</dt><dd>${esc(u.inscricao_estadual || '—')}</dd>
+      <dt>Telefone da empresa</dt><dd>${fmtPhone(u.telefone_empresa)}</dd>
+      <dt>Ramo</dt><dd>${esc(u.ramo || '—')}</dd>
+      <dt>Site</dt><dd>${u.site_empresa ? `<a href="${esc(u.site_empresa)}" target="_blank" rel="noopener nofollow">${esc(u.site_empresa)}</a>` : '—'}</dd>
+      <dt>Endereço da empresa</dt><dd>${fmtAddr(u, 'emp_')}</dd>` : ''}
+      <dt>Aceite dos termos</dt><dd>${fmtDate(u.aceite_termos_em)}</dd>
       <dt>Situação</dt><dd><span class="badge b-${u.status}">${esc(U_STATUS[u.status])}</span>
         ${u.suspenso_ate ? ` até ${fmtDate(u.suspenso_ate)}` : ''}${u.status_motivo ? ` — ${esc(u.status_motivo)}` : ''}
         ${u.bloqueio_publicacao ? ' <span class="tag">impedido de publicar</span>' : ''}</dd>

@@ -4,6 +4,12 @@ const crypto = require('crypto');
 const db = require('./db');
 const settings = require('./settings');
 const { hashPassword, verifyPassword, tokenHash, parseCookies, cookieFlags } = require('./auth');
+const cadastro = require('./cadastro');
+
+// Campos cadastrais que o próprio usuário vê e (exceto documentos e e-mail) pode editar.
+const PESSOA_FIELDS = ['nome', 'data_nascimento', 'telefone', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf'];
+const EMPRESA_FIELDS = ['razao_social', 'empresa_nome', 'inscricao_estadual', 'telefone_empresa', 'ramo', 'site_empresa',
+  'emp_cep', 'emp_logradouro', 'emp_numero', 'emp_complemento', 'emp_bairro', 'emp_cidade', 'emp_uf'];
 
 const COOKIE = 'gp_user';
 const SESSION_DAYS = 30;
@@ -17,18 +23,6 @@ const ACTIVE_SQL = alias => `(${alias}.status = 'active' OR (${alias}.status = '
 const normalizeEmail = e => String(e || '').trim().toLowerCase();
 const fmtDate = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '');
 
-function validCnpj(raw) {
-  const c = String(raw || '').replace(/\D/g, '');
-  if (c.length !== 14 || /^(\d)\1+$/.test(c)) return false;
-  const calc = len => {
-    let sum = 0, pos = len - 7;
-    for (let i = len; i >= 1; i--) { sum += Number(c[len - i]) * pos--; if (pos < 2) pos = 9; }
-    const r = sum % 11;
-    return r < 2 ? 0 : 11 - r;
-  };
-  return calc(12) === Number(c[12]) && calc(13) === Number(c[13]);
-}
-
 function signupMode(tipo) {
   const mode = settings.get(`signup_${tipo}`);
   return SIGNUP_MODES.includes(mode) ? mode : 'aprovacao';
@@ -37,11 +31,16 @@ function signupMode(tipo) {
 // Formato enviado ao próprio usuário (sem hash de senha).
 function publicUser(u) {
   if (!u) return null;
-  return {
-    id: u.id, tipo: u.tipo, nome: u.nome, email: u.email, empresa_nome: u.empresa_nome, cnpj: u.cnpj,
+  const out = {
+    id: u.id, tipo: u.tipo, email: u.email, cpf: u.cpf, cnpj: u.cnpj,
     status: u.status, bloqueio_publicacao: Boolean(u.bloqueio_publicacao), created_at: u.created_at,
   };
+  for (const k of [...PESSOA_FIELDS, ...(u.tipo === 'empresa' ? EMPRESA_FIELDS : [])]) out[k] = u[k] ?? null;
+  return out;
 }
+
+// e-mails, CPFs e CNPJs bloqueados pelo administrador ficam na mesma tabela ("cpf:...", "cnpj:...").
+const isBlocked = key => Boolean(db.get('SELECT 1 FROM blocked_emails WHERE email = ?', key));
 
 function register(body) {
   const tipo = String(body.tipo || '');
@@ -49,34 +48,28 @@ function register(body) {
   const mode = signupMode(tipo);
   if (mode === 'fechado') throw new Error(`Os cadastros de ${tipo === 'empresa' ? 'empresas' : 'consumidores'} estão fechados no momento.`);
 
-  const nome = String(body.nome || '').trim().replace(/\s+/g, ' ');
   const email = normalizeEmail(body.email);
   const senha = String(body.senha || '');
-  if (nome.length < 2 || nome.length > 80) throw new Error('Informe seu nome (2 a 80 caracteres).');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) throw new Error('Informe um e-mail válido.');
   if (senha.length < MIN_PASSWORD || senha.length > 200) throw new Error(`A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.`);
-
-  let empresaNome = null, cnpj = null;
-  if (tipo === 'empresa') {
-    empresaNome = String(body.empresa_nome || '').trim().replace(/\s+/g, ' ');
-    if (empresaNome.length < 2 || empresaNome.length > 80) throw new Error('Informe o nome da empresa.');
-    const rawCnpj = String(body.cnpj || '').replace(/\D/g, '');
-    if (rawCnpj) {
-      if (!validCnpj(rawCnpj)) throw new Error('CNPJ inválido.');
-      cnpj = rawCnpj;
-    }
+  if (body.senha_confirmacao !== undefined && body.senha_confirmacao !== senha) throw new Error('As senhas não conferem.');
+  if (!(body.aceite_termos === true || body.aceite_termos === 'on' || body.aceite_termos === '1')) {
+    throw new Error('É preciso aceitar os Termos de uso e a Política de privacidade.');
   }
 
-  if (db.get('SELECT 1 FROM blocked_emails WHERE email = ?', email)) {
-    throw new Error('Este e-mail não pode ser cadastrado.');
+  const dados = { ...cadastro.dadosPessoa(body), ...(tipo === 'empresa' ? cadastro.dadosEmpresa(body) : {}) };
+
+  if (isBlocked(email) || isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) {
+    throw new Error('Não é possível criar uma conta com estes dados. Fale com o administrador.');
   }
   if (db.get('SELECT 1 FROM users WHERE email = ?', email)) throw new Error('Já existe uma conta com este e-mail.');
+  if (db.get('SELECT 1 FROM users WHERE cpf = ?', dados.cpf)) throw new Error('Já existe uma conta com este CPF.');
+  if (dados.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ?', dados.cnpj)) throw new Error('Já existe uma conta com este CNPJ.');
 
   const status = mode === 'aberto' ? 'active' : 'pending';
-  const res = db.run(
-    `INSERT INTO users (tipo, nome, email, senha_hash, empresa_nome, cnpj, status) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    tipo, nome, email, hashPassword(senha), empresaNome, cnpj, status
-  );
+  const cols = ['tipo', 'email', 'senha_hash', 'status', 'aceite_termos_em', ...Object.keys(dados)];
+  const vals = [tipo, email, hashPassword(senha), status, new Date().toISOString().replace('T', ' ').slice(0, 19), ...Object.values(dados)];
+  const res = db.run(`INSERT INTO users (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`, ...vals);
   return getById(Number(res.lastInsertRowid));
 }
 
@@ -141,15 +134,14 @@ function requireUser(req, res, next) {
   next();
 }
 
+// Atualiza os dados cadastrais (CPF, CNPJ e e-mail não podem ser trocados pelo próprio usuário).
 function updateProfile(u, body) {
-  const nome = String(body.nome ?? u.nome).trim().replace(/\s+/g, ' ');
-  if (nome.length < 2 || nome.length > 80) throw new Error('Nome inválido.');
-  let empresaNome = u.empresa_nome;
-  if (u.tipo === 'empresa' && body.empresa_nome !== undefined) {
-    empresaNome = String(body.empresa_nome).trim().replace(/\s+/g, ' ');
-    if (empresaNome.length < 2 || empresaNome.length > 80) throw new Error('Nome da empresa inválido.');
-  }
-  db.run('UPDATE users SET nome = ?, empresa_nome = ? WHERE id = ?', nome, empresaNome, u.id);
+  const dados = {
+    ...cadastro.dadosPessoa(body, { exigirDocumento: false }),
+    ...(u.tipo === 'empresa' ? cadastro.dadosEmpresa(body, { exigirDocumento: false }) : {}),
+  };
+  const cols = Object.keys(dados);
+  db.run(`UPDATE users SET ${cols.map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(dados), u.id);
 }
 
 function changePassword(u, atual, nova) {
@@ -220,9 +212,12 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
     }
     case 'excluir':
       if (bloquearEmail) {
-        db.run('INSERT OR REPLACE INTO blocked_emails (email, motivo) VALUES (?, ?)', u.email, motivo || null);
+        // Bloqueia e-mail, CPF e CNPJ para a pessoa não voltar com outro e-mail.
+        for (const key of [u.email, u.cpf && `cpf:${u.cpf}`, u.cnpj && `cnpj:${u.cnpj}`].filter(Boolean)) {
+          db.run('INSERT OR REPLACE INTO blocked_emails (email, motivo) VALUES (?, ?)', key, motivo || null);
+        }
       }
-      logAction(u, 'perfil_excluido', `${motivo || ''}${bloquearEmail ? ' (e-mail bloqueado)' : ''}`.trim());
+      logAction(u, 'perfil_excluido', `${motivo || ''}${bloquearEmail ? ' (e-mail e documentos bloqueados)' : ''}`.trim());
       db.run('DELETE FROM users WHERE id = ?', id);
       break;
     default:
@@ -234,7 +229,12 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
 function listForAdmin({ q = '', tipo = '', status = '', page = 1, perPage = 30 }) {
   const where = [];
   const params = [];
-  if (q) { where.push('(u.nome LIKE ? OR u.email LIKE ? OR u.empresa_nome LIKE ? OR l.nome LIKE ?)'); params.push(...Array(4).fill(`%${q}%`)); }
+  if (q) {
+    const doc = cadastro.digits(q);
+    where.push('(u.nome LIKE ? OR u.email LIKE ? OR u.empresa_nome LIKE ? OR u.razao_social LIKE ? OR l.nome LIKE ?'
+      + (doc.length >= 5 ? ' OR u.cpf LIKE ? OR u.cnpj LIKE ?' : '') + ')');
+    params.push(...Array(5).fill(`%${q}%`), ...(doc.length >= 5 ? [`%${doc}%`, `%${doc}%`] : []));
+  }
   if (TIPOS.includes(tipo)) { where.push('u.tipo = ?'); params.push(tipo); }
   if (status) { where.push('u.status = ?'); params.push(status); }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

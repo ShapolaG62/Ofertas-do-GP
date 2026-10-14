@@ -6,7 +6,123 @@
   const brl = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtDate = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
 
-  let ME = null, LOJA = null;
+  let ME = null, LOJA = null, INFO = { ufs: [], ramos: [], idade_minima: 18 };
+
+  // ── Campos cadastrais (usados no cadastro e em "Meus dados") ───────────────
+  const field = (label, input, extra = '') => `<label class="field"><span>${label}${extra}</span>${input}</label>`;
+  const inp = (name, attrs = '') => `<input name="${name}" ${attrs}>`;
+
+  function addressFields(prefix, title) {
+    const p = n => `${prefix}${n}`;
+    return `<fieldset class="form-section" data-address="${prefix}">
+      <legend>${title}</legend>
+      <div class="form-row-addr">
+        ${field('CEP', inp(p('cep'), 'inputmode="numeric" data-mask="cep" maxlength="9" placeholder="00000-000" autocomplete="postal-code"'))}
+        ${field('Rua / avenida', inp(p('logradouro'), 'maxlength="120" autocomplete="address-line1"'))}
+        ${field('Número', inp(p('numero'), 'maxlength="10"'))}
+      </div>
+      <div class="form-row">
+        ${field('Complemento', inp(p('complemento'), 'maxlength="60" placeholder="Apto, sala, bloco..."'), ' <span class="hint-inline">(opcional)</span>')}
+        ${field('Bairro', inp(p('bairro'), 'maxlength="60"'))}
+      </div>
+      <div class="form-row">
+        ${field('Cidade', inp(p('cidade'), 'maxlength="60" autocomplete="address-level2"'))}
+        ${field('Estado (UF)', `<select name="${p('uf')}"><option value="">Selecione</option>${INFO.ufs.map(u => `<option>${u}</option>`).join('')}</select>`)}
+      </div>
+    </fieldset>`;
+  }
+
+  function pessoaFields(mode) {
+    const cadastro = mode === 'cadastro';
+    return `<fieldset class="form-section">
+      <legend>${cadastro ? 'Seus dados' : 'Dados pessoais'}</legend>
+      ${field('Nome completo', inp('nome', 'maxlength="100" autocomplete="name"'))}
+      <div class="form-row-3">
+        ${field('CPF', inp('cpf', `inputmode="numeric" data-mask="cpf" maxlength="14" placeholder="000.000.000-00" ${cadastro ? '' : 'disabled'}`))}
+        ${field('Data de nascimento', inp('data_nascimento', 'type="date" autocomplete="bday"'))}
+        ${field('Celular / WhatsApp', inp('telefone', 'inputmode="tel" data-mask="tel" maxlength="15" placeholder="(11) 90000-0000" autocomplete="tel"'))}
+      </div>
+    </fieldset>
+    ${addressFields('', cadastro ? 'Seu endereço' : 'Endereço')}`;
+  }
+
+  function empresaFields(mode) {
+    const cadastro = mode === 'cadastro';
+    return `<fieldset class="form-section">
+      <legend>Dados da empresa</legend>
+      ${field('Razão social', inp('razao_social', 'maxlength="150" autocomplete="organization"'))}
+      <div class="form-row">
+        ${field('Nome fantasia', inp('empresa_nome', 'maxlength="80"'))}
+        ${field('CNPJ', inp('cnpj', `inputmode="numeric" data-mask="cnpj" maxlength="18" placeholder="00.000.000/0000-00" ${cadastro ? '' : 'disabled'}`))}
+      </div>
+      <div class="form-row">
+        ${field('Inscrição estadual', inp('inscricao_estadual', 'maxlength="20" placeholder="Isento, se não tiver"'), ' <span class="hint-inline">(opcional)</span>')}
+        ${field('Telefone da empresa', inp('telefone_empresa', 'inputmode="tel" data-mask="tel" maxlength="15" placeholder="(11) 3000-0000"'))}
+      </div>
+      <div class="form-row">
+        ${field('Ramo de atividade', `<select name="ramo"><option value="">Selecione</option>${INFO.ramos.map(r => `<option>${esc(r)}</option>`).join('')}</select>`)}
+        ${field('Site da empresa', inp('site_empresa', 'type="url" maxlength="200" placeholder="https://"'), ' <span class="hint-inline">(opcional)</span>')}
+      </div>
+      <label class="check-line"><input type="checkbox" name="mesmo_endereco" data-same-address> <span>O endereço da empresa é o mesmo informado acima</span></label>
+    </fieldset>
+    ${addressFields('emp_', 'Endereço da empresa')}`;
+  }
+
+  function renderFieldBlocks() {
+    document.querySelectorAll('[data-fields]').forEach(el => {
+      el.innerHTML = el.dataset.fields === 'pessoa' ? pessoaFields(el.dataset.mode) : empresaFields(el.dataset.mode);
+    });
+  }
+
+  // Máscaras de digitação
+  const MASKS = {
+    cpf: d => d.slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'),
+    cnpj: d => d.slice(0, 14).replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2'),
+    cep: d => d.slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'),
+    tel: d => {
+      d = d.slice(0, 11);
+      if (d.length <= 2) return d.length ? `(${d}` : '';
+      const ddd = `(${d.slice(0, 2)}) `, n = d.slice(2);
+      return ddd + (n.length > 8 ? `${n.slice(0, 5)}-${n.slice(5)}` : n.length > 4 ? `${n.slice(0, 4)}-${n.slice(4)}` : n);
+    },
+  };
+  const applyMask = el => { if (el?.dataset?.mask) el.value = MASKS[el.dataset.mask](el.value.replace(/\D/g, '')); };
+
+  // Busca o endereço pelo CEP (ViaCEP) e preenche rua, bairro, cidade e estado.
+  async function lookupCep(input) {
+    const cep = input.value.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    const box = input.closest('[data-address]');
+    const prefix = box.dataset.address;
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`).then(x => x.json());
+      if (r.erro) return toast('CEP não encontrado. Preencha o endereço manualmente.');
+      const set = (n, v) => { const el = box.querySelector(`[name="${prefix}${n}"]`); if (el && v && !el.value) el.value = v; };
+      set('logradouro', r.logradouro); set('bairro', r.bairro); set('cidade', r.localidade); set('uf', r.uf);
+      box.querySelector(`[name="${prefix}numero"]`)?.focus();
+    } catch { /* sem internet: o usuário preenche à mão */ }
+  }
+
+  document.addEventListener('input', e => {
+    if (e.target.dataset?.mask) {
+      applyMask(e.target);
+      if (e.target.dataset.mask === 'cep') lookupCep(e.target);
+    }
+  });
+  document.addEventListener('change', e => {
+    if (e.target.matches('[data-same-address]')) {
+      const form = e.target.form;
+      form.querySelector('[data-address="emp_"]').hidden = e.target.checked;
+    }
+  });
+
+  function fillFields(form, data) {
+    for (const el of form.elements) {
+      if (!el.name || !(el.name in data) || el.type === 'checkbox') continue;
+      el.value = data[el.name] ?? '';
+      applyMask(el);
+    }
+  }
 
   async function api(path, opts = {}) {
     const res = await fetch(path, {
@@ -53,7 +169,14 @@
     $('#logout').hidden = view !== 'conta';
   }
 
+  let fieldsReady = false;
   async function route() {
+    if (!fieldsReady) {
+      INFO = await api('/api/conta/cadastro-info').catch(() => INFO);
+      signupInfo = INFO;
+      renderFieldBlocks();
+      fieldsReady = true;
+    }
     const me = await api('/api/conta/me');
     ME = me.user; LOJA = me.loja;
     if (ME) return renderAccount();
@@ -79,7 +202,6 @@
   function updateSignupNote() {
     const tipo = $('#form-cadastro').tipo.value;
     $('#form-cadastro [data-empresa]').hidden = tipo !== 'empresa';
-    $('#form-cadastro').empresa_nome.required = tipo === 'empresa';
     const mode = signupInfo?.[tipo];
     const label = tipo === 'empresa' ? 'empresas' : 'consumidores';
     $('#signup-note').textContent = mode === 'fechado'
@@ -95,6 +217,7 @@
     const r = await api('/api/conta/cadastro', { method: 'POST', body: d });
     if (r.status === 'active') { location.hash = ''; return route(); }
     form.reset();
+    form.querySelector('[data-address="emp_"]').hidden = false;
     updateSignupNote();
     msg(form, 'Cadastro enviado! Assim que o administrador aprovar, você poderá entrar com seu e-mail e senha.', true);
   });
@@ -126,8 +249,8 @@
     if (LOJA) $('#hello-store').href = `/loja/${LOJA.slug}`;
 
     const fp = $('#form-perfil');
-    fp.nome.value = ME.nome; fp.email.value = ME.email;
-    if (empresa) fp.empresa_nome.value = ME.empresa_nome || '';
+    fillFields(fp, ME);
+    fp.email.value = ME.email;
 
     if (empresa) fillStore();
     openTab(currentTab);

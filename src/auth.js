@@ -59,7 +59,32 @@ function cookieFlags(req) {
   return `Path=/; HttpOnly; SameSite=Strict${secure ? '; Secure' : ''}`;
 }
 
+// Na Vercel o site roda em várias cópias, cada uma com seu banco temporário: uma sessão gravada no banco
+// não é reconhecida pelas outras. Lá a sessão do admin é um cookie assinado com uma chave derivada de
+// ADMIN_PASSWORD (igual em todas as cópias; trocar a variável derruba as sessões).
+let statelessKey;
+function sessionKey() {
+  if (!process.env.VERCEL || !process.env.ADMIN_PASSWORD) return null;
+  statelessKey ||= crypto.scryptSync(process.env.ADMIN_PASSWORD, 'ofertas-do-gp:sessao-admin', 32);
+  return statelessKey;
+}
+const sign = (key, data) => crypto.createHmac('sha256', key).update(data).digest('hex');
+
+function validStatelessToken(token, key) {
+  const [v, exp, sig] = String(token).split('.');
+  if (v !== 'v1' || !/^\d+$/.test(exp || '') || !/^[a-f0-9]{64}$/.test(sig || '')) return false;
+  if (Number(exp) < Date.now()) return false;
+  return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(sign(key, `v1.${exp}`), 'hex'));
+}
+
 function createSession(req, res) {
+  const key = sessionKey();
+  if (key) {
+    const exp = Date.now() + SESSION_DAYS * 86400000;
+    const token = `v1.${exp}.${sign(key, `v1.${exp}`)}`;
+    res.setHeader('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
+    return;
+  }
   const token = crypto.randomBytes(32).toString('hex');
   db.run(
     `INSERT INTO sessions (token_hash, expires_at) VALUES (?, datetime('now', ?))`,
@@ -77,6 +102,8 @@ function destroySession(req, res) {
 function isLoggedIn(req) {
   const token = parseCookies(req.headers.cookie)[COOKIE];
   if (!token) return false;
+  const key = sessionKey();
+  if (key) return validStatelessToken(token, key);
   return Boolean(db.get(
     `SELECT 1 FROM sessions WHERE token_hash = ? AND expires_at > datetime('now')`, tokenHash(token)
   ));

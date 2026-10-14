@@ -189,6 +189,8 @@
   async function route() {
     const me = await api('/api/conta/me');
     ME = me.user; LOJA = me.loja;
+    // Administrador logado vai para o painel (ou para a página que pediu).
+    if (!ME && me.admin) return goToSite('/admin');
     if (!ME) return showLogin();
     if (ME.status === 'onboarding') return showProfileChoice();
     if (ME.status === 'pending') {
@@ -219,9 +221,9 @@
   });
 
   // Depois de entrar, uma conta liberada vai direto para as ofertas (ou para a página que tentou abrir).
-  function goToSite() {
+  function goToSite(padrao = '/') {
     const voltar = new URLSearchParams(location.search).get('voltar');
-    location.href = voltar && /^\/(?!\/)/.test(voltar) ? voltar : '/';
+    location.href = voltar && /^\/(?!\/)/.test(voltar) ? voltar : padrao;
   }
 
   function setAuthTab(tab) {
@@ -235,7 +237,8 @@
   $$('[data-auth]').forEach(b => b.addEventListener('click', () => setAuthTab(b.dataset.auth)));
 
   bind('#form-entrar', async (form, d) => {
-    await api('/api/conta/entrar', { method: 'POST', body: d });
+    const r = await api('/api/conta/entrar', { method: 'POST', body: d });
+    if (r.admin) return goToSite('/admin');
     location.hash = '';
     const me = await api('/api/conta/me');
     if (me.user?.status === 'active') return goToSite();
@@ -279,7 +282,7 @@
   bind('#form-dados', async (form, d) => {
     const r = await api('/api/conta/perfil-inicial', { method: 'POST', body: { ...d, tipo: chosenTipo } });
     toast(r.status === 'active' ? 'Cadastro concluído!' : 'Cadastro enviado para aprovação.');
-    if (r.status === 'active') return setTimeout(goToSite, 600);
+    if (r.status === 'active') return setTimeout(() => goToSite(), 600);
     route();
   });
 

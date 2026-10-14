@@ -571,11 +571,13 @@
   }).catch(() => {});
   $('#logout-site').addEventListener('click', async () => {
     await fetch('/api/conta/sair', { method: 'POST' });
+    await fetch('/api/admin/logout', { method: 'POST' });
     location.href = '/conta';
   });
   fetch('/api/admin/session').then(r => r.json()).then(s => {
     isAdmin = Boolean(s.loggedIn);
     document.body.classList.toggle('is-admin', isAdmin);
+    if (isAdmin) $('#logout-site').hidden = false;
   }).catch(() => {});
 
   loadOffers();

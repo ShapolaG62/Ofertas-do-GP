@@ -1,6 +1,7 @@
 // API das contas de usuários do site (consumidor e empresa), login com Google, anúncios e lojas públicas.
 const express = require('express');
 const users = require('../users');
+const auth = require('../auth');
 const lojas = require('../lojas');
 const anuncios = require('../anuncios');
 const google = require('../google');
@@ -66,6 +67,23 @@ router.post('/api/conta/cadastro', (req, res) => {
 router.post('/api/conta/entrar', (req, res) => {
   const wait = loginLimiter.hit(req.ip);
   if (wait) return res.status(429).json({ error: `Muitas tentativas. Tente de novo em ${wait} min.` });
+  // Usuário "admin": entra com a senha do painel (a mesma já configurada) e recebe a sessão de administrador.
+  if (String(req.body?.email || '').trim().toLowerCase() === 'admin') {
+    const locked = auth.checkRateLimit(req.ip);
+    if (locked) return res.status(429).json({ error: `Muitas tentativas. Tente de novo em ${locked} min.` });
+    const stored = settings.get('admin_password_hash');
+    if (!stored) {
+      return res.status(400).json({ error: 'A senha do administrador ainda não foi criada. Abra /admin no computador do servidor para criá-la.' });
+    }
+    if (!auth.verifyPassword(String(req.body?.senha || ''), stored)) {
+      auth.registerFailure(req.ip);
+      return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
+    }
+    auth.clearFailures(req.ip);
+    loginLimiter.reset(req.ip);
+    auth.createSession(req, res);
+    return res.json({ ok: true, admin: true });
+  }
   try {
     const u = users.login(req.body?.email, req.body?.senha);
     loginLimiter.reset(req.ip);
@@ -82,7 +100,7 @@ router.post('/api/conta/sair', (req, res) => {
 // Sessão atual (não exige login: responde user null quando ninguém está logado).
 router.get('/api/conta/me', (req, res) => {
   const u = users.currentUser(req);
-  if (!u) return res.json({ user: null });
+  if (!u) return res.json({ user: null, admin: auth.isLoggedIn(req) });
   res.json({ user: users.publicUser(u), loja: u.tipo === 'empresa' ? lojas.getByUser(u.id) : null });
 });
 

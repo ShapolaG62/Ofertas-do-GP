@@ -34,6 +34,15 @@ app.use(express.json({ limit: '100kb' }));
 // Login obrigatório para ver as ofertas (configurável no painel).
 app.use(access.guard);
 
+// O painel só abre para quem entrou como "admin". Exceção: antes da senha existir, /admin mostra a criação de senha
+// (aceita apenas no próprio computador do servidor).
+app.use((req, res, next) => {
+  if (req.method === 'GET' && /^\/admin(\.html)?\/?$/.test(req.path) && auth.hasPassword() && !auth.isLoggedIn(req)) {
+    return res.redirect('/conta?voltar=/admin');
+  }
+  next();
+});
+
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.
 app.use(express.static(PUBLIC_DIR, { index: 'index.html', extensions: ['html'] }));
 

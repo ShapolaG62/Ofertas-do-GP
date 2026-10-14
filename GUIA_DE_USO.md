@@ -102,3 +102,7 @@ Suspensão, banimento e loja oculta tiram os produtos do site na hora. O motivo 
 ### Login obrigatório
 
 Por padrão, **a primeira página do site é o login**: quem não está logado é levado para `/conta`, e só contas liberadas (e o administrador) veem as ofertas. Para abrir o site ao público, mude em **Painel → Usuários → "Quem pode ver as ofertas"**. A tela de login sempre mostra o botão **Entrar com Google**; enquanto ele não for configurado no painel, o botão avisa que ainda não está ativo.
+
+### Entrar como administrador
+
+Na tela de login do site (`/conta`), digite **`admin`** no campo de e-mail e a **senha do painel**. Você vai direto para o painel. O painel (`/admin`) e o botão "Painel" só aparecem para quem entrou como admin; qualquer outra pessoa que tente abrir `/admin` é levada para o login. Para trocar a senha: Painel → Conta.

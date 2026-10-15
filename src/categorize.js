@@ -9,7 +9,7 @@ const RULES = [
   ['esporte', /tapete (de )?yoga|colch[ãa]o infl[áa]vel|cooler t[ée]rmico|caixa t[ée]rmica|esteira (el[ée]trica|ergom|de corrida|dobr[áa]vel)|bicicleta ergom/],
   ['ferramentas', /lavadora de alta press[ãa]o|lavadora (de |para )?jardim|lavajato|caixa de ferramentas|maleta de ferramentas|kit de ferramentas|jogo de (chaves|soquetes|brocas|ferramentas)|cortador de grama|chuveiro el[ée]trico/],
   ['audio_tv', /suporte (articulado )?(para |de )?(tv|televis)|l[âa]mpada (inteligente|smart|wi-?fi)|interruptor (inteligente|smart|wi-?fi)|tomada (inteligente|smart|wi-?fi)|fechadura (digital|eletr[ôo]nica|biom[ée]trica|inteligente)|c[âa]mera (de seguran[çc]a|ip\b|wi-?fi|de vigil)|sensor de presen[çc]a|controle remoto universal|echo (dot|show|pop)|\balexa\b|google (nest|home)|assistente virtual/],
-  ['informatica', /cabo (hdmi|displayport|vga|de rede)|suporte (articulado )?(para |de )?monitor|caixa de som (para )?(pc|computador)|microfone (usb|condensador|para (pc|computador))|adaptador (wi-?fi|usb|bluetooth)|pasta t[ée]rmica|fonte (atx|para pc|real|\d{3,4} ?w)|water ?cooler|cooler (para |do )?(processador|cpu|gabinete)|\bfan\b|\bcooler\b|gabinete (gamer|mid|full|atx|micro)/],
+  ['informatica', /cabo (hdmi|displayport|vga|de rede)|suporte (articulado )?(para |de )?monitor|caixa de som (para )?(pc|computador)|microfone (usb|condensador|para (pc|computador))|adaptador (wi-?fi|usb|bluetooth)|pasta t[ée]rmica|fonte (atx|para pc|real|\d{3,4} ?w)|fonte de alimenta[çc][ãa]o|\bfonte\b.{0,40}\b(atx|80 plus)\b|\bmini ?pc\b|water ?cooler|cooler (para |do )?(processador|cpu|gabinete)|\bfan\b|\bcooler\b|gabinete (gamer|mid|full|atx|micro)/],
   ['games', /cadeira gamer|volante (gamer|para (ps|xbox|pc))|dock (station )?(para )?(nintendo )?switch|(carregador|base|doca|esta[çc][ãa]o)\b.{0,50}\b(controles?|dualsense|joy-?cons?)\b|skin (para )?(console|controle|ps[45]|xbox)|jogo (de )?m[íi]dia f[íi]sica|jogos? (para |de )?(ps[45]|playstation|xbox|nintendo|switch)/],
   ['casa', /gabinete (de |para )?banheiro|cadeira (de escrit[óo]rio|ergon[ôo]mica|presidente|diretor)|cadeiras? (de )?jantar|mesa (de escrit[óo]rio|para escrit[óo]rio|escrit[óo]rio|de jantar|de centro|de cabeceira|para computador|gamer)|painel (para )?tv|rack (para )?tv|cama box|jogo de (len[çc]ol|cama|banho|toalhas|panelas)/],
   ['brinquedos', /carrinho de (beb[êe]|controle)|beb[êe] conforto|jogo de tabuleiro|piscina de bolinhas/],
@@ -29,7 +29,7 @@ const RULES = [
   // ── 6. Cozinha e eletroportáteis ──
   ['cozinha', /air ?fryer|fritadeira|micro-?ondas|liquidificador|batedeira|cafeteira|nespresso|dolce gusto|m[áa]quina de caf[ée]|chaleira|panela|frigideira|sanduicheira|\bgrill\b|torradeira|mixer|espremedor|aspirador|rob[ôo] aspirador|ferro de passar|vaporizador/],
   // ── 7. Casa, móveis e decoração ──
-  ['casa', /\bcama\b|colch[ãa]o|guarda.?roupa|c[ôo]moda|cabeceira|travesseiro|len[çc]ol|edredom|cobertor|manta|sof[áa]|poltrona|\brack\b|estante|escrivaninha|arm[áa]rio|banqueta|espelho|l[âa]mpada|fita led|lumin[áa]ria|lustre|pendente|abajur|cortina|tapete|quadro|almofada|toalha|organizador|cabide|prateleira|nicho/],
+  ['casa', /\bcama\b|colch[ãa]o|guarda.?roupa|c[ôo]moda|cabeceira|travesseiro|len[çc]ol|edredom|cobertor|\bmanta\b|sof[áa]|poltrona|\brack\b|\bestante|escrivaninha|arm[áa]rio|banqueta|espelho|l[âa]mpada|fita led|lumin[áa]ria|\blustre|\bpendente|abajur|cortina|tapete|quadro|almofada|toalha|organizador|cabide|prateleira|nicho/],
   // ── 8. Ferramentas, jardim e construção ──
   ['ferramentas', /furadeira|parafusadeira|martelete|serra|esmerilhadeira|politriz|chaves? (de fenda|de boca|catraca|de impacto|allen|torx)|alicate|martelo|trena|compressor|torneira|fechadura|refletor|escada|ro[çc]adeira|mangueira|ferramenta|n[íi]vel a laser|soprador/],
   // ── 9. Beleza e cuidados pessoais ──
@@ -44,7 +44,7 @@ const RULES = [
   ['brinquedos', /beb[êe]|cadeirinha|ber[çc]o|fralda|bab[áa] eletr[ôo]nica|mamadeira|chupeta|lego|brinquedo|boneca|quebra-?cabe[çc]a|triciclo|pel[úu]cia/],
   // ── 13. Automotivo e pets ──
   ['automotivo', /pneu|automotiv|multim[íi]dia|\bcarro\b|\bmotos?\b|capacete|para-?brisa|calota/],
-  ['pets', /ra[çc][ãa]o|\bpet\b|cachorro|\bc[ãa]es\b|\bgatos?\b|coleira/],
+  ['pets', /\bra[çc][ãa]o|\bpet\b|cachorro|\bc[ãa]es\b|\bgatos?\b|coleira/],
   // ── Outros ──
   ['limpeza', /sab[ãa]o|amaciante|detergente|desinfetante|papel higi[êe]nico|multiuso|alvejante/],
   ['alimentos', /caf[ée] (em|torrado|gr[ãa]os|sol[úu]vel)|c[áa]psula|chocolate|azeite|cerveja|vinho|energ[ée]tico|leite/],
@@ -58,7 +58,7 @@ const CATEGORIES = ['informatica', 'celulares', 'games', 'audio_tv', 'eletrodome
 const SUBCATEGORIES = {
   informatica: [
     ['Notebooks', /notebook|laptop|ultrabook|macbook|chromebook/],
-    ['Computadores', /computador|\bdesktop\b|\bpc gamer\b|all in one/],
+    ['Computadores', /computador|\bdesktop\b|\bpc gamer\b|\bmini ?pc\b|all in one/],
     ['Monitores', /monitor/],
     ['Componentes', /placa de v|\brtx\b|geforce|radeon|processador|mem[óo]ria ram|\bddr[345]\b|placa[ -]m[ãa]e|\bfonte\b|cooler|\bfan\b|gabinete|pasta t[ée]rmica/],
     ['Armazenamento', /\bssd\b|\bhd\b|nvme|disco r[íi]gido|pen ?drive|cart[ãa]o de mem|sandisk/],
@@ -128,12 +128,12 @@ const SUBCATEGORIES = {
   ],
   casa: [
     ['Camas e colchões', /\bcama\b|cama box|colch[ãa]o|cabeceira|ber[çc]o/],
-    ['Cama, mesa e banho', /len[çc]ol|edredom|cobertor|manta|travesseiro|toalha|jogo de (cama|banho)/],
+    ['Cama, mesa e banho', /len[çc]ol|edredom|cobertor|\bmanta\b|travesseiro|toalha|jogo de (cama|banho)/],
     ['Guarda-roupas e cômodas', /guarda.?roupa|c[ôo]moda|arm[áa]rio/],
     ['Sofás e poltronas', /sof[áa]|poltrona/],
-    ['Racks e estantes', /\brack\b|painel|estante|prateleira|nicho/],
+    ['Racks e estantes', /\brack\b|painel|\bestante|prateleira|nicho/],
     ['Mesas e cadeiras', /mesa|escrivaninha|cadeira|banqueta/],
-    ['Iluminação', /l[âa]mpada|fita led|lumin[áa]ria|lustre|pendente|abajur/],
+    ['Iluminação', /l[âa]mpada|fita led|lumin[áa]ria|\blustre|\bpendente|abajur/],
     ['Decoração', /tapete|cortina|quadro|almofada|espelho|vaso/],
     ['Banheiro', /banheiro/],
     ['Organização', /organizador|caixa organizadora|cabide/],
@@ -197,7 +197,7 @@ const SUBCATEGORIES = {
     ['Motos', /capacete|\bmotos?\b/],
   ],
   pets: [
-    ['Rações', /ra[çc][ãa]o/],
+    ['Rações', /\bra[çc][ãa]o/],
     ['Higiene e beleza', /areia|tapete higi|shampoo|col[ôo]nia|perfume|creme|condicionador|escova|sabonete/],
     ['Saúde', /antipulgas|pulga|carrapato|verm[íi]fugo|suplemento|vitamina|clorexidina|antibacteriano|antif[úu]ngico/],
     ['Camas e casinhas', /cama|casinha/],

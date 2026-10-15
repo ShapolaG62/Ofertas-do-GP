@@ -1,5 +1,6 @@
 // Mercado Livre — duas fontes:
-//  1) API oficial (se o App ID e a Chave secreta do Mercado Livre Developers estiverem no painel);
+//  1) API oficial (se o App ID e a Chave secreta do Mercado Livre Developers estiverem no painel):
+//     mais vendidos da categoria do termo, só os anúncios com preço riscado pelo próprio ML;
 //  2) leitura da busca pública (o ML costuma bloquear com "verificação de conta" quando detecta robô).
 const cheerio = require('cheerio');
 const { http, parseBRL } = require('../util');
@@ -31,24 +32,61 @@ async function getToken(s) {
   return tokenCache.token;
 }
 
-async function searchApi(query, s) {
-  const token = await getToken(s);
-  const res = await http.get(`${API}/sites/MLB/search`, {
-    params: { q: query, limit: 50 },
+async function apiGet(path, token, params) {
+  const res = await http.get(`${API}${path}`, {
+    params,
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     validateStatus: () => true,
   });
-  if (res.status !== 200) throw new Error(`busca recusada (${res.status}: ${res.data?.message || 'sem detalhes'})`);
-  return (res.data.results || [])
-    .filter(r => r.original_price && r.price && r.original_price > r.price)
-    .map(r => ({
-      store_product_id: r.id,
-      produto: r.title,
-      preco_atual: r.price,
-      preco_anterior: r.original_price,
-      imagem: (r.thumbnail || '').replace(/^http:/, 'https:').replace(/-I\.jpg$/, '-O.jpg'),
-      original_url: r.permalink,
-    }));
+  return res;
+}
+
+// Roda as tarefas com poucas requisições simultâneas, para não sobrecarregar a API.
+async function inBatches(list, size, fn) {
+  const out = [];
+  for (let i = 0; i < list.length; i += size) {
+    out.push(...await Promise.all(list.slice(i, i + size).map(fn)));
+  }
+  return out;
+}
+
+// A busca comum (/sites/MLB/search) é recusada para aplicativos (403). Caminho usado:
+// termo → categoria (domain_discovery) → mais vendidos da categoria (highlights) → anúncios de cada produto.
+// Entra só o anúncio mais barato que tenha preço anterior (riscado) informado pelo próprio Mercado Livre.
+async function searchApi(query, s) {
+  const token = await getToken(s);
+  const disc = await apiGet('/sites/MLB/domain_discovery/search', token, { q: query, limit: 2 });
+  if (disc.status !== 200) throw new Error(`categoria não encontrada (${disc.status})`);
+  const categorias = [...new Set((disc.data || []).map(d => d.category_id).filter(Boolean))];
+  if (!categorias.length) return [];
+
+  const produtos = [];
+  for (const cat of categorias) {
+    const h = await apiGet(`/highlights/MLB/category/${cat}`, token);
+    if (h.status !== 200) continue;
+    for (const c of h.data.content || []) if (c.type === 'PRODUCT' && !produtos.includes(c.id)) produtos.push(c.id);
+  }
+
+  const deals = await inBatches(produtos.slice(0, 40), 5, async productId => {
+    const items = await apiGet(`/products/${productId}/items`, token);
+    if (items.status !== 200) return null;
+    const best = (items.data.results || [])
+      .filter(i => i.price > 0 && i.original_price > i.price && i.currency_id === 'BRL' && i.condition !== 'used')
+      .sort((a, b) => a.price - b.price)[0];
+    if (!best) return null;
+    const prod = await apiGet(`/products/${productId}`, token);
+    if (prod.status !== 200 || !prod.data.name) return null;
+    const num = String(best.item_id).replace(/^MLB/i, '');
+    return {
+      store_product_id: best.item_id,
+      produto: prod.data.name,
+      preco_atual: best.price,
+      preco_anterior: best.original_price,
+      imagem: (prod.data.pictures?.[0]?.url || '').replace(/^http:/, 'https:') || null,
+      original_url: `https://produto.mercadolivre.com.br/MLB-${num}`,
+    };
+  });
+  return deals.filter(Boolean);
 }
 
 function idFromUrl(url) {
@@ -122,7 +160,7 @@ async function search(query, s) {
 module.exports = {
   id: 'mercadolivre',
   name: 'Mercado Livre',
-  method: 'API oficial (se configurada) ou leitura da busca pública',
+  method: 'API oficial (mais vendidos com desconto) ou leitura da busca pública',
   automatic: true,
   isReady: () => ({ ready: true }),
   search,

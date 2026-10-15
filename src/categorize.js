@@ -4,7 +4,7 @@ const RULES = [
   ['ferramentas', /chaves? de (fenda|torque|precis)|parafusadeira|furadeira|jogo de chaves|kit de ferramentas/],
   ['moda', /smartwatch|smart ?band|rel[óo]gio inteligente|pulseira inteligente/],
   ['informatica', /notebook|laptop|macbook|chromebook|computador port[áa]til|\bmonitor\b|\bmouse\b|teclado|\bssd\b|nvme|hd interno|disco r[íi]gido/],
-  ['audio_tv', /\bfones?\b|headphone|earbuds?|airpods|\btws\b|caixas? (de som|ac[úu]stica)|alto-falante|soundbar|smart ?tv|\btv\b|televis/],
+  ['audio_tv', /\bfones?\b|headphone|earbuds?|\bbuds\b|airpods|\btws\b|caixas? (de som|ac[úu]stica)|alto-falante|soundbar|smart ?tv|\btv\b|televis/],
   ['games', /playstation|\bps[45]\b|xbox|nintendo|joystick|gamepad|dualsense|controle (sem fio|gamer|xbox|ps)|headset|\bgamer\b|console/],
   ['celulares', /iphone|smartphone|smarphone|celular|galaxy [asmz]\d|redmi|poco |xiaomi (mi )?\d|motorola (moto|edge|g\d)|\bipad\b|tablet/],
   ['informatica', /\bhd\b externo|pen ?drive|placa de v[ií]deo|processador|mem[óo]ria ram|roteador|impressora|webcam|hub usb/],
@@ -58,7 +58,7 @@ const SUBCATEGORIES = {
   ],
   audio_tv: [
     ['Caixas de som', /caixas? (de som|ac[úu]stica)|alto-falante|speaker|jbl (go|flip|charge|boombox|clip)/],
-    ['Fones de ouvido', /\bfones?\b|headphone|earbuds?|airpods|\btws\b/],
+    ['Fones de ouvido', /\bfones?\b|headphone|earbuds?|\bbuds\b|airpods|\btws\b/],
     ['Soundbars', /soundbar/],
     ['TVs', /smart ?tv|\btv\b|televis|streaming/],
     ['Projetores', /projetor/],

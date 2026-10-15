@@ -1,32 +1,8 @@
 const db = require('./db');
 
-// Termos buscados automaticamente em todas as lojas com coleta automática.
+// Termos buscados automaticamente em todas as lojas com coleta automática (lista em search-terms.js).
 // Formato de cada linha: "termo" ou "termo | categoria".
-const DEFAULT_SEARCH_TERMS = [
-  'iphone | celulares',
-  'samsung galaxy | celulares',
-  'celular xiaomi | celulares',
-  'notebook | informatica',
-  'monitor gamer | informatica',
-  'teclado mecanico | informatica',
-  'ssd 1tb | informatica',
-  'playstation 5 | games',
-  'nintendo switch | games',
-  'headset gamer | games',
-  'smart tv | audio_tv',
-  'fone bluetooth | audio_tv',
-  'caixa de som jbl | audio_tv',
-  'air fryer | cozinha',
-  'cafeteira | cozinha',
-  'robo aspirador | eletrodomesticos',
-  'ar condicionado | eletrodomesticos',
-  'tenis | moda',
-  'smartwatch | moda',
-  'perfume | beleza',
-  'whey protein | saude',
-  'creatina | saude',
-  'parafusadeira | ferramentas',
-].join('\n');
+const { DEFAULT_SEARCH_TERMS } = require('./search-terms');
 
 const DEFAULTS = {
   // Site / redes sociais (públicos)
@@ -39,6 +15,7 @@ const DEFAULTS = {
 
   // Mineração
   search_terms: DEFAULT_SEARCH_TERMS,
+  mining_terms_per_run: '60', // termos por rodada; a lista inteira é percorrida em rodízio
   mining_interval_min: '120',
   offer_max_age_hours: '24',
   manual_offer_days: '3',
@@ -80,7 +57,7 @@ const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsens
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
-const INTERNAL_KEYS = ['admin_password_hash'];
+const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor'];
 
 for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);

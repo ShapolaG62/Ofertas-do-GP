@@ -14,10 +14,11 @@
   const STORE_BY_ID = Object.fromEntries(STORES.map(s => [s.id, s]));
 
   const CATEGORIES = {
-    celulares: 'Celulares e tablets', informatica: 'Informática', games: 'Games', audio_tv: 'Áudio e TV',
-    cozinha: 'Cozinha', eletrodomesticos: 'Eletrodomésticos', casa: 'Casa', moda: 'Moda e calçados',
-    beleza: 'Beleza', saude: 'Saúde e suplementos', ferramentas: 'Ferramentas', limpeza: 'Limpeza',
-    alimentos: 'Alimentos e bebidas', pets: 'Pets', automotivo: 'Automotivo', brinquedos: 'Brinquedos', outros: 'Outros',
+    informatica: 'Informática', celulares: 'Celulares, tablets e relógios', games: 'Games',
+    audio_tv: 'TV, áudio e casa inteligente', eletrodomesticos: 'Eletrodomésticos', cozinha: 'Cozinha e eletroportáteis',
+    casa: 'Casa, móveis e decoração', ferramentas: 'Ferramentas e construção', beleza: 'Beleza e cuidados pessoais',
+    saude: 'Saúde e bem-estar', esporte: 'Esporte e fitness', moda: 'Moda e acessórios', brinquedos: 'Bebês e brinquedos',
+    automotivo: 'Automotivo', pets: 'Pet shop', limpeza: 'Limpeza', alimentos: 'Alimentos e bebidas', outros: 'Outros',
   };
   const DISCOUNTS = [10, 20, 30, 50];
   const PRICE_PRESETS = [[0, 100], [100, 500], [500, 2000], [2000, null]];

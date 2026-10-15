@@ -293,11 +293,13 @@
           <textarea name="search_terms"></textarea>
           <div class="grid" style="margin-top:14px">
             <label class="field">Minerar a cada (minutos) <input type="number" name="mining_interval_min" min="15" max="1440"></label>
+            <label class="field">Termos por rodada (rodízio) <input type="number" name="mining_terms_per_run" min="5" max="500"></label>
             <label class="field">Tirar do ar se não for vista há (horas) <input type="number" name="offer_max_age_hours" min="1" max="168"></label>
             <label class="field">Desconto mínimo (%) <input type="number" name="min_discount_pct" min="1" max="90"></label>
             <label class="field">Validade padrão de ofertas manuais (dias) <input type="number" name="manual_offer_days" min="1" max="60"></label>
           </div>
-          <p class="hint">Intervalos curtos aumentam o risco de as lojas bloquearem seu IP. Recomendado: 120 minutos ou mais.</p>
+          <p class="hint">Intervalos curtos aumentam o risco de as lojas bloquearem seu IP. Recomendado: 120 minutos ou mais.
+            Com muitos termos, cada rodada busca só um lote e a seguinte continua de onde parou. Mantenha (termos ÷ termos por rodada) × intervalo abaixo da validade das ofertas, senão elas saem do ar antes de serem conferidas de novo.</p>
           <div class="actions"><button class="btn primary" type="submit">Salvar mineração</button></div>
         </div>
       </form>

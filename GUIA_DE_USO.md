@@ -45,9 +45,19 @@ Com o painel logado, abra o site: aparecem os botões de seleção nos cards e *
 ## 6. Mineração pelo terminal
 
 ```bash
-npm run mine                 # todos os termos configurados
+npm run mine                 # próximo lote de termos (rodízio)
 npm run mine -- "air fryer"  # só um termo
 ```
+
+### Termos e categorias
+
+A lista padrão tem mais de 300 termos (os mais buscados nos marketplaces), organizados nas categorias do site:
+
+Informática · Celulares, tablets e relógios · Games · TV, áudio e casa inteligente · Eletrodomésticos · Cozinha e eletroportáteis · Casa, móveis e decoração · Ferramentas e construção · Beleza e cuidados pessoais · Saúde e bem-estar · Esporte e fitness · Moda e acessórios · Bebês e brinquedos · Automotivo · Pet shop
+
+- Cada rodada busca **60 termos** (Painel → Mineração → "Termos por rodada") e a próxima continua de onde a anterior parou. Com mineração a cada 120 minutos, a lista inteira é percorrida a cada ~12 horas, dentro da validade de 24 horas das ofertas.
+- A categoria de cada produto é decidida pelo **título** da oferta (ex.: "Cadeira Gamer" → Games, "Processador de Alimentos" → Cozinha, "Shampoo para cães" → Pet shop). O "| categoria" do termo só é usado quando o título não deixa claro.
+- Para editar a lista: Painel → Mineração → Termos de busca (um por linha, `termo | categoria`).
 
 ## 7. Usuários do site (consumidores e empresas)
 

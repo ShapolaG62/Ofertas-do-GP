@@ -74,12 +74,23 @@ async function mineStore(store, terms, s, log) {
   return { store: store.id, found, saved, status: lastStatus };
 }
 
+// Com centenas de termos, cada rodada busca só um lote e a próxima continua de onde esta parou.
+// Assim a lista inteira é percorrida várias vezes por dia sem disparar centenas de buscas de uma vez.
+function nextBatch(all) {
+  const size = Math.min(Math.max(Math.round(settings.getNumber('mining_terms_per_run', 60)), 5), 500);
+  if (all.length <= size) return all;
+  const start = (Number(settings.get('mining_cursor')) || 0) % all.length;
+  const batch = Array.from({ length: size }, (_, i) => all[(start + i) % all.length]);
+  settings.set('mining_cursor', String((start + size) % all.length));
+  return batch;
+}
+
 // options.query: busca um termo específico; options.storeIds: limita às lojas indicadas.
 async function runMining(options = {}) {
   if (running) return { alreadyRunning: true };
   const s = settings.getAll();
   const enabled = settings.getEnabledStores();
-  const terms = options.query ? [{ query: options.query, cat: null }] : settings.getSearchTerms();
+  const terms = options.query ? [{ query: options.query, cat: null }] : nextBatch(settings.getSearchTerms());
   const stores = STORES.filter(st => !options.storeIds || options.storeIds.includes(st.id));
   const log = msg => console.log(`[MINER] ${msg}`);
 

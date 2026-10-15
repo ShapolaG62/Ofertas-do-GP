@@ -62,31 +62,48 @@ async function searchApi(query, s) {
 
   const produtos = [];
   for (const cat of categorias) {
-    const h = await apiGet(`/highlights/MLB/category/${cat}`, token);
-    if (h.status !== 200) continue;
-    for (const c of h.data.content || []) if (c.type === 'PRODUCT' && !produtos.includes(c.id)) produtos.push(c.id);
+    const ids = await cached(`cat:${cat}`, async () => {
+      const h = await apiGet(`/highlights/MLB/category/${cat}`, token);
+      return h.status === 200 ? (h.data.content || []).filter(c => c.type === 'PRODUCT').map(c => c.id) : [];
+    });
+    for (const id of ids) if (!produtos.includes(id)) produtos.push(id);
   }
 
-  const deals = await inBatches(produtos.slice(0, 40), 5, async productId => {
-    const items = await apiGet(`/products/${productId}/items`, token);
-    if (items.status !== 200) return null;
-    const best = (items.data.results || [])
-      .filter(i => i.price > 0 && i.original_price > i.price && i.currency_id === 'BRL' && i.condition !== 'used')
-      .sort((a, b) => a.price - b.price)[0];
-    if (!best) return null;
-    const prod = await apiGet(`/products/${productId}`, token);
-    if (prod.status !== 200 || !prod.data.name) return null;
-    const num = String(best.item_id).replace(/^MLB/i, '');
-    return {
-      store_product_id: best.item_id,
-      produto: prod.data.name,
-      preco_atual: best.price,
-      preco_anterior: best.original_price,
-      imagem: (prod.data.pictures?.[0]?.url || '').replace(/^http:/, 'https:') || null,
-      original_url: `https://produto.mercadolivre.com.br/MLB-${num}`,
-    };
-  });
+  const deals = await inBatches(produtos.slice(0, 40), 5, productId => cached(`prod:${productId}`, () => dealFor(productId, token)));
   return deals.filter(Boolean);
+}
+
+// Vários termos caem na mesma categoria ("fone bluetooth", "fone tws"...): guarda as respostas por 30 min.
+const CACHE_MS = 30 * 60 * 1000;
+const cache = new Map();
+async function cached(key, fn) {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
+  const value = await fn();
+  cache.set(key, { at: Date.now(), value });
+  if (cache.size > 5000) for (const [k, v] of cache) if (Date.now() - v.at >= CACHE_MS) cache.delete(k);
+  return value;
+}
+
+// Anúncio mais barato do produto que tenha preço anterior (riscado) informado pelo Mercado Livre.
+async function dealFor(productId, token) {
+  const items = await apiGet(`/products/${productId}/items`, token);
+  if (items.status !== 200) return null;
+  const best = (items.data.results || [])
+    .filter(i => i.price > 0 && i.original_price > i.price && i.currency_id === 'BRL' && i.condition !== 'used')
+    .sort((a, b) => a.price - b.price)[0];
+  if (!best) return null;
+  const prod = await apiGet(`/products/${productId}`, token);
+  if (prod.status !== 200 || !prod.data.name) return null;
+  const num = String(best.item_id).replace(/^MLB/i, '');
+  return {
+    store_product_id: best.item_id,
+    produto: prod.data.name,
+    preco_atual: best.price,
+    preco_anterior: best.original_price,
+    imagem: (prod.data.pictures?.[0]?.url || '').replace(/^http:/, 'https:') || null,
+    original_url: `https://produto.mercadolivre.com.br/MLB-${num}`,
+  };
 }
 
 function idFromUrl(url) {

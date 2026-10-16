@@ -71,6 +71,12 @@ router.get('/api/img/:id', async (req, res) => {
   const row = db.get('SELECT imagem FROM offers WHERE id = ?', Number(req.params.id));
   if (row && /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(row.imagem || '')) return res.redirect(row.imagem);
   if (!row || !/^https:\/\//i.test(row.imagem || '')) return res.redirect('/images/pet-capi-head.png');
+  // Fotos da Magalu: o servidor de imagens dela bloqueia o IP de quem baixa muitas fotos seguidas.
+  // O navegador de cada visitante baixa direto de lá (cada um pelo próprio IP), sem passar pelo servidor.
+  if (/^https:\/\/[a-z0-9-]+\.mlcdn\.com\.br\//i.test(row.imagem)) {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.redirect(302, row.imagem);
+  }
   try {
     const img = await safeGet(row.imagem, {
       responseType: 'arraybuffer',

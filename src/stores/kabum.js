@@ -60,14 +60,29 @@ module.exports = {
   automatic: true,
   isReady: () => ({ ready: true }),
   search,
-  // Link de afiliado: modelo do painel com {url} (link de rastreamento da rede de afiliados) ou parâmetros
-  // para acrescentar ao link do produto; vazio = link direto.
+  // Link de afiliado a partir de UM link de afiliado de qualquer produto da KaBuM! colado no painel:
+  //  • link da rede de afiliados com o produto dentro (ex.: ...&ued=https%3A%2F%2Fwww.kabum.com.br%2F...):
+  //    troca o produto de dentro pelo da oferta;
+  //  • link da própria KaBuM! com parâmetros de rastreamento: copia os parâmetros para o link da oferta;
+  //  • modelo com {url} também funciona. Vazio = link direto, sem comissão.
   affiliateLink(offer, s) {
     const modelo = String(s.kabum_afiliado || '').trim();
     if (!modelo) return offer.original_url;
     if (modelo.includes('{url}')) return modelo.replace('{url}', encodeURIComponent(offer.original_url));
+    let exemplo;
+    try { exemplo = new URL(modelo); } catch { exemplo = null; }
+    if (exemplo && !/kabum\.com\.br$/i.test(exemplo.hostname)) {
+      for (const [k, v] of exemplo.searchParams) {
+        if (/^https?:\/\/(www\.)?kabum\.com\.br/i.test(v)) {
+          exemplo.searchParams.set(k, offer.original_url);
+          return exemplo.toString();
+        }
+      }
+      return offer.original_url; // não achou o produto dentro do link colado
+    }
     const url = new URL(offer.original_url);
-    for (const [k, v] of new URLSearchParams(modelo.replace(/^\?/, ''))) url.searchParams.set(k, v);
+    const params = exemplo ? exemplo.searchParams : new URLSearchParams(modelo.replace(/^\?/, ''));
+    for (const [k, v] of params) url.searchParams.set(k, v);
     return url.toString();
   },
   matchesUrl: url => /kabum\.com\.br/i.test(url),

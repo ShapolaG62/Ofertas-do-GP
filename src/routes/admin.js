@@ -82,7 +82,7 @@ router.get('/api/admin/settings', (req, res) => res.json(settings.getForAdmin())
 
 router.put('/api/admin/settings', (req, res) => {
   const changed = settings.updateFromAdmin(req.body);
-  const affiliateKeys = ['amazon_tag', 'ml_matt_word', 'ml_matt_tool', 'magalu_store'];
+  const affiliateKeys = ['amazon_tag', 'ml_matt_word', 'ml_matt_tool', 'magalu_store', 'kabum_afiliado'];
   const refreshed = changed.some(k => affiliateKeys.includes(k)) ? offers.refreshAffiliateLinks() : 0;
   res.json({ ok: true, changed, refreshed });
 });

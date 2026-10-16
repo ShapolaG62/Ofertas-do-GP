@@ -17,6 +17,8 @@ fs.mkdirSync(CACHE_DIR, { recursive: true });
 
 const POSICOES = ['inferior-direito', 'inferior-esquerdo', 'superior-direito', 'superior-esquerdo', 'centro'];
 const ativa = (s = settings.getAll()) => s.marca_ativa !== '0';
+// Trocar a imagem da Capi refaz as imagens já guardadas.
+const logoVersao = () => { try { return String(fs.statSync(LOGO).mtimeMs); } catch { return ''; } };
 
 const escXml = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -92,7 +94,7 @@ async function compor(foto, s) {
 // Imagem com marca d'água de uma oferta (guardada em disco; refeita se a foto ou a configuração mudar).
 async function paraOferta(o, s = settings.getAll()) {
   const chave = crypto.createHash('sha1')
-    .update([o.imagem, s.marca_texto, s.marca_posicao, s.marca_opacidade, s.site_url].join('|')).digest('hex').slice(0, 12);
+    .update([o.imagem, s.marca_texto, s.marca_posicao, s.marca_opacidade, s.site_url, logoVersao()].join('|')).digest('hex').slice(0, 12);
   const arquivo = path.join(CACHE_DIR, `${o.id}-${chave}.jpg`);
   try { return await fs.promises.readFile(arquivo); } catch { /* ainda não existe */ }
   const buf = await compor(await baixarFoto(o.imagem), s);

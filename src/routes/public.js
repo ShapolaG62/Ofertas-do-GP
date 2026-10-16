@@ -15,26 +15,36 @@ const router = express.Router();
 
 // Lista de todas as ofertas no ar (a página filtra e ordena no navegador). Vai enxuta — a foto vem por
 // /api/img/:id e o clique passa por /oferta/:slug — e compactada; o link de afiliado só vai para o admin
-// (gerador de postagens). A resposta fica guardada por 1 minuto.
+// (gerador de postagens). A resposta é refeita quando as ofertas mudam (ou a cada minuto) e usa ETag.
 const OFFERS_CACHE_MS = 60 * 1000;
 const offersCache = new Map(); // 'admin' | 'public' -> { at, json, gz }
 
+// Assinatura barata do conteúdo: muda quando uma oferta entra, sai, é atualizada ou ocultada.
+const offersSignature = () => {
+  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h FROM offers');
+  return `${r.n}|${r.u}|${r.s}|${r.h}`;
+};
+
 function offersPayload(admin) {
   const key = admin ? 'admin' : 'public';
+  const sig = offersSignature();
   const hit = offersCache.get(key);
-  if (hit && Date.now() - hit.at < OFFERS_CACHE_MS) return hit;
+  if (hit && hit.sig === sig && Date.now() - hit.at < OFFERS_CACHE_MS) return hit;
   const rows = offers.listActive(100000).map(({ imagem, loja_nome, affiliate_url, ...o }) => (admin ? { ...o, affiliate_url } : o));
   const json = Buffer.from(JSON.stringify(rows));
-  const entry = { at: Date.now(), json, gz: zlib.gzipSync(json, { level: 6 }) };
+  const etag = `"${key}-${require('crypto').createHash('sha1').update(json).digest('hex').slice(0, 16)}"`;
+  const entry = { at: Date.now(), sig, etag, json, gz: zlib.gzipSync(json, { level: 6 }) };
   offersCache.set(key, entry);
   return entry;
 }
 
 router.get('/api/offers', (req, res) => {
-  const { json, gz } = offersPayload(auth.isLoggedIn(req));
+  const { json, gz, etag } = offersPayload(auth.isLoggedIn(req));
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'private, max-age=60');
+  res.setHeader('Cache-Control', 'private, no-cache'); // o navegador confere o ETag a cada vez (304 se nada mudou)
+  res.setHeader('ETag', etag);
   res.setHeader('Vary', 'Accept-Encoding, Cookie');
+  if (req.headers['if-none-match'] === etag) return res.status(304).end();
   if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
     res.setHeader('Content-Encoding', 'gzip');
     return res.end(gz);

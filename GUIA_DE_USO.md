@@ -46,7 +46,7 @@ Com o painel logado, abra o site: aparecem os botões de seleção nos cards e *
 
 ```bash
 npm run mine                 # próximo lote de termos (rodízio)
-npm run mine -- "air fryer"  # só um termo
+npm run mine -- "air fryer"  # só um termo (no site: digite na busca e clique em "Buscar nas lojas agora", na barra de postagens)
 ```
 
 ### Termos e categorias
@@ -140,7 +140,7 @@ O site tem espaços reservados para propaganda de empresas que entrarem em conta
 
 **Quem usa:** o administrador e os usuários que você liberar em **Painel → Usuários → Gerenciar → Permitir postagens nas redes** (só contas ativas). Eles publicam nas contas que você configurou.
 
-1. Na página de ofertas, toque no **✓** de um produto: ele entra na lista e abre a tela **/postagens**. Para escolher mais, use **+ Escolher mais produtos**. A barra "Postagens" também tem **Selecionar página** e **1 por categoria**. Tocar no ✓ de um produto já escolhido o desmarca.
+1. Na página de ofertas, toque no **✓** dos produtos: eles ficam marcados e você continua na mesma página (tocar de novo desmarca). A barra verde **Postagens** mostra quantos foram escolhidos e tem **★ Melhor de cada categoria** (escolhe, em cada categoria, o produto com mais chance de venda: desconto real, cliques no site, menor preço dos últimos 30 dias, loja conhecida e preço de compra por impulso), **Selecionar página** e **Limpar seleção**. Quando terminar, clique em **Ir para postagens** (ou no atalho que aparece no rodapé).
 2. Na tela de postagens, cada produto tem o texto pronto e **editável** (fica salvo no navegador), além de botões manuais: copiar texto, baixar imagem, WhatsApp e Telegram.
 3. Para publicar sozinho: marque as redes, deixe marcados os produtos em **Incluir** e clique em **Postar automaticamente** (clique de novo para confirmar). O site publica um produto a cada 3 segundos e mostra o resultado de cada rede; dá para **Parar** no meio.
 

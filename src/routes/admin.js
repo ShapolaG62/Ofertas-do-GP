@@ -95,7 +95,9 @@ router.get('/api/admin/stores', (req, res) => {
 router.post('/api/admin/mine', async (req, res) => {
   const query = String(req.body?.query || '').trim().slice(0, 100);
   const storeIds = Array.isArray(req.body?.stores) ? req.body.stores : undefined;
-  if (miner.getState().running) return res.status(409).json({ error: 'Já existe uma mineração em andamento.' });
+  if (miner.getState().running) {
+    return res.status(409).json({ error: 'A mineração automática está rodando agora (lote de termos). Tente de novo em alguns minutos.' });
+  }
   if (query) {
     // Busca pontual: espera o resultado para mostrar na tela.
     return res.json(await miner.runMining({ query, storeIds }));

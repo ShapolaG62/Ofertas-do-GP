@@ -27,9 +27,9 @@ const RULES = [
   // ── 5. Eletrodomésticos ──
   ['eletrodomesticos', /geladeira|refrigerador|freezer|frigobar|fog[ãa]o|cooktop|forno|coifa|depurador|lava.?lou[cç]as|m[áa]quina de lavar|lavadora|lava e seca|tanquinho|centr[íi]fuga|secadora|ar.condicionado|ar split|split inverter|ar inverter|ventilador|circulador de ar|aquecedor|climatizador|umidificador|desumidificador|purificador|bebedouro/],
   // ── 6. Cozinha e eletroportáteis ──
-  ['cozinha', /air ?fryer|fritadeira|micro-?ondas|liquidificador|batedeira|cafeteira|nespresso|dolce gusto|m[áa]quina de caf[ée]|chaleira|panela|frigideira|sanduicheira|\bgrill\b|torradeira|mixer|espremedor|aspirador|rob[ôo] aspirador|ferro de passar|vaporizador/],
+  ['cozinha', /air ?fryer|fritadeira|micro-?ondas|liquidificador|batedeira|cafeteira|nespresso|dolce gusto|m[áa]quina de caf[ée]|m[áa]quina (el[ée]trica )?de (leite|p[ãa]o|sorvete|waffle|algod[ãa]o doce|pipoca)|pipoqueira|iogurteira|chaleira|panela|frigideira|sanduicheira|\bgrill\b|torradeira|mixer|espremedor|aspirador|rob[ôo] aspirador|ferro de passar|vaporizador/],
   // ── 7. Casa, móveis e decoração ──
-  ['casa', /\bcama\b|colch[ãa]o|guarda.?roupa|c[ôo]moda|cabeceira|travesseiro|len[çc]ol|edredom|cobertor|\bmanta\b|sof[áa]|poltrona|\brack\b|\bestante|escrivaninha|arm[áa]rio|banqueta|espelho|l[âa]mpada|fita led|lumin[áa]ria|\blustre|\bpendente|abajur|cortina|tapete|quadro|almofada|toalha|organizador|cabide|prateleira|nicho/],
+  ['casa', /\bcama\b|(?<!\b(de|para|da|stand) )(?<!\bsuporte\b.{0,25})\bmesas?\b(?! (digitalizadora|de som|de luz|controladora))|colch[ãa]o|guarda.?roupa|c[ôo]moda|cabeceira|travesseiro|len[çc]ol|edredom|cobertor|\bmanta\b|sof[áa]|poltrona|\brack\b|\bestante|escrivaninha|arm[áa]rio|banqueta|espelho|l[âa]mpada|fita led|lumin[áa]ria|\blustre|\bpendente|abajur|cortina|tapete|quadro|almofada|toalha|organizador|cabide|prateleira|nicho/],
   // ── 8. Ferramentas, jardim e construção ──
   ['ferramentas', /furadeira|parafusadeira|martelete|serra|esmerilhadeira|politriz|chaves? (de fenda|de boca|catraca|de impacto|allen|torx)|alicate|martelo|trena|compressor|torneira|fechadura|refletor|escada|ro[çc]adeira|mangueira|ferramenta|n[íi]vel a laser|soprador/],
   // ── 9. Beleza e cuidados pessoais ──
@@ -46,8 +46,8 @@ const RULES = [
   ['automotivo', /pneu|automotiv|multim[íi]dia|\bcarro\b|\bmotos?\b|capacete|para-?brisa|calota/],
   ['pets', /\bra[çc][ãa]o|\bpet\b|cachorro|\bc[ãa]es\b|\bgatos?\b|coleira/],
   // ── Outros ──
-  ['limpeza', /sab[ãa]o|amaciante|detergente|desinfetante|papel higi[êe]nico|multiuso|alvejante/],
-  ['alimentos', /caf[ée] (em|torrado|gr[ãa]os|sol[úu]vel)|c[áa]psula|chocolate|azeite|cerveja|vinho|energ[ée]tico|leite/],
+  ['limpeza', /sab[ãa]o|amaciante|detergente|desinfetante|papel higi[êe]nico|limpador multiuso|multiuso (spray|limpeza|\d)|alvejante/],
+  ['alimentos', /caf[ée] (em|torrado|gr[ãa]os|sol[úu]vel)|c[áa]psulas? de caf|chocolate|azeite|cerveja|vinho|energ[ée]tico|\bleite (em p[óo]|integral|desnatado|semidesnatado|condensado|zero lactose)/],
 ];
 
 // Ordem em que as categorias aparecem nos menus.

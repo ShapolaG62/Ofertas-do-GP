@@ -438,60 +438,94 @@
   });
 
   // ── Escolha de produtos para postar (admin e usuários liberados) ──────────
+  // Escolher não sai da página: os produtos ficam guardados e aparecem todos na tela de postagens.
   function updateSelection() {
-    $('#sel-count').textContent = `${selected.size} selecionada${selected.size === 1 ? '' : 's'}`;
+    const n = selected.size;
     saveSelection();
+    $('#sel-count').textContent = `${n} selecionada${n === 1 ? '' : 's'}`;
+    $('#sel-count').classList.toggle('has-items', n > 0);
+    $('#posts-dock').hidden = !n || !document.body.classList.contains('can-post');
+    $('#dock-count').textContent = n;
+    $('#dock-label').textContent = n === 1 ? 'produto escolhido' : 'produtos escolhidos';
   }
-  const goToPosts = () => { saveSelection(); location.href = '/postagens'; };
 
-  // Escolher um produto leva direto para a tela de postagens; tocar de novo num já escolhido desmarca.
   $('#grid').addEventListener('click', e => {
     const b = e.target.closest('[data-select]');
     if (!b) return;
     e.preventDefault();
     e.stopPropagation();
     const id = Number(b.dataset.select);
-    if (selected.has(id)) {
-      selected.delete(id);
-      b.closest('.card').classList.remove('is-selected');
-      updateSelection();
-      return;
-    }
-    selected.add(id);
+    selected.has(id) ? selected.delete(id) : selected.add(id);
+    b.closest('.card').classList.toggle('is-selected', selected.has(id));
     updateSelection();
-    goToPosts();
   });
 
   $('#sel-page').addEventListener('click', () => {
-    filtered().slice((state.pagina - 1) * PER_PAGE, state.pagina * PER_PAGE).forEach(o => selected.add(o.id));
-    goToPosts();
+    const page = filtered().slice((state.pagina - 1) * PER_PAGE, state.pagina * PER_PAGE);
+    const antes = selected.size;
+    page.forEach(o => selected.add(o.id));
+    renderGrid(); updateSelection();
+    toast(`${selected.size - antes} produto(s) da página adicionados.`);
   });
-  $('#sel-clear').addEventListener('click', () => { selected.clear(); renderGrid(); updateSelection(); });
-  $('#sel-mix').addEventListener('click', () => {
-    selected.clear();
-    const byCat = {};
-    for (const o of filtered()) (byCat[o.categoria] ||= []).push(o);
-    for (const list of Object.values(byCat)) {
-      const top = list.sort((a, b) => b.desconto_pct - a.desconto_pct).slice(0, 5);
-      selected.add(top[Math.floor(Math.random() * top.length)].id);
-    }
-    goToPosts();
-  });
-  $('#open-posts').addEventListener('click', e => { e.preventDefault(); goToPosts(); });
+  $('#sel-clear').addEventListener('click', () => { selected.clear(); renderGrid(); updateSelection(); toast('Seleção limpa.'); });
 
+  // Nota de "chance de venda" usada no "Melhor de cada categoria": desconto real, cliques no site (interesse),
+  // menor preço dos últimos 30 dias, loja conhecida, faixa de preço de compra por impulso, economia em reais
+  // e oferta conferida há pouco. Descontos acima de 85% costumam ser erro de preço e ficam de fora.
+  const LOJA_CONFIANCA = { amazon: 10, mercadolivre: 10, magalu: 8, shopee: 6, aliexpress: 4, shein: 4, temu: 3 };
+  function salesScore(o) {
+    const d = o.desconto_pct;
+    const p = o.preco_atual;
+    let s = Math.min(d, 70);
+    s += 12 * Math.log2(1 + (o.link_clicks || 0));
+    if (o.menor_preco_30d) s += 15;
+    s += LOJA_CONFIANCA[o.store_id] ?? 2;
+    s += p >= 40 && p <= 800 ? 10 : p > 800 && p <= 2500 ? 5 : p < 15 ? -10 : p > 5000 ? -5 : 0;
+    s += Math.min(15, (o.preco_anterior - p) / 20);
+    const seen = parseDate(o.last_seen_at);
+    if (seen && Date.now() - seen < 6 * 3600 * 1000) s += 5;
+    if (o.subcategoria && o.subcategoria !== 'Outros') s += 3;
+    return s;
+  }
+
+  $('#sel-mix').addEventListener('click', () => {
+    const best = {};
+    for (const o of ALL) {
+      if (o.categoria === 'outros' || o.desconto_pct > 85) continue;
+      if (state.loja && (state.loja === 'parceiros' ? !o.loja_slug : o.store_id !== state.loja)) continue;
+      const sc = salesScore(o);
+      if (!best[o.categoria] || sc > best[o.categoria].sc) best[o.categoria] = { o, sc };
+    }
+    const escolhidos = Object.values(best).map(b => b.o);
+    const novos = escolhidos.filter(o => !selected.has(o.id)).length;
+    escolhidos.forEach(o => selected.add(o.id));
+    renderGrid(); updateSelection();
+    toast(`${novos} produto(s) adicionados: o melhor de cada categoria (${escolhidos.length} categorias).`);
+  });
+
+  // Busca um termo nas lojas na hora (útil para produtos que não estão na lista de mineração automática).
   $('#mine-term').addEventListener('click', async () => {
     const q = $('#q').value.trim();
-    if (!q) return toast('Digite um termo na busca primeiro.');
-    toast(`Minerando “${q}” nas lojas… pode levar até 1 minuto.`);
+    if (!q) { $('#q').focus(); return toast('Digite na busca o produto que quer procurar nas lojas.'); }
+    const btn = $('#mine-term');
+    btn.disabled = true;
+    btn.textContent = 'Buscando nas lojas…';
     try {
-      const res = await fetch('/api/admin/mine', {
+      const r = await fetch('/api/admin/mine', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }),
-      }).then(r => r.json());
-      if (res.error) return toast(res.error);
-      const saved = (res.results || []).reduce((a, r) => a + (r.saved || 0), 0);
-      toast(saved ? `${saved} ofertas reais encontradas.` : 'Nenhuma oferta nova com desconto real.');
-      loadOffers();
-    } catch { toast('Erro de conexão com o minerador.'); }
+      });
+      const res = await r.json().catch(() => ({}));
+      if (!r.ok || res.error) throw new Error(res.error || `Erro ${r.status}`);
+      const saved = (res.results || []).reduce((a, x) => a + (x.saved || 0), 0);
+      const lojas = (res.results || []).filter(x => x.saved).map(x => `${STORE_BY_ID[x.store]?.name || x.store} ${x.saved}`).join(', ');
+      await loadOffers();
+      toast(saved ? `${saved} ofertas com desconto real (${lojas}). Já aparecem na lista.` : 'As lojas não têm esse produto com desconto real agora.');
+    } catch (err) {
+      toast(err.message === 'Failed to fetch' ? 'Erro de conexão com o servidor.' : err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Buscar nas lojas agora';
+    }
   });
 
   // ── Utilidades ───────────────────────────────────────────────────────────

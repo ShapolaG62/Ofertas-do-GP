@@ -9,6 +9,7 @@
     { id: 'magalu', name: 'Magalu', color: '#0086ff' },
     { id: 'shein', name: 'Shein', color: '#222222' },
     { id: 'aliexpress', name: 'AliExpress', color: '#e62e04' },
+    { id: 'kabum', name: 'KaBuM!', color: '#ff6500' },
     { id: 'temu', name: 'Temu', color: '#fb7701' },
   ];
   const STORE_BY_ID = Object.fromEntries(STORES.map(s => [s.id, s]));
@@ -489,7 +490,7 @@
   // Nota de "chance de venda" usada no "Melhor de cada categoria": desconto real, cliques no site (interesse),
   // menor preço dos últimos 30 dias, loja conhecida, faixa de preço de compra por impulso, economia em reais
   // e oferta conferida há pouco. Descontos acima de 85% costumam ser erro de preço e ficam de fora.
-  const LOJA_CONFIANCA = { amazon: 10, mercadolivre: 10, magalu: 8, shopee: 6, aliexpress: 4, shein: 4, temu: 3 };
+  const LOJA_CONFIANCA = { amazon: 10, mercadolivre: 10, kabum: 9, magalu: 8, shopee: 6, aliexpress: 4, shein: 4, temu: 3 };
   function salesScore(o) {
     const d = o.desconto_pct;
     const p = o.preco_atual;

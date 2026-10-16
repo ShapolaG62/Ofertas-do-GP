@@ -101,7 +101,7 @@ async function montar() {
       `SELECT o.id, o.produto, o.imagem, o.preco_atual, o.preco_anterior, o.desconto_pct, o.store_id FROM offers o
        WHERE ${t.where} AND o.oculto = 0 AND o.desconto_pct BETWEEN 8 AND 75 AND o.imagem LIKE 'https://%'
          AND o.last_seen_at > datetime('now', '-24 hours')
-       ORDER BY CASE o.store_id WHEN 'amazon' THEN 0 WHEN 'mercadolivre' THEN 0 ELSE 1 END, o.desconto_pct DESC LIMIT 12`);
+       ORDER BY CASE o.store_id WHEN 'amazon' THEN 0 WHEN 'mercadolivre' THEN 0 WHEN 'kabum' THEN 0 ELSE 1 END, o.desconto_pct DESC LIMIT 12`);
     for (const o of candidatos) {
       if (!offers.isActive(o.id)) continue;
       if (await recorteDaOferta(o)) {

@@ -4,9 +4,10 @@ const amazon = require('./amazon');
 const mercadolivre = require('./mercadolivre');
 const aliexpress = require('./aliexpress');
 const shopee = require('./shopee');
+const kabum = require('./kabum');
 const { magalu, shein, temu } = require('./manual');
 
-const STORES = [mercadolivre, amazon, shopee, magalu, shein, aliexpress, temu];
+const STORES = [mercadolivre, amazon, shopee, magalu, shein, aliexpress, kabum, temu];
 const BY_ID = Object.fromEntries(STORES.map(s => [s.id, s]));
 
 const getStore = id => BY_ID[id] || null;

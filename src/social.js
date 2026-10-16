@@ -246,7 +246,7 @@ async function postWhatsApp(o, texto, s) {
 
 // Texto padrão de uma oferta (mesmo modelo da tela de postagens), usado nas postagens agendadas.
 function textoPadrao(o, s = settings.getAll()) {
-  const LOJAS = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', temu: 'Temu' };
+  const LOJAS = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', kabum: 'KaBuM!', temu: 'Temu' };
   const lines = [
     `*${o.produto}*`, '',
     `De ~R$ ${brl(o.preco_anterior)}~`,

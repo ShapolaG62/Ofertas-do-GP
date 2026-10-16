@@ -20,7 +20,7 @@ const DEFAULTS = {
   offer_max_age_hours: '24',
   manual_offer_days: '3',
   min_discount_pct: '5',
-  stores_enabled: JSON.stringify({ amazon: true, mercadolivre: true, aliexpress: true, shopee: true }),
+  stores_enabled: JSON.stringify({ amazon: true, mercadolivre: true, aliexpress: true, shopee: true, kabum: true }),
 
   // Afiliados
   amazon_tag: '',
@@ -33,6 +33,7 @@ const DEFAULTS = {
   aliexpress_app_key: '',
   aliexpress_app_secret: '',
   aliexpress_tracking_id: '',
+  kabum_afiliado: '',        // modelo do link de afiliado da KaBuM! com {url} (ou parâmetros para acrescentar)
   magalu_store: '',
 
   // Cadastro de usuários do site: 'aberto' (entra na hora), 'aprovacao' (admin libera) ou 'fechado'

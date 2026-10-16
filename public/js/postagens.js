@@ -6,7 +6,7 @@
   const brl = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const parseDate = s => (s ? new Date(String(s).replace(' ', 'T') + 'Z') : null);
   const fmtWhen = d => d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  const STORES = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', temu: 'Temu' };
+  const STORES = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', kabum: 'KaBuM!', temu: 'Temu' };
 
   // Seleção e textos editados ficam no navegador (mesma chave usada pela página de ofertas).
   const SEL_KEY = 'gp_postagens';

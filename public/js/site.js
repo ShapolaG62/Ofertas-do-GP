@@ -673,9 +673,21 @@
     }
   }
 
+  // A lista chega como tabela compacta (dicionários + uma linha por oferta); aqui vira a lista de objetos de sempre.
+  function remontarOfertas(d) {
+    if (Array.isArray(d)) return d;
+    const data = m => (m === null ? null : new Date((d.t0 + m) * 60000).toISOString().replace('T', ' ').slice(0, 19));
+    const de = (lista, i) => (i < 0 ? null : lista[i]);
+    return d.linhas.map(l => ({
+      id: l[0], store_id: d.lojas[l[1]], plataforma: d.plataformas[l[1]], produto: l[2], preco_atual: l[3], preco_anterior: l[4],
+      desconto_pct: l[5], categoria: de(d.cat, l[6]), subcategoria: de(d.sub, l[7]), link_clicks: l[8], fonte: de(d.fontes, l[9]),
+      created_at: data(l[10]), last_seen_at: data(l[11]), loja_slug: l[12] || null, menor_preco_30d: l[13],
+    }));
+  }
+
   async function loadOffers() {
     try {
-      ALL = await fetch('/api/offers').then(r => r.json());
+      ALL = remontarOfertas(await fetch('/api/offers').then(r => r.json()));
     } catch {
       ALL = [];
     }

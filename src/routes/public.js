@@ -15,11 +15,34 @@ const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 
 const router = express.Router();
 
-// Lista de todas as ofertas no ar (a página filtra e ordena no navegador). Vai enxuta — a foto vem por
-// /api/img/:id e o clique passa por /oferta/:slug — e compactada; o link de afiliado só vai para o admin
-// (gerador de postagens). A resposta é refeita quando as ofertas mudam (ou a cada minuto) e usa ETag.
+// Lista de todas as ofertas no ar (a página filtra e ordena no navegador). Vai em formato de tabela compacta
+// (sem repetir nomes de campos, lojas, categorias e datas por extenso em cada oferta: ~60% menor) e comprimida
+// (brotli ou gzip). A foto vem por /api/img/:id e o clique passa por /oferta/:slug. A resposta é refeita quando
+// as ofertas mudam (ou a cada minuto) e usa ETag.
 const OFFERS_CACHE_MS = 60 * 1000;
-const offersCache = new Map(); // 'admin' | 'public' -> { at, json, gz }
+let offersCache = null; // { at, sig, etag, json, gz, br }
+
+// Tabela compacta: dicionários (lojas, categorias…) + uma linha por oferta. O navegador remonta os objetos.
+function ofertasCompactas(rows) {
+  const dic = () => {
+    const lista = [];
+    const pos = new Map();
+    return { lista, i: v => { if (v == null) return -1; if (!pos.has(v)) { pos.set(v, lista.length); lista.push(v); } return pos.get(v); } };
+  };
+  const lojas = dic(), cats = dic(), subs = dic(), fontes = dic();
+  const plataformas = {};
+  const minutos = s => (s ? Math.round(Date.parse(`${String(s).replace(' ', 'T')}Z`) / 60000) : null);
+  let t0 = Infinity;
+  for (const o of rows) { const m = minutos(o.created_at); if (m !== null && m < t0) t0 = m; }
+  if (!Number.isFinite(t0)) t0 = 0;
+  const rel = s => { const m = minutos(s); return m === null ? null : m - t0; };
+  const linhas = rows.map(o => {
+    plataformas[o.store_id] = o.plataforma;
+    return [o.id, lojas.i(o.store_id), o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct, cats.i(o.categoria),
+      subs.i(o.subcategoria), o.link_clicks || 0, fontes.i(o.fonte), rel(o.created_at), rel(o.last_seen_at), o.loja_slug || 0, o.menor_preco_30d || 0];
+  });
+  return { v: 2, t0, lojas: lojas.lista, plataformas: lojas.lista.map(id => plataformas[id]), cat: cats.lista, sub: subs.lista, fontes: fontes.lista, linhas };
+}
 
 // Assinatura barata do conteúdo: muda quando uma oferta entra, sai, é atualizada ou ocultada.
 const offersSignature = () => {
@@ -27,44 +50,34 @@ const offersSignature = () => {
   return `${r.n}|${r.u}|${r.s}|${r.h}`;
 };
 
-function offersPayload(admin) {
-  const key = admin ? 'admin' : 'public';
+function offersPayload() {
   const sig = offersSignature();
-  const hit = offersCache.get(key);
-  if (hit && hit.sig === sig && Date.now() - hit.at < OFFERS_CACHE_MS) return hit;
-  const rows = offers.listActive(100000).map(({ imagem, loja_nome, affiliate_url, ...o }) => (admin ? { ...o, affiliate_url } : o));
-  const json = Buffer.from(JSON.stringify(rows));
-  const etag = `"${key}-${require('crypto').createHash('sha1').update(json).digest('hex').slice(0, 16)}"`;
-  const entry = { at: Date.now(), sig, etag, json, gz: zlib.gzipSync(json, { level: 6 }) };
-  offersCache.set(key, entry);
-  return entry;
+  if (offersCache && offersCache.sig === sig && Date.now() - offersCache.at < OFFERS_CACHE_MS) return offersCache;
+  const json = Buffer.from(JSON.stringify(ofertasCompactas(offers.listActive(100000))));
+  const etag = `"v2-${require('crypto').createHash('sha1').update(json).digest('hex').slice(0, 16)}"`;
+  if (offersCache && offersCache.etag === etag) { offersCache.at = Date.now(); offersCache.sig = sig; return offersCache; }
+  offersCache = {
+    at: Date.now(), sig, etag, json,
+    gz: zlib.gzipSync(json, { level: 6 }),
+    br: zlib.brotliCompressSync(json, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 7, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: json.length } }),
+  };
+  return offersCache;
 }
 
 router.get('/api/offers', (req, res) => {
-  const { json, gz, etag } = offersPayload(auth.isLoggedIn(req));
+  const { json, gz, br, etag } = offersPayload();
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'private, no-cache'); // o navegador confere o ETag a cada vez (304 se nada mudou)
   res.setHeader('ETag', etag);
-  res.setHeader('Vary', 'Accept-Encoding, Cookie');
+  res.setHeader('Vary', 'Accept-Encoding');
   if (req.headers['if-none-match'] === etag) return res.status(304).end();
-  if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
-    res.setHeader('Content-Encoding', 'gzip');
-    return res.end(gz);
-  }
+  const aceita = req.headers['accept-encoding'] || '';
+  if (/\bbr\b/.test(aceita)) { res.setHeader('Content-Encoding', 'br'); return res.end(br); }
+  if (/\bgzip\b/.test(aceita)) { res.setHeader('Content-Encoding', 'gzip'); return res.end(gz); }
   res.end(json);
 });
 
-router.get('/api/featured', (req, res) => res.json(offers.featured() || {}));
-
-router.get('/api/stats', (req, res) => res.json(offers.stats()));
-
 router.get('/api/settings/public', (req, res) => res.json(settings.getPublic()));
-
-router.get('/api/price-history/:id', (req, res) => {
-  res.json(db.all(
-    'SELECT price, checked_at FROM price_history WHERE offer_id = ? ORDER BY id ASC LIMIT 200', Number(req.params.id)
-  ));
-});
 
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.
 router.get('/api/img/:id', async (req, res) => {

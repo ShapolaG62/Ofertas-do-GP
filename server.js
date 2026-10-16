@@ -36,6 +36,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Compressão (brotli/gzip) de páginas, CSS, JS e JSON. A lista de ofertas já sai comprimida pela própria rota.
+app.use(require('compression')({ threshold: 1024 }));
+
 app.use(express.json({ limit: '100kb' }));
 
 // Login obrigatório para ver as ofertas (configurável no painel).
@@ -89,7 +92,17 @@ app.use((req, res, next) => {
 });
 
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.
-app.use(express.static(PUBLIC_DIR, { index: 'index.html', extensions: ['html'] }));
+// Cache no navegador: CSS/JS com ?v= (o número muda a cada versão) ficam guardados por 1 ano; imagens por 7 dias;
+// páginas HTML são sempre conferidas (ETag), para as mudanças aparecerem na hora.
+app.use(express.static(PUBLIC_DIR, {
+  index: 'index.html',
+  extensions: ['html'],
+  setHeaders(res, arquivo) {
+    if (/\.(css|js)$/.test(arquivo) && res.req.query.v) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    else if (/\.(png|jpe?g|webp|svg|ico|woff2?)$/.test(arquivo)) res.setHeader('Cache-Control', 'public, max-age=604800');
+    else if (/\.html$/.test(arquivo)) res.setHeader('Cache-Control', 'no-cache');
+  },
+}));
 
 // Fotos enviadas pelas empresas: só imagens já verificadas, sem execução de nada.
 app.use('/uploads', express.static(UPLOADS_DIR, {

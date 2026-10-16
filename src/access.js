@@ -11,7 +11,7 @@ const isOffersPage = p => p === '/' || /^\/(index|loja|anuncio|perfil)\.html$/.t
   || /^\/perfil(\/|$)/.test(p);
 
 // Rotas da API que entregam ofertas, lojas e anúncios.
-const isOffersApi = p => /^\/api\/(offers|featured|stats|price-history|lojas|anuncios|vitrine|perfis)(\/|$)/.test(p);
+const isOffersApi = p => /^\/api\/(offers|lojas|anuncios|vitrine|perfis)(\/|$)/.test(p);
 
 function canSeeOffers(req) {
   if (!loginRequired() || auth.isLoggedIn(req)) return true;

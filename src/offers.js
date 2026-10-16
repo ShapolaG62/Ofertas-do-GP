@@ -103,15 +103,6 @@ function listActive(limit = 2000, lojaId = null) {
   );
 }
 
-function featured() {
-  const active = activeClause();
-  return db.get(
-    `SELECT ${PUBLIC_FIELDS} FROM offers o WHERE ${active.sql} AND o.desconto_pct >= 30
-     ORDER BY o.desconto_pct DESC, o.last_seen_at DESC LIMIT 1`,
-    ...active.params
-  ) || null;
-}
-
 function stats() {
   const active = activeClause();
   const row = db.get(
@@ -196,5 +187,5 @@ function reclassifyAll() {
 }
 
 module.exports = {
-  saveDeal, listActive, featured, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld, reclassifyAll, reclassifyOne,
+  saveDeal, listActive, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld, reclassifyAll, reclassifyOne,
 };

@@ -1,4 +1,4 @@
-# Ofertas do GP
+# Ofertou!
 
 Site que minera **ofertas reais** das lojas online e publica com seus links de afiliado.
 Nenhuma oferta é criada por IA nem inventada: o sistema só aceita produtos em que **a própria loja exibe o preço anterior riscado**, e uma oferta sai do ar sozinha quando deixa de ser encontrada na loja.

@@ -47,7 +47,7 @@ const DEFAULTS = {
   // Login com Google (Google Cloud > APIs e serviços > Credenciais > ID do cliente OAuth)
   google_client_id: '',
   google_client_secret: '',
-  // Endereço público do site (ex.: https://ofertasdogp.com.br). Vazio = usa o endereço acessado.
+  // Endereço público do site (ex.: https://ofertou.com.br). Vazio = usa o endereço acessado.
   site_url: '',
 
   // Postagem automática nas redes sociais (APIs oficiais)
@@ -74,7 +74,7 @@ const DEFAULTS = {
 
   // Marca d'água nas imagens das postagens
   marca_ativa: '1',
-  marca_texto: 'Ofertas do GP',
+  marca_texto: 'Ofertou!',
   marca_posicao: 'inferior-direito', // inferior-direito | inferior-esquerdo | superior-direito | superior-esquerdo | centro
   marca_opacidade: '90',             // 30 a 100 (%)
 
@@ -146,6 +146,8 @@ const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas']
 for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);
 }
+// O site passou a se chamar Ofertou!: a marca d'água que ainda usa o nome antigo padrão acompanha a mudança.
+db.run("UPDATE settings SET value = 'Ofertou!' WHERE key = 'marca_texto' AND value = 'Ofertas do GP'");
 
 function getAll() {
   const map = {};

@@ -1,4 +1,4 @@
-/* Ofertas do GP — espaços de publicidade (banners de empresas anunciantes).
+/* Ofertou! — espaços de publicidade (banners de empresas anunciantes).
    Cada lugar da página marcado com data-espaco="..." recebe a campanha no ar daquele espaço,
    ou o cartão "Anuncie sua marca aqui" quando o espaço está livre. */
 (() => {

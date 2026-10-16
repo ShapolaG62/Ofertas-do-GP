@@ -1,4 +1,4 @@
-/* Ofertas do GP — tela de postagens: produtos escolhidos, textos editáveis e publicação nas redes sociais */
+/* Ofertou! — tela de postagens: produtos escolhidos, textos editáveis e publicação nas redes sociais */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);

@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Assinar — Ofertas do GP</title>
+<title>Assinar — Ofertou!</title>
 <meta name="theme-color" content="#0c8f4f">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261038">
+<link rel="stylesheet" href="/css/site.css?v=20261039">
 </head>
 <body>
 <header class="site-header">
   <div class="container header-row">
-    <a class="brand" href="/conta" aria-label="Ofertas do GP — início">
+    <a class="brand" href="/conta" aria-label="Ofertou! — início">
       <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
-      <span class="brand-name">Ofertas do <b>GP</b></span>
+      <span class="brand-name">Ofertou<b>!</b></span>
     </a>
     <div class="header-actions"><a class="btn btn-sm" href="/conta#planos">Ver planos</a></div>
   </div>
@@ -30,9 +30,9 @@
     <div class="ass-grid">
       <form class="panel-card ass-form" id="ass-form" novalidate>
         <h1>Finalizar assinatura</h1>
-        <p class="cli-sub">Preencha seus dados para criarmos o seu acesso. Depois é só pagar.</p>
+        <p class="cli-sub">Confira o plano, preencha seus dados para criarmos o seu acesso e escolha como pagar.</p>
 
-        <label class="check-line ass-renovar"><input type="checkbox" name="renovar" id="renovar"> Já tenho conta e quero <b>renovar</b> (só e-mail e senha)</label>
+        <label class="check-line ass-renovar"><input type="checkbox" name="renovar" id="renovar"> <span>Já tenho conta e quero <b>renovar</b> (só e-mail e senha)</span></label>
 
         <fieldset class="ass-bloco">
           <legend>Acesso</legend>
@@ -96,7 +96,7 @@
 
         <label class="check-line"><input type="checkbox" name="aceite_termos" required> Li e aceito os <a class="link-btn" href="/privacidade" target="_blank">Termos de uso e a Política de privacidade</a>.</label>
         <div class="form-msg err" id="ass-msg" hidden></div>
-        <button class="btn btn-primary btn-block" type="submit" id="ass-enviar">Continuar para o pagamento</button>
+        <button class="btn btn-primary btn-block" type="submit" id="ass-enviar">Finalizar compra</button>
       </form>
 
       <aside class="panel-card ass-resumo" id="resumo"></aside>
@@ -116,6 +116,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261038" defer></script>
+<script src="/js/assinar.js?v=20261039" defer></script>
 </body>
 </html>

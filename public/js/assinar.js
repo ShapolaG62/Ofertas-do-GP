@@ -1,4 +1,4 @@
-/* Ofertas do GP — assinatura de planos: dados do cadastro, pagamento (Pix, cartão, transferência ou link) e confirmação */
+/* Ofertou! — assinatura de planos: dados do cadastro, pagamento (Pix, cartão, transferência ou link) e confirmação */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -44,7 +44,7 @@
     const d = await fetch(`/api/planos?plano=${encodeURIComponent(id)}`).then(r => r.json());
     PLANO = d.planos.find(p => p.id === id);
     if (!PLANO) return show('erro');
-    document.title = `Assinar ${PLANO.nome} — Ofertas do GP`;
+    document.title = `Assinar ${PLANO.nome} — Ofertou!`;
     const ufs = d.ufs.map(u => `<option>${u}</option>`).join('');
     $('#uf').insertAdjacentHTML('beforeend', ufs);
     $('#emp_uf').insertAdjacentHTML('beforeend', ufs);
@@ -99,7 +99,7 @@
     }
     if (!body.renovar && body.senha !== body.senha_confirmacao) { msg.textContent = 'As senhas não conferem.'; msg.hidden = false; return; }
     const btn = $('#ass-enviar');
-    btn.disabled = true; btn.textContent = 'Gerando pagamento…';
+    btn.disabled = true; btn.textContent = 'Finalizando…';
     try {
       const r = await fetch('/api/assinatura', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const d = await r.json().catch(() => ({}));
@@ -111,7 +111,7 @@
       msg.textContent = err.message; msg.hidden = false;
       msg.scrollIntoView({ block: 'center', behavior: 'smooth' });
     } finally {
-      btn.disabled = false; btn.textContent = 'Continuar para o pagamento';
+      btn.disabled = false; btn.textContent = 'Finalizar compra';
     }
   });
 
@@ -156,6 +156,21 @@
         ? `pelo <a class="link-btn" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(`Olá! Paguei o plano ${p.plano} (${p.email}). Segue o comprovante.`)}">WhatsApp</a>`
         : '';
       const linha = (rot, val, copiar) => (val ? `<div class="ass-dado"><span>${rot}</span><b>${esc(val)}</b>${copiar ? `<button class="btn btn-sm" type="button" data-copiar="${esc(val)}">Copiar</button>` : ''}</div>` : '');
+      if (m.tipo === 'combinar') {
+        box.innerHTML = `
+          <div class="ass-ok">✓</div>
+          <h1>Pedido recebido!</h1>${valor}
+          <p class="cli-sub">Seu cadastro foi registrado. Agora é só combinar o pagamento com a gente.</p>
+          <ol class="cli-steps">
+            <li>Fale conosco ${comprovante || 'pelo WhatsApp'} informando o e-mail <b>${esc(p.email)}</b>.</li>
+            <li>Enviamos as opções para você pagar <b>${brl(p.valor)}</b>.</li>
+            <li>Confirmado o pagamento, seu acesso é liberado e você recebe um e-mail com a data de validade — esta página atualiza sozinha.</li>
+          </ol>
+          ${wa ? `<a class="btn btn-primary btn-lg" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(`Olá! Fiz o pedido do plano ${p.plano} (${p.email}) e quero combinar o pagamento.`)}">Combinar pagamento no WhatsApp</a>` : ''}
+          ${m.recado ? `<p class="cli-hint">${esc(m.recado)}</p>` : ''}
+          <p class="ass-aguarde"><span class="live-dot"></span> Aguardando a confirmação do pagamento…</p>`;
+        return;
+      }
       let titulo, dados, passo1;
       if (m.tipo === 'pix_manual') {
         titulo = 'Pague com Pix';

@@ -52,7 +52,7 @@ async function baixarFoto(imagem) {
 // Selo de cliente da ferramenta (marca_logo = '0'): só o texto dele, sem a Capi e sem o endereço do site.
 async function selo(s) {
   const semLogo = s.marca_logo === '0';
-  const texto = String(s.marca_texto || (semLogo ? '' : 'Ofertas do GP')).trim().slice(0, 40) || (semLogo ? 'Ofertas' : 'Ofertas do GP');
+  const texto = String(s.marca_texto || (semLogo ? '' : 'Ofertou!')).trim().slice(0, 40) || (semLogo ? 'Ofertas' : 'Ofertou!');
   const site = semLogo ? '' : String(s.site_url || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').slice(0, 40);
   const op = Math.min(Math.max(Number(s.marca_opacidade) || 90, 30), 100) / 100;
   const logo = semLogo ? -16 : 92, padX = semLogo ? 30 : 22, h = 120;

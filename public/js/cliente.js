@@ -1,4 +1,4 @@
-/* Ofertas do GP — painel do cliente da ferramenta: links de afiliado, canais, agendamento e histórico DELE */
+/* Ofertou! — painel do cliente da ferramenta: links de afiliado, canais, agendamento e histórico DELE */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);

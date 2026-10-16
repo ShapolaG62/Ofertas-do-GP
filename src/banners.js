@@ -57,7 +57,7 @@ function whatsappLink(espaco) {
   const numero = String(settings.get('whatsapp_anuncios') || '').replace(/\D/g, '');
   if (numero.length < 10) return null;
   const nome = ESPACOS[espaco] ? `, no espaço "${ESPACOS[espaco].nome}"` : '';
-  const texto = `Olá! Vi o Ofertas do GP e quero anunciar minha empresa no site${nome}.`;
+  const texto = `Olá! Vi o Ofertou! e quero anunciar minha empresa no site${nome}.`;
   return `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`;
 }
 

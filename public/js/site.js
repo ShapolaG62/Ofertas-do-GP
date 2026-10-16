@@ -1,4 +1,4 @@
-/* Ofertas do GP — site público */
+/* Ofertou! — site público */
 (() => {
   'use strict';
 

@@ -1,6 +1,6 @@
-# 🚀 Guia de Hospedagem na VPS - Ofertas do GP
+# 🚀 Guia de Hospedagem na VPS - Ofertou!
 
-Este guia ensina como colocar o projeto **Ofertas do GP** para rodar em qualquer servidor VPS Linux (Ubuntu / Debian / Hostinger / Hetzner / DigitalOcean / AWS / Contabo / Vultr).
+Este guia ensina como colocar o projeto **Ofertou!** para rodar em qualquer servidor VPS Linux (Ubuntu / Debian / Hostinger / Hetzner / DigitalOcean / AWS / Contabo / Vultr).
 
 ---
 
@@ -18,7 +18,7 @@ ssh root@SEU_IP_DA_VPS
 Caso vá enviar a pasta do projeto via `scp` ou FileZilla:
 ```bash
 # Na sua máquina local:
-scp -r "c:\Users\tiosh\Downloads\Ofertas do GP" root@SEU_IP_DA_VPS:/var/www/ofertas-do-gp
+scp -r "c:\Users\tiosh\Downloads\Ofertou!" root@SEU_IP_DA_VPS:/var/www/ofertas-do-gp
 ```
 Ou se você subiu para o GitHub/GitLab:
 ```bash

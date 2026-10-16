@@ -1,4 +1,4 @@
-/* Ofertas do GP — página "Anuncie": espaços disponíveis e pedido de contato de empresas */
+/* Ofertou! — página "Anuncie": espaços disponíveis e pedido de contato de empresas */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);

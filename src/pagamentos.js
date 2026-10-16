@@ -40,8 +40,11 @@ function metodosDisponiveis(s = settings.getAll(), planoId = null) {
     desc: 'Pague pelo link seguro e envie o comprovante' });
   if (ted) lista.push({ id: 'transferencia', nome: 'Transferência bancária (TED)', automatico: false,
     desc: 'Transfira para a conta indicada e envie o comprovante' });
-  return { lista, pix: pixAuto || pixManual, pix_automatico: pixAuto, mercadopago: lista.some(m => m.id === 'mercadopago'),
-    algum: lista.length > 0 };
+  const algum = lista.length > 0;
+  // Sem nenhuma forma configurada, a compra ainda é finalizada: o pedido fica registrado e o pagamento é combinado.
+  if (!algum) lista.push({ id: 'combinar', nome: 'Combinar o pagamento', automatico: false,
+    desc: 'Finalize o pedido e combinamos o pagamento com você pelo WhatsApp' });
+  return { lista, pix: pixAuto || pixManual, pix_automatico: pixAuto, mercadopago: lista.some(m => m.id === 'mercadopago'), algum };
 }
 
 // ── Pedido ───────────────────────────────────────────────────────────────────
@@ -125,7 +128,7 @@ async function criarPedido(b, req) {
   const id = Number(ins.lastInsertRowid);
   const base = baseUrl(req);
   const publico = /^https:\/\//i.test(base); // o Mercado Pago só avisa / volta para endereços https
-  const descricao = `${p.nome} — ${p.dias} dias de acesso (Ofertas do GP)`;
+  const descricao = `${p.nome} — ${p.dias} dias de acesso (Ofertou!)`;
 
   try {
     if (metodo === 'pix' && disp.pix_automatico) {
@@ -151,7 +154,7 @@ async function criarPedido(b, req) {
         back_urls: { success: `${base}/assinar?pedido=${token}`, failure: `${base}/assinar?pedido=${token}`, pending: `${base}/assinar?pedido=${token}` },
         ...(publico ? { auto_return: 'approved', notification_url: `${base}/api/pagamentos/webhook` } : {}),
         payment_methods: { excluded_payment_types: [{ id: 'ticket' }], installments: Math.min(Math.max(parseInt(s.pag_mp_parcelas, 10) || 1, 1), 12) },
-        statement_descriptor: 'OFERTASDOGP',
+        statement_descriptor: 'OFERTOU',
       }, s);
       db.run('UPDATE pagamentos SET mp_preference_id = ? WHERE id = ?', String(pref.id), id);
       return { token, checkout_url: pref.init_point };
@@ -248,7 +251,7 @@ const fmtDia = sql => new Date(String(sql).replace(' ', 'T') + 'Z').toLocaleDate
 async function enviarConfirmacao(pedido) {
   if (!email.configurado()) return false;
   const p = planos.plano(pedido.plano);
-  const site = String(settings.get('site_url') || '').replace(/\/+$/, '') || 'o site Ofertas do GP';
+  const site = String(settings.get('site_url') || '').replace(/\/+$/, '') || 'o site Ofertou!';
   const onde = p.conta === 'cliente' ? `${site}/cliente` : `${site}/conta`;
   const validade = fmtDia(pedido.validade_ate);
   const texto = [
@@ -258,7 +261,7 @@ async function enviarConfirmacao(pedido) {
     `Válido até: ${validade}`,
     `Acesso: ${onde} (entre com o e-mail ${pedido.email} e a senha que você cadastrou)`, '',
     'Para renovar, é só assinar o mesmo plano de novo com o mesmo e-mail e senha: os dias são somados.', '',
-    'Obrigado!', 'Ofertas do GP',
+    'Obrigado!', 'Ofertou!',
   ].join('\n');
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#161b18;line-height:1.55">
     <h2 style="color:#0c8f4f;margin:0 0 12px">Pagamento confirmado! 🎉</h2>
@@ -269,7 +272,7 @@ async function enviarConfirmacao(pedido) {
       <tr><td style="padding:4px 12px 4px 0;color:#48514c">Acesso</td><td><a href="${escHtml(onde)}">${escHtml(onde)}</a></td></tr>
     </table>
     <p style="color:#48514c">Entre com o e-mail <b>${escHtml(pedido.email)}</b> e a senha que você cadastrou. Para renovar, assine o mesmo plano com o mesmo e-mail e senha: os dias são somados.</p>
-    <p>Obrigado!<br>Ofertas do GP</p></div>`;
+    <p>Obrigado!<br>Ofertou!</p></div>`;
   await email.enviar({ para: pedido.email, assunto: `Pagamento confirmado — ${p.nome} válido até ${validade}`, texto, html });
   db.run('UPDATE pagamentos SET email_enviado = 1 WHERE id = ?', pedido.id);
   return true;
@@ -290,7 +293,7 @@ function entregarLogin(pedido, req, res) {
 }
 
 // Como pagar nas formas confirmadas pelo admin (dados que o próprio admin cadastrou para receber).
-const MANUAIS = ['pix_manual', 'transferencia', 'link'];
+const MANUAIS = ['pix_manual', 'transferencia', 'link', 'combinar'];
 const TIPO_CHAVE = { cpf: 'CPF', cnpj: 'CNPJ', email: 'E-mail', telefone: 'Telefone', aleatoria: 'Chave aleatória' };
 function instrucoesManuais(pedido, s) {
   const base = { tipo: pedido.metodo, whatsapp: s.pag_whatsapp || s.whatsapp_anuncios || '', recado: s.pag_instrucoes || '' };
@@ -301,6 +304,7 @@ function instrucoesManuais(pedido, s) {
     return { ...base, banco: s.ted_banco, agencia: s.ted_agencia, conta: s.ted_conta,
       tipo_conta: s.ted_tipo_conta === 'poupanca' ? 'Poupança' : 'Corrente', titular: s.ted_titular, documento: s.ted_documento };
   }
+  if (pedido.metodo === 'combinar') return base;
   return { ...base, nome: s.pag_link_nome, url: String(s[`pag_link_${pedido.plano}`] || '').trim() };
 }
 

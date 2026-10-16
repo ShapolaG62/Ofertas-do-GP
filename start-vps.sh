@@ -1,11 +1,11 @@
 #!/bin/bash
 # =========================================================
-# Script de Inicialização Automática - Ofertas do GP na VPS
+# Script de Inicialização Automática - Ofertou! na VPS
 # =========================================================
 
 set -e
 
-echo "🚀 Iniciando configuração do servidor para Ofertas do GP..."
+echo "🚀 Iniciando configuração do servidor para Ofertou!..."
 
 # 1. Atualizar repositórios do sistema
 echo "🔄 Atualizando pacotes do sistema Linux..."
@@ -56,7 +56,7 @@ if [ ! -f "data/ofertas.db" ] && [ -z "$ADMIN_PASSWORD" ]; then
 fi
 
 # 8. Iniciar ou reiniciar a aplicação com PM2
-echo "🔄 Iniciando/Atualizando a aplicação Ofertas do GP no PM2..."
+echo "🔄 Iniciando/Atualizando a aplicação Ofertou! no PM2..."
 pm2 startOrReload ecosystem.config.js --update-env
 
 # 9. Configurar PM2 para iniciar no boot da VPS
@@ -69,7 +69,7 @@ PUBLIC_IP=$(curl -s ifconfig.me || curl -s icanhazip.com || echo "IP_DA_SUA_VPS"
 
 echo ""
 echo "========================================================="
-echo "🎉 OFERTAS DO GP ESTÁ RODANDO NA SUA VPS!"
+echo "🎉 OFERTOU! ESTÁ RODANDO NA SUA VPS!"
 echo "========================================================="
 echo "🌐 Site:   http://${PUBLIC_IP}:3000"
 echo "🔐 Painel: http://${PUBLIC_IP}:3000/admin"

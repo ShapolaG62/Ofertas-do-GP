@@ -98,7 +98,7 @@ if (process.env.VERCEL) {
 } else {
   app.listen(PORT, HOST, () => {
     console.log('\n==================================================');
-    console.log('🚀 OFERTAS DO GP RODANDO');
+    console.log('🚀 OFERTOU! RODANDO');
     console.log(`🌐 Site:   http://localhost:${PORT}`);
     console.log(`🔐 Painel: http://localhost:${PORT}/admin`);
     console.log('==================================================\n');

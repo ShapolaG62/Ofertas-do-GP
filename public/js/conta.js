@@ -1,4 +1,4 @@
-/* Ofertas do GP — login (e-mail ou Google), primeiro acesso, área do usuário e criador de anúncios */
+/* Ofertou! — login (e-mail ou Google), primeiro acesso, área do usuário e criador de anúncios */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -177,7 +177,7 @@
   // ── Navegação entre telas ──────────────────────────────────────────────────
   const VIEWS = ['login', 'perfil', 'dados', 'aguardando', 'conta'];
   // ── Página inicial: planos, comparativo e números ─────────────────────────
-  // Cada cartão leva para a página de pagamento. Sem forma de pagamento configurada, o botão chama no WhatsApp.
+  // Cada cartão leva para a página de confirmação e pagamento (/assinar).
   const ICONES = {
     consumidor: '<svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>',
     empresa: '<svg viewBox="0 0 24 24"><path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>',
@@ -212,14 +212,7 @@
       return;
     }
     const vende = d.metodos?.algum;
-    const botao = p => {
-      if (vende) return `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>`;
-      if (d.whatsapp) {
-        const txt = encodeURIComponent(`Olá! Quero assinar o plano ${p.nome} do Ofertas do GP.`);
-        return `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" target="_blank" rel="noopener" href="https://wa.me/${esc(d.whatsapp)}?text=${txt}">Assinar pelo WhatsApp</a>`;
-      }
-      return `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>`;
-    };
+    const botao = p => `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>`;
     grid.innerHTML = d.planos.map(p => {
       const mensal = p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
       return `
@@ -277,7 +270,7 @@
     const liberado = ME?.status === 'active';
     $('#header-offers').hidden = INFO.exigir_login && !liberado;
     $('#aguardando-offers').hidden = INFO.exigir_login;
-    document.title = inicio ? 'Ofertas do GP — ofertas reais das maiores lojas do Brasil' : 'Minha conta — Ofertas do GP';
+    document.title = inicio ? 'Ofertou! — ofertas reais das maiores lojas do Brasil' : 'Minha conta — Ofertou!';
     // Na página inicial, respeita o link para uma seção (#planos, #entrar…); nas outras telas, volta ao topo.
     const alvo = inicio && /^#[\w-]+$/.test(location.hash) && document.querySelector(location.hash === '#cadastro' ? '#entrar' : location.hash);
     if (alvo) setTimeout(() => alvo.scrollIntoView(), 350); else window.scrollTo(0, 0);

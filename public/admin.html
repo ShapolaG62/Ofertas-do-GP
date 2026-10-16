@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Painel — Ofertas do GP</title>
+<title>Painel — Ofertou!</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -119,7 +119,7 @@
   <!-- LOGIN / PRIMEIRO ACESSO -->
   <section id="auth" class="center-box hidden">
     <div class="panel">
-      <div class="logo" style="margin-bottom:12px"><img src="/images/pet-capi-head.png" alt=""><span>Ofertas do <b>GP</b> · Painel</span></div>
+      <div class="logo" style="margin-bottom:12px"><img src="/images/pet-capi-head.png" alt=""><span>Ofertou<b>!</b> · Painel</span></div>
       <div id="setup-box" class="hidden">
         <h2>Criar senha do painel</h2>
         <p class="hint">Primeiro acesso. Escolha uma senha forte (mínimo <span id="min-pass">8</span> caracteres). Ela protege suas tags de afiliado e o controle do minerador.</p>
@@ -147,7 +147,7 @@
   <!-- APLICATIVO -->
   <section id="app" class="hidden">
     <header class="top">
-      <div class="logo"><img src="/images/pet-capi-head.png" alt=""><span>Ofertas do <b>GP</b> · Painel</span></div>
+      <div class="logo"><img src="/images/pet-capi-head.png" alt=""><span>Ofertou<b>!</b> · Painel</span></div>
       <div class="spacer"></div>
       <a class="btn small" href="/" target="_blank">Ver site ↗</a>
       <button class="btn small" id="logout">Sair</button>
@@ -254,7 +254,7 @@
             </div>
             <div class="store-card">
               <h4>Amazon</h4>
-              <p class="hint">Programa: <a href="https://associados.amazon.com.br" target="_blank" rel="noopener">associados.amazon.com.br</a>. Sua tag aparece no topo do painel de associados (ex.: <code>ofertasdogp-20</code>).</p>
+              <p class="hint">Programa: <a href="https://associados.amazon.com.br" target="_blank" rel="noopener">associados.amazon.com.br</a>. Sua tag aparece no topo do painel de associados (ex.: <code>ofertou-20</code>).</p>
               <label class="field">Tag de associado <input type="text" name="amazon_tag" placeholder="seunome-20"></label>
             </div>
             <div class="store-card">
@@ -282,7 +282,7 @@
             <div class="store-card">
               <h4>Magalu</h4>
               <p class="hint">Programa Parceiro Magalu / Magazine Você. Informe o nome da sua loja (o que vem depois de <code>magazinevoce.com.br/magazine</code>). Links da Magalu cadastrados manualmente serão convertidos.</p>
-              <label class="field">Nome da sua loja <input type="text" name="magalu_store" placeholder="ofertasdogp"></label>
+              <label class="field">Nome da sua loja <input type="text" name="magalu_store" placeholder="ofertou"></label>
             </div>
             <div class="store-card">
               <h4>Shein e Temu</h4>
@@ -327,7 +327,7 @@
             <label class="field">Link do grupo do WhatsApp <input type="url" name="whatsapp_link" placeholder="https://chat.whatsapp.com/..."></label>
             <label class="field">WhatsApp para anunciantes (com DDI e DDD) <input type="text" name="whatsapp_anuncios" placeholder="5562982417271"></label>
             <label class="field">Telegram (link ou @canal) <input type="text" name="telegram_link"></label>
-            <label class="field">Instagram (usuário) <input type="text" name="instagram_user" placeholder="ofertasdogp"></label>
+            <label class="field">Instagram (usuário) <input type="text" name="instagram_user" placeholder="ofertou"></label>
             <label class="field">Google AdSense (ca-pub-...) <input type="text" name="adsense_client" placeholder="ca-pub-0000000000000000"></label>
             <label class="field">Google Analytics (G-...) <input type="text" name="ga_id" placeholder="G-XXXXXXXXXX"></label>
           </div>
@@ -372,7 +372,7 @@
           <p class="hint">Permite entrar e criar conta com a conta Google. Sem estes dados, o botão do Google não aparece no site.</p>
           <ol class="hint" style="padding-left:18px;line-height:1.7">
             <li>Acesse <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">console.cloud.google.com → APIs e serviços → Credenciais</a> (crie um projeto se pedir).</li>
-            <li>Em <b>Tela de consentimento OAuth</b>, configure o nome "Ofertas do GP", seu e-mail e o tipo <b>Externo</b>.</li>
+            <li>Em <b>Tela de consentimento OAuth</b>, configure o nome "Ofertou!", seu e-mail e o tipo <b>Externo</b>.</li>
             <li>Em <b>Criar credenciais → ID do cliente OAuth</b>, escolha <b>Aplicativo da Web</b>.</li>
             <li>Em <b>URIs de redirecionamento autorizados</b>, cole exatamente: <code id="google-redirect"></code> <button class="btn small" type="button" id="copy-redirect">Copiar</button></li>
             <li>Copie o <b>ID do cliente</b> e a <b>Chave secreta do cliente</b> para os campos abaixo e salve.</li>
@@ -380,7 +380,7 @@
           <div class="grid">
             <label class="field">ID do cliente <input type="text" name="google_client_id" placeholder="xxxx.apps.googleusercontent.com"></label>
             <label class="field">Chave secreta do cliente <input type="password" name="google_client_secret" autocomplete="off" data-secret></label>
-            <label class="field">Endereço público do site <input type="url" name="site_url" placeholder="Vazio = usa o endereço atual (ex.: https://ofertasdogp.com.br)"></label>
+            <label class="field">Endereço público do site <input type="url" name="site_url" placeholder="Vazio = usa o endereço atual (ex.: https://ofertou.com.br)"></label>
           </div>
           <p class="hint">Quando o site for para a VPS com domínio, preencha o endereço público e cadastre também o novo endereço de retorno no Google.</p>
           <div class="actions"><button class="btn primary" type="submit">Salvar login com Google</button></div>
@@ -524,7 +524,7 @@
             <label class="field">Porta <input type="number" name="smtp_port" placeholder="587"></label>
             <label class="field">Usuário <input type="text" name="smtp_user" autocomplete="off"></label>
             <label class="field">Senha <input type="password" name="smtp_pass" autocomplete="off" data-secret></label>
-            <label class="field">Remetente (opcional) <input type="text" name="smtp_from" placeholder="Ofertas do GP &lt;seu@email.com&gt;"></label>
+            <label class="field">Remetente (opcional) <input type="text" name="smtp_from" placeholder="Ofertou! &lt;seu@email.com&gt;"></label>
           </div>
           <div class="actions" style="justify-content:flex-start">
             <button class="btn primary" type="submit">Salvar e-mail</button>
@@ -576,7 +576,7 @@
             <div class="grid" style="flex:1;min-width:260px">
               <label class="field">Marca d'água
                 <select name="marca_ativa"><option value="1">Ligada</option><option value="0">Desligada (usa a foto da loja)</option></select></label>
-              <label class="field">Texto <input type="text" name="marca_texto" maxlength="40" placeholder="Ofertas do GP"></label>
+              <label class="field">Texto <input type="text" name="marca_texto" maxlength="40" placeholder="Ofertou!"></label>
               <label class="field">Posição
                 <select name="marca_posicao">
                   <option value="inferior-direito">Canto inferior direito</option>
@@ -618,7 +618,7 @@
           <div class="grid wa-evolution" style="margin-top:14px">
             <label class="field">Endereço do servidor <input type="url" name="evolution_url" placeholder="http://localhost:8080"></label>
             <label class="field">Chave (apikey) <input type="password" name="evolution_api_key" autocomplete="off" data-secret></label>
-            <label class="field">Nome da instância <input type="text" name="evolution_instance" placeholder="ofertasgp"></label>
+            <label class="field">Nome da instância <input type="text" name="evolution_instance" placeholder="ofertou"></label>
           </div>
           <p class="hint wa-evolution">Na Evolution API (v2): crie uma instância, leia o QR code com o WhatsApp do número separado e informe aqui o endereço, a chave global (AUTHENTICATION_API_KEY) e o nome da instância.</p>
           <div class="actions" style="justify-content:flex-start">
@@ -1287,8 +1287,8 @@ $('#user-dlg').addEventListener('click', async e => {
 // ── Planos e pagamentos ───────────────────────────────────────────────────────
 const PED_STATUS = { pendente: ['b-pending', 'Aguardando'], aprovado: ['b-active', 'Aprovado'], recusado: ['b-banned', 'Recusado'],
   cancelado: ['b-none', 'Cancelado'], expirado: ['b-none', 'Expirado'] };
-const PED_METODO = { pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento' };
-const PED_MANUAL = ['pix_manual', 'transferencia', 'link'];
+const PED_METODO = { pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento', combinar: 'A combinar' };
+const PED_MANUAL = ['pix_manual', 'transferencia', 'link', 'combinar'];
 const PLANO_NOME = { consumidor: 'Consumidor', empresa: 'Empresário', pro: 'Ferramenta' };
 async function loadPedidos() {
   const d = await api('/api/admin/pagamentos');
@@ -1296,7 +1296,7 @@ async function loadPedidos() {
   $('#pedidos-badge').textContent = pend;
   $('#pedidos-badge').classList.toggle('hidden', !pend);
   const m = d.metodos;
-  $('#pag-situacao').innerHTML = `Recebendo por: ${m.lista.length ? m.lista.map(x => `<b>${esc(x.nome)}</b>${x.automatico ? ' (automático)' : ''}`).join(', ') : '<b style="color:var(--red)">nenhuma forma configurada — os planos aparecem com botão de WhatsApp</b>'}
+  $('#pag-situacao').innerHTML = `Recebendo por: ${m.algum ? m.lista.map(x => `<b>${esc(x.nome)}</b>${x.automatico ? ' (automático)' : ''}`).join(', ') : '<b style="color:var(--red)">nenhuma forma configurada — o cliente finaliza o pedido e o pagamento fica "a combinar" (você confirma aqui)</b>'}
     · E-mail de confirmação: ${d.email ? '<b>configurado</b>' : '<b style="color:var(--yellow)">não configurado</b>'}`;
   $('#pedidos-body').innerHTML = d.pedidos.length ? d.pedidos.map(p => {
     const [cls, txt] = PED_STATUS[p.status] || ['b-none', p.status];

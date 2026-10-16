@@ -1,4 +1,4 @@
-/* Ofertas do GP — página pública de uma loja parceira */
+/* Ofertou! — página pública de uma loja parceira */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -34,7 +34,7 @@
       return;
     }
     const { loja, ofertas } = await res.json();
-    document.title = `${loja.nome} — Ofertas do GP`;
+    document.title = `${loja.nome} — Ofertou!`;
     const site = /^https:\/\//i.test(loja.site_url || '') ? loja.site_url : '';
     const logo = /^https:\/\//i.test(loja.logo_url || '')
       ? `<img class="store-logo" src="${esc(loja.logo_url)}" alt="" referrerpolicy="no-referrer">`

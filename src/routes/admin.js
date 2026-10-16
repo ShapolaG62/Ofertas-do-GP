@@ -255,7 +255,7 @@ router.post('/api/admin/email/teste', async (req, res) => {
   const para = String(req.body?.para || '').trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(para)) return res.status(400).json({ error: 'Informe um e-mail válido.' });
   try {
-    await require('../email').enviar({ para, assunto: 'Teste de e-mail — Ofertas do GP', texto: 'Se você recebeu esta mensagem, o e-mail do site está funcionando.' });
+    await require('../email').enviar({ para, assunto: 'Teste de e-mail — Ofertou!', texto: 'Se você recebeu esta mensagem, o e-mail do site está funcionando.' });
     res.json({ ok: true });
   } catch (err) { res.status(400).json({ error: `Falha ao enviar: ${err.message}` }); }
 });

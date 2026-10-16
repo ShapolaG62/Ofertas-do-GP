@@ -1,4 +1,4 @@
-# Ofertas do GP — Guia de uso
+# Ofertou! — Guia de uso
 
 Tudo é configurado pelo **painel administrativo**: http://localhost:3000/admin (ou `http://SEU_IP:3000/admin` na VPS). Não é preciso editar código.
 
@@ -166,7 +166,7 @@ Depois clique em **Testar conexão**, **Carregar grupos do número**, marque os 
 
 ### Marca d'água nas imagens
 
-As fotos das postagens vão num quadrado 1080×1080 com o selo do site: a Capi + "Ofertas do GP" (e o endereço do site, quando ele estiver configurado em "Endereço público do site").
+As fotos das postagens vão num quadrado 1080×1080 com o selo do site: a Capi + "Ofertou!" (e o endereço do site, quando ele estiver configurado em "Endereço público do site").
 
 - Configure em **Painel → Redes sociais → Marca d'água**: ligar/desligar, texto, posição (cantos ou centro) e opacidade. A prévia mostra o resultado numa oferta real.
 - Vale para WhatsApp, Telegram, Facebook e para o botão **Baixar imagem** da tela de postagens (a miniatura de cada produto já mostra a versão com marca).
@@ -223,7 +223,7 @@ Nomes, preços, dias e quais planos ficam visíveis: **Painel → Planos**.
 - **Link de pagamento:** para cartão sem Mercado Pago — crie um link de valor fixo (PagBank, InfinitePay, PicPay, Stone…) para cada plano e cole aqui.
 - **WhatsApp para comprovantes** e um **recado** opcional na tela de pagamento.
 
-Nas formas com comprovante, o pedido fica em **Pedidos de assinatura** e você clica **Confirmar pagamento**. Sem nenhuma forma ligada, os planos continuam aparecendo, com o botão **Assinar pelo WhatsApp**.
+Nas formas com comprovante, o pedido fica em **Pedidos de assinatura** e você clica **Confirmar pagamento**. Sem nenhuma forma ligada, o cliente ainda finaliza a compra (dados + confirmação) com o pagamento **a combinar**: o pedido aparece no painel, ele fala com você pelo WhatsApp e você clica **Confirmar pagamento**.
 
 **E-mail de confirmação:** configure o SMTP em Painel → Planos (ex.: Gmail com *senha de app*: smtp.gmail.com, porta 465) e use **Enviar e-mail de teste**. Sem SMTP o pagamento funciona, mas o e-mail não é enviado (dá para reenviar depois pelo botão do pedido).
 

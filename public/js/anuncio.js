@@ -1,4 +1,4 @@
-/* Ofertas do GP — página pública de um anúncio de loja parceira */
+/* Ofertou! — página pública de um anúncio de loja parceira */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -23,7 +23,7 @@
   }
 
   function render(a) {
-    document.title = `${a.produto} — Ofertas do GP`;
+    document.title = `${a.produto} — Ofertou!`;
     const imgs = (a.imagens || []).filter(okImg);
     const buy = `/oferta/${slugOf(a)}`;
     const specs = [
@@ -31,7 +31,7 @@
       ['Estoque', a.estoque != null ? `${a.estoque} unidade(s)` : null], ['Código (SKU)', a.sku], ['Código de barras', a.ean],
     ].filter(([, v]) => v);
     const frete = a.frete ? `${a.frete}${a.frete_valor != null ? `: R$ ${brl(a.frete_valor)}` : ''}` : null;
-    const wa = a.whatsapp ? `https://wa.me/55${a.whatsapp}?text=${encodeURIComponent(`Olá! Vi o anúncio "${a.produto}" no Ofertas do GP e tenho uma dúvida.`)}` : null;
+    const wa = a.whatsapp ? `https://wa.me/55${a.whatsapp}?text=${encodeURIComponent(`Olá! Vi o anúncio "${a.produto}" no Ofertou! e tenho uma dúvida.`)}` : null;
 
     $('#ad-root').innerHTML = `
       <nav class="crumbs"><a href="/">Ofertas</a> › <a href="/loja/${esc(a.loja_slug)}">${esc(a.loja_nome)}</a></nav>

@@ -2,7 +2,7 @@
   "name": "ofertas-do-gp",
   "version": "2.0.0",
   "private": true,
-  "description": "Ofertas do GP - mineração de ofertas reais (Mercado Livre, Amazon, Shopee, Magalu, Shein, AliExpress, Temu)",
+  "description": "Ofertou! - mineração de ofertas reais (Mercado Livre, Amazon, Shopee, Magalu, Shein, AliExpress, Temu)",
   "main": "server.js",
   "engines": {
     "node": ">=22.13"

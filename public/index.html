@@ -23,8 +23,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261045">
-<script src="/js/app-nativo.js?v=20261045"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261047">
+<script src="/js/app-nativo.js?v=20261047"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Ofertou!","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}
 </script>
@@ -80,8 +80,16 @@
         <div class="notice" id="expired-notice" hidden>Essa oferta acabou ou não está mais disponível na loja. Veja as ofertas válidas abaixo.</div>
       </div>
       <div class="hero-art">
-        <img class="hero-pet" id="hero-pet" src="/images/pet-capi.png" alt="Capi, o mascote do Ofertou!, comemorando com uma moeda de desconto" width="300" height="300">
-        <div class="vitrine" id="vitrine" hidden></div>
+        <img class="hero-pet" id="hero-pet" src="/images/pet-capi.png" alt="Capi, o mascote do Ofertou!, comemorando com uma moeda de desconto" width="300" height="300" hidden>
+        <div class="vitrine is-carregando" id="vitrine" role="region" aria-roledescription="carrossel" aria-label="Ofertas em destaque">
+          <div class="vitrine-palco" id="vitrine-palco" aria-live="polite"></div>
+          <div class="vitrine-ctrl" id="vitrine-ctrl" hidden>
+            <button class="vitrine-seta" type="button" data-vit="-1" aria-label="Oferta anterior">‹</button>
+            <span class="vitrine-barra"><span id="vitrine-progresso"></span></span>
+            <span class="vitrine-conta" id="vitrine-conta"></span>
+            <button class="vitrine-seta" type="button" data-vit="1" aria-label="Próxima oferta">›</button>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -222,8 +230,8 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/js/publicidade.js?v=20261045" data-espacos="topo,meio,lateral" defer></script>
-<script src="/js/site.js?v=20261045" defer></script>
-<script src="/js/comunidade.js?v=20261045" defer></script>
+<script src="/js/publicidade.js?v=20261047" data-espacos="topo,meio,lateral" defer></script>
+<script src="/js/site.js?v=20261047" defer></script>
+<script src="/js/comunidade.js?v=20261047" defer></script>
 </body>
 </html>

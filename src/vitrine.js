@@ -1,5 +1,6 @@
-// Vitrine da página inicial: notebook, TV, PS5 e iPhone das melhores ofertas do momento, com a foto da loja
-// recortada (fundo branco removido). Fotos com cenário ou fundo colorido são descartadas.
+// Vitrine da página inicial: um produto por vez (carrossel), escolhido entre as melhores ofertas do momento de
+// vários tipos (TV, notebook, console, celular, geladeira, air fryer…), com a foto da loja recortada (fundo branco
+// removido). Fotos com cenário ou fundo colorido são descartadas.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -11,18 +12,47 @@ const { baixarFoto } = require('./watermark');
 const CACHE_DIR = path.join(path.dirname(db.UPLOADS_DIR), 'recorte');
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 
-// Tipos mostrados na vitrine (ordem = camadas da montagem: o primeiro fica atrás).
-const TIPOS = [
-  { id: 'tv', nome: 'Smart TV', where: `o.categoria = 'audio_tv' AND o.subcategoria = 'TVs' AND o.produto LIKE '%tv%' AND o.preco_atual >= 500` },
-  { id: 'notebook', nome: 'Notebook', where: `o.categoria = 'informatica' AND o.subcategoria = 'Notebooks' AND o.produto LIKE 'notebook%'
-      AND o.preco_atual >= 1000 AND o.produto NOT LIKE '%infantil%' AND o.produto NOT LIKE '%educativo%' AND o.produto NOT LIKE '%brinquedo%'` },
-  { id: 'console', nome: 'PlayStation 5', where: `o.categoria = 'games' AND o.subcategoria = 'Consoles'
-      AND (o.produto LIKE 'console%playstation%5%' OR o.produto LIKE 'playstation%5%' OR o.produto LIKE 'sony playstation%5%' OR o.produto LIKE 'console ps5%' OR o.produto LIKE 'ps5 %')
-      AND o.produto NOT LIKE '%base %' AND o.produto NOT LIKE '%controle%' AND o.produto NOT LIKE '%jogo%' AND o.produto NOT LIKE '%capa%'
-      AND o.preco_atual >= 2000` },
-  { id: 'iphone', nome: 'iPhone', where: `o.categoria = 'celulares' AND o.subcategoria = 'iPhone' AND o.produto LIKE 'iphone%' AND o.preco_atual >= 1500` },
-];
+// Monta o filtro SQL de um tipo: categoria/subcategoria, palavras no nome (alguma delas), preço mínimo
+// (evita acessórios) e palavras que excluem (capa, suporte, controle…).
+const q = t => `'${String(t).replace(/'/g, "''")}'`;
+function filtro({ cat, subs, nomes = [], min = 0, sem = [] }) {
+  const partes = [`o.categoria = ${q(cat)}`, `o.subcategoria IN (${subs.map(q).join(', ')})`, `o.preco_atual >= ${Number(min)}`];
+  if (nomes.length) partes.push(`(${nomes.map(n => `lower(o.produto) LIKE ${q(n)}`).join(' OR ')})`);
+  for (const n of sem) partes.push(`lower(o.produto) NOT LIKE ${q(`%${n}%`)}`);
+  return partes.join(' AND ');
+}
+const ACESSORIOS = ['capa', 'capinha', 'película', 'pelicula', 'suporte', 'case ', 'cabo', 'carregador', 'controle remoto', 'adesivo'];
 
+// Tipos que podem aparecer na vitrine (até 3 produtos de cada).
+const TIPOS = [
+  { id: 'tv', nome: 'Smart TV', where: filtro({ cat: 'audio_tv', subs: ['TVs'], nomes: ['%tv%'], min: 500, sem: ACESSORIOS }) },
+  { id: 'notebook', nome: 'Notebook', where: filtro({ cat: 'informatica', subs: ['Notebooks'], nomes: ['notebook%'], min: 1000, sem: ['infantil', 'educativo', 'brinquedo', ...ACESSORIOS] }) },
+  { id: 'console', nome: 'Console', where: filtro({ cat: 'games', subs: ['Consoles'], min: 1200,
+    nomes: ['console%', 'playstation%5%', 'sony playstation%', 'xbox series%', 'nintendo switch%', 'ps5 %'],
+    sem: ['base ', 'controle', 'jogo', 'capa', 'suporte', 'case', 'película'] }) },
+  { id: 'iphone', nome: 'iPhone', where: filtro({ cat: 'celulares', subs: ['iPhone'], nomes: ['iphone%', 'apple iphone%'], min: 1500, sem: ACESSORIOS }) },
+  { id: 'celular', nome: 'Smartphone', where: filtro({ cat: 'celulares', subs: ['Celulares', 'Samsung Galaxy', 'Xiaomi'], min: 700,
+    nomes: ['smartphone%', 'celular%', 'samsung galaxy%', 'galaxy %', 'xiaomi%', 'redmi%', 'poco %', 'motorola%', 'moto g%'], sem: ACESSORIOS }) },
+  { id: 'tablet', nome: 'Tablet', where: filtro({ cat: 'celulares', subs: ['Tablets'], nomes: ['tablet%', 'ipad%', 'apple ipad%', 'samsung galaxy tab%'], min: 600, sem: ACESSORIOS }) },
+  { id: 'relogio', nome: 'Smartwatch', where: filtro({ cat: 'celulares', subs: ['Smartwatches e relógios'], min: 150,
+    nomes: ['%smartwatch%', '%apple watch%', '%galaxy watch%', '%relógio inteligente%', '%relogio inteligente%', '%amazfit%'], sem: ['pulseira', ...ACESSORIOS] }) },
+  { id: 'fone', nome: 'Fone de ouvido', where: filtro({ cat: 'audio_tv', subs: ['Fones de ouvido'], min: 120, sem: ['adaptador', 'espuma', 'almofada', ...ACESSORIOS] }) },
+  { id: 'caixa', nome: 'Caixa de som', where: filtro({ cat: 'audio_tv', subs: ['Caixas de som', 'Soundbars e home theater'], min: 250, sem: ACESSORIOS }) },
+  { id: 'monitor', nome: 'Monitor', where: filtro({ cat: 'informatica', subs: ['Monitores'], nomes: ['monitor%'], min: 500, sem: ['braço', 'braco', ...ACESSORIOS] }) },
+  { id: 'cadeira', nome: 'Cadeira gamer', where: filtro({ cat: 'games', subs: ['Cadeiras gamer'], nomes: ['cadeira%'], min: 450, sem: ['rodízio', 'rodizio', 'capa', 'almofada'] }) },
+  { id: 'airfryer', nome: 'Air fryer', where: filtro({ cat: 'cozinha', subs: ['Air fryers'], min: 200, sem: ['forma', 'papel', 'tapete', 'cesto', 'grade', 'acessório', 'acessorio'] }) },
+  { id: 'aspirador', nome: 'Robô aspirador', where: filtro({ cat: 'cozinha', subs: ['Aspiradores'], nomes: ['%robô%', '%robo %', '%robot%'], min: 400, sem: ['escova', 'filtro', 'refil', 'kit '] }) },
+  { id: 'cafeteira', nome: 'Cafeteira', where: filtro({ cat: 'cozinha', subs: ['Cafeteiras'], nomes: ['cafeteira%'], min: 300, sem: ['cápsula', 'capsula', 'filtro'] }) },
+  { id: 'geladeira', nome: 'Geladeira', where: filtro({ cat: 'eletrodomesticos', subs: ['Geladeiras e freezers'], nomes: ['geladeira%', 'refrigerador%'], min: 1500, sem: ['puxador', 'borracha', 'filtro'] }) },
+  { id: 'lavadora', nome: 'Máquina de lavar', where: filtro({ cat: 'eletrodomesticos', subs: ['Máquinas de lavar'], min: 1200,
+    nomes: ['lavadora%', 'máquina de lavar%', 'maquina de lavar%', 'lava e seca%', 'lava-e-seca%'], sem: ['capa', 'pé ', 'base'] }) },
+  { id: 'microondas', nome: 'Micro-ondas', where: filtro({ cat: 'cozinha', subs: ['Micro-ondas'], nomes: ['micro-ondas%', 'microondas%', 'forno micro%'], min: 350, sem: ['prato', 'tampa', 'suporte'] }) },
+  { id: 'arcondicionado', nome: 'Ar-condicionado', where: filtro({ cat: 'eletrodomesticos', subs: ['Ar-condicionado'], nomes: ['ar condicionado%', 'ar-condicionado%'], min: 1200, sem: ['suporte', 'controle', 'climatizador', 'ventilador'] }) },
+  { id: 'bicicleta', nome: 'Bicicleta', where: filtro({ cat: 'esporte', subs: ['Bicicletas'], nomes: ['bicicleta%', 'bike %'], min: 700, sem: ['pneu', 'câmara', 'camara', 'selim', 'suporte'] }) },
+];
+const POR_TIPO = 3;          // produtos de cada tipo no carrossel
+const CANDIDATOS = 10;       // ofertas testadas por tipo (a foto precisa dar um bom recorte)
+const VALIDADE_MS = 10 * 60 * 1000; // a vitrine é refeita a cada 10 min
 
 // Remove o fundo branco ligado às bordas (preenchimento a partir das bordas), suavizando o contorno.
 async function recortar(foto) {
@@ -71,12 +101,15 @@ async function recortar(foto) {
   }
   const area = produto / (w * h);
   if (area < 0.06 || area > 0.97) throw new Error('recorte ruim');
+  // Foto de estúdio: praticamente toda a borda vira fundo. Se sobra borda (chão, parede, janela), tem cenário.
+  const bordaFundo = bordaIdx.filter(i => fundo[i]).length / bordaIdx.length;
+  if (bordaFundo < 0.97) throw new Error('foto com cenário');
   return sharp(data, { raw: { width: w, height: h, channels: 4 } }).trim({ threshold: 1 })
     .resize(560, 560, { fit: 'inside' }).webp({ quality: 86, alphaQuality: 90, effort: 5 }).toBuffer();
 }
 
 async function recorteDaOferta(o) {
-  const chave = crypto.createHash('sha1').update(String(o.imagem)).digest('hex').slice(0, 12);
+  const chave = crypto.createHash('sha1').update(`v2|${o.imagem}`).digest('hex').slice(0, 12);
   const ok = path.join(CACHE_DIR, `${o.id}-${chave}.webp`);
   const ruim = path.join(CACHE_DIR, `${o.id}-${chave}.ruim`);
   if (fs.existsSync(ok)) return ok;
@@ -90,36 +123,57 @@ async function recorteDaOferta(o) {
   }
 }
 
-// Escolhe, para cada tipo, a melhor oferta cuja foto dá um bom recorte. Resultado guardado por 30 min.
+// Escolhe, para cada tipo, as melhores ofertas cujas fotos dão um bom recorte. Refeita a cada 10 min.
 let cache = { at: 0, itens: null };
 let montando = null;
+let parcial = [];
+
+// Ordem do carrossel: um de cada tipo por vez (TV, notebook, console…), começando de um tipo aleatório.
+function intercalar(lista) {
+  const porTipo = new Map();
+  for (const it of lista) { if (!porTipo.has(it.tipo)) porTipo.set(it.tipo, []); porTipo.get(it.tipo).push(it); }
+  const grupos = [...porTipo.values()];
+  const desloc = grupos.length ? Math.floor(Math.random() * grupos.length) : 0;
+  const ordem = [...grupos.slice(desloc), ...grupos.slice(0, desloc)];
+  const out = [];
+  for (let i = 0; ordem.some(g => g[i]); i++) for (const g of ordem) if (g[i]) out.push(g[i]);
+  return out;
+}
 
 async function montar() {
-  const itens = [];
+  const achados = [];
+  parcial = achados;
+  // Mesmo produto em lojas diferentes (ou variações de cor) aparece uma vez só.
+  const vistos = new Set();
+  const chaveProduto = t => String(t).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').slice(0, 5).join(' ');
   for (const t of TIPOS) {
     const candidatos = db.all(
       `SELECT o.id, o.produto, o.imagem, o.preco_atual, o.preco_anterior, o.desconto_pct, o.store_id FROM offers o
        WHERE ${t.where} AND o.oculto = 0 AND o.desconto_pct BETWEEN 8 AND 75 AND o.imagem LIKE 'https://%'
-         AND o.last_seen_at > datetime('now', '-24 hours')
-       ORDER BY CASE o.store_id WHEN 'amazon' THEN 0 WHEN 'mercadolivre' THEN 0 WHEN 'kabum' THEN 0 ELSE 1 END, o.desconto_pct DESC LIMIT 12`);
+         AND o.imagem NOT LIKE '%mlcdn.com.br%' AND o.last_seen_at > datetime('now', '-24 hours')
+       ORDER BY o.desconto_pct DESC LIMIT ${CANDIDATOS * 2}`);
+    let n = 0;
     for (const o of candidatos) {
-      if (!offers.isActive(o.id)) continue;
+      if (n >= POR_TIPO) break;
+      if (!offers.isActive(o.id) || vistos.has(chaveProduto(o.produto))) continue;
       if (await recorteDaOferta(o)) {
-        itens.push({ tipo: t.id, nome: t.nome, id: o.id, produto: o.produto, preco_atual: o.preco_atual,
+        vistos.add(chaveProduto(o.produto));
+        achados.push({ tipo: t.id, nome: t.nome, id: o.id, produto: o.produto, preco_atual: o.preco_atual,
           preco_anterior: o.preco_anterior, desconto_pct: o.desconto_pct, store_id: o.store_id });
-        break;
+        n++;
       }
     }
   }
-  cache = { at: Date.now(), itens };
-  return itens;
+  cache = { at: Date.now(), itens: intercalar(achados) };
+  return cache.itens;
 }
 
 async function itens() {
-  if (cache.itens && Date.now() - cache.at < 30 * 60 * 1000) return cache.itens;
-  montando ||= montar().finally(() => { montando = null; });
-  // Primeira vez: espera montar; depois, devolve o anterior enquanto renova em segundo plano.
-  return cache.itens || montando;
+  if (!cache.itens || Date.now() - cache.at >= VALIDADE_MS) montando ||= montar().finally(() => { montando = null; });
+  if (cache.itens) return cache.itens; // devolve a anterior enquanto renova em segundo plano
+  // Primeira vez (sem nada pronto): espera até 6 s e devolve o que já deu para recortar.
+  await Promise.race([montando, new Promise(r => setTimeout(r, 6000))]);
+  return cache.itens || intercalar(parcial);
 }
 
 async function arquivoRecorte(id) {

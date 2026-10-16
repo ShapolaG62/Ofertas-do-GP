@@ -337,22 +337,106 @@
     $('#pagination').innerHTML = parts.join('');
   }
 
-  // Vitrine do topo: notebook, TV, PS5 e iPhone das melhores ofertas, com a foto recortada. Com menos de
-  // dois produtos disponíveis, o mascote continua no lugar.
-  async function loadVitrine() {
-    try {
-      const itens = await fetch('/api/vitrine').then(r => (r.ok ? r.json() : []));
-      if (!Array.isArray(itens) || itens.length < 2) return;
-      $('#vitrine').innerHTML = itens.map(o => `
-        <a class="vitrine-item vitrine-${esc(o.tipo)}" href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"
-           title="${esc(o.produto)}" aria-label="${esc(o.nome)}: ${esc(o.produto)}, por R$ ${brl(o.preco_atual)}">
-          <img src="/img/recorte/${o.id}.webp" alt="" decoding="async">
-          <span class="vitrine-preco"><b>-${Math.round(o.desconto_pct)}%</b>R$ ${brl(o.preco_atual)}</span>
-        </a>`).join('');
-      $('#vitrine').hidden = false;
-      $('#hero-pet').hidden = true;
-    } catch { /* fica o mascote */ }
+  // Vitrine do topo: carrossel com um produto por vez (TV, notebook, console, celular, geladeira…), com a foto
+  // recortada, trocando sozinho com transição suave. A lista é renovada a cada 10 min. Se não houver produtos,
+  // aparece o mascote (ele não pisca antes: começa escondido).
+  const VIT = { itens: [], i: 0, timer: null, pausa: false };
+  const VIT_MS = 5000;
+  const vitImg = o => `/img/recorte/${o.id}.webp`;
+  const preCarregar = o => new Promise(r => { const im = new Image(); im.onload = im.onerror = () => r(); im.src = vitImg(o); });
+
+  function vitItem(o, ativo) {
+    const nome = String(o.produto || '').replace(/\s+/g, ' ').trim();
+    return `<a class="vitrine-item${ativo ? ' is-ativo' : ''}" href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"
+        title="${esc(nome)}" aria-label="${esc(o.nome)}: ${esc(nome)}, por R$ ${brl(o.preco_atual)}">
+      <span class="vitrine-foto"><img src="${vitImg(o)}" alt="" decoding="async"></span>
+      <span class="vitrine-preco"><b>-${Math.round(o.desconto_pct)}%</b>R$ ${brl(o.preco_atual)}</span>
+      <span class="vitrine-nome"><small>${esc(o.nome)}</small>${esc(nome.length > 60 ? `${nome.slice(0, 58)}…` : nome)}</span>
+    </a>`;
   }
+
+  function vitIr(passo) {
+    if (VIT.itens.length < 2) return;
+    VIT.i = (VIT.i + passo + VIT.itens.length) % VIT.itens.length;
+    const o = VIT.itens[VIT.i];
+    preCarregar(o).then(() => {
+      const palco = $('#vitrine-palco');
+      const antigo = palco.querySelector('.vitrine-item.is-ativo');
+      palco.insertAdjacentHTML('beforeend', vitItem(o, false));
+      const novo = palco.lastElementChild;
+      novo.classList.toggle('vem-da-esquerda', passo < 0);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        novo.classList.add('is-ativo');
+        if (antigo) {
+          antigo.classList.remove('is-ativo');
+          antigo.classList.add(passo < 0 ? 'sai-direita' : 'sai-esquerda');
+          setTimeout(() => antigo.remove(), 1200);
+        }
+      }));
+      $('#vitrine-conta').textContent = `${VIT.i + 1}/${VIT.itens.length}`;
+      // Prepara a próxima foto enquanto esta aparece
+      preCarregar(VIT.itens[(VIT.i + 1) % VIT.itens.length]);
+    });
+    vitAgendar();
+  }
+
+  function vitAgendar() {
+    clearTimeout(VIT.timer);
+    const barra = $('#vitrine-progresso');
+    barra.style.transition = 'none'; barra.style.width = '0%';
+    if (VIT.pausa || document.hidden || VIT.itens.length < 2) return;
+    requestAnimationFrame(() => { barra.style.transition = `width ${VIT_MS}ms linear`; barra.style.width = '100%'; });
+    VIT.timer = setTimeout(() => vitIr(1), VIT_MS);
+  }
+
+  async function loadVitrine() {
+    const v = $('#vitrine');
+    try {
+      const itens = await fetch('/api/vitrine', { cache: 'no-store' }).then(r => (r.ok ? r.json() : []));
+      if (!Array.isArray(itens) || !itens.length) throw new Error('sem itens');
+      const atual = VIT.itens[VIT.i];
+      VIT.itens = itens;
+      if (!$('#vitrine-palco').children.length) {
+        // Primeira vez: começa num produto aleatório e só mostra depois que a foto carregou (sem piscar).
+        VIT.i = Math.floor(Math.random() * itens.length);
+        await preCarregar(itens[VIT.i]);
+        $('#vitrine-palco').innerHTML = vitItem(itens[VIT.i], true);
+        v.classList.remove('is-carregando');
+        $('#vitrine-ctrl').hidden = itens.length < 2;
+        $('#vitrine-conta').textContent = `${VIT.i + 1}/${itens.length}`;
+        preCarregar(itens[(VIT.i + 1) % itens.length]);
+        vitAgendar();
+      } else {
+        // Lista renovada: continua de onde estava (se o produto atual ainda estiver na lista)
+        const pos = atual ? itens.findIndex(x => x.id === atual.id) : -1;
+        VIT.i = pos >= 0 ? pos : 0;
+        $('#vitrine-ctrl').hidden = itens.length < 2;
+        $('#vitrine-conta').textContent = `${VIT.i + 1}/${itens.length}`;
+      }
+      $('#hero-pet').hidden = true;
+      v.hidden = false;
+    } catch {
+      if (!VIT.itens.length) { v.hidden = true; $('#hero-pet').hidden = false; }
+    }
+  }
+
+  $('#vitrine-ctrl').addEventListener('click', e => {
+    const b = e.target.closest('[data-vit]');
+    if (b) vitIr(Number(b.dataset.vit));
+  });
+  // Pausa enquanto o mouse está em cima (ou a aba está escondida); arrastar com o dedo troca de produto
+  $('#vitrine').addEventListener('mouseenter', () => { VIT.pausa = true; vitAgendar(); });
+  $('#vitrine').addEventListener('mouseleave', () => { VIT.pausa = false; vitAgendar(); });
+  document.addEventListener('visibilitychange', vitAgendar);
+  let toqueX = null;
+  $('#vitrine').addEventListener('touchstart', e => { toqueX = e.touches[0].clientX; }, { passive: true });
+  $('#vitrine').addEventListener('touchend', e => {
+    if (toqueX === null) return;
+    const dx = e.changedTouches[0].clientX - toqueX;
+    toqueX = null;
+    if (Math.abs(dx) > 40) vitIr(dx < 0 ? 1 : -1);
+  });
+  setInterval(loadVitrine, 10 * 60 * 1000);
 
   function renderHero() {
     const stores = new Set(ALL.map(o => o.store_id)).size;

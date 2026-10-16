@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261042">
-<script src="/js/app-nativo.js?v=20261042"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261043">
+<script src="/js/app-nativo.js?v=20261043"></script>
 </head>
 <body>
 <header class="site-header">
@@ -33,6 +33,7 @@
         <h1>Finalizar assinatura</h1>
         <p class="cli-sub">Confira o plano, preencha seus dados para criarmos o seu acesso e escolha como pagar.</p>
 
+        <div class="form-msg err" id="ass-vencido" hidden></div>
         <div class="ass-logado" id="ass-logado" hidden></div>
         <div class="auth-google-ass" id="ass-google" hidden>
           <a class="btn btn-google btn-block" id="ass-google-btn" href="/auth/google">
@@ -127,6 +128,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261042" defer></script>
+<script src="/js/assinar.js?v=20261043" defer></script>
 </body>
 </html>

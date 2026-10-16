@@ -143,27 +143,54 @@ function login(email, senha) {
   if (!u || !verifyPassword(String(senha || ''), u.senha_hash)) throw new Error('E-mail ou senha incorretos.');
   const reason = blockedReason(u);
   if (reason) throw Object.assign(new Error(reason), { status: 403 });
+  if (planoVencido(u)) throw erroPlanoVencido(u); // plano pago vencido: avisa e manda reativar
   db.run(`UPDATE users SET last_login_at = datetime('now') WHERE id = ?`, u.id);
   return u;
 }
 
-function createSession(req, res, userId) {
-  const token = crypto.randomBytes(32).toString('hex');
-  db.run(
-    `INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES (?, ?, datetime('now', ?))`,
-    tokenHash(token), userId, `+${SESSION_DAYS} days`
-  );
-  res.setHeader('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
+// ── Plano pago: o login dura o prazo contratado ──────────────────────────────
+const msSql = s => new Date(String(s).replace(' ', 'T') + 'Z').getTime();
+const sqlMs = ms => new Date(ms).toISOString().replace('T', ' ').slice(0, 19);
+const planoVencido = u => Boolean(u && u.assinatura_ate && u.assinatura_ate < nowSql());
+const RENOVACAO_MS = 2 * 3600000; // plano vencido: sessão curta, só para reativar (ex.: conta do Google)
+
+// Até quando a sessão vale: conta com plano pago → até o fim do plano; sem plano → 180 dias sem uso.
+function fimSessao(u) {
+  if (planoVencido(u)) return Date.now() + RENOVACAO_MS;
+  const max = Date.now() + SESSION_DAYS * 86400000;
+  return u && u.assinatura_ate ? Math.min(max, msSql(u.assinatura_ate)) : max;
 }
 
-// Sessão deslizante: quem continua usando o site nunca precisa entrar de novo (renova no máximo 1 vez por dia).
+// Erro mostrado ao tentar entrar com o plano vencido (com o link para reativar).
+function erroPlanoVencido(u) {
+  const planos = require('./planos');
+  const p = planos.plano(u.plano || { empresa: 'empresa', afiliado: 'pro' }[u.tipo] || 'consumidor');
+  const data = new Date(msSql(u.assinatura_ate)).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  return Object.assign(new Error(`Seu plano ${p ? p.nome : ''} venceu em ${data}. Reative o plano para voltar a usar o Ofertou!`),
+    { status: 402, reativar: `/assinar?plano=${p ? p.id : 'consumidor'}&renovar=1`, plano: p ? p.id : 'consumidor' });
+}
+
+function createSession(req, res, userId) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const fim = fimSessao(getById(userId));
+  db.run('INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)', tokenHash(token), userId, sqlMs(fim));
+  res.setHeader('Set-Cookie', `${COOKIE}=${token}; Max-Age=${Math.max(1, Math.floor((fim - Date.now()) / 1000))}; ${cookieFlags(req)}`);
+}
+
+// Sessão deslizante: renova enquanto a pessoa usa o site, sem passar do fim do plano pago.
+// Ajusta também quando o plano é renovado (estende) ou vence (encurta para a sessão de reativação).
 function renovarSessao(req, res) {
   const token = parseCookies(req.headers.cookie)[COOKIE];
   if (!token) return;
-  const r = db.run(`UPDATE user_sessions SET expires_at = datetime('now', ?) WHERE token_hash = ?
-                    AND expires_at > datetime('now') AND expires_at < datetime('now', ?)`,
-  `+${SESSION_DAYS} days`, tokenHash(token), `+${SESSION_DAYS - 1} days`);
-  if (r.changes) res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
+  const s = db.get(`SELECT s.expires_at, u.* FROM user_sessions s JOIN users u ON u.id = s.user_id
+                    WHERE s.token_hash = ? AND s.expires_at > datetime('now')`, tokenHash(token));
+  if (!s) return;
+  const atual = msSql(s.expires_at);
+  const fim = planoVencido(s) ? Math.min(atual, Date.now() + RENOVACAO_MS) : fimSessao(s);
+  if (fim > atual + 86400000 || fim < atual - 60000) {
+    db.run('UPDATE user_sessions SET expires_at = ? WHERE token_hash = ?', sqlMs(fim), tokenHash(token));
+    res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${Math.max(1, Math.floor((fim - Date.now()) / 1000))}; ${cookieFlags(req)}`);
+  }
 }
 
 function destroySession(req, res) {
@@ -352,6 +379,7 @@ function detailForAdmin(id) {
 }
 
 module.exports = {
+  planoVencido, erroPlanoVencido,
   renovarSessao,
   ACTIVE_SQL, TIPOS, SIGNUP_MODES, signupMode, register, login, createSession, destroySession, currentUser,
   requireUser, requireActive, loginWithGoogle, completeProfile, publicUser, updateProfile, changePassword, deleteOwnAccount, moderate, listForAdmin, detailForAdmin,

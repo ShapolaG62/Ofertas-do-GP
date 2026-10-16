@@ -99,26 +99,41 @@ function motivoBloqueio(c) {
 function login(email, senha) {
   const c = db.get('SELECT * FROM clientes WHERE email = ?', String(email || '').trim().toLowerCase());
   if (!c || !auth.verifyPassword(String(senha || ''), c.senha_hash)) throw fail('E-mail ou senha incorretos.', 401);
+  if (c.status !== 'bloqueado' && vencido(c)) {
+    const data = new Date(msSql(c.validade)).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    throw Object.assign(fail(`Seu plano Afiliado Pro venceu em ${data}. Reative o plano para voltar a usar o painel.`, 402),
+      { reativar: '/assinar?plano=pro&renovar=1' });
+  }
   const motivo = motivoBloqueio(c);
   if (motivo) throw fail(motivo, 403);
   return c;
 }
 
+// O login do painel dura o prazo contratado (validade), renovando enquanto a pessoa usa.
+const msSql = v => new Date(String(v).replace(' ', 'T') + 'Z').getTime();
+const sqlMs = ms => new Date(ms).toISOString().replace('T', ' ').slice(0, 19);
+const fimSessao = c => Math.max(Date.now(), Math.min(Date.now() + SESSION_DAYS * 86400000, msSql(c.validade)));
+
 function criarSessao(req, res, c) {
   const token = crypto.randomBytes(32).toString('hex');
-  db.run(`INSERT INTO cliente_sessions (token_hash, cliente_id, expires_at) VALUES (?, ?, datetime('now', ?))`,
-    auth.tokenHash(token), c.id, `+${SESSION_DAYS} days`);
+  const fim = fimSessao(c);
+  db.run('INSERT INTO cliente_sessions (token_hash, cliente_id, expires_at) VALUES (?, ?, ?)', auth.tokenHash(token), c.id, sqlMs(fim));
   db.run(`UPDATE clientes SET last_login_at = datetime('now') WHERE id = ?`, c.id);
-  res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${auth.cookieFlags(req)}`);
+  res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${Math.max(1, Math.floor((fim - Date.now()) / 1000))}; ${auth.cookieFlags(req)}`);
 }
 
 function renovarSessao(req, res) {
   const token = auth.parseCookies(req.headers.cookie)[COOKIE];
   if (!token) return;
-  const r = db.run(`UPDATE cliente_sessions SET expires_at = datetime('now', ?) WHERE token_hash = ?
-                    AND expires_at > datetime('now') AND expires_at < datetime('now', ?)`,
-  `+${SESSION_DAYS} days`, auth.tokenHash(token), `+${SESSION_DAYS - 1} days`);
-  if (r.changes) res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${auth.cookieFlags(req)}`);
+  const s = db.get(`SELECT s.expires_at, c.validade FROM cliente_sessions s JOIN clientes c ON c.id = s.cliente_id
+                    WHERE s.token_hash = ? AND s.expires_at > datetime('now')`, auth.tokenHash(token));
+  if (!s) return;
+  const atual = msSql(s.expires_at);
+  const fim = fimSessao(s);
+  if (fim > atual + 86400000 || fim < atual - 60000) {
+    db.run('UPDATE cliente_sessions SET expires_at = ? WHERE token_hash = ?', sqlMs(fim), auth.tokenHash(token));
+    res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${Math.max(1, Math.floor((fim - Date.now()) / 1000))}; ${auth.cookieFlags(req)}`);
+  }
 }
 
 function encerrarSessao(req, res) {

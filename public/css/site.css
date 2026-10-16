@@ -1103,3 +1103,5 @@ body.pf-body {
 }
 .pf-nav-link { display: block; margin-top: 8px; padding: 10px 12px; border-radius: 8px; font-weight: 700; color: var(--brand-strong); background: var(--brand-soft); }
 .cli-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.form-msg .form-reativar { margin-top: 10px; color: #fff; }

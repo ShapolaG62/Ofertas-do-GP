@@ -16,7 +16,7 @@ const signupLimiter = createLimiter(5, 60);   // 5 contas novas por hora por IP
 const syncLimiter = createLimiter(6, 60);     // 6 sincronizações manuais por hora por loja
 const uploadLimiter = createLimiter(60, 60);  // 60 fotos por hora por usuário
 
-const sendError = (res, err) => res.status(err.status || 400).json({ error: err.message });
+const sendError = (res, err) => res.status(err.status || 400).json({ error: err.message, ...(err.reativar ? { reativar: err.reativar } : {}) });
 
 // Informações para as telas de login, primeiro acesso e criador de anúncios.
 router.get('/api/conta/cadastro-info', (req, res) => {
@@ -54,7 +54,11 @@ router.get('/auth/google/callback', async (req, res) => {
   try {
     const profile = await google.finish(req, res);
     const u = users.loginWithGoogle(profile);
-    users.createSession(req, res, u.id);
+    users.createSession(req, res, u.id); // com o plano vencido, a sessão é curta e só serve para reativar
+    if (users.planoVencido(u)) {
+      res.append('Set-Cookie', voltarCookie('', 0));
+      return res.redirect(`${users.erroPlanoVencido(u).reativar}&vencido=1`);
+    }
     // Veio da página de um plano: volta para concluir a compra já logado.
     const voltar = voltarValido(decodeURIComponent(auth.parseCookies(req.headers.cookie)[VOLTAR_COOKIE] || ''));
     if (voltar) {

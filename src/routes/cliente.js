@@ -8,7 +8,7 @@ const { createLimiter } = require('../ratelimit');
 
 const router = express.Router();
 const loginLimiter = createLimiter(8, 15); // 8 tentativas por 15 min por IP
-const sendError = (res, err) => res.status(err.status || 400).json({ error: err.message });
+const sendError = (res, err) => res.status(err.status || 400).json({ error: err.message, ...(err.reativar ? { reativar: err.reativar } : {}) });
 
 router.post('/api/cliente/entrar', (req, res) => {
   const wait = loginLimiter.hit(req.ip);

@@ -253,4 +253,7 @@ Todo mundo que acessa o site tem um perfil em **/perfil** (link "Perfil" no topo
 
 **Vendas e compras confirmadas:** as lojas não informam vendas ao site automaticamente. Você confere nos relatórios dos programas de afiliados (ou com a empresa) e registra: abra o perfil da pessoa logado como admin → quadro **Admin** → tipo + quantidade → **Registrar** (use número negativo para corrigir). No mesmo quadro dá para **ocultar** um perfil ou **remover foto, capa e textos**.
 
-**Manter conectado:** quem entra uma vez continua conectado enquanto usar o site (a sessão se renova sozinha; expira após 6 meses sem uso — 30 dias para o painel admin). Quem não está conectado sempre cai na tela de entrar/criar conta.
+**Manter conectado:** quem não está conectado sempre cai na tela de entrar/criar conta. Quem entra uma vez continua conectado:
+- **Plano pago** (inclusive o Afiliado Pro): durante **todo o prazo contratado**. Quando o plano vence, a sessão acaba e, ao tentar entrar, aparece *"Seu plano … venceu em DD/MM. Reative o plano…"* com o botão **Reativar plano** (abre a página do plano já no modo renovar; os dias novos começam quando o pagamento é confirmado). Quem entra com o Google vai direto para essa página.
+- **Conta gratuita aprovada:** enquanto usar o site (expira após 6 meses sem uso).
+- **Painel admin:** expira após 30 dias sem uso.

@@ -18,7 +18,7 @@
     });
     const data = await res.json().catch(() => ({}));
     if (res.status === 401 && !path.endsWith('/entrar')) { mostrarLogin(); throw new Error(data.error || 'Sessão expirada.'); }
-    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+    if (!res.ok) throw Object.assign(new Error(data.error || `Erro ${res.status}`), { reativar: data.reativar || null });
     return data;
   }
 
@@ -47,7 +47,16 @@
       await api('/api/cliente/entrar', { method: 'POST', body: { email: f.email.value, senha: f.senha.value } });
       f.reset();
       abrir();
-    } catch (err) { box.textContent = err.message; box.hidden = false; }
+    } catch (err) {
+      box.textContent = err.message; box.hidden = false;
+      if (err.reativar) {
+        const a = document.createElement('a');
+        a.className = 'btn btn-primary btn-block form-reativar';
+        a.href = err.reativar;
+        a.textContent = 'Reativar plano';
+        box.appendChild(a);
+      }
+    }
   });
 
   $('#logout').addEventListener('click', async () => {

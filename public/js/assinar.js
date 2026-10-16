@@ -69,6 +69,11 @@
       if (LOGADO.nome && !nome.value) nome.value = LOGADO.nome;
     }
     if (params.get('erro')) { $('#ass-msg').textContent = params.get('erro'); $('#ass-msg').hidden = false; }
+    if (params.get('renovar') === '1' && !LOGADO) $('#renovar').checked = true;
+    if (params.get('vencido') === '1') {
+      $('#ass-vencido').hidden = false;
+      $('#ass-vencido').textContent = 'Seu plano venceu. Reative abaixo para voltar a usar o Ofertou! — os novos dias começam a contar assim que o pagamento for confirmado.';
+    }
     PLANO = d.planos.find(p => p.id === id);
     if (!PLANO) return show('erro');
     document.title = `Assinar ${PLANO.nome} — Ofertou!`;

@@ -30,7 +30,7 @@
       body: opts.raw ? opts.raw : opts.body ? JSON.stringify(opts.body) : undefined,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+    if (!res.ok) throw Object.assign(new Error(data.error || `Erro ${res.status}`), { reativar: data.reativar || null });
     return data;
   }
 
@@ -57,7 +57,17 @@
       const form = e.target, btn = form.querySelector('[type=submit]');
       msg(form, '');
       btn.disabled = true;
-      try { await handler(form, formData(form)); } catch (err) { msg(form, err.message); }
+      try { await handler(form, formData(form)); } catch (err) {
+        msg(form, err.message);
+        // Plano vencido: botão para reativar logo abaixo da mensagem
+        if (err.reativar) {
+          const a = document.createElement('a');
+          a.className = 'btn btn-primary btn-block form-reativar';
+          a.href = err.reativar;
+          a.textContent = 'Reativar plano';
+          form.querySelector('.form-msg').appendChild(a);
+        }
+      }
       btn.disabled = false;
     });
   }
@@ -288,7 +298,7 @@
     if (ME.status === 'onboarding') return showProfileChoice();
     if (ME.assinatura_vencida) {
       $('#aguardando-text').innerHTML = `Sua assinatura venceu em ${esc(new Date(ME.assinatura_ate.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR'))}. `
-        + `<a class="link-btn" href="/assinar?plano=${encodeURIComponent(ME.plano || ({ empresa: 'empresa', afiliado: 'pro' }[ME.tipo] || 'consumidor'))}">Renove o plano</a> para voltar a ver as ofertas.`;
+        + `<a class="link-btn" href="/assinar?plano=${encodeURIComponent(ME.plano || ({ empresa: 'empresa', afiliado: 'pro' }[ME.tipo] || 'consumidor'))}&renovar=1">Renove o plano</a> para voltar a ver as ofertas.`;
       return show('aguardando');
     }
     if (ME.status === 'pending') {

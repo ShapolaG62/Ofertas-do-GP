@@ -13,7 +13,7 @@ const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 
 // Configurações que pertencem a cada cliente (valores padrão iguais aos do site, com as chaves vazias).
 const AFILIADO_KEYS = ['amazon_tag', 'ml_matt_word', 'ml_matt_tool', 'kabum_afiliado', 'magalu_store',
-  'aliexpress_app_key', 'aliexpress_app_secret', 'aliexpress_tracking_id', 'shopee_app_id', 'shopee_app_secret'];
+  'aliexpress_app_key', 'aliexpress_app_secret', 'aliexpress_tracking_id', 'shopee_app_id', 'shopee_app_secret', 'shopee_afiliado_id'];
 const REDES_KEYS = ['telegram_bot_token', 'telegram_chat_id', 'facebook_page_id', 'facebook_page_token', 'instagram_business_id',
   'x_api_key', 'x_api_secret', 'x_access_token', 'x_access_secret',
   'whatsapp_provider', 'zapi_instance', 'zapi_token', 'zapi_client_token', 'evolution_url', 'evolution_api_key', 'evolution_instance',
@@ -235,7 +235,8 @@ async function linkAfiliado(clienteId, o, s = config(clienteId)) {
     const pronto = o.store_id === 'aliexpress'
       ? s.aliexpress_app_key && s.aliexpress_app_secret && s.aliexpress_tracking_id
       : s.shopee_app_id && s.shopee_app_secret;
-    if (!pronto) return o.original_url;
+    // Shopee sem a API: link com o ID de afiliado do cliente (se ele informou)
+    if (!pronto) return o.store_id === 'shopee' ? store.affiliateLink(o, s) : o.original_url;
     const chave = o.store_id === 'aliexpress' ? `${s.aliexpress_app_key}|${s.aliexpress_tracking_id}` : s.shopee_app_id;
     const salvo = db.get('SELECT link, chave FROM cliente_links WHERE cliente_id = ? AND offer_id = ?', clienteId, o.id);
     if (salvo && salvo.chave === chave) return salvo.link;
@@ -259,7 +260,7 @@ function lojasSemAfiliado(s) {
   if (!s.ml_matt_word || !s.ml_matt_tool) faltam.push('Mercado Livre');
   if (!s.kabum_afiliado) faltam.push('KaBuM!');
   if (!(s.aliexpress_app_key && s.aliexpress_app_secret && s.aliexpress_tracking_id)) faltam.push('AliExpress');
-  if (!(s.shopee_app_id && s.shopee_app_secret)) faltam.push('Shopee');
+  if (!(s.shopee_app_id && s.shopee_app_secret) && !s.shopee_afiliado_id) faltam.push('Shopee');
   return faltam;
 }
 

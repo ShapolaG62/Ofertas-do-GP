@@ -35,6 +35,7 @@ const DEFAULTS = {
   ml_client_secret: '',
   shopee_app_id: '',
   shopee_app_secret: '',
+  shopee_afiliado_id: '',        // ID de afiliado da Shopee (vai nos links quando não há a API)
   aliexpress_app_key: '',
   aliexpress_app_secret: '',
   aliexpress_tracking_id: '',

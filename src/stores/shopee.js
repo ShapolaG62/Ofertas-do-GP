@@ -78,7 +78,18 @@ module.exports = {
     ? { ready: true }
     : { ready: false, reason: 'Informe o App ID e a Senha da API do Shopee Afiliados no painel.' },
   search,
-  affiliateLink: offer => offer.original_url,
+  // Sem link da API: usa o ID de afiliado no mesmo formato dos links de afiliado da Shopee (utm_source=an_<ID>).
+  affiliateLink(offer, s = {}) {
+    const id = String(s.shopee_afiliado_id || '').trim();
+    const url = String(offer.original_url || '');
+    if (!/^\d{5,20}$/.test(id) || !/^https:\/\/([a-z0-9-]+\.)*shopee\.com\.br\//i.test(url)) return url;
+    const u = new URL(url);
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach(k => u.searchParams.delete(k));
+    u.searchParams.set('utm_source', `an_${id}`);
+    u.searchParams.set('utm_medium', 'affiliates');
+    u.searchParams.set('utm_campaign', 'ofertou');
+    return u.href;
+  },
   matchesUrl: url => /shopee\.com\.br|shp\.ee/i.test(url),
   productIdFromUrl: url => {
     const m = String(url).match(/i\.(\d+)\.(\d+)/) || String(url).match(/product\/(\d+)\/(\d+)/);

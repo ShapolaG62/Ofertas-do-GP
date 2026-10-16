@@ -1,5 +1,7 @@
+const zlib = require('zlib');
 const express = require('express');
 const db = require('../db');
+const auth = require('../auth');
 const settings = require('../settings');
 const offers = require('../offers');
 const { safeGet } = require('../net');
@@ -11,9 +13,33 @@ const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 
 const router = express.Router();
 
+// Lista de todas as ofertas no ar (a página filtra e ordena no navegador). Vai enxuta — a foto vem por
+// /api/img/:id e o clique passa por /oferta/:slug — e compactada; o link de afiliado só vai para o admin
+// (gerador de postagens). A resposta fica guardada por 1 minuto.
+const OFFERS_CACHE_MS = 60 * 1000;
+const offersCache = new Map(); // 'admin' | 'public' -> { at, json, gz }
+
+function offersPayload(admin) {
+  const key = admin ? 'admin' : 'public';
+  const hit = offersCache.get(key);
+  if (hit && Date.now() - hit.at < OFFERS_CACHE_MS) return hit;
+  const rows = offers.listActive(100000).map(({ imagem, loja_nome, affiliate_url, ...o }) => (admin ? { ...o, affiliate_url } : o));
+  const json = Buffer.from(JSON.stringify(rows));
+  const entry = { at: Date.now(), json, gz: zlib.gzipSync(json, { level: 6 }) };
+  offersCache.set(key, entry);
+  return entry;
+}
+
 router.get('/api/offers', (req, res) => {
-  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 2000, 1), 5000);
-  res.json(offers.listActive(limit));
+  const { json, gz } = offersPayload(auth.isLoggedIn(req));
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'private, max-age=60');
+  res.setHeader('Vary', 'Accept-Encoding, Cookie');
+  if (/\bgzip\b/.test(req.headers['accept-encoding'] || '')) {
+    res.setHeader('Content-Encoding', 'gzip');
+    return res.end(gz);
+  }
+  res.end(json);
 });
 
 router.get('/api/featured', (req, res) => res.json(offers.featured() || {}));

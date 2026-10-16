@@ -86,7 +86,8 @@
   }
 
   // ── Filtragem e ordenação ────────────────────────────────────────────────
-  const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  // Minúsculas, sem acento e sem hífen ("Micro-ondas" acha "microondas" e vice-versa).
+  const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/-/g, ' ').replace(/\s+/g, ' ');
 
   function matches(o, skip = '') {
     if (skip !== 'loja' && state.loja) {
@@ -123,7 +124,27 @@
     return collator.compare(a || '', b || '');
   }
 
-  const filtered = () => ALL.filter(o => matches(o)).sort(SORTS[state.ordem] || SORTS.recentes);
+  // Relevância na busca: primeiro o produto cujo nome começa com o termo ("Geladeira Frost Free..."),
+  // depois os que trazem o termo logo no início, e por último acessórios ("Organizador de geladeira").
+  function relevance(o, phrase, words) {
+    const t = normalize(o.produto);
+    const i = t.indexOf(phrase);
+    let score = i === 0 ? 100 : i > 0 && i <= 30 ? 60 : i > 0 ? 30 : 10;
+    if (i > 0 && /\b(para|de|do|da|p\/)\s$/.test(t.slice(Math.max(0, i - 5), i))) score -= 25;
+    if (t.split(' ')[0] === words[0]) score += 20;
+    return score;
+  }
+
+  function filtered() {
+    const list = ALL.filter(o => matches(o));
+    if (state.q && state.ordem === 'recentes') {
+      const phrase = normalize(state.q).trim().replace(/\s+/g, ' ');
+      const words = phrase.split(' ');
+      const score = new Map(list.map(o => [o, relevance(o, phrase, words)]));
+      return list.sort((a, b) => score.get(b) - score.get(a) || SORTS.recentes(a, b));
+    }
+    return list.sort(SORTS[state.ordem] || SORTS.recentes);
+  }
   const countBy = (list, key) => list.reduce((acc, o) => ((acc[o[key]] = (acc[o[key]] || 0) + 1), acc), {});
 
   // ── Renderização ─────────────────────────────────────────────────────────
@@ -552,7 +573,7 @@
 
   async function loadOffers() {
     try {
-      ALL = await fetch('/api/offers?limit=5000').then(r => r.json());
+      ALL = await fetch('/api/offers').then(r => r.json());
     } catch {
       ALL = [];
     }

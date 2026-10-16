@@ -97,5 +97,6 @@ if (process.env.VERCEL) {
     console.log(`🔐 Painel: http://localhost:${PORT}/admin`);
     console.log('==================================================\n');
     if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
+    if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar(); // postagens agendadas (manhã, tarde, noite)
   });
 }

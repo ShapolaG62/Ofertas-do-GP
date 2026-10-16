@@ -59,6 +59,24 @@ const DEFAULTS = {
   x_api_secret: '',
   x_access_token: '',
   x_access_secret: '',
+
+  // WhatsApp (número separado, conectado por Z-API ou Evolution API)
+  whatsapp_provider: '',        // 'zapi' | 'evolution'
+  zapi_instance: '',
+  zapi_token: '',
+  zapi_client_token: '',        // "token de segurança da conta" (opcional)
+  evolution_url: '',
+  evolution_api_key: '',
+  evolution_instance: '',
+  whatsapp_groups: '[]',        // grupos de destino: [{ id, nome }]
+  whatsapp_intervalo_s: '90',   // espera entre uma oferta e outra no WhatsApp
+
+  // Postagens agendadas (3 vezes por dia)
+  agenda_ativa: '0',
+  agenda_horarios: '09:00,14:00,20:00', // horário de Brasília
+  agenda_qtd: '5',
+  agenda_redes: '["whatsapp"]',
+  agenda_completar: '1',        // completa a fila com as melhores ofertas do momento
 };
 
 // Chaves que o site público pode ler.
@@ -66,10 +84,11 @@ const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsens
 
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
-  'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret'];
+  'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret',
+  'zapi_token', 'zapi_client_token', 'evolution_api_key'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
-const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor'];
+const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas'];
 
 for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);
@@ -115,7 +134,7 @@ function updateFromAdmin(updates) {
   for (const [key, raw] of Object.entries(updates || {})) {
     if (!(key in DEFAULTS) || INTERNAL_KEYS.includes(key)) continue;
     let value = typeof raw === 'string' ? raw.trim() : raw;
-    if (key === 'stores_enabled' && typeof value === 'object') value = JSON.stringify(value);
+    if (['stores_enabled', 'whatsapp_groups', 'agenda_redes'].includes(key) && typeof value === 'object') value = JSON.stringify(value);
     if (SECRET_KEYS.includes(key) && !value) continue;
     set(key, value);
     changed.push(key);

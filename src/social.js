@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const axios = require('axios');
 const db = require('./db');
 const settings = require('./settings');
+const whatsapp = require('./whatsapp');
 
 const GRAPH = 'https://graph.facebook.com/v23.0';
 const TIMEOUT = 25000;
@@ -25,6 +26,15 @@ const REDES = {
     nome: 'Instagram',
     pronta: s => (s.instagram_business_id && s.facebook_page_token ? null : 'Informe o ID da conta do Instagram e o token da página no painel.'),
     publicar: postInstagram,
+  },
+  whatsapp: {
+    nome: 'WhatsApp',
+    pronta: s => {
+      const c = whatsapp.config(s);
+      if (c.erro) return c.erro;
+      return whatsapp.gruposEscolhidos(s).length ? null : 'Escolha os grupos de destino no painel.';
+    },
+    publicar: postWhatsApp,
   },
   x: {
     nome: 'X (Twitter)',
@@ -187,6 +197,42 @@ async function postX(o, _texto, s) {
   } catch (err) { throw apiError(err, 'X'); }
 }
 
+// WhatsApp: foto + texto em cada grupo escolhido, com uma pausa aleatória entre grupos (parece menos robô).
+async function postWhatsApp(o, texto, s) {
+  const grupos = whatsapp.gruposEscolhidos(s);
+  const imagem = postImage(o, s);
+  const ok = [], erros = [];
+  for (let i = 0; i < grupos.length; i++) {
+    try {
+      await whatsapp.enviar(s, grupos[i].id, { imagem, texto });
+      ok.push(grupos[i].nome);
+    } catch (err) {
+      erros.push(`${grupos[i].nome}: ${err.message}`);
+    }
+    if (i < grupos.length - 1) await new Promise(r => setTimeout(r, 6000 + Math.random() * 6000));
+  }
+  if (!ok.length) throw new Error(erros.join(' | '));
+  return `enviado para ${ok.length} grupo(s)${erros.length ? `; falhou em ${erros.join(' | ')}` : ''}`;
+}
+
+// Texto padrão de uma oferta (mesmo modelo da tela de postagens), usado nas postagens agendadas.
+function textoPadrao(o, s = settings.getAll()) {
+  const LOJAS = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', temu: 'Temu' };
+  const lines = [
+    `*${o.produto}*`, '',
+    `De ~R$ ${brl(o.preco_anterior)}~`,
+    `*Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
+    `Loja: ${LOJAS[o.store_id] || o.plataforma}`, '',
+    postLink(o, s),
+  ];
+  const seen = o.last_seen_at && new Date(String(o.last_seen_at).replace(' ', 'T') + 'Z');
+  if (seen && !isNaN(seen)) {
+    const quando = seen.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    lines.push('', `_Preço conferido em ${quando}. Pode mudar a qualquer momento._`);
+  }
+  return lines.join('\n');
+}
+
 // Publica uma oferta nas redes pedidas; cada rede responde independentemente.
 async function publicar(offerId, redes, texto, autor) {
   const s = settings.getAll();
@@ -223,4 +269,4 @@ function historico(offerIds) {
   return out;
 }
 
-module.exports = { REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, oauthHeader, toTelegramHtml, plain, textoCurto };
+module.exports = { REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, textoPadrao, oauthHeader, toTelegramHtml, plain, textoCurto };

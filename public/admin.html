@@ -407,8 +407,84 @@
       <div class="panel">
         <h2>Postagem automática nas redes sociais</h2>
         <p class="hint">Na página de ofertas, toque no ✓ de um produto para levá-lo à tela <a href="/postagens" target="_blank">Postagens</a>. Lá você edita os textos, publica manualmente ou clica em <b>Postar automaticamente</b> nas redes marcadas. Usuários do site só usam essa tela se você liberar em <b>Usuários → Gerenciar → Permitir postagens nas redes</b>; eles publicam nas contas configuradas aqui.</p>
-        <p class="hint">O <b>WhatsApp</b> não tem API oficial para postar em grupos; lá a postagem é pelo botão manual (abre o WhatsApp com o texto pronto). Ferramentas não oficiais costumam levar o número a ser banido.</p>
+        <p class="hint">O <b>WhatsApp</b> não tem API oficial para grupos: a postagem automática usa um número separado conectado pela Z-API ou pela Evolution API (configure abaixo). O botão manual de WhatsApp continua disponível em cada produto.</p>
       </div>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>WhatsApp (número separado para as postagens)</h2>
+          <p class="hint">O WhatsApp não tem API oficial para grupos. A postagem automática usa um serviço que conecta um número ao WhatsApp Web: <b>Z-API</b> (pago, na nuvem, funciona sem servidor) ou <b>Evolution API</b> (grátis, roda no seu computador ou VPS com Docker). <b>Use um número só para isso</b>: o WhatsApp pode banir números automatizados. Para reduzir o risco, use um chip com algumas semanas de uso, mantenha o intervalo entre mensagens e poste só em grupos onde as pessoas entraram por vontade própria.</p>
+          <div class="grid">
+            <label class="field">Serviço
+              <select name="whatsapp_provider" id="wa-provider">
+                <option value="">— escolha —</option>
+                <option value="zapi">Z-API (z-api.io)</option>
+                <option value="evolution">Evolution API</option>
+              </select></label>
+            <label class="field">Intervalo entre ofertas (segundos) <input type="number" name="whatsapp_intervalo_s" min="20" max="900"></label>
+          </div>
+          <div class="grid wa-zapi" style="margin-top:14px">
+            <label class="field">ID da instância <input type="text" name="zapi_instance" placeholder="3C2A..."></label>
+            <label class="field">Token da instância <input type="password" name="zapi_token" autocomplete="off" data-secret></label>
+            <label class="field">Token de segurança da conta (Client-Token) <input type="password" name="zapi_client_token" autocomplete="off" data-secret></label>
+          </div>
+          <p class="hint wa-zapi">Na Z-API: crie uma instância, leia o QR code com o WhatsApp do número separado e copie o ID e o token da instância. O "token de segurança da conta" fica em Segurança (obrigatório se estiver ativado).</p>
+          <div class="grid wa-evolution" style="margin-top:14px">
+            <label class="field">Endereço do servidor <input type="url" name="evolution_url" placeholder="http://localhost:8080"></label>
+            <label class="field">Chave (apikey) <input type="password" name="evolution_api_key" autocomplete="off" data-secret></label>
+            <label class="field">Nome da instância <input type="text" name="evolution_instance" placeholder="ofertasgp"></label>
+          </div>
+          <p class="hint wa-evolution">Na Evolution API (v2): crie uma instância, leia o QR code com o WhatsApp do número separado e informe aqui o endereço, a chave global (AUTHENTICATION_API_KEY) e o nome da instância.</p>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn primary" type="submit">Salvar WhatsApp</button>
+            <button class="btn" type="button" id="wa-test">Testar conexão</button>
+            <button class="btn" type="button" id="wa-load">Carregar grupos do número</button>
+          </div>
+          <div id="wa-msg"></div>
+          <div id="wa-groups-box" class="hidden">
+            <h3>Grupos de destino</h3>
+            <p class="hint">Marque os grupos que vão receber as postagens. O número precisa ser membro (de preferência administrador) de cada grupo.</p>
+            <div id="wa-groups" style="display:grid;gap:6px;max-height:280px;overflow:auto"></div>
+            <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" id="wa-save-groups">Salvar grupos</button></div>
+          </div>
+          <p class="hint" id="wa-chosen"></p>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Postagens agendadas</h2>
+          <p class="hint">Nos horários abaixo (horário de Brasília), o site publica algumas ofertas nas redes marcadas: primeiro as da <b>fila</b> (botão "Adicionar à fila agendada" na tela de postagens) e, se faltar, as <b>melhores ofertas do momento</b> (maior desconto, categorias variadas, sem repetir o que foi postado nos últimos 7 dias). Funciona enquanto o site estiver ligado (no seu computador ou na VPS); não roda na Vercel.</p>
+          <div class="grid">
+            <label class="field">Agendamento
+              <select name="agenda_ativa"><option value="1">Ligado</option><option value="0">Desligado</option></select></label>
+            <label class="field">Horários (separe por vírgula) <input type="text" name="agenda_horarios" placeholder="09:00,14:00,20:00"></label>
+            <label class="field">Ofertas por horário <input type="number" name="agenda_qtd" min="1" max="20"></label>
+            <label class="field">Se a fila não tiver ofertas suficientes
+              <select name="agenda_completar"><option value="1">Completar com as melhores ofertas</option><option value="0">Postar só o que estiver na fila</option></select></label>
+          </div>
+          <h3>Redes do agendamento</h3>
+          <div class="row" style="gap:18px">
+            <label class="check"><input type="checkbox" data-agenda-rede="whatsapp"> WhatsApp</label>
+            <label class="check"><input type="checkbox" data-agenda-rede="telegram"> Telegram</label>
+            <label class="check"><input type="checkbox" data-agenda-rede="facebook"> Facebook</label>
+            <label class="check"><input type="checkbox" data-agenda-rede="instagram"> Instagram</label>
+            <label class="check"><input type="checkbox" data-agenda-rede="x"> X (Twitter)</label>
+          </div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn primary" type="submit">Salvar agendamento</button>
+            <button class="btn" type="button" id="agenda-run">Postar uma rodada agora</button>
+          </div>
+          <p class="hint" id="agenda-estado"></p>
+          <h3>Fila <button class="btn small danger" type="button" id="fila-limpar" style="margin-left:8px">Limpar fila</button></h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Produto</th><th>Situação</th><th>Adicionada</th><th>Resultado</th><th></th></tr></thead>
+              <tbody id="fila-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </form>
 
       <form class="settings-form">
         <div class="panel">
@@ -700,6 +776,10 @@ async function loadSettings() {
       }
     }
   });
+  let redesAgenda = [];
+  try { redesAgenda = JSON.parse(SETTINGS.agenda_redes || '[]'); } catch { /* vazio */ }
+  $$('[data-agenda-rede]').forEach(c => { c.checked = redesAgenda.includes(c.dataset.agendaRede); });
+  if (typeof updateWaProvider === 'function') updateWaProvider();
 }
 
 $$('.settings-form').forEach(form => form.addEventListener('submit', async e => {
@@ -708,6 +788,8 @@ $$('.settings-form').forEach(form => form.addEventListener('submit', async e => 
   for (const el of form.elements) if (el.name) body[el.name] = el.value;
   const storeChecks = $$('#enabled-stores input', form);
   if (storeChecks.length) body.stores_enabled = Object.fromEntries(storeChecks.map(c => [c.dataset.store, c.checked]));
+  const agendaRedes = $$('[data-agenda-rede]', form);
+  if (agendaRedes.length) body.agenda_redes = agendaRedes.filter(c => c.checked).map(c => c.dataset.agendaRede);
   try {
     const r = await api('/api/admin/settings', { method: 'PUT', body });
     globalMsg(r.refreshed ? `Salvo! ${r.refreshed} links de afiliado atualizados.` : 'Configurações salvas!');
@@ -1008,8 +1090,96 @@ $('#user-dlg').addEventListener('click', async e => {
 });
 
 // ── Redes sociais ─────────────────────────────────────────────────────────────
-const REDE_NOME = { telegram: 'Telegram', facebook: 'Facebook', instagram: 'Instagram', x: 'X (Twitter)' };
+const REDE_NOME = { telegram: 'Telegram', facebook: 'Facebook', instagram: 'Instagram', x: 'X (Twitter)', whatsapp: 'WhatsApp' };
+
+// WhatsApp: mostra só os campos do serviço escolhido.
+function updateWaProvider() {
+  const p = $('#wa-provider').value;
+  $$('.wa-zapi').forEach(el => el.classList.toggle('hidden', p !== 'zapi'));
+  $$('.wa-evolution').forEach(el => el.classList.toggle('hidden', p !== 'evolution'));
+  let g = [];
+  try { g = JSON.parse(SETTINGS.whatsapp_groups || '[]'); } catch { /* vazio */ }
+  $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>` : 'Nenhum grupo de destino escolhido ainda.';
+}
+$('#wa-provider').addEventListener('change', updateWaProvider);
+
+// Salva o formulário do WhatsApp antes de testar (para usar o que está digitado).
+async function saveWaForm() {
+  const form = $('#wa-provider').form;
+  const body = {};
+  for (const el of form.elements) if (el.name) body[el.name] = el.value;
+  await api('/api/admin/settings', { method: 'PUT', body });
+  await loadSettings();
+}
+
+$('#wa-test').addEventListener('click', async () => {
+  try {
+    await saveWaForm();
+    const r = await api('/api/admin/whatsapp/status');
+    flash($('#wa-msg'), r.mensagem, r.conectado);
+  } catch (err) { flash($('#wa-msg'), err.message, false); }
+});
+
+$('#wa-load').addEventListener('click', async () => {
+  const b = $('#wa-load');
+  b.disabled = true; b.textContent = 'Carregando…';
+  try {
+    await saveWaForm();
+    const r = await api('/api/admin/whatsapp/grupos');
+    const chosen = new Set(r.escolhidos.map(g => g.id));
+    $('#wa-groups').innerHTML = r.grupos.length ? r.grupos.map(g => `
+      <label class="check"><input type="checkbox" data-wa-group="${esc(g.id)}" data-nome="${esc(g.nome)}" ${chosen.has(g.id) ? 'checked' : ''}> ${esc(g.nome)}</label>`).join('')
+      : '<span class="hint">O número não participa de nenhum grupo.</span>';
+    $('#wa-groups-box').classList.remove('hidden');
+    $('#wa-msg').innerHTML = '';
+  } catch (err) { flash($('#wa-msg'), err.message, false); }
+  b.disabled = false; b.textContent = 'Carregar grupos do número';
+});
+
+$('#wa-save-groups').addEventListener('click', async () => {
+  const grupos = $$('[data-wa-group]').filter(c => c.checked).map(c => ({ id: c.dataset.waGroup, nome: c.dataset.nome }));
+  try {
+    await api('/api/admin/settings', { method: 'PUT', body: { whatsapp_groups: grupos } });
+    await loadSettings();
+    flash($('#wa-msg'), `${grupos.length} grupo(s) de destino salvos.`);
+  } catch (err) { flash($('#wa-msg'), err.message, false); }
+});
+
+// Agendamento e fila
+const FILA_STATUS = { pendente: 'Na fila', postado: 'Postado', erro: 'Erro', expirado: 'Saiu do ar' };
+async function loadAgenda() {
+  const { estado, fila } = await api('/api/admin/agenda');
+  const ult = estado.ultimaExecucao;
+  $('#agenda-estado').innerHTML = `${estado.ativa ? `<b>Ligado</b> · horários ${estado.horarios.join(', ')} · próximo: <b>${esc(estado.proximo || '—')}</b>` : '<b>Desligado</b>'}
+    · ${estado.pendentes} oferta(s) na fila${estado.rodando ? ' · <b>publicando agora…</b>' : ''}
+    ${ult ? `<br>Última rodada (${esc(ult.motivo)}): ${ult.feitos.filter(f => f.ok).length} de ${ult.feitos.length} publicadas em ${fmtDate(ult.em.replace('T', ' ').slice(0, 19))}` : ''}`;
+  $('#fila-body').innerHTML = fila.length ? fila.map(q => `<tr>
+      <td><span class="offer-title">${esc(q.produto || `oferta #${q.offer_id}`)}</span></td>
+      <td><span class="badge ${q.status === 'postado' ? 'b-ok' : q.status === 'erro' ? 'b-error' : q.status === 'pendente' ? 'b-pending' : 'b-none'}">${FILA_STATUS[q.status] || q.status}</span></td>
+      <td class="num">${fmtDate(q.created_at)}</td>
+      <td class="hint" style="max-width:340px">${esc(q.resultado || '')}</td>
+      <td>${q.status === 'pendente' ? `<button class="btn small danger" type="button" data-fila-del="${q.id}">Tirar</button>` : ''}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="hint">A fila está vazia.</td></tr>';
+}
+$('#fila-body').addEventListener('click', async e => {
+  const b = e.target.closest('[data-fila-del]');
+  if (!b) return;
+  try { await api(`/api/admin/agenda/fila/${b.dataset.filaDel}`, { method: 'DELETE' }); loadAgenda(); } catch (err) { globalMsg(err.message, false); }
+});
+$('#fila-limpar').addEventListener('click', async () => {
+  if (!confirm('Tirar todas as ofertas que estão esperando na fila?')) return;
+  try { await api('/api/admin/agenda/fila', { method: 'DELETE' }); loadAgenda(); } catch (err) { globalMsg(err.message, false); }
+});
+$('#agenda-run').addEventListener('click', async () => {
+  try {
+    await api('/api/admin/agenda/executar', { method: 'POST', body: {} });
+    globalMsg('Rodada iniciada. As ofertas serão publicadas com o intervalo configurado; acompanhe no histórico.');
+    setTimeout(loadAgenda, 1500);
+  } catch (err) { globalMsg(err.message, false); }
+});
+
 async function loadSocialLog() {
+  loadAgenda().catch(() => {});
   const rows = await api('/api/postagens/historico');
   $('#social-log').innerHTML = rows.length ? rows.map(r => `<tr>
       <td class="num">${fmtDate(r.created_at)}</td>

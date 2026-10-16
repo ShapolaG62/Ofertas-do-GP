@@ -153,6 +153,22 @@ O site tem espaços reservados para propaganda de empresas que entrarem em conta
 | Instagram | Conta profissional ligada à página + mesmo token (só publica com foto) |
 | X (Twitter) | App no developer.x.com com permissão "Read and write" (4 chaves) |
 
-**WhatsApp:** não tem API oficial para postar em grupos, então lá é sempre pelo botão manual (abre o WhatsApp com o texto pronto).
+**WhatsApp:** não tem API oficial para grupos. A postagem automática usa um **número separado** conectado por um destes serviços (Painel → Redes sociais → WhatsApp):
+
+- **Z-API** (z-api.io): pago, na nuvem, não precisa de servidor. Informe o ID e o token da instância e, se estiver ativado, o token de segurança da conta.
+- **Evolution API** (v2): grátis, roda no seu computador ou na VPS com Docker. Informe o endereço, a chave (apikey) e o nome da instância.
+
+Depois clique em **Testar conexão**, **Carregar grupos do número**, marque os grupos de destino e **Salvar grupos**. Cada oferta vai com foto e texto para todos os grupos marcados, com pausa de alguns segundos entre os grupos e o intervalo configurado (padrão 90 s) entre uma oferta e outra.
+
+> O WhatsApp pode banir números automatizados. Use um chip só para isso (de preferência com algumas semanas de uso), mantenha o intervalo e poste só em grupos onde as pessoas entraram por vontade própria.
+
+### Postagens agendadas (manhã, tarde e noite)
+
+Em **Painel → Redes sociais → Postagens agendadas**: ligue o agendamento, confira os horários (padrão **09:00, 14:00 e 20:00**, horário de Brasília), a quantidade por horário (padrão **5**) e as redes (padrão WhatsApp).
+
+- Em cada horário entram primeiro as ofertas da **fila**: na tela de postagens, o botão **Adicionar à fila agendada** guarda os produtos incluídos com o texto editado.
+- Se a fila tiver menos ofertas que o necessário, o site completa com as **melhores do momento** (maior desconto até 80%, categorias variadas, nada que tenha sido postado nos últimos 7 dias). Dá para desligar e postar só o que estiver na fila.
+- Ofertas da fila que saíram do ar antes do horário são puladas. A fila, o resultado de cada postagem e o botão **Postar uma rodada agora** (para testar) ficam no mesmo painel.
+- O agendamento só funciona com o site ligado (no seu computador ou na VPS). Se o computador estiver desligado no horário, a rodada acontece quando ele voltar, até 2 horas depois.
 
 O link publicado leva direto à loja com o seu código de afiliado. Quando o site tiver endereço público (Painel → Usuários → "Endereço público do site"), o link passa pelo site e o clique é contado. O histórico das publicações fica em Painel → Redes sociais.

@@ -5,6 +5,7 @@ const db = require('../db');
 const auth = require('../auth');
 const users = require('../users');
 const social = require('../social');
+const agenda = require('../agenda');
 const settings = require('../settings');
 const { createLimiter } = require('../ratelimit');
 
@@ -30,7 +31,20 @@ router.get('/api/postagens/permissao', (req, res) => res.json({ pode: Boolean(po
 router.use('/api/postagens', requirePoster);
 
 router.get('/api/postagens/redes', (req, res) => {
-  res.json({ redes: social.listarRedes(), whatsapp_link: settings.get('whatsapp_link') || '', admin: req.poster.key === 'admin' });
+  res.json({
+    redes: social.listarRedes(),
+    whatsapp_intervalo_s: settings.getNumber('whatsapp_intervalo_s', 90),
+    agenda: agenda.estado(),
+    admin: req.poster.key === 'admin',
+  });
+});
+
+// Coloca ofertas (com o texto editado) na fila das postagens agendadas.
+router.post('/api/postagens/fila', (req, res) => {
+  const itens = Array.isArray(req.body?.itens) ? req.body.itens : [];
+  if (!itens.length) return res.status(400).json({ error: 'Nenhum produto enviado.' });
+  const n = agenda.enfileirar(itens, req.poster.autor);
+  res.json({ ok: true, adicionados: n, pendentes: agenda.pendentes() });
 });
 
 // Dados das ofertas escolhidas (com o link e a imagem que vão nas postagens).

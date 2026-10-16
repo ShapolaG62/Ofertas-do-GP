@@ -17,6 +17,7 @@
 
   let OFFERS = [];
   let REDES = [];
+  let WA_INTERVALO = 90;
   let textos = load(TXT_KEY, {});
   const excluded = new Set();
   let stopRequested = false;
@@ -53,10 +54,11 @@
       <label class="net-option${r.pronta ? '' : ' is-off'}" title="${esc(r.motivo || '')}">
         <input type="checkbox" value="${r.id}" ${r.pronta ? '' : 'disabled'} ${r.pronta && chosen.includes(r.id) ? 'checked' : ''}>
         <span>${esc(r.nome)}</span>${r.pronta ? '' : '<small>não configurada</small>'}
-      </label>`).join('') + `
-      <span class="net-option is-off" title="O WhatsApp não tem API oficial para grupos">
-        <input type="checkbox" disabled><span>WhatsApp</span><small>só manual</small>
-      </span>`;
+      </label>`).join('');
+    const ag = info.agenda;
+    $('#agenda-info').innerHTML = ag.ativa
+      ? `Agendamento ligado: ${ag.horarios.join(', ')} (próximo às <b>${esc(ag.proximo || '—')}</b>) em ${ag.redes.map(id => esc(REDES.find(r => r.id === id)?.nome || id)).join(', ')}. ${ag.pendentes} oferta(s) na fila.`
+      : `Agendamento desligado${info.admin ? ' (ligue em <a class="link-btn" href="/admin">Painel → Redes sociais</a>)' : ''}. ${ag.pendentes} oferta(s) na fila.`;
     const off = REDES.filter(r => !r.pronta);
     const hint = $('#net-hint');
     hint.hidden = !off.length;
@@ -219,7 +221,14 @@
         if (st) st.innerHTML = `<span class="post-fail">${esc(err.message)}</span>`;
         if (/limite|permiss/i.test(err.message)) break;
       }
-      if (i < list.length - 1 && !stopRequested) await sleep(3000); // intervalo entre postagens (evita bloqueio por spam)
+      // Intervalo entre postagens (evita bloqueio por spam); no WhatsApp é bem maior.
+      if (i < list.length - 1 && !stopRequested) {
+        let espera = redes.includes('whatsapp') ? WA_INTERVALO : 3;
+        while (espera > 0 && !stopRequested) {
+          prog.textContent = `Próxima postagem em ${espera}s… (${i + 1} de ${list.length} feitas)`;
+          await sleep(1000); espera--;
+        }
+      }
     }
 
     prog.textContent = `${stopRequested ? 'Interrompido. ' : 'Concluído. '}${ok} publicação(ões) feitas${falhas ? `, ${falhas} com erro (veja em cada produto)` : ''}.`;
@@ -229,6 +238,23 @@
   });
   $('#auto-stop').addEventListener('click', () => { stopRequested = true; $('#auto-stop').hidden = true; });
 
+  // Fila das postagens agendadas (manhã, tarde e noite): leva os produtos incluídos com o texto editado.
+  $('#to-queue').addEventListener('click', async () => {
+    const list = OFFERS.filter(o => !excluded.has(o.id));
+    if (!list.length) return toast('Nenhum produto incluído.');
+    try {
+      const res = await fetch('/api/postagens/fila', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itens: list.map(o => ({ offer_id: o.id, texto: textOf(o) })) }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || `Erro ${res.status}`);
+      toast(`${d.adicionados} produto(s) na fila. Total esperando: ${d.pendentes}.`);
+      const info = await fetch('/api/postagens/redes').then(r => r.json());
+      renderNets(info);
+    } catch (err) { toast(err.message); }
+  });
+
   // ── Início ─────────────────────────────────────────────────────────────────
   (async () => {
     try {
@@ -237,6 +263,7 @@
         return r.json();
       });
       REDES = info.redes;
+      WA_INTERVALO = Math.max(20, Number(info.whatsapp_intervalo_s) || 90);
       renderNets(info);
       const ids = selection();
       const rows = ids.length ? await fetch(`/api/postagens/ofertas?ids=${ids.join(',')}`).then(r => r.json()) : [];

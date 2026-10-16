@@ -253,6 +253,19 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_social_posts_offer ON social_posts (offer_id);
+
+  -- Fila das postagens agendadas (3 vezes por dia)
+  CREATE TABLE IF NOT EXISTS post_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    offer_id INTEGER NOT NULL,
+    texto TEXT,
+    autor TEXT,
+    status TEXT NOT NULL DEFAULT 'pendente',
+    resultado TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    posted_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_post_queue_status ON post_queue (status, id);
 `);
 
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');

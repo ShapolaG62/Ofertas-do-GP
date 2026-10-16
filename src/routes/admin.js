@@ -8,6 +8,8 @@ const miner = require('../miner');
 const users = require('../users');
 const lojas = require('../lojas');
 const banners = require('../banners');
+const whatsapp = require('../whatsapp');
+const agenda = require('../agenda');
 const anuncios = require('../anuncios');
 const { STORES, getStore, storeFromUrl } = require('../stores');
 const { CATEGORIES } = require('../categorize');
@@ -225,6 +227,40 @@ router.delete('/api/admin/emails-bloqueados', (req, res) => {
 
 router.get('/api/admin/store-list', (req, res) => {
   res.json(STORES.map(s => ({ id: s.id, name: s.name, automatic: s.automatic })));
+});
+
+// ── WhatsApp e postagens agendadas ───────────────────────────────────────────
+router.get('/api/admin/whatsapp/status', async (req, res) => {
+  res.json(await whatsapp.status(settings.getAll()));
+});
+
+router.get('/api/admin/whatsapp/grupos', async (req, res) => {
+  try {
+    res.json({ grupos: await whatsapp.listarGrupos(settings.getAll()), escolhidos: whatsapp.gruposEscolhidos(settings.getAll()) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/api/admin/agenda', (req, res) => {
+  res.json({ estado: agenda.estado(), fila: agenda.listarFila() });
+});
+
+// Roda uma rodada agora (para testar); a publicação continua em segundo plano.
+router.post('/api/admin/agenda/executar', (req, res) => {
+  if (agenda.estado().rodando) return res.status(409).json({ error: 'Já existe uma rodada em andamento.' });
+  const r = agenda.executar('manual pelo painel');
+  r.then(x => x?.erro && console.log('[AGENDA]', x.erro)).catch(err => console.error('[AGENDA]', err));
+  res.json({ ok: true });
+});
+
+router.delete('/api/admin/agenda/fila/:id', (req, res) => {
+  agenda.removerDaFila(Number(req.params.id));
+  res.json({ ok: true });
+});
+
+router.delete('/api/admin/agenda/fila', (req, res) => {
+  res.json({ ok: true, removidos: agenda.limparFila() });
 });
 
 // ── Publicidade (banners de empresas) ─────────────────────────────────────────

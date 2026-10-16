@@ -135,3 +135,24 @@ O site tem espaços reservados para propaganda de empresas que entrarem em conta
 - Com mais de uma campanha no mesmo espaço, elas se **revezam** a cada visita.
 - O painel mostra **visualizações, cliques e a taxa de clique** de cada campanha, para você passar o resultado ao anunciante.
 - Todo banner aparece com o selo **Patrocinado**, como pede o Código de Defesa do Consumidor e o CONAR. Não aceite anúncios enganosos ou de produtos ilegais.
+
+## 10. Postagens nas redes sociais
+
+**Quem usa:** o administrador e os usuários que você liberar em **Painel → Usuários → Gerenciar → Permitir postagens nas redes** (só contas ativas). Eles publicam nas contas que você configurou.
+
+1. Na página de ofertas, toque no **✓** de um produto: ele entra na lista e abre a tela **/postagens**. Para escolher mais, use **+ Escolher mais produtos**. A barra "Postagens" também tem **Selecionar página** e **1 por categoria**. Tocar no ✓ de um produto já escolhido o desmarca.
+2. Na tela de postagens, cada produto tem o texto pronto e **editável** (fica salvo no navegador), além de botões manuais: copiar texto, baixar imagem, WhatsApp e Telegram.
+3. Para publicar sozinho: marque as redes, deixe marcados os produtos em **Incluir** e clique em **Postar automaticamente** (clique de novo para confirmar). O site publica um produto a cada 3 segundos e mostra o resultado de cada rede; dá para **Parar** no meio.
+
+**Redes com postagem automática** (configure em **Painel → Redes sociais**, que tem o passo a passo de cada uma):
+
+| Rede | O que é preciso |
+|---|---|
+| Telegram | Bot criado no @BotFather, adicionado como administrador do canal ou grupo |
+| Facebook | Página do Facebook + token de acesso da página |
+| Instagram | Conta profissional ligada à página + mesmo token (só publica com foto) |
+| X (Twitter) | App no developer.x.com com permissão "Read and write" (4 chaves) |
+
+**WhatsApp:** não tem API oficial para postar em grupos, então lá é sempre pelo botão manual (abre o WhatsApp com o texto pronto).
+
+O link publicado leva direto à loja com o seu código de afiliado. Quando o site tiver endereço público (Painel → Usuários → "Endereço público do site"), o link passa pelo site e o clique é contado. O histórico das publicações fica em Painel → Redes sociais.

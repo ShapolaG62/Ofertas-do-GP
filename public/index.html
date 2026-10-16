@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261019">
+<link rel="stylesheet" href="/css/site.css?v=20261025">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Ofertas do GP","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}
 </script>
@@ -113,14 +113,14 @@
       <div class="sub-chips" id="sub-chips" role="group" aria-label="Tipos de produto" hidden></div>
       <div class="active-filters" id="active-filters"></div>
 
-      <div class="admin-bar admin-only">
-        <strong>Ferramentas do administrador</strong>
+      <div class="admin-bar poster-only">
+        <strong>Postagens</strong>
         <span id="sel-count">0 selecionadas</span>
         <button class="btn btn-sm" type="button" id="sel-page">Selecionar página</button>
         <button class="btn btn-sm" type="button" id="sel-mix">1 por categoria</button>
         <button class="btn btn-sm" type="button" id="sel-clear">Limpar</button>
-        <button class="btn btn-sm btn-primary" type="button" id="open-posts">Gerar postagens</button>
-        <button class="btn btn-sm" type="button" id="mine-term">Minerar termo da busca</button>
+        <a class="btn btn-sm btn-primary" href="/postagens" id="open-posts">Ir para postagens</a>
+        <button class="btn btn-sm admin-only" type="button" id="mine-term">Minerar termo da busca</button>
       </div>
 
       <div class="grid" id="grid" aria-live="polite"></div>
@@ -170,23 +170,9 @@
   </div>
 </dialog>
 
-<dialog id="posts-dialog" aria-label="Postagens para grupos">
-  <div class="modal">
-    <div class="modal-head">
-      <h3 id="posts-title">Postagens</h3>
-      <button class="icon-btn" type="button" data-close aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
-    </div>
-    <div class="modal-body" id="posts-body"></div>
-    <div class="modal-foot">
-      <button class="btn" type="button" data-close>Fechar</button>
-      <button class="btn btn-primary" type="button" id="copy-all">Copiar todas</button>
-    </div>
-  </div>
-</dialog>
-
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/js/publicidade.js?v=20261021" data-espacos="topo,meio,lateral" defer></script>
-<script src="/js/site.js?v=20261024" defer></script>
+<script src="/js/site.js?v=20261025" defer></script>
 </body>
 </html>

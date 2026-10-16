@@ -48,13 +48,25 @@ const DEFAULTS = {
   google_client_secret: '',
   // Endereço público do site (ex.: https://ofertasdogp.com.br). Vazio = usa o endereço acessado.
   site_url: '',
+
+  // Postagem automática nas redes sociais (APIs oficiais)
+  telegram_bot_token: '',   // @BotFather
+  telegram_chat_id: '',     // @canal ou id do grupo (-100...)
+  facebook_page_id: '',
+  facebook_page_token: '',  // token de acesso da página (também usado pelo Instagram)
+  instagram_business_id: '',
+  x_api_key: '',
+  x_api_secret: '',
+  x_access_token: '',
+  x_access_secret: '',
 };
 
 // Chaves que o site público pode ler.
 const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsense_client', 'ga_id'];
 
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
-const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret'];
+const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
+  'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
 const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor'];

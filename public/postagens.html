@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postagens — Ofertas do GP</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c8f4f">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261025">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-wa" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1-.3-.1-.5-.1-.7.1-.2.3-.7 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5.3-.5c.1-.2.1-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1.1 1-1.1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.3 5.2 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.2-.3-.2-.6-.4zM12 2a10 10 0 0 0-8.5 15.2L2 22l4.9-1.4A10 10 0 1 0 12 2z"/></symbol>
+  <symbol id="i-tg" viewBox="0 0 24 24" fill="currentColor"><path d="M22 4.5c-.4.2-.7.3-1 .4l-15.6 6c-1.5.5-1.5 1.5-.3 1.9l4 1.3 1.5 4.7c.2.6.1.8.7.8.5 0 .7-.2 1-.5l2.4-2.3 4.9 3.6c.9.5 1.6.3 1.8-.8l3.3-15.5c.3-1.3-.5-1.9-1.7-1.6z"/></symbol>
+</svg>
+
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertas do GP — início">
+      <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertas do <b>GP</b></span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-sm" href="/" id="more-link">+ Escolher mais produtos</a>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+<div class="container posts-page">
+  <div class="posts-head">
+    <div>
+      <h1>Postagens</h1>
+      <p class="posts-sub" id="posts-sub">Carregando…</p>
+    </div>
+  </div>
+
+  <section class="panel-card posts-auto" aria-labelledby="auto-title">
+    <h2 id="auto-title">Postar automaticamente</h2>
+    <p class="posts-hint">Marque as redes e clique em postar. Cada produto marcado abaixo é publicado com o texto que está na caixa dele.</p>
+    <div class="net-list" id="net-list"></div>
+    <p class="posts-hint" id="net-hint" hidden></p>
+    <div class="posts-actions">
+      <button class="btn btn-primary" type="button" id="auto-post">Postar automaticamente</button>
+      <button class="btn" type="button" id="auto-stop" hidden>Parar</button>
+      <button class="btn" type="button" id="copy-all">Copiar todos os textos</button>
+      <button class="btn" type="button" id="clear-all">Limpar seleção</button>
+    </div>
+    <div class="post-progress" id="progress" hidden></div>
+  </section>
+
+  <div class="posts-list" id="posts-list" aria-live="polite"></div>
+</div>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/js/postagens.js?v=20261024" defer></script>
+</body>
+</html>

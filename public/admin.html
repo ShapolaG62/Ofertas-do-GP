@@ -160,6 +160,7 @@
       <button class="tab" data-tab="mining">Mineração</button>
       <button class="tab" data-tab="users">Usuários<span class="count-badge hidden" id="pending-badge">0</span></button>
       <button class="tab" data-tab="ads">Publicidade<span class="count-badge hidden" id="leads-badge">0</span></button>
+      <button class="tab" data-tab="social">Redes sociais</button>
       <button class="tab" data-tab="site">Site</button>
       <button class="tab" data-tab="account">Conta</button>
     </nav>
@@ -401,6 +402,80 @@
       </div>
     </div>
 
+    <!-- REDES SOCIAIS -->
+    <div class="tab-body hidden" data-body="social">
+      <div class="panel">
+        <h2>Postagem automática nas redes sociais</h2>
+        <p class="hint">Na página de ofertas, toque no ✓ de um produto para levá-lo à tela <a href="/postagens" target="_blank">Postagens</a>. Lá você edita os textos, publica manualmente ou clica em <b>Postar automaticamente</b> nas redes marcadas. Usuários do site só usam essa tela se você liberar em <b>Usuários → Gerenciar → Permitir postagens nas redes</b>; eles publicam nas contas configuradas aqui.</p>
+        <p class="hint">O <b>WhatsApp</b> não tem API oficial para postar em grupos; lá a postagem é pelo botão manual (abre o WhatsApp com o texto pronto). Ferramentas não oficiais costumam levar o número a ser banido.</p>
+      </div>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Telegram</h2>
+          <ol class="hint" style="padding-left:18px;line-height:1.7">
+            <li>No Telegram, fale com <b>@BotFather</b> → <code>/newbot</code> → copie o <b>token</b>.</li>
+            <li>Adicione o bot ao seu canal ou grupo como <b>administrador</b> (com permissão de postar).</li>
+            <li>Canal público: informe <code>@nomedocanal</code>. Grupo ou canal privado: o ID numérico (começa com <code>-100</code>).</li>
+          </ol>
+          <div class="grid">
+            <label class="field">Token do bot <input type="password" name="telegram_bot_token" autocomplete="off" data-secret></label>
+            <label class="field">Canal ou grupo <input type="text" name="telegram_chat_id" placeholder="@meucanal ou -100123..."></label>
+          </div>
+          <div class="actions"><button class="btn primary" type="submit">Salvar Telegram</button></div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Facebook e Instagram</h2>
+          <ol class="hint" style="padding-left:18px;line-height:1.7">
+            <li>Você precisa de uma <b>Página do Facebook</b> e, para o Instagram, de uma conta <b>profissional</b> (comercial ou criador) ligada a essa página.</li>
+            <li>Em <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com</a>, crie um app do tipo <b>Empresa</b> e adicione os produtos <b>Facebook Login para Empresas</b> e <b>API do Instagram</b>.</li>
+            <li>No <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">Explorador da API do Graph</a>, gere um token com as permissões <code>pages_manage_posts</code>, <code>pages_read_engagement</code>, <code>instagram_basic</code> e <code>instagram_content_publish</code>, e troque por um <b>token de página de longa duração</b>.</li>
+            <li>ID da página: em Página → Sobre → Transparência da página. ID do Instagram: consulte <code>/{id-da-página}?fields=instagram_business_account</code> no Explorador.</li>
+          </ol>
+          <div class="grid">
+            <label class="field">ID da página do Facebook <input type="text" name="facebook_page_id"></label>
+            <label class="field">Token de acesso da página <input type="password" name="facebook_page_token" autocomplete="off" data-secret></label>
+            <label class="field">ID da conta do Instagram <input type="text" name="instagram_business_id" placeholder="1784..."></label>
+          </div>
+          <p class="hint">O Instagram só publica com foto, e a foto precisa estar num endereço público (as fotos das lojas já estão). Links no texto do Instagram não são clicáveis.</p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar Facebook e Instagram</button></div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>X (Twitter)</h2>
+          <ol class="hint" style="padding-left:18px;line-height:1.7">
+            <li>Em <a href="https://developer.x.com/en/portal/dashboard" target="_blank" rel="noopener">developer.x.com</a>, crie um projeto e um app.</li>
+            <li>Em <b>User authentication settings</b>, ative OAuth 1.0a com permissão <b>Read and write</b>.</li>
+            <li>Em <b>Keys and tokens</b>, copie a <b>API Key</b> e o <b>API Key Secret</b>, e gere o <b>Access Token</b> e o <b>Access Token Secret</b> (gere depois de ativar a escrita).</li>
+          </ol>
+          <div class="grid">
+            <label class="field">API Key <input type="text" name="x_api_key" autocomplete="off"></label>
+            <label class="field">API Key Secret <input type="password" name="x_api_secret" autocomplete="off" data-secret></label>
+            <label class="field">Access Token <input type="password" name="x_access_token" autocomplete="off" data-secret></label>
+            <label class="field">Access Token Secret <input type="password" name="x_access_secret" autocomplete="off" data-secret></label>
+          </div>
+          <p class="hint">No X o texto é resumido automaticamente (nome, preço e link) para caber em 280 caracteres.</p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar X</button></div>
+        </div>
+      </form>
+
+      <div class="panel">
+        <h2>Histórico de postagens</h2>
+        <p class="hint">As últimas 100 publicações automáticas, com quem publicou e o resultado.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Produto</th><th>Rede</th><th>Resultado</th><th>Por</th></tr></thead>
+            <tbody id="social-log"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- PUBLICIDADE -->
     <div class="tab-body hidden" data-body="ads">
       <div class="panel">
@@ -556,6 +631,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'dash') loadStores();
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
   if (t.dataset.tab === 'ads') loadAds();
+  if (t.dataset.tab === 'social') loadSocialLog();
 }));
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
@@ -725,7 +801,7 @@ async function loadUsers() {
     <tr>
       <td><b>${esc(u.tipo === 'empresa' ? (u.empresa_nome || u.nome) : u.nome)}</b><br><span class="hint" style="margin:0">${esc(u.email)}</span></td>
       <td>${tipoLabel(u.tipo)}</td>
-      <td><span class="badge b-${u.status}">${esc(U_STATUS[u.status] || u.status)}</span>${u.bloqueio_publicacao ? ' <span class="tag">sem publicar</span>' : ''}</td>
+      <td><span class="badge b-${u.status}">${esc(U_STATUS[u.status] || u.status)}</span>${u.bloqueio_publicacao ? ' <span class="tag">sem publicar</span>' : ''}${u.pode_postar ? ' <span class="tag">posta nas redes</span>' : ''}</td>
       <td class="hide-sm">${u.loja_nome ? `<a href="/loja/${esc(u.loja_slug)}" target="_blank">${esc(u.loja_nome)}</a>${u.loja_oculta ? ' <span class="tag">oculta</span>' : ''}<br><span class="hint" style="margin:0">${u.produtos} produto(s)</span>` : '—'}</td>
       <td class="hide-sm num">${fmtDate(u.created_at)}</td>
       <td class="num">
@@ -830,6 +906,7 @@ async function openUser(id) {
   const actions = [];
   if (u.status === 'pending') actions.push(btn('aprovar', 'Aprovar cadastro', 'primary'), btn('recusar', 'Recusar cadastro', 'danger'));
   if (u.status === 'active') actions.push(btn('suspender', 'Suspender (punir)'), btn('banir', 'Banir', 'danger'));
+  if (u.status === 'active') actions.push(u.pode_postar ? btn('remover_postagens', 'Tirar permissão de postagens') : btn('permitir_postagens', 'Permitir postagens nas redes', 'primary'));
   if (['suspended', 'banned', 'rejected'].includes(u.status)) actions.push(btn('reativar', 'Reativar conta', 'primary'));
   if (u.tipo === 'empresa') {
     actions.push(u.bloqueio_publicacao ? btn('liberar_publicacao', 'Liberar publicações') : btn('bloquear_publicacao', 'Impedir de publicar'));
@@ -858,7 +935,8 @@ async function openUser(id) {
       <dt>Aceite dos termos</dt><dd>${fmtDate(u.aceite_termos_em)}</dd>
       <dt>Situação</dt><dd><span class="badge b-${u.status}">${esc(U_STATUS[u.status])}</span>
         ${u.suspenso_ate ? ` até ${fmtDate(u.suspenso_ate)}` : ''}${u.status_motivo ? ` — ${esc(u.status_motivo)}` : ''}
-        ${u.bloqueio_publicacao ? ' <span class="tag">impedido de publicar</span>' : ''}</dd>
+        ${u.bloqueio_publicacao ? ' <span class="tag">impedido de publicar</span>' : ''}
+        ${u.pode_postar ? ' <span class="tag">pode postar nas redes</span>' : ''}</dd>
       <dt>Cadastro</dt><dd>${fmtDate(u.created_at)}</dd>
       <dt>Último acesso</dt><dd>${fmtDate(u.last_login_at)}</dd>
     </dl>
@@ -928,6 +1006,19 @@ $('#user-dlg').addEventListener('click', async e => {
     loadUsers(); loadModLog();
   } catch (err) { globalMsg(err.message, false); }
 });
+
+// ── Redes sociais ─────────────────────────────────────────────────────────────
+const REDE_NOME = { telegram: 'Telegram', facebook: 'Facebook', instagram: 'Instagram', x: 'X (Twitter)' };
+async function loadSocialLog() {
+  const rows = await api('/api/postagens/historico');
+  $('#social-log').innerHTML = rows.length ? rows.map(r => `<tr>
+      <td class="num">${fmtDate(r.created_at)}</td>
+      <td><span class="offer-title">${esc(r.produto || '—')}</span></td>
+      <td>${esc(REDE_NOME[r.rede] || r.rede)}</td>
+      <td>${r.ok ? '<span class="badge b-ok">Publicado</span>' : `<span class="badge b-error">Erro</span> <span class="hint">${esc(r.mensagem || '')}</span>`}</td>
+      <td>${esc(r.autor || '—')}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="hint">Nenhuma postagem automática ainda.</td></tr>';
+}
 
 // ── Publicidade ───────────────────────────────────────────────────────────────
 const AD_STATUS = { no_ar: 'No ar', agendada: 'Agendada', encerrada: 'Encerrada', pausada: 'Pausada' };

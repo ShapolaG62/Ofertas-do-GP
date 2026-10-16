@@ -50,7 +50,10 @@
   const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, ordem: 'recentes', pagina: 1 };
   let ALL = [];
   let isAdmin = false;
-  const selected = new Set();
+  // Produtos escolhidos para postar: guardados no navegador e lidos pela tela /postagens.
+  const SEL_KEY = 'gp_postagens';
+  const selected = new Set((() => { try { return JSON.parse(localStorage.getItem(SEL_KEY)) || []; } catch { return []; } })());
+  const saveSelection = () => { try { localStorage.setItem(SEL_KEY, JSON.stringify([...selected])); } catch { /* sem armazenamento */ } };
 
   function readUrl() {
     const p = new URLSearchParams(location.search);
@@ -257,7 +260,7 @@
       <div class="card-media">
         <img src="/api/img/${o.id}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
         <span class="card-off">-${Math.round(o.desconto_pct)}%</span>
-        <button class="card-select admin-only" type="button" data-select="${o.id}" aria-label="Selecionar oferta"><svg><use href="#i-check"/></svg></button>
+        <button class="card-select poster-only" type="button" data-select="${o.id}" aria-label="Escolher para postar"><svg><use href="#i-check"/></svg></button>
       </div>
       <div class="card-body">
         <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}</div>
@@ -434,25 +437,34 @@
     d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
   });
 
-  // ── Ferramentas do administrador ─────────────────────────────────────────
+  // ── Escolha de produtos para postar (admin e usuários liberados) ──────────
   function updateSelection() {
     $('#sel-count').textContent = `${selected.size} selecionada${selected.size === 1 ? '' : 's'}`;
+    saveSelection();
   }
+  const goToPosts = () => { saveSelection(); location.href = '/postagens'; };
 
+  // Escolher um produto leva direto para a tela de postagens; tocar de novo num já escolhido desmarca.
   $('#grid').addEventListener('click', e => {
     const b = e.target.closest('[data-select]');
     if (!b) return;
     e.preventDefault();
     e.stopPropagation();
     const id = Number(b.dataset.select);
-    selected.has(id) ? selected.delete(id) : selected.add(id);
-    b.closest('.card').classList.toggle('is-selected', selected.has(id));
+    if (selected.has(id)) {
+      selected.delete(id);
+      b.closest('.card').classList.remove('is-selected');
+      updateSelection();
+      return;
+    }
+    selected.add(id);
     updateSelection();
+    goToPosts();
   });
 
   $('#sel-page').addEventListener('click', () => {
     filtered().slice((state.pagina - 1) * PER_PAGE, state.pagina * PER_PAGE).forEach(o => selected.add(o.id));
-    renderGrid(); updateSelection();
+    goToPosts();
   });
   $('#sel-clear').addEventListener('click', () => { selected.clear(); renderGrid(); updateSelection(); });
   $('#sel-mix').addEventListener('click', () => {
@@ -463,56 +475,9 @@
       const top = list.sort((a, b) => b.desconto_pct - a.desconto_pct).slice(0, 5);
       selected.add(top[Math.floor(Math.random() * top.length)].id);
     }
-    renderGrid(); updateSelection();
-    toast(`${selected.size} ofertas selecionadas (uma por categoria).`);
+    goToPosts();
   });
-
-  function postText(o) {
-    const store = STORE_BY_ID[o.store_id]?.name || o.plataforma;
-    const seen = parseDate(o.last_seen_at);
-    const lines = [
-      `*${o.produto}*`,
-      '',
-      `De ~R$ ${brl(o.preco_anterior)}~`,
-      `*Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
-      `Loja: ${store}`,
-      '',
-      `${o.affiliate_url || `${location.origin}/oferta/${slug(o)}`}`,
-    ];
-    if (seen && !isNaN(seen)) {
-      lines.push('', `_Preço conferido em ${seen.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}. Pode mudar a qualquer momento._`);
-    }
-    return lines.join('\n');
-  }
-
-  $('#open-posts').addEventListener('click', () => {
-    const list = ALL.filter(o => selected.has(o.id));
-    if (!list.length) return toast('Selecione pelo menos uma oferta.');
-    $('#posts-title').textContent = `Postagens prontas (${list.length})`;
-    $('#posts-body').innerHTML = list.map(o => {
-      const text = postText(o);
-      return `<article class="post-item">
-        <header><img src="/api/img/${o.id}" alt=""><strong>${esc(o.produto)}</strong></header>
-        <pre>${esc(text)}</pre>
-        <div class="post-actions">
-          <button class="btn btn-sm" type="button" data-copy="${o.id}">Copiar texto</button>
-          <a class="btn btn-sm" href="/api/img/${o.id}" download="oferta-${o.id}.jpg">Baixar imagem</a>
-          <a class="btn btn-sm" href="https://api.whatsapp.com/send?text=${encodeURIComponent(text)}" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>WhatsApp</a>
-          <a class="btn btn-sm" href="https://t.me/share/url?url=${encodeURIComponent(o.affiliate_url || '')}&text=${encodeURIComponent(text)}" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Telegram</a>
-        </div></article>`;
-    }).join('');
-    $('#posts-dialog').showModal();
-  });
-  $('#posts-body').addEventListener('click', e => {
-    const b = e.target.closest('[data-copy]');
-    if (!b) return;
-    const o = ALL.find(x => x.id === Number(b.dataset.copy));
-    navigator.clipboard.writeText(postText(o)).then(() => toast('Texto copiado.'));
-  });
-  $('#copy-all').addEventListener('click', () => {
-    const text = ALL.filter(o => selected.has(o.id)).map(postText).join('\n\n———\n\n');
-    navigator.clipboard.writeText(text).then(() => toast('Todas as postagens foram copiadas.'));
-  });
+  $('#open-posts').addEventListener('click', e => { e.preventDefault(); goToPosts(); });
 
   $('#mine-term').addEventListener('click', async () => {
     const q = $('#q').value.trim();
@@ -606,6 +571,11 @@
     isAdmin = Boolean(s.loggedIn);
     document.body.classList.toggle('is-admin', isAdmin);
     if (isAdmin) $('#logout-site').hidden = false;
+  }).catch(() => {});
+  // Ferramentas de postagem: admin ou usuário liberado pelo admin.
+  fetch('/api/postagens/permissao').then(r => r.json()).then(p => {
+    document.body.classList.toggle('can-post', Boolean(p.pode));
+    if (p.pode) updateSelection();
   }).catch(() => {});
 
   loadOffers();

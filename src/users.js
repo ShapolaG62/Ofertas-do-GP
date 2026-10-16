@@ -33,7 +33,8 @@ function publicUser(u) {
   if (!u) return null;
   const out = {
     id: u.id, tipo: u.tipo, email: u.email, cpf: u.cpf, cnpj: u.cnpj,
-    status: u.status, bloqueio_publicacao: Boolean(u.bloqueio_publicacao), created_at: u.created_at,
+    status: u.status, bloqueio_publicacao: Boolean(u.bloqueio_publicacao), pode_postar: Boolean(u.pode_postar),
+    created_at: u.created_at,
     avatar_url: u.avatar_url, google: Boolean(u.google_id), tem_senha: Boolean(u.senha_hash),
   };
   for (const k of [...PESSOA_FIELDS, ...(u.tipo === 'empresa' ? EMPRESA_FIELDS : [])]) out[k] = u[k] ?? null;
@@ -258,6 +259,14 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
       db.run('UPDATE users SET bloqueio_publicacao = 0 WHERE id = ?', id);
       logAction(u, 'publicacoes_liberadas');
       break;
+    case 'permitir_postagens':
+      db.run('UPDATE users SET pode_postar = 1 WHERE id = ?', id);
+      logAction(u, 'postagens_permitidas');
+      break;
+    case 'remover_postagens':
+      db.run('UPDATE users SET pode_postar = 0 WHERE id = ?', id);
+      logAction(u, 'postagens_removidas', motivo);
+      break;
     case 'excluir_publicacoes': {
       const n = db.run('DELETE FROM offers WHERE loja_id IN (SELECT id FROM lojas WHERE user_id = ?)', id).changes;
       logAction(u, 'publicacoes_excluidas', `${n} produto(s)${motivo ? ` — ${motivo}` : ''}`);
@@ -295,7 +304,7 @@ function listForAdmin({ q = '', tipo = '', status = '', page = 1, perPage = 30 }
   const total = db.get(`SELECT COUNT(*) AS n ${from} ${whereSql}`, ...params).n;
   const rows = db.all(
     `SELECT u.id, u.tipo, u.nome, u.email, u.empresa_nome, u.cnpj, u.status, u.status_motivo, u.suspenso_ate,
-            u.bloqueio_publicacao, u.created_at, u.last_login_at,
+            u.bloqueio_publicacao, u.pode_postar, u.created_at, u.last_login_at,
             l.id AS loja_id, l.nome AS loja_nome, l.slug AS loja_slug, l.oculta AS loja_oculta,
             (SELECT COUNT(*) FROM offers o WHERE o.loja_id = l.id) AS produtos
      ${from} ${whereSql}

@@ -36,6 +36,7 @@ const USERS_COLUMNS = `
     status_motivo TEXT,
     suspenso_ate TEXT,
     bloqueio_publicacao INTEGER NOT NULL DEFAULT 0,
+    pode_postar INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     last_login_at TEXT,
     ${USER_DATA_COLUMNS.map(c => `${c} TEXT`).join(',\n    ')}
@@ -173,6 +174,10 @@ if (!usersSql.includes("'onboarding'")) {
     db.exec('PRAGMA foreign_keys = ON');
   }
 }
+// Permissão dada pelo admin para o usuário usar a tela de postagens nas redes sociais.
+if (!db.prepare('PRAGMA table_info(users)').all().some(c => c.name === 'pode_postar')) {
+  db.exec('ALTER TABLE users ADD COLUMN pode_postar INTEGER NOT NULL DEFAULT 0');
+}
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cpf ON users (cpf) WHERE cpf IS NOT NULL');
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cnpj ON users (cnpj) WHERE cnpj IS NOT NULL');
 
@@ -233,6 +238,21 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'novo',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+`);
+
+// Histórico das postagens automáticas nas redes sociais.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS social_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    offer_id INTEGER,
+    produto TEXT,
+    rede TEXT NOT NULL,
+    ok INTEGER NOT NULL,
+    mensagem TEXT,
+    autor TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_social_posts_offer ON social_posts (offer_id);
 `);
 
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');

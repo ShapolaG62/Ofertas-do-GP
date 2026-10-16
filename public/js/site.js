@@ -373,7 +373,6 @@
           setTimeout(() => antigo.remove(), 1200);
         }
       }));
-      $('#vitrine-conta').textContent = `${VIT.i + 1}/${VIT.itens.length}`;
       // Prepara a próxima foto enquanto esta aparece
       preCarregar(VIT.itens[(VIT.i + 1) % VIT.itens.length]);
     });
@@ -382,10 +381,7 @@
 
   function vitAgendar() {
     clearTimeout(VIT.timer);
-    const barra = $('#vitrine-progresso');
-    barra.style.transition = 'none'; barra.style.width = '0%';
     if (VIT.pausa || document.hidden || VIT.itens.length < 2) return;
-    requestAnimationFrame(() => { barra.style.transition = `width ${VIT_MS}ms linear`; barra.style.width = '100%'; });
     VIT.timer = setTimeout(() => vitIr(1), VIT_MS);
   }
 
@@ -403,7 +399,6 @@
         $('#vitrine-palco').innerHTML = vitItem(itens[VIT.i], true);
         v.classList.remove('is-carregando');
         $('#vitrine-ctrl').hidden = itens.length < 2;
-        $('#vitrine-conta').textContent = `${VIT.i + 1}/${itens.length}`;
         preCarregar(itens[(VIT.i + 1) % itens.length]);
         vitAgendar();
       } else {
@@ -411,7 +406,6 @@
         const pos = atual ? itens.findIndex(x => x.id === atual.id) : -1;
         VIT.i = pos >= 0 ? pos : 0;
         $('#vitrine-ctrl').hidden = itens.length < 2;
-        $('#vitrine-conta').textContent = `${VIT.i + 1}/${itens.length}`;
       }
       $('#hero-pet').hidden = true;
       v.hidden = false;

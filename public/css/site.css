@@ -678,9 +678,9 @@ body:not(.can-post) .poster-only { display: none !important; }
 @media (max-width: 720px) { .posts-bar-row { flex-wrap: wrap; } .posts-bar-search { flex-basis: 100%; } }
 
 /* ── Vitrine da página inicial (produtos recortados no lugar do mascote) ── */
-.vitrine { position: relative; width: min(100%, 440px); display: grid; gap: 10px; }
+.vitrine { position: relative; width: min(100%, 540px); }
 .vitrine[hidden] { display: none; }
-.vitrine-palco { position: relative; aspect-ratio: 1 / 0.9; }
+.vitrine-palco { position: relative; aspect-ratio: 1 / 0.92; }
 /* Carregando: brilho suave no lugar do produto (em vez do mascote piscando) */
 .vitrine.is-carregando .vitrine-palco::before { content: ""; position: absolute; inset: 14% 18%; border-radius: 50%;
   background: radial-gradient(circle, var(--brand-soft), transparent 70%); animation: vit-pulsar 1.6s ease-in-out infinite; }
@@ -699,21 +699,19 @@ body:not(.can-post) .poster-only { display: none !important; }
 .vitrine-item:hover .vitrine-foto img { transform: scale(1.04); }
 .vitrine-item:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; border-radius: 12px; }
 .vitrine-preco {
-  position: absolute; right: 6%; top: 8%; display: inline-flex; align-items: center; gap: 6px;
+  position: absolute; right: 4%; top: 6%; display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--surface); color: var(--ink); white-space: nowrap;
-  font-size: 14px; font-weight: 800; box-shadow: var(--shadow-md); border: 1px solid var(--line);
+  font-size: 16px; font-weight: 800; box-shadow: var(--shadow-md); border: 1px solid var(--line);
 }
-.vitrine-preco b { padding: 2px 8px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 12.5px; }
-.vitrine-nome { display: grid; gap: 1px; text-align: center; max-width: 92%; font-size: 13.5px; font-weight: 600; color: var(--ink-2); line-height: 1.35; margin-top: 6px; }
-.vitrine-nome small { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand); }
-.vitrine-ctrl { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+.vitrine-preco b { padding: 3px 9px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 14px; }
+.vitrine-nome { display: grid; gap: 2px; align-content: center; text-align: center; width: 100%; min-height: 58px; padding: 0 56px; font-size: 15px; font-weight: 600; color: var(--ink-2); line-height: 1.35; margin-top: 6px; }
+.vitrine-nome small { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand); }
+/* Setas nas laterais do nome do produto (mesma altura da faixa do nome) */
+.vitrine-ctrl { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px; pointer-events: none; z-index: 2; }
 .vitrine-ctrl[hidden] { display: none; }
-.vitrine-seta { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
-  font-size: 20px; line-height: 1; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.vitrine-seta { pointer-events: auto; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  font-size: 24px; line-height: 1; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; box-shadow: var(--shadow-sm); }
 .vitrine-seta:hover { border-color: var(--brand); color: var(--brand); }
-.vitrine-barra { flex: 1; height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
-.vitrine-barra span { display: block; height: 100%; width: 0; background: var(--brand); border-radius: 4px; }
-.vitrine-conta { font-size: 12px; font-weight: 700; color: var(--ink-3); min-width: 40px; text-align: center; }
 @keyframes flutuar { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
 @media (prefers-reduced-motion: reduce) {
   .vitrine-foto img { animation: none; }

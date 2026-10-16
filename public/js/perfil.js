@@ -77,12 +77,14 @@
           ${P.selos.map(s => `<span class="pf-selo pf-selo-${esc(s.id)}">${esc(s.nome)}</span>`).join('')}
           ${P.oculto ? '<span class="pf-selo pf-selo-oculto">Oculto</span>' : ''}
         </div>
+        <p class="pf-social"><b id="pf-n-seguidores">${num(P.seguidores)}</b> seguidores · <b>${num(P.seguindo)}</b> seguindo</p>
         <p class="pf-meta">${P.cidade ? `📍 ${esc(P.cidade)} · ` : ''}Membro desde ${dia(P.membro_desde)}${P.loja ? ` · <a href="/loja/${esc(P.loja.slug)}">🏪 ${esc(P.loja.nome)}</a>` : ''}</p>
       </div>
       <div class="pf-topo-dir">
-        <div class="pf-nivel-selo" title="${num(nv.xp)} XP"><small>Nível</small><b>${nv.nivel}</b></div>
+        <div class="pf-nivel-selo" title="${nv.xp !== undefined ? `${num(nv.xp)} XP` : 'Nível'}"><small>Nível</small><b>${nv.nivel}</b></div>
         <div class="pf-topo-acoes">
           ${P.proprio ? '<button class="btn btn-primary" type="button" id="pf-editar">Editar perfil</button>' : ''}
+          ${P.pode_seguir ? `<button class="btn ${P.eu_sigo ? '' : 'btn-primary'}" type="button" id="pf-seguir">${P.eu_sigo ? 'Seguindo ✓' : '+ Seguir'}</button>` : ''}
           <button class="btn" type="button" id="pf-copiar">Copiar link</button>
         </div>
       </div>`;
@@ -95,20 +97,22 @@
       ? P.vitrine.map(c => conquistaHtml(c, true)).join('')
       : '<p class="pf-vazio">Nenhuma conquista ainda. Use o site e elas vão aparecendo aqui!</p>';
 
-    $('#pf-contagem').textContent = `${P.conquistas.obtidas} de ${P.conquistas.total}`;
+    $('#pf-contagem').textContent = P.conquistas.total ? `${P.conquistas.obtidas} de ${P.conquistas.total}` : `${P.conquistas.obtidas} conquistada${P.conquistas.obtidas === 1 ? '' : 's'}`;
     $('#pf-conquistas').innerHTML = P.conquistas.familias.map(f => `
       <div class="pf-familia">
-        <h3>${f.icone} ${esc(f.nome)} <small>${f.itens.filter(c => c.obtida).length}/${f.itens.length}</small></h3>
+        <h3>${f.icone} ${esc(f.nome)} <small>${P.conquistas.total ? `${f.itens.filter(c => c.obtida).length}/${f.itens.length}` : f.itens.length}</small></h3>
         <div class="pf-conqs">${f.itens.map(c => conquistaHtml(c)).join('')}</div>
       </div>`).join('');
 
+    const comProgresso = nv.xp_proximo !== undefined;
     $('#pf-nivel').innerHTML = `
       <div class="pf-nivel-linha"><div class="pf-nivel-selo is-pequeno"><b>${nv.nivel}</b></div>
-        <div><b>Nível ${nv.nivel}</b><small>${num(nv.xp)} XP no total</small></div></div>
-      <div class="pf-xp"><span style="width:${Math.round((nv.xp_nivel / nv.xp_proximo) * 100)}%"></span></div>
-      <small class="pf-xp-txt">${num(nv.xp_proximo - nv.xp_nivel)} XP para o nível ${nv.nivel + 1}</small>
+        <div><b>Nível ${nv.nivel}</b>${comProgresso ? `<small>${num(nv.xp)} XP no total</small>` : ''}</div></div>
+      ${comProgresso ? `<div class="pf-xp"><span style="width:${Math.round((nv.xp_nivel / nv.xp_proximo) * 100)}%"></span></div>
+      <small class="pf-xp-txt">${num(nv.xp_proximo - nv.xp_nivel)} XP para o nível ${nv.nivel + 1}</small>` : ''}
       <p class="pf-plano-linha">Plano: <b>${esc(P.plano_rotulo)}</b></p>`;
 
+    $('#pf-numeros').hidden = !P.numeros.length;
     $('#pf-numeros').innerHTML = `<h2>Números</h2><dl class="pf-nums">${P.numeros.map(n => `<div><dt>${esc(n.rotulo)}</dt><dd>${num(n.valor)}</dd></div>`).join('')}</dl>`;
 
     $('#pf-links').hidden = !P.links.length;
@@ -121,6 +125,17 @@
 
     $('#pf-grid').hidden = false;
     $('#pf-editar')?.addEventListener('click', abrirEditor);
+    $('#pf-seguir')?.addEventListener('click', async e => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      try {
+        const r = await api(`/api/perfis/${encodeURIComponent(P.slug)}/seguir`, { method: P.eu_sigo ? 'DELETE' : 'POST' });
+        P.eu_sigo = r.eu_sigo; P.seguidores = r.seguidores;
+        b.textContent = r.eu_sigo ? 'Seguindo ✓' : '+ Seguir';
+        b.classList.toggle('btn-primary', !r.eu_sigo);
+        $('#pf-n-seguidores').textContent = num(r.seguidores);
+      } catch (err) { toast(err.message); } finally { b.disabled = false; }
+    });
     $('#pf-copiar').addEventListener('click', () => {
       navigator.clipboard.writeText(`${location.origin}/perfil/${P.slug}`).then(() => toast('Link do perfil copiado!'));
     });

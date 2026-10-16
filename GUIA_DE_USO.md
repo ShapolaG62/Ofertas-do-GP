@@ -251,6 +251,8 @@ Todo mundo que acessa o site tem um perfil em **/perfil** (link "Perfil" no topo
 - Afiliados: ofertas postadas, **cliques nos links** deles (contados sozinhos quando o site tem endereço https: os links postados passam por `/ir/...`) e **vendas como afiliado**.
 - Empresas: anúncios publicados, cliques nos anúncios e **vendas da loja**.
 
+**Comunidade e seguidores:** na tela de ofertas há o quadro **👥 Comunidade** (na lateral; no celular, botão no topo) com todos os perfis. Pesquise digitando **#nome** — ali ou na própria busca de ofertas — e toque em **Seguir**. A janela "Ver todos" tem as abas **Todos**, **Seguindo** e **Seguidores**. No computador, ao passar o mouse num perfil aparece a miniatura com a capa, o nível, os seguidores e todas as conquistas já ganhas. Quem visita um perfil vê só o que a pessoa configurou e as conquistas que ela já tem: o progresso, o XP e os números são só do dono e do admin.
+
 **Vendas e compras confirmadas:** as lojas não informam vendas ao site automaticamente. Você confere nos relatórios dos programas de afiliados (ou com a empresa) e registra: abra o perfil da pessoa logado como admin → quadro **Admin** → tipo + quantidade → **Registrar** (use número negativo para corrigir). No mesmo quadro dá para **ocultar** um perfil ou **remover foto, capa e textos**.
 
 **Manter conectado:** quem não está conectado sempre cai na tela de entrar/criar conta. Quem entra uma vez continua conectado:

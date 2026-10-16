@@ -42,6 +42,28 @@ router.delete('/api/perfil/imagem/:tipo', exigirDono, (req, res) => {
   try { res.json(perfis.removerImagem(req.dono, req.params.tipo)); } catch (err) { sendError(res, err); }
 });
 
+// ── Comunidade ───────────────────────────────────────────────────────────────
+router.get('/api/perfis', (req, res) => {
+  const visitante = perfis.donoDe(req);
+  if (!visitante) return res.status(401).json({ error: 'Entre na sua conta para ver a comunidade.' });
+  try {
+    res.json(perfis.listar({ q: req.query.q, filtro: req.query.filtro, pagina: req.query.pagina, visitante }));
+  } catch (err) { sendError(res, err); }
+});
+
+router.get('/api/perfis/:slug/mini', (req, res) => {
+  try { res.json(perfis.mini(req.params.slug, perfis.donoDe(req))); } catch (err) { sendError(res, err); }
+});
+
+const seguirLimiter = createLimiter(120, 60); // 120 seguir/deixar de seguir por hora
+router.post('/api/perfis/:slug/seguir', exigirDono, (req, res) => {
+  if (seguirLimiter.hit(req.dono)) return res.status(429).json({ error: 'Muitas ações seguidas. Aguarde um pouco.' });
+  try { res.json(perfis.seguir(req.dono, req.params.slug, true)); } catch (err) { sendError(res, err); }
+});
+router.delete('/api/perfis/:slug/seguir', exigirDono, (req, res) => {
+  try { res.json(perfis.seguir(req.dono, req.params.slug, false)); } catch (err) { sendError(res, err); }
+});
+
 router.get('/api/perfis/:slug', (req, res) => {
   try { res.json(perfis.porSlug(req.params.slug, perfis.donoDe(req))); } catch (err) { sendError(res, err); }
 });

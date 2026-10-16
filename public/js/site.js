@@ -436,12 +436,17 @@
   $('#sort').addEventListener('change', e => setFilter({ ordem: e.target.value }));
 
   let searchTimer;
+  // Texto começando com # pesquisa perfis da comunidade (não filtra as ofertas).
+  const buscaPerfil = v => v.trim().startsWith('#') && window.Comunidade;
   $('#q').addEventListener('input', e => {
     clearTimeout(searchTimer);
+    if (buscaPerfil(e.target.value)) { window.Comunidade.buscar(e.target.value.trim()); return; }
+    window.Comunidade?.fecharSugestoes();
     searchTimer = setTimeout(() => setFilter({ q: e.target.value.trim() }), 200);
   });
   $('#search-form').addEventListener('submit', e => {
     e.preventDefault();
+    if (buscaPerfil($('#q').value)) { window.Comunidade.buscar($('#q').value.trim(), true); return; }
     setFilter({ q: $('#q').value.trim() });
     $('#ofertas').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });

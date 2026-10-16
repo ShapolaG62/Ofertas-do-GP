@@ -23,8 +23,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261043">
-<script src="/js/app-nativo.js?v=20261043"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261044">
+<script src="/js/app-nativo.js?v=20261044"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Ofertou!","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}
 </script>
@@ -51,10 +51,12 @@
     <form class="search" role="search" id="search-form">
       <label class="sr-only" for="q">Buscar ofertas</label>
       <svg><use href="#i-search"/></svg>
-      <input id="q" type="search" placeholder="Buscar produto, marca ou modelo" autocomplete="off">
+      <input id="q" type="search" placeholder="Buscar produto, marca ou modelo — ou #nome para perfis" autocomplete="off">
+      <div class="comu-sug" id="comu-sug" hidden></div>
     </form>
     <div class="header-actions">
       <a class="btn btn-sm admin-only" href="/admin">Painel</a>
+      <button class="btn btn-sm comu-btn" type="button" id="comu-abrir" hidden><span aria-hidden="true">👥</span><span class="comu-btn-txt">Comunidade</span></button>
       <a class="btn btn-sm pf-atalho" href="/perfil" id="perfil-link" hidden><img id="perfil-link-img" alt="" hidden referrerpolicy="no-referrer"><span>Perfil</span></a>
       <a class="btn btn-sm" href="/conta" id="account-link">Entrar</a>
       <button class="btn btn-sm" type="button" id="logout-site" hidden>Sair</button>
@@ -89,6 +91,11 @@
   <div class="container catalog" id="ofertas">
     <div class="side-col">
       <div class="ad-slot ad-side" data-espaco="lateral" hidden></div>
+      <section class="comu-card" id="comu-card" hidden aria-label="Comunidade">
+        <div class="comu-card-head"><h2>👥 Comunidade</h2><button class="link-btn" type="button" id="comu-ver-todos">Ver todos</button></div>
+        <input class="comu-busca" id="comu-busca-card" type="search" placeholder="#nome" autocomplete="off" maxlength="40">
+        <ul class="comu-lista" id="comu-lista-card"></ul>
+      </section>
       <aside class="filters" id="filters" aria-label="Filtros"></aside>
     </div>
 
@@ -175,6 +182,25 @@
   </div>
 </footer>
 
+<dialog class="comu-dialog" id="comu-dialog" aria-label="Comunidade">
+  <div class="comu-dialog-in">
+    <div class="comu-dialog-head">
+      <h2>👥 Comunidade</h2>
+      <button class="icon-btn" type="button" data-comu-fechar aria-label="Fechar">✕</button>
+    </div>
+    <div class="tabs-line" role="tablist" id="comu-abas">
+      <button type="button" role="tab" data-filtro="todos" aria-selected="true">Todos</button>
+      <button type="button" role="tab" data-filtro="seguindo" aria-selected="false">Seguindo</button>
+      <button type="button" role="tab" data-filtro="seguidores" aria-selected="false">Seguidores</button>
+    </div>
+    <input class="comu-busca" id="comu-busca" type="search" placeholder="Pesquisar #nome" autocomplete="off" maxlength="40">
+    <p class="comu-total" id="comu-total"></p>
+    <ul class="comu-lista comu-lista-grande" id="comu-lista"></ul>
+    <button class="btn btn-block" type="button" id="comu-mais" hidden>Carregar mais</button>
+  </div>
+</dialog>
+<div class="comu-pop" id="comu-pop" hidden></div>
+
 <dialog id="filters-dialog" aria-label="Filtros">
   <div class="drawer">
     <div class="modal-head">
@@ -197,6 +223,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/js/publicidade.js?v=20261029" data-espacos="topo,meio,lateral" defer></script>
-<script src="/js/site.js?v=20261035" defer></script>
+<script src="/js/site.js?v=20261044" defer></script>
+<script src="/js/comunidade.js?v=20261044" defer></script>
 </body>
 </html>

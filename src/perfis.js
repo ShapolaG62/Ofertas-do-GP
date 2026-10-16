@@ -193,7 +193,7 @@ function avaliar(ctx, perfil) {
 // ── Saída para a página ──────────────────────────────────────────────────────
 const json = (t, padrao) => { try { return JSON.parse(t) ?? padrao; } catch { return padrao; } };
 
-function montar(perfil, ctx, { proprio = false, admin = false } = {}) {
+function montar(perfil, ctx, { proprio = false, admin = false, visitante = null } = {}) {
   const pl = plano(ctx);
   const lim = LIMITES[pl];
   const av = avaliar(ctx, perfil);
@@ -231,8 +231,28 @@ function montar(perfil, ctx, { proprio = false, admin = false } = {}) {
     out.vitrine_ids = json(perfil.vitrine, []);
   }
   if (admin) out.dono = ctx.dono;
+  // Seguidores
+  out.seguidores = db.get('SELECT COUNT(*) n FROM seguidores WHERE seguido = ?', ctx.dono).n;
+  out.seguindo = db.get('SELECT COUNT(*) n FROM seguidores WHERE seguidor = ?', ctx.dono).n;
+  out.eu_sigo = Boolean(visitante && !proprio && db.get('SELECT 1 FROM seguidores WHERE seguidor = ? AND seguido = ?', visitante, ctx.dono));
+  out.pode_seguir = Boolean(visitante && !proprio);
+  // Quem visita vê só o que a pessoa configurou e as conquistas que ela já tem — sem progresso (só o admin vê tudo).
+  if (!proprio && !admin) {
+    out.conquistas = {
+      obtidas: out.conquistas.obtidas,
+      familias: out.conquistas.familias
+        .map(fm => ({ ...fm, itens: fm.itens.filter(c => c.obtida).map(semProgresso) }))
+        .filter(fm => fm.itens.length),
+    };
+    out.vitrine = out.vitrine.map(semProgresso);
+    out.numeros = [];
+    out.nivel = { nivel: out.nivel.nivel };
+  }
   return out;
 }
+
+const semProgresso = c => ({ id: c.id, nome: c.nome, descricao: c.descricao, icone: c.icone, tier: c.tier, xp: c.xp,
+  familia: c.familia, obtida: true, obtida_em: c.obtida_em });
 
 function numerosVisiveis(m, pap) {
   const n = [['Idas à loja', m.idas_loja], ['Compras confirmadas', m.compras_codigo]];
@@ -244,7 +264,7 @@ function numerosVisiveis(m, pap) {
 function meu(dono) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
-  return montar(garantir(ctx), ctx, { proprio: true, admin: dono === 'admin' });
+  return montar(garantir(ctx), ctx, { proprio: true, admin: dono === 'admin', visitante: dono });
 }
 
 function porSlug(slug, visitante) {
@@ -254,7 +274,7 @@ function porSlug(slug, visitante) {
   const proprio = visitante === perfil.dono;
   const admin = visitante === 'admin';
   if (perfil.oculto && !proprio && !admin) throw fail('Este perfil está oculto.', 404);
-  return montar(perfil, ctx, { proprio, admin });
+  return montar(perfil, ctx, { proprio, admin, visitante });
 }
 
 // ── Edição ───────────────────────────────────────────────────────────────────
@@ -391,9 +411,112 @@ function excluir(dono) {
   const p = db.get('SELECT avatar, capa FROM perfis WHERE dono = ?', dono);
   if (p) { apagarArquivo(p.avatar); apagarArquivo(p.capa); }
   for (const t of ['perfis', 'metricas', 'conquistas_obtidas', 'vendas_registro']) db.run(`DELETE FROM ${t} WHERE dono = ?`, dono);
+  db.run('DELETE FROM seguidores WHERE seguidor = ? OR seguido = ?', dono, dono);
+}
+
+// ── Comunidade: lista de perfis, busca por #nome, seguir e miniatura ─────────
+// Todos com acesso ao site têm perfil: cria os que faltam (contas ativas, clientes avulsos válidos e o admin).
+let ultimaGarantia = 0;
+function garantirTodos() {
+  if (Date.now() - ultimaGarantia < 60000) return;
+  ultimaGarantia = Date.now();
+  const faltam = [
+    ...db.all(`SELECT 'u:' || u.id AS dono FROM users u WHERE u.status = 'active' AND NOT EXISTS (SELECT 1 FROM perfis p WHERE p.dono = 'u:' || u.id)`),
+    ...db.all(`SELECT 'c:' || c.id AS dono FROM clientes c WHERE c.status = 'ativo' AND c.validade > datetime('now')
+                AND NOT EXISTS (SELECT 1 FROM users u WHERE u.cliente_id = c.id) AND NOT EXISTS (SELECT 1 FROM perfis p WHERE p.dono = 'c:' || c.id)`),
+    ...(db.get(`SELECT 1 FROM perfis WHERE dono = 'admin'`) ? [] : [{ dono: 'admin' }]),
+  ];
+  // Cria o perfil e já calcula as conquistas (para o nível aparecer certo na lista).
+  for (const { dono } of faltam) { const ctx = contexto(dono); if (ctx) avaliar(ctx, garantir(ctx)); }
+}
+
+// Perfil aparece na comunidade se não estiver oculto e a pessoa ainda tiver acesso ao site.
+function visivel(ctx) {
+  if (!ctx) return false;
+  if (ctx.tipo === 'admin') return true;
+  if (ctx.tipo === 'cliente') return ctx.cliente.status === 'ativo';
+  return ctx.user.status === 'active';
+}
+
+function xpDe(dono) {
+  return db.all('SELECT conquista FROM conquistas_obtidas WHERE dono = ?', dono).reduce((t, r) => t + (POR_ID[r.conquista]?.xp || 0), 0);
+}
+
+function cartao(p, ctx, visitante) {
+  const lim = LIMITES[plano(ctx)];
+  const xp = xpDe(p.dono);
+  return {
+    slug: p.slug, nome: p.nome, titulo: p.titulo || '', avatar: p.avatar || null,
+    cor: lim.cores.includes(p.cor) ? p.cor : 'verde', moldura: p.moldura || 'nenhuma',
+    papel_rotulo: ROTULO_PAPEL[papel(ctx)], nivel: nivel(xp).nivel,
+    conquistas: db.get('SELECT COUNT(*) n FROM conquistas_obtidas WHERE dono = ?', p.dono).n,
+    seguidores: db.get('SELECT COUNT(*) n FROM seguidores WHERE seguido = ?', p.dono).n,
+    eu_sigo: Boolean(visitante && db.get('SELECT 1 FROM seguidores WHERE seguidor = ? AND seguido = ?', visitante, p.dono)),
+    eu: visitante === p.dono, _xp: xp,
+  };
+}
+
+const POR_PAGINA = 24;
+const recalculado = new Map();
+function listar({ q = '', filtro = 'todos', pagina = 1, visitante = null } = {}) {
+  garantirTodos();
+  const termo = String(q || '').trim().replace(/^#+/, '').trim().slice(0, 40);
+  const params = [];
+  let sql = 'SELECT p.* FROM perfis p';
+  if (filtro === 'seguindo') { sql += ' JOIN seguidores s ON s.seguido = p.dono AND s.seguidor = ?'; params.push(visitante || ''); }
+  if (filtro === 'seguidores') { sql += ' JOIN seguidores s ON s.seguidor = p.dono AND s.seguido = ?'; params.push(visitante || ''); }
+  sql += ' WHERE p.oculto = 0';
+  if (termo) {
+    // Busca por #nome (sem diferenciar maiúsculas): nome, endereço do perfil ou título
+    sql += " AND (instr(lower(p.nome), ?) > 0 OR instr(p.slug, ?) > 0 OR instr(lower(COALESCE(p.titulo, '')), ?) > 0)";
+    const t = termo.toLowerCase();
+    params.push(t, t, t);
+  }
+  const linhas = db.all(`${sql} LIMIT 3000`, ...params);
+  const cards = [];
+  for (const p of linhas) {
+    const ctx = contexto(p.dono);
+    if (!visivel(ctx)) continue;
+    // Perfil sem conquistas calculadas (ex.: nunca aberto): calcula agora, no máximo a cada 10 min.
+    if (!db.get('SELECT 1 FROM conquistas_obtidas WHERE dono = ?', p.dono) && Date.now() - (recalculado.get(p.dono) || 0) > 600000) {
+      recalculado.set(p.dono, Date.now());
+      avaliar(ctx, p);
+    }
+    cards.push(cartao(p, ctx, visitante));
+  }
+  // Quem eu sigo primeiro, depois os de nível mais alto.
+  cards.sort((a, b) => (b.eu_sigo - a.eu_sigo) || (b._xp - a._xp) || a.nome.localeCompare(b.nome, 'pt-BR'));
+  const pag = Math.max(1, parseInt(pagina, 10) || 1);
+  const itens = cards.slice((pag - 1) * POR_PAGINA, pag * POR_PAGINA).map(({ _xp, ...c }) => c);
+  return { itens, total: cards.length, pagina: pag, mais: pag * POR_PAGINA < cards.length };
+}
+
+// Miniatura flutuante: aparência + todas as conquistas já ganhas (sem progresso).
+function mini(slug, visitante) {
+  const p = porSlug(slug, visitante);
+  const todas = p.conquistas.familias.flatMap(fm => fm.itens).filter(c => c.obtida)
+    .sort((a, b) => b.xp - a.xp).map(c => ({ id: c.id, nome: c.nome, icone: c.icone, tier: c.tier, descricao: c.descricao }));
+  return {
+    slug: p.slug, nome: p.nome, titulo: p.titulo, avatar: p.avatar, capa: p.capa, cor: p.cor, moldura: p.moldura,
+    papel_rotulo: p.papel_rotulo, selos: p.selos, nivel: p.nivel.nivel, bio: (p.bio || '').slice(0, 140),
+    seguidores: p.seguidores, seguindo: p.seguindo, eu_sigo: p.eu_sigo, pode_seguir: p.pode_seguir, conquistas: todas,
+  };
+}
+
+function seguir(visitante, slug, ligar) {
+  if (!visitante) throw fail('Entre na sua conta para seguir perfis.', 401);
+  const p = db.get('SELECT dono, oculto FROM perfis WHERE slug = ?', String(slug || '').toLowerCase());
+  if (!p || (p.oculto && visitante !== 'admin')) throw fail('Perfil não encontrado.', 404);
+  if (p.dono === visitante) throw fail('Você não pode seguir o próprio perfil.');
+  if (ligar) db.run('INSERT OR IGNORE INTO seguidores (seguidor, seguido) VALUES (?, ?)', visitante, p.dono);
+  else db.run('DELETE FROM seguidores WHERE seguidor = ? AND seguido = ?', visitante, p.dono);
+  return {
+    eu_sigo: Boolean(ligar),
+    seguidores: db.get('SELECT COUNT(*) n FROM seguidores WHERE seguido = ?', p.dono).n,
+  };
 }
 
 module.exports = {
   donoDe, contexto, meu, porSlug, salvar, salvarImagem, removerImagem, incrementar,
-  registrarVenda, resumoAdmin, moderar, excluir, LIMITES,
+  registrarVenda, resumoAdmin, moderar, excluir, LIMITES, listar, mini, seguir,
 };

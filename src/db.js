@@ -394,6 +394,14 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX IF NOT EXISTS idx_vendas_registro_dono ON vendas_registro (dono);
+  -- Quem segue quem (donos de perfil: 'u:<id>', 'c:<id>' ou 'admin')
+  CREATE TABLE IF NOT EXISTS seguidores (
+    seguidor TEXT NOT NULL,
+    seguido TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (seguidor, seguido)
+  );
+  CREATE INDEX IF NOT EXISTS idx_seguidores_seguido ON seguidores (seguido);
 `);
 
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');

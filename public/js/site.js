@@ -504,14 +504,16 @@
   });
 
   // Busca um termo nas lojas na hora (útil para produtos que não estão na lista de mineração automática).
-  // O campo fica na própria barra de postagens; vazio, usa o que estiver na busca do topo.
+  // O campo fica na própria barra de postagens: digita e aperta Enter.
   $('#mine-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const q = $('#mine-q').value.trim() || $('#q').value.trim();
-    if (!q) { $('#mine-q').focus(); return toast('Digite o produto que quer procurar nas lojas.'); }
-    const btn = $('#mine-term');
-    btn.disabled = true;
-    btn.textContent = 'Buscando nas lojas…';
+    const inp = $('#mine-q');
+    const q = inp.value.trim();
+    if (!q) { inp.focus(); return toast('Digite o produto que quer procurar nas lojas e aperte Enter.'); }
+    if (inp.readOnly) return;
+    inp.readOnly = true;
+    $('#mine-form').classList.add('is-busy');
+    toast(`Buscando “${q}” nas lojas…`);
     try {
       const r = await fetch('/api/admin/mine', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }),
@@ -529,8 +531,8 @@
     } catch (err) {
       toast(err.message === 'Failed to fetch' ? 'Erro de conexão com o servidor.' : err.message);
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Buscar nas lojas agora';
+      inp.readOnly = false;
+      $('#mine-form').classList.remove('is-busy');
     }
   });
 

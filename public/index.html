@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261030">
+<link rel="stylesheet" href="/css/site.css?v=20261031">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Ofertas do GP","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}
 </script>
@@ -127,10 +127,12 @@
           <button class="btn btn-sm" type="button" id="sel-mix" title="Escolhe o produto com mais chance de venda de cada categoria">★ Melhor de cada categoria</button>
           <button class="btn btn-sm" type="button" id="sel-page">Selecionar página</button>
           <button class="btn btn-sm" type="button" id="sel-clear">Limpar seleção</button>
+        </div>
+        <div class="posts-bar-row">
           <form class="posts-bar-search admin-only" id="mine-form" role="search" title="Busca o produto nas lojas agora, mesmo que não esteja na lista de mineração">
-            <label class="sr-only" for="mine-q">Produto para buscar nas lojas</label>
-            <input id="mine-q" type="search" placeholder="Buscar produto nas lojas…" autocomplete="off" maxlength="100">
-            <button class="btn btn-sm" type="submit" id="mine-term">Buscar nas lojas agora</button>
+            <label class="sr-only" for="mine-q">Produto para buscar nas lojas (aperte Enter)</label>
+            <svg aria-hidden="true"><use href="#i-search"/></svg>
+            <input id="mine-q" type="search" placeholder="Buscar produto nas lojas… (digite e aperte Enter)" autocomplete="off" maxlength="100" enterkeyhint="search">
           </form>
           <a class="btn btn-primary posts-bar-go" href="/postagens" id="open-posts">Ir para postagens →</a>
         </div>
@@ -192,6 +194,6 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="/js/publicidade.js?v=20261029" data-espacos="topo,meio,lateral" defer></script>
-<script src="/js/site.js?v=20261030" defer></script>
+<script src="/js/site.js?v=20261031" defer></script>
 </body>
 </html>

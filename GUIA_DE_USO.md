@@ -232,3 +232,25 @@ Nas formas com comprovante, o pedido fica em **Pedidos de assinatura** e você c
 **Contas sem plano:** depois de criar a conta (ou entrar com o Google), a pessoa vê primeiro os planos pagos (acesso imediato após o pagamento) e, abaixo, os 3 perfis gratuitos — Consumidor, Empresarial e **Usuário da ferramenta** — que passam pela sua aprovação (Painel → Usuários). Ao aprovar um usuário da ferramenta, ele ganha o painel de afiliado (aba Clientes) pelo número de dias do Afiliado Pro.
 
 **Google na compra:** na tela de pagamento há o botão **Cadastrar com Google**; a pessoa volta já logada e só completa os dados e paga.
+
+## 13. Perfis e conquistas
+
+Todo mundo que acessa o site tem um perfil em **/perfil** (link "Perfil" no topo do site, "Meu perfil" no painel do afiliado e no painel admin): foto, capa, nome, título, cidade, resumo, cor, moldura da foto, links e uma vitrine de conquistas. Cada perfil tem um endereço próprio (`/perfil/nome`) para compartilhar; só quem tem acesso ao site consegue ver.
+
+| O que dá para personalizar | Gratuito | Caçador de Ofertas | Loja Parceira | Afiliado Pro | Admin |
+|---|---|---|---|---|---|
+| Conquistas na vitrine | 3 | 4 | 6 | 8 | 12 |
+| Capa do perfil | — | ✓ | ✓ | ✓ | ✓ |
+| Links (Instagram, grupo de WhatsApp…) | — | 1 | 4 | 5 | 6 |
+| Cores em degradê | — | — | — | ✓ | ✓ |
+| Endereço personalizado | — | — | — | ✓ | ✓ |
+| Molduras | pelo nível | pelo nível | pelo nível | + moldura Pro | todas + coroa |
+
+**Conquistas** (bronze → diamante, cada uma dá XP e o XP define o nível):
+- Para todos: tempo de conta, **idas à loja** pelos links do site (contadas sozinhas) e **compras confirmadas pelo seu código de afiliado**.
+- Afiliados: ofertas postadas, **cliques nos links** deles (contados sozinhos quando o site tem endereço https: os links postados passam por `/ir/...`) e **vendas como afiliado**.
+- Empresas: anúncios publicados, cliques nos anúncios e **vendas da loja**.
+
+**Vendas e compras confirmadas:** as lojas não informam vendas ao site automaticamente. Você confere nos relatórios dos programas de afiliados (ou com a empresa) e registra: abra o perfil da pessoa logado como admin → quadro **Admin** → tipo + quantidade → **Registrar** (use número negativo para corrigir). No mesmo quadro dá para **ocultar** um perfil ou **remover foto, capa e textos**.
+
+**Manter conectado:** quem entra uma vez continua conectado enquanto usar o site (a sessão se renova sozinha; expira após 6 meses sem uso — 30 dias para o painel admin). Quem não está conectado sempre cai na tela de entrar/criar conta.

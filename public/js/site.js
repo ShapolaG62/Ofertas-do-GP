@@ -616,6 +616,12 @@
   $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join('');
 
   fetch('/api/settings/public').then(r => r.json()).then(applySettings).catch(() => {});
+  // Atalho para o perfil (com a foto), para qualquer pessoa logada: conta, cliente da ferramenta ou admin.
+  fetch('/api/perfil', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(p => {
+    if (!p) return;
+    $('#perfil-link').hidden = false;
+    if (p.avatar) { $('#perfil-link-img').src = p.avatar; $('#perfil-link-img').hidden = false; }
+  }).catch(() => {});
   fetch('/api/conta/me').then(r => r.json()).then(d => {
     if (d.user) {
       $('#account-link').textContent = 'Minha conta';

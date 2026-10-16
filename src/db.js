@@ -352,6 +352,50 @@ const bannerCols = db.prepare('PRAGMA table_info(banners)').all().map(c => c.nam
 if (!bannerCols.includes('video')) db.exec('ALTER TABLE banners ADD COLUMN video TEXT');
 if (!bannerCols.includes('video_mobile')) db.exec('ALTER TABLE banners ADD COLUMN video_mobile TEXT');
 
+// Perfis (estilo Steam) de todos que acessam o site: contas (u:<id>), clientes avulsos (c:<id>) e o admin.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS perfis (
+    dono TEXT PRIMARY KEY,
+    slug TEXT NOT NULL UNIQUE,
+    nome TEXT,
+    titulo TEXT,
+    bio TEXT,
+    cidade TEXT,
+    avatar TEXT,
+    capa TEXT,
+    cor TEXT,
+    moldura TEXT,
+    links TEXT,
+    vitrine TEXT,
+    oculto INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  -- Contadores usados pelas conquistas (idas à loja, cliques nos links do afiliado...)
+  CREATE TABLE IF NOT EXISTS metricas (
+    dono TEXT NOT NULL,
+    chave TEXT NOT NULL,
+    valor INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (dono, chave)
+  );
+  CREATE TABLE IF NOT EXISTS conquistas_obtidas (
+    dono TEXT NOT NULL,
+    conquista TEXT NOT NULL,
+    obtida_em TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (dono, conquista)
+  );
+  -- Vendas e compras confirmadas pelo admin (relatórios dos programas de afiliados / da loja)
+  CREATE TABLE IF NOT EXISTS vendas_registro (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dono TEXT NOT NULL,
+    tipo TEXT NOT NULL CHECK (tipo IN ('afiliado', 'empresa', 'compra')),
+    quantidade INTEGER NOT NULL,
+    observacao TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_vendas_registro_dono ON vendas_registro (dono);
+`);
+
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 

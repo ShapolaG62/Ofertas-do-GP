@@ -130,7 +130,7 @@ async function executar(motivo = 'agendado', cid = null) {
     for (let i = 0; i < lote.length; i++) {
       const it = lote[i];
       const o = db.get('SELECT * FROM offers WHERE id = ?', it.offer_id);
-      const link = cid ? await clientes.linkAfiliado(cid, o, s) : null; // cliente: link de afiliado dele
+      const link = cid ? await clientes.linkParaPostar(cid, o, s) : null; // cliente: link de afiliado dele
       if (link) o.__link = link;
       const texto = it.texto || social.textoPadrao(o, s);
       let resultados;

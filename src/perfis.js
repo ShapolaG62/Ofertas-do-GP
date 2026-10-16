@@ -1,0 +1,399 @@
+// Perfis estilo Steam: todos que acessam o site têm um (contas do site, clientes da ferramenta e o admin).
+// O que cada um pode personalizar depende do plano; conquistas vêm de métricas reais do site
+// (idas à loja, postagens, cliques nos links, anúncios) e de vendas/compras confirmadas pelo admin.
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const db = require('./db');
+const auth = require('./auth');
+const users = require('./users');
+const clientes = require('./clientes');
+const { LISTA, POR_ID, FAMILIAS, nivel } = require('./conquistas');
+
+const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
+const nowSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+const DIR = path.join(db.UPLOADS_DIR, 'perfis');
+fs.mkdirSync(DIR, { recursive: true });
+
+// ── Aparência liberada por plano ─────────────────────────────────────────────
+const CORES_BASICAS = ['verde', 'azul', 'roxo', 'laranja', 'vermelho', 'grafite'];
+const CORES_EXTRAS = ['rosa', 'dourado', 'ciano', 'vinho'];
+const GRADIENTES = ['aurora', 'por-do-sol', 'oceano', 'neon', 'galaxia'];
+const LIMITES = {
+  gratis: { rotulo: 'Conta gratuita', vitrine: 3, bio: 160, capa: false, links: 0, slug_livre: false, cores: CORES_BASICAS, gradiente: false },
+  consumidor: { rotulo: 'Caçador de Ofertas', vitrine: 4, bio: 300, capa: true, links: 1, slug_livre: false, cores: [...CORES_BASICAS, ...CORES_EXTRAS], gradiente: false },
+  empresa: { rotulo: 'Loja Parceira', vitrine: 6, bio: 400, capa: true, links: 4, slug_livre: false, cores: [...CORES_BASICAS, ...CORES_EXTRAS], gradiente: false },
+  pro: { rotulo: 'Afiliado Pro', vitrine: 8, bio: 500, capa: true, links: 5, slug_livre: true, cores: [...CORES_BASICAS, ...CORES_EXTRAS, ...GRADIENTES], gradiente: true },
+  admin: { rotulo: 'Administrador', vitrine: 12, bio: 800, capa: true, links: 6, slug_livre: true, cores: [...CORES_BASICAS, ...CORES_EXTRAS, ...GRADIENTES], gradiente: true },
+};
+// Molduras do avatar: liberadas pelo nível (e pelo plano)
+const MOLDURAS = [
+  { id: 'nenhuma', nome: 'Sem moldura', nivel: 0 },
+  { id: 'bronze', nome: 'Bronze', nivel: 3 },
+  { id: 'prata', nome: 'Prata', nivel: 8 },
+  { id: 'ouro', nome: 'Ouro', nivel: 15 },
+  { id: 'diamante', nome: 'Diamante', nivel: 25 },
+  { id: 'pro', nome: 'Afiliado Pro', plano: 'pro' },
+  { id: 'coroa', nome: 'Coroa do admin', plano: 'admin' },
+];
+const TIPOS_LINK = { site: 'Site', instagram: 'Instagram', whatsapp: 'Grupo de WhatsApp', telegram: 'Telegram', youtube: 'YouTube', tiktok: 'TikTok' };
+const RESERVADOS = new Set(['admin', 'api', 'conta', 'cliente', 'perfil', 'perfis', 'editar', 'ofertou', 'suporte', 'loja', 'oferta']);
+
+// ── Quem é o dono ────────────────────────────────────────────────────────────
+// 'admin' | 'u:<id>' (conta do site; o acesso de cliente ligado à conta usa o mesmo perfil) | 'c:<id>' (cliente avulso)
+function donoDe(req) {
+  if (auth.isLoggedIn(req)) return 'admin';
+  const u = users.currentUser(req);
+  if (u && u.status === 'active') return `u:${u.id}`;
+  const c = clientes.atual(req);
+  if (c) {
+    const ligado = db.get('SELECT id FROM users WHERE cliente_id = ?', c.id);
+    return ligado ? `u:${ligado.id}` : `c:${c.id}`;
+  }
+  return null;
+}
+
+function contexto(dono) {
+  if (dono === 'admin') return { dono, tipo: 'admin' };
+  const [t, idStr] = String(dono).split(':');
+  const id = Number(idStr);
+  if (t === 'u') {
+    const user = users.getById(id);
+    if (!user) return null;
+    const cliente = user.cliente_id ? clientes.getById(user.cliente_id) : null;
+    return { dono, tipo: 'usuario', user, cliente };
+  }
+  if (t === 'c') {
+    const cliente = clientes.getById(id);
+    return cliente ? { dono, tipo: 'cliente', cliente } : null;
+  }
+  return null;
+}
+
+const ativo = ate => Boolean(ate && ate > nowSql());
+function plano(ctx) {
+  if (ctx.tipo === 'admin') return 'admin';
+  if (ctx.tipo === 'cliente') return ativo(ctx.cliente.validade) && ctx.cliente.status === 'ativo' ? 'pro' : 'gratis';
+  const u = ctx.user;
+  if (u.plano && ativo(u.assinatura_ate) && LIMITES[u.plano]) return u.plano;
+  return 'gratis';
+}
+// Perfil (papel) mostrado no topo: decide quais famílias de conquistas aparecem.
+function papel(ctx) {
+  if (ctx.tipo === 'admin') return 'admin';
+  if (ctx.tipo === 'cliente') return 'afiliado';
+  if (ctx.user.tipo === 'afiliado' || ctx.user.cliente_id) return 'afiliado';
+  return ctx.user.tipo === 'empresa' ? 'empresa' : 'consumidor';
+}
+const ROTULO_PAPEL = { admin: 'Administrador', afiliado: 'Afiliado', empresa: 'Empresa', consumidor: 'Consumidor' };
+
+// ── Linha do perfil ──────────────────────────────────────────────────────────
+const slugify = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24);
+
+function nomePadrao(ctx) {
+  if (ctx.tipo === 'admin') return 'Ofertou!';
+  const base = ctx.user || ctx.cliente;
+  if (ctx.user?.tipo === 'empresa' && ctx.user.empresa_nome) return ctx.user.empresa_nome;
+  return base.nome || base.email.split('@')[0];
+}
+
+function garantir(ctx) {
+  const atual = db.get('SELECT * FROM perfis WHERE dono = ?', ctx.dono);
+  if (atual) return atual;
+  const nome = nomePadrao(ctx).slice(0, 40);
+  let slug = ctx.tipo === 'admin' ? 'ofertou' : slugify(nome) || 'perfil';
+  if (ctx.tipo !== 'admin' || db.get('SELECT 1 FROM perfis WHERE slug = ?', slug)) {
+    const sufixo = ctx.tipo === 'admin' ? 'admin' : ctx.dono.replace(':', '');
+    slug = `${slug}-${sufixo}`.slice(0, 30);
+  }
+  while (db.get('SELECT 1 FROM perfis WHERE slug = ?', slug)) slug = `${slug.slice(0, 24)}-${crypto.randomBytes(2).toString('hex')}`;
+  const avatar = ctx.tipo === 'admin' ? '/images/pet-capi-head.png' : ctx.user?.avatar_url || null;
+  db.run('INSERT INTO perfis (dono, slug, nome, avatar, cor, moldura) VALUES (?, ?, ?, ?, ?, ?)',
+    ctx.dono, slug, nome, avatar, ctx.tipo === 'admin' ? 'dourado' : 'verde', ctx.tipo === 'admin' ? 'coroa' : 'nenhuma');
+  return db.get('SELECT * FROM perfis WHERE dono = ?', ctx.dono);
+}
+
+// ── Métricas ─────────────────────────────────────────────────────────────────
+const contador = (dono, chave) => db.get('SELECT valor FROM metricas WHERE dono = ? AND chave = ?', dono, chave)?.valor || 0;
+const vendas = (dono, tipo) => db.get('SELECT COALESCE(SUM(quantidade), 0) n FROM vendas_registro WHERE dono = ? AND tipo = ?', dono, tipo).n;
+// Dias de conta contando o primeiro (quem entrou hoje já tem 1 dia).
+const dias = desde => (desde ? Math.max(0, Math.floor((Date.now() - new Date(String(desde).replace(' ', 'T') + 'Z')) / 86400000)) + 1 : 0);
+
+function incrementar(dono, chave, n = 1) {
+  if (!dono) return;
+  db.run(`INSERT INTO metricas (dono, chave, valor) VALUES (?, ?, ?)
+          ON CONFLICT(dono, chave) DO UPDATE SET valor = valor + excluded.valor`, dono, chave, n);
+}
+
+function metricas(ctx, perfil) {
+  const m = {
+    idas_loja: contador(ctx.dono, 'idas_loja'),
+    cliques_links: contador(ctx.dono, 'cliques_links'),
+    compras_codigo: vendas(ctx.dono, 'compra'),
+    vendas_afiliado: vendas(ctx.dono, 'afiliado'),
+    vendas_empresa: vendas(ctx.dono, 'empresa'),
+    perfil_completo: perfil.avatar && perfil.bio ? 1 : 0,
+    postagens: 0, anuncios: 0, cliques_anuncios: 0, dias_conta: 0,
+    assinante: 0, ferramenta: 0, pioneiro: 0, admin: 0,
+  };
+  if (ctx.tipo === 'admin') {
+    // O admin acompanha o site inteiro.
+    m.admin = 1; m.assinante = 1; m.ferramenta = 1; m.pioneiro = 1;
+    m.dias_conta = dias(db.get('SELECT MIN(created_at) d FROM offers').d);
+    m.idas_loja += db.get('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers WHERE loja_id IS NULL').n;
+    m.postagens = db.get(`SELECT COUNT(*) n FROM social_posts WHERE ok = 1 AND cliente_id IS NULL AND autor = 'admin'`).n;
+    m.anuncios = db.get('SELECT COUNT(*) n FROM offers WHERE loja_id IS NOT NULL').n;
+    m.cliques_anuncios = db.get('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers WHERE loja_id IS NOT NULL').n;
+    return m;
+  }
+  const u = ctx.user;
+  const c = ctx.cliente;
+  m.dias_conta = dias((u || c).created_at);
+  m.assinante = plano(ctx) !== 'gratis' ? 1 : 0;
+  m.ferramenta = c ? 1 : 0;
+  m.pioneiro = u && u.id <= 100 ? 1 : 0;
+  if (c) m.postagens += db.get('SELECT COUNT(*) n FROM social_posts WHERE ok = 1 AND cliente_id = ?', c.id).n;
+  if (u) m.postagens += db.get('SELECT COUNT(*) n FROM social_posts WHERE ok = 1 AND cliente_id IS NULL AND autor = ?', u.email).n;
+  if (u && u.tipo === 'empresa') {
+    const loja = db.get('SELECT id FROM lojas WHERE user_id = ?', u.id);
+    if (loja) {
+      const r = db.get('SELECT COUNT(*) n, COALESCE(SUM(link_clicks), 0) cliques FROM offers WHERE loja_id = ?', loja.id);
+      m.anuncios = r.n; m.cliques_anuncios = r.cliques;
+    }
+  }
+  return m;
+}
+
+// ── Conquistas ───────────────────────────────────────────────────────────────
+function relevante(c, pap) {
+  return pap === 'admin' || c.para === 'todos' || c.para === pap;
+}
+
+function avaliar(ctx, perfil) {
+  const pap = papel(ctx);
+  const m = metricas(ctx, perfil);
+  const obtidas = Object.fromEntries(db.all('SELECT conquista, obtida_em FROM conquistas_obtidas WHERE dono = ?', ctx.dono).map(r => [r.conquista, r.obtida_em]));
+  const lista = [];
+  for (const c of LISTA) {
+    if (!relevante(c, pap)) continue;
+    const valor = m[c.metrica] || 0;
+    const ganhou = valor >= c.alvo;
+    if (ganhou && !obtidas[c.id]) {
+      db.run('INSERT OR IGNORE INTO conquistas_obtidas (dono, conquista) VALUES (?, ?)', ctx.dono, c.id);
+      obtidas[c.id] = nowSql();
+    }
+    // Uma vez ganha, fica (mesmo se o plano acabar).
+    lista.push({ ...c, obtida: Boolean(obtidas[c.id]), obtida_em: obtidas[c.id] || null, progresso: Math.min(valor, c.alvo) });
+  }
+  const xp = lista.filter(c => c.obtida).reduce((s, c) => s + c.xp, 0);
+  return { lista, metricas: m, nivel: nivel(xp), papel: pap };
+}
+
+// ── Saída para a página ──────────────────────────────────────────────────────
+const json = (t, padrao) => { try { return JSON.parse(t) ?? padrao; } catch { return padrao; } };
+
+function montar(perfil, ctx, { proprio = false, admin = false } = {}) {
+  const pl = plano(ctx);
+  const lim = LIMITES[pl];
+  const av = avaliar(ctx, perfil);
+  const obtidas = av.lista.filter(c => c.obtida);
+  let vitrine = json(perfil.vitrine, []).filter(id => obtidas.some(c => c.id === id)).slice(0, lim.vitrine);
+  if (!vitrine.length) vitrine = [...obtidas].sort((a, b) => b.xp - a.xp || (b.obtida_em > a.obtida_em ? 1 : -1)).slice(0, lim.vitrine).map(c => c.id);
+  // O admin tem tudo liberado.
+  const molduras = MOLDURAS.filter(mo => pl === 'admin' || (mo.plano ? mo.plano === pl || (mo.plano === 'pro' && pl === 'admin') : av.nivel.nivel >= mo.nivel));
+  const familias = [...FAMILIAS.map(f => ({ id: f.id, nome: f.nome, icone: f.icone })), { id: 'especiais', nome: 'Especiais', icone: '✨' }]
+    .map(f => ({ ...f, itens: av.lista.filter(c => c.familia === f.id) })).filter(f => f.itens.length);
+  const loja = ctx.user?.tipo === 'empresa' ? db.get('SELECT nome, slug FROM lojas WHERE user_id = ?', ctx.user.id) : null;
+  const selos = [];
+  if (ctx.tipo === 'admin') selos.push({ id: 'admin', nome: 'Equipe Ofertou!' });
+  if (pl === 'pro') selos.push({ id: 'pro', nome: 'Afiliado Pro' });
+  if (pl === 'empresa' || (loja && pl !== 'gratis')) selos.push({ id: 'loja', nome: 'Loja verificada' });
+  if (pl === 'consumidor') selos.push({ id: 'assinante', nome: 'Assinante' });
+  const desde = ctx.tipo === 'admin' ? db.get('SELECT MIN(created_at) d FROM offers').d : (ctx.user || ctx.cliente).created_at;
+  const out = {
+    slug: perfil.slug, nome: perfil.nome, titulo: perfil.titulo || '', bio: perfil.bio || '', cidade: perfil.cidade || '',
+    avatar: perfil.avatar || null, capa: lim.capa ? perfil.capa || null : null,
+    cor: lim.cores.includes(perfil.cor) ? perfil.cor : 'verde',
+    moldura: molduras.some(mo => mo.id === perfil.moldura) ? perfil.moldura : 'nenhuma',
+    links: json(perfil.links, []).slice(0, lim.links),
+    papel: av.papel, papel_rotulo: ROTULO_PAPEL[av.papel], plano: pl, plano_rotulo: lim.rotulo, selos,
+    membro_desde: desde, loja, oculto: Boolean(perfil.oculto),
+    nivel: av.nivel,
+    vitrine: vitrine.map(id => av.lista.find(c => c.id === id)).filter(Boolean),
+    conquistas: { total: av.lista.length, obtidas: obtidas.length, familias },
+    numeros: numerosVisiveis(av.metricas, av.papel),
+    proprio, admin_vendo: admin && !proprio,
+  };
+  if (proprio || admin) {
+    out.limites = lim;
+    out.opcoes = { cores: lim.cores, gradientes: GRADIENTES, molduras, tipos_link: TIPOS_LINK, todos_planos: LIMITES };
+    out.vitrine_ids = json(perfil.vitrine, []);
+  }
+  if (admin) out.dono = ctx.dono;
+  return out;
+}
+
+function numerosVisiveis(m, pap) {
+  const n = [['Idas à loja', m.idas_loja], ['Compras confirmadas', m.compras_codigo]];
+  if (pap === 'afiliado' || pap === 'admin') n.push(['Ofertas postadas', m.postagens], ['Cliques nos links', m.cliques_links], ['Vendas como afiliado', m.vendas_afiliado]);
+  if (pap === 'empresa' || pap === 'admin') n.push(['Anúncios', m.anuncios], ['Cliques nos anúncios', m.cliques_anuncios], ['Vendas da loja', m.vendas_empresa]);
+  return n.map(([rotulo, valor]) => ({ rotulo, valor }));
+}
+
+function meu(dono) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  return montar(garantir(ctx), ctx, { proprio: true, admin: dono === 'admin' });
+}
+
+function porSlug(slug, visitante) {
+  const perfil = db.get('SELECT * FROM perfis WHERE slug = ?', String(slug || '').toLowerCase());
+  const ctx = perfil && contexto(perfil.dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  const proprio = visitante === perfil.dono;
+  const admin = visitante === 'admin';
+  if (perfil.oculto && !proprio && !admin) throw fail('Este perfil está oculto.', 404);
+  return montar(perfil, ctx, { proprio, admin });
+}
+
+// ── Edição ───────────────────────────────────────────────────────────────────
+const texto = (v, max) => String(v ?? '').replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, max);
+
+function validarLink(tipo, url) {
+  if (!TIPOS_LINK[tipo]) return null;
+  let u;
+  try { u = new URL(String(url).trim()); } catch { return null; }
+  if (u.protocol !== 'https:') return null;
+  const host = u.hostname.replace(/^www\./, '');
+  const esperado = { instagram: /(^|\.)instagram\.com$/, whatsapp: /^(chat\.whatsapp\.com|wa\.me|whatsapp\.com)$/, telegram: /^(t\.me|telegram\.me)$/,
+    youtube: /(^|\.)(youtube\.com|youtu\.be)$/, tiktok: /(^|\.)tiktok\.com$/ }[tipo];
+  if (esperado && !esperado.test(host)) return null;
+  return { tipo, url: u.href.slice(0, 300) };
+}
+
+function salvar(dono, b) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  const perfil = garantir(ctx);
+  const lim = LIMITES[plano(ctx)];
+  const nome = texto(b.nome, 40);
+  if (nome.length < 2) throw fail('Escolha um nome de exibição (mínimo 2 letras).');
+  const cols = {
+    nome, titulo: texto(b.titulo, 60), bio: texto(b.bio, lim.bio), cidade: texto(b.cidade, 60),
+    updated_at: nowSql(),
+  };
+  if (b.cor !== undefined) {
+    if (!lim.cores.includes(b.cor)) throw fail('Esta cor não está liberada no seu plano.');
+    cols.cor = b.cor;
+  }
+  if (b.moldura !== undefined) {
+    const av = avaliar(ctx, perfil);
+    const pl = plano(ctx);
+    const ok = MOLDURAS.find(mo => mo.id === b.moldura && (pl === 'admin' || (mo.plano ? mo.plano === pl || (mo.plano === 'pro' && pl === 'admin') : av.nivel.nivel >= mo.nivel)));
+    if (!ok) throw fail('Esta moldura ainda não foi liberada.');
+    cols.moldura = b.moldura;
+  }
+  if (Array.isArray(b.links)) {
+    const links = b.links.map(l => validarLink(l?.tipo, l?.url)).filter(Boolean);
+    if (b.links.length && links.length < b.links.filter(l => l?.url).length) throw fail('Confira os links: use endereços https do serviço escolhido.');
+    if (links.length > lim.links) throw fail(lim.links ? `Seu plano permite até ${lim.links} link(s).` : 'Links no perfil fazem parte dos planos pagos.');
+    cols.links = JSON.stringify(links);
+  }
+  if (Array.isArray(b.vitrine)) {
+    const ids = [...new Set(b.vitrine.map(String))].filter(id => POR_ID[id]);
+    if (ids.length > lim.vitrine) throw fail(`Seu plano mostra até ${lim.vitrine} conquistas na vitrine.`);
+    const donas = new Set(db.all('SELECT conquista FROM conquistas_obtidas WHERE dono = ?', dono).map(r => r.conquista));
+    cols.vitrine = JSON.stringify(ids.filter(id => donas.has(id)));
+  }
+  if (b.slug !== undefined && String(b.slug).toLowerCase() !== perfil.slug) {
+    if (!lim.slug_livre) throw fail('Endereço personalizado faz parte do Afiliado Pro.');
+    const slug = String(b.slug).toLowerCase().trim();
+    if (!/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/.test(slug) || RESERVADOS.has(slug)) throw fail('Endereço inválido: use de 3 a 30 letras, números ou hífen.');
+    if (db.get('SELECT 1 FROM perfis WHERE slug = ? AND dono <> ?', slug, dono)) throw fail('Este endereço já está em uso.', 409);
+    cols.slug = slug;
+  }
+  db.run(`UPDATE perfis SET ${Object.keys(cols).map(k => `${k} = ?`).join(', ')} WHERE dono = ?`, ...Object.values(cols), dono);
+  return meu(dono);
+}
+
+// Foto (avatar) ou capa, recortadas e convertidas para WebP.
+async function salvarImagem(dono, tipo, buffer) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  if (!['avatar', 'capa'].includes(tipo)) throw fail('Tipo de imagem inválido.');
+  const lim = LIMITES[plano(ctx)];
+  if (tipo === 'capa' && !lim.capa) throw fail('A capa do perfil faz parte dos planos pagos.');
+  if (!Buffer.isBuffer(buffer) || buffer.length < 100) throw fail('Envie uma imagem JPG, PNG ou WEBP.');
+  const sharp = require('sharp');
+  let img;
+  try {
+    img = tipo === 'avatar'
+      ? await sharp(buffer).rotate().resize(320, 320, { fit: 'cover' }).webp({ quality: 85 }).toBuffer()
+      : await sharp(buffer).rotate().resize(1600, 420, { fit: 'cover' }).webp({ quality: 82 }).toBuffer();
+  } catch { throw fail('Não foi possível ler esta imagem.'); }
+  const perfil = garantir(ctx);
+  const nome = `${dono.replace(':', '')}-${tipo}-${crypto.randomBytes(5).toString('hex')}.webp`;
+  fs.writeFileSync(path.join(DIR, nome), img);
+  apagarArquivo(perfil[tipo]);
+  db.run(`UPDATE perfis SET ${tipo} = ?, updated_at = ? WHERE dono = ?`, `/uploads/perfis/${nome}`, nowSql(), dono);
+  return meu(dono);
+}
+
+function removerImagem(dono, tipo) {
+  const ctx = contexto(dono);
+  if (!ctx || !['avatar', 'capa'].includes(tipo)) throw fail('Pedido inválido.');
+  const perfil = garantir(ctx);
+  apagarArquivo(perfil[tipo]);
+  db.run(`UPDATE perfis SET ${tipo} = NULL, updated_at = ? WHERE dono = ?`, nowSql(), dono);
+  return meu(dono);
+}
+
+function apagarArquivo(url) {
+  const m = /^\/uploads\/perfis\/([\w.-]+\.webp)$/.exec(String(url || ''));
+  if (m) fs.promises.unlink(path.join(DIR, m[1])).catch(() => {});
+}
+
+// ── Admin ────────────────────────────────────────────────────────────────────
+function registrarVenda(dono, tipo, quantidade, observacao) {
+  if (!contexto(dono)) throw fail('Perfil não encontrado.', 404);
+  if (!['afiliado', 'empresa', 'compra'].includes(tipo)) throw fail('Tipo inválido.');
+  const q = parseInt(quantidade, 10);
+  if (!q || Math.abs(q) > 100000) throw fail('Informe a quantidade (use número negativo para corrigir).');
+  db.run('INSERT INTO vendas_registro (dono, tipo, quantidade, observacao) VALUES (?, ?, ?, ?)', dono, tipo, q, texto(observacao, 200) || null);
+  return resumoAdmin(dono);
+}
+
+function resumoAdmin(dono) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  const perfil = garantir(ctx);
+  return {
+    dono, slug: perfil.slug, nome: perfil.nome, oculto: Boolean(perfil.oculto),
+    vendas: { afiliado: vendas(dono, 'afiliado'), empresa: vendas(dono, 'empresa'), compra: vendas(dono, 'compra') },
+    registros: db.all('SELECT tipo, quantidade, observacao, created_at FROM vendas_registro WHERE dono = ? ORDER BY id DESC LIMIT 20', dono),
+  };
+}
+
+function moderar(dono, { oculto, limpar } = {}) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  const perfil = garantir(ctx);
+  if (oculto !== undefined) db.run('UPDATE perfis SET oculto = ? WHERE dono = ?', oculto ? 1 : 0, dono);
+  if (limpar) {
+    apagarArquivo(perfil.avatar); apagarArquivo(perfil.capa);
+    db.run(`UPDATE perfis SET titulo = NULL, bio = NULL, avatar = NULL, capa = NULL, links = NULL WHERE dono = ?`, dono);
+  }
+  return resumoAdmin(dono);
+}
+
+function excluir(dono) {
+  const p = db.get('SELECT avatar, capa FROM perfis WHERE dono = ?', dono);
+  if (p) { apagarArquivo(p.avatar); apagarArquivo(p.capa); }
+  for (const t of ['perfis', 'metricas', 'conquistas_obtidas', 'vendas_registro']) db.run(`DELETE FROM ${t} WHERE dono = ?`, dono);
+}
+
+module.exports = {
+  donoDe, contexto, meu, porSlug, salvar, salvarImagem, removerImagem, incrementar,
+  registrarVenda, resumoAdmin, moderar, excluir, LIMITES,
+};

@@ -109,7 +109,7 @@ router.post('/api/postagens/publicar', async (req, res) => {
     if (cid) {
       const o = db.get('SELECT * FROM offers WHERE id = ?', Number(b.offer_id));
       if (!o) return res.status(404).json({ error: 'Oferta não encontrada.' });
-      ctx = { s: req.cfg, clienteId: cid, link: await clientes.linkAfiliado(cid, o, req.cfg) };
+      ctx = { s: req.cfg, clienteId: cid, link: await clientes.linkParaPostar(cid, o, req.cfg) };
     }
     res.json({ resultados: await social.publicar(Number(b.offer_id), redes, b.texto, req.poster.autor, ctx) });
   } catch (err) {

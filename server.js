@@ -13,6 +13,7 @@ const postagens = require('./src/routes/postagens');
 const clienteRoutes = require('./src/routes/cliente');
 const assinaturaRoutes = require('./src/routes/assinatura');
 const appRoutes = require('./src/routes/app');
+const perfilRoutes = require('./src/routes/perfil');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -36,6 +37,15 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '100kb' }));
 
 // Login obrigatório para ver as ofertas (configurável no painel).
+// Mantém conectado quem já entrou: renova as sessões (site, cliente e admin) enquanto a pessoa usa o site.
+app.use((req, res, next) => {
+  try {
+    require('./src/users').renovarSessao(req, res);
+    require('./src/clientes').renovarSessao(req, res);
+    require('./src/auth').renovarSessao(req, res);
+  } catch (err) { console.error('[SESSAO]', err.message); }
+  next();
+});
 app.use(access.guard);
 
 // O painel só abre para quem entrou como "admin". Exceção: antes da senha existir, /admin mostra a criação de senha
@@ -71,6 +81,7 @@ app.use(postagens.router);
 app.use(clienteRoutes);
 app.use(assinaturaRoutes);
 app.use(appRoutes);
+app.use(perfilRoutes);
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));

@@ -408,7 +408,8 @@
     const tabs = empresa ? TABS_EMPRESA : TABS_CONSUMIDOR;
     if (!tabs.some(([k]) => k === currentTab)) currentTab = 'inicio';
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>
-      `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}</button>`).join('');
+      `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}</button>`).join('')
+      + '<a class="pf-nav-link" href="/perfil">🏅 Meu perfil e conquistas</a>';
     $$('#view-conta [data-empresa]').forEach(el => { el.hidden = !empresa; });
 
     $('#hello-name').textContent = (ME.nome || '').split(' ')[0];

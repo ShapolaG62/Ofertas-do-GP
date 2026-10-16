@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil — Ofertou!</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0e1210">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261042">
+<script src="/js/app-nativo.js?v=20261042"></script>
+</head>
+<body class="pf-body">
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertou! — ofertas">
+      <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertou<b>!</b></span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-sm" href="/">Ver ofertas</a>
+      <a class="btn btn-sm" href="/perfil" id="pf-meu" hidden>Meu perfil</a>
+    </div>
+  </div>
+</header>
+
+<main class="pf-page">
+  <div class="pf-capa" id="pf-capa"></div>
+  <div class="container pf-wrap">
+    <section class="pf-topo" id="pf-topo">
+      <p class="pf-carregando">Carregando perfil…</p>
+    </section>
+
+    <div class="pf-grid" id="pf-grid" hidden>
+      <div class="pf-col">
+        <section class="pf-card" id="pf-resumo"></section>
+        <section class="pf-card" id="pf-vitrine-card">
+          <h2>Vitrine de conquistas</h2>
+          <div class="pf-vitrine" id="pf-vitrine"></div>
+        </section>
+        <section class="pf-card">
+          <div class="pf-card-head"><h2>Conquistas</h2><span class="pf-contagem" id="pf-contagem"></span></div>
+          <div id="pf-conquistas"></div>
+        </section>
+      </div>
+      <aside class="pf-col pf-lado">
+        <section class="pf-card pf-nivel-card" id="pf-nivel"></section>
+        <section class="pf-card" id="pf-numeros"></section>
+        <section class="pf-card" id="pf-links" hidden></section>
+        <section class="pf-card pf-admin" id="pf-admin" hidden></section>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<!-- Editor do perfil -->
+<dialog class="pf-dialog" id="pf-editor" aria-label="Editar perfil">
+  <form class="pf-form" id="pf-form" method="dialog" novalidate>
+    <div class="pf-dialog-head">
+      <h2>Editar perfil</h2>
+      <button class="icon-btn" type="button" data-fechar aria-label="Fechar">✕</button>
+    </div>
+    <p class="pf-plano-aviso" id="pf-plano-aviso"></p>
+
+    <fieldset>
+      <legend>Imagens</legend>
+      <div class="pf-imgs">
+        <div class="pf-img-box">
+          <span class="pf-img-rot">Foto</span>
+          <div class="pf-avatar-prev" id="pf-avatar-prev"></div>
+          <div class="pf-img-acoes">
+            <label class="btn btn-sm"><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-img="avatar">Trocar</label>
+            <button class="btn btn-sm" type="button" data-remover="avatar">Remover</button>
+          </div>
+        </div>
+        <div class="pf-img-box pf-img-capa">
+          <span class="pf-img-rot">Capa <small id="pf-capa-lock"></small></span>
+          <div class="pf-capa-prev" id="pf-capa-prev"></div>
+          <div class="pf-img-acoes" id="pf-capa-acoes">
+            <label class="btn btn-sm"><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-img="capa">Trocar</label>
+            <button class="btn btn-sm" type="button" data-remover="capa">Remover</button>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Sobre você</legend>
+      <div class="pf-campos">
+        <label class="field">Nome de exibição <input name="nome" maxlength="40" required></label>
+        <label class="field">Título <input name="titulo" maxlength="60" placeholder="Ex.: Caçador de promoções de tecnologia"></label>
+        <label class="field">Cidade <input name="cidade" maxlength="60"></label>
+        <label class="field">Endereço do perfil <small id="pf-slug-lock"></small>
+          <span class="pf-slug"><span id="pf-slug-base">/perfil/</span><input name="slug" maxlength="30"></span></label>
+      </div>
+      <label class="field">Resumo <small class="hint-inline" id="pf-bio-conta"></small><textarea name="bio" rows="4"></textarea></label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Cor do perfil</legend>
+      <div class="pf-cores" id="pf-cores"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Moldura da foto</legend>
+      <div class="pf-molduras" id="pf-molduras"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Vitrine <small class="hint-inline" id="pf-vitrine-conta"></small></legend>
+      <p class="hint" style="margin:0 0 8px">Escolha as conquistas em destaque. Sem escolha, mostramos as mais valiosas.</p>
+      <div class="pf-escolha-vitrine" id="pf-escolha-vitrine"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Links <small class="hint-inline" id="pf-links-conta"></small></legend>
+      <div id="pf-links-edit"></div>
+      <button class="btn btn-sm" type="button" id="pf-add-link">+ Adicionar link</button>
+    </fieldset>
+
+    <div class="form-msg err" id="pf-msg" hidden></div>
+    <div class="pf-dialog-foot">
+      <button class="btn" type="button" data-fechar>Cancelar</button>
+      <button class="btn btn-primary" type="submit">Salvar perfil</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/js/perfil.js?v=20261042" defer></script>
+</body>
+</html>

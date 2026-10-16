@@ -4,7 +4,7 @@ const db = require('./db');
 const settings = require('./settings');
 
 const COOKIE = 'gp_admin';
-const SESSION_DAYS = 7;
+const SESSION_DAYS = 30; // expira após 30 dias sem usar o painel (renovado a cada uso)
 const MIN_PASSWORD = 8;
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
@@ -93,6 +93,24 @@ function createSession(req, res) {
   res.setHeader('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
 }
 
+function renovarSessao(req, res) {
+  const token = parseCookies(req.headers.cookie)[COOKIE];
+  if (!token) return;
+  const key = sessionKey();
+  if (key) { // Vercel: cookie assinado; renova quando falta menos de 29 dias
+    const [, exp] = String(token).split('.');
+    if (validStatelessToken(token, key) && Number(exp) < Date.now() + (SESSION_DAYS - 1) * 86400000) {
+      const novoExp = Date.now() + SESSION_DAYS * 86400000;
+      res.append('Set-Cookie', `${COOKIE}=v1.${novoExp}.${sign(key, `v1.${novoExp}`)}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
+    }
+    return;
+  }
+  const r = db.run(`UPDATE sessions SET expires_at = datetime('now', ?) WHERE token_hash = ?
+                    AND expires_at > datetime('now') AND expires_at < datetime('now', ?)`,
+  `+${SESSION_DAYS} days`, tokenHash(token), `+${SESSION_DAYS - 1} days`);
+  if (r.changes) res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
+}
+
 function destroySession(req, res) {
   const token = parseCookies(req.headers.cookie)[COOKIE];
   if (token) db.run('DELETE FROM sessions WHERE token_hash = ?', tokenHash(token));
@@ -144,6 +162,7 @@ function purgeExpiredSessions() {
 }
 
 module.exports = {
+  renovarSessao,
   hasPassword, setPassword, verifyPassword, initFromEnv, createSession, destroySession, isLoggedIn,
   requireAdmin, checkRateLimit, registerFailure, clearFailures, isLocalRequest, purgeExpiredSessions, MIN_PASSWORD,
   hashPassword, tokenHash, parseCookies, cookieFlags,

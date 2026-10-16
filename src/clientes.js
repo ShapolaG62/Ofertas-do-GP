@@ -8,7 +8,7 @@ const auth = require('./auth');
 const { getStore } = require('./stores');
 
 const COOKIE = 'gp_cliente';
-const SESSION_DAYS = 30;
+const SESSION_DAYS = 180; // renovado a cada uso (ver renovarSessao)
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 
 // Configurações que pertencem a cada cliente (valores padrão iguais aos do site, com as chaves vazias).
@@ -73,6 +73,7 @@ function definirStatus(id, status) {
 }
 
 function excluir(id) {
+  require('./perfis').excluir(`c:${id}`);
   db.run('DELETE FROM post_queue WHERE cliente_id = ?', id);
   db.run('DELETE FROM clientes WHERE id = ?', id);
 }
@@ -109,6 +110,15 @@ function criarSessao(req, res, c) {
     auth.tokenHash(token), c.id, `+${SESSION_DAYS} days`);
   db.run(`UPDATE clientes SET last_login_at = datetime('now') WHERE id = ?`, c.id);
   res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${auth.cookieFlags(req)}`);
+}
+
+function renovarSessao(req, res) {
+  const token = auth.parseCookies(req.headers.cookie)[COOKIE];
+  if (!token) return;
+  const r = db.run(`UPDATE cliente_sessions SET expires_at = datetime('now', ?) WHERE token_hash = ?
+                    AND expires_at > datetime('now') AND expires_at < datetime('now', ?)`,
+  `+${SESSION_DAYS} days`, auth.tokenHash(token), `+${SESSION_DAYS - 1} days`);
+  if (r.changes) res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${auth.cookieFlags(req)}`);
 }
 
 function encerrarSessao(req, res) {
@@ -195,6 +205,14 @@ function salvarConfig(id, body) {
 }
 
 // ── Link de afiliado de uma oferta para o cliente ────────────────────────────
+// Link usado nas postagens do cliente: passa pelo site (/ir/...) para contar os cliques nas conquistas dele.
+// Só com o site num endereço público https; sem isso, vai direto para o link de afiliado.
+async function linkParaPostar(cid, o, s) {
+  const site = String(settings.get('site_url') || '').trim().replace(/\/+$/, '');
+  if (/^https:\/\/[^\s/]+/i.test(site) && o && o.id) return `${site}/ir/${cid}-${o.id}`;
+  return linkAfiliado(cid, o, s);
+}
+
 async function linkAfiliado(clienteId, o, s = config(clienteId)) {
   const store = getStore(o.store_id);
   if (!store || o.loja_id || o.fonte === 'empresa' || o.fonte === 'feed') return o.original_url;
@@ -235,6 +253,8 @@ function publico(c) {
 }
 
 module.exports = {
+  linkParaPostar,
+  renovarSessao,
   vincularUsuario,
   CLIENT_KEYS, SECRET_KEYS, criar, editar, renovar, definirStatus, excluir, listar, getById, login, criarSessao,
   encerrarSessao, atual, exigir, config, configParaPainel, salvarConfig, linkAfiliado, lojasSemAfiliado, publico, motivoBloqueio,

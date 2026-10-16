@@ -127,10 +127,12 @@ router.get('/img/recorte/:id.webp', async (req, res) => {
 router.get('/oferta/:slug', (req, res) => {
   const id = Number(String(req.params.slug).split('-').pop());
   const offer = id && offers.isActive(id)
-    ? db.get('SELECT affiliate_url, original_url FROM offers WHERE id = ?', id)
+    ? db.get('SELECT affiliate_url, original_url, loja_id FROM offers WHERE id = ?', id)
     : null;
   if (!offer) return res.redirect('/?expirada=1');
   db.run('UPDATE offers SET link_clicks = link_clicks + 1 WHERE id = ?', id);
+  // Conquistas: ida à loja pelo link do site (do admin) de quem está logado.
+  if (!offer.loja_id) { try { const perfis = require('../perfis'); perfis.incrementar(perfis.donoDe(req), 'idas_loja'); } catch { /* sem perfil */ } }
   res.redirect(offer.affiliate_url || offer.original_url);
 });
 

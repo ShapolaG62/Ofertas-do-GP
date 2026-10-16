@@ -7,10 +7,11 @@ const users = require('./users');
 const loginRequired = () => settings.get('exigir_login') !== '0';
 
 // Páginas de ofertas (a tela de login, os termos e o painel ficam sempre abertos).
-const isOffersPage = p => p === '/' || /^\/(index|loja|anuncio)\.html$/.test(p) || /^\/(loja|anuncio)\//.test(p);
+const isOffersPage = p => p === '/' || /^\/(index|loja|anuncio|perfil)\.html$/.test(p) || /^\/(loja|anuncio)\//.test(p)
+  || /^\/perfil(\/|$)/.test(p);
 
 // Rotas da API que entregam ofertas, lojas e anúncios.
-const isOffersApi = p => /^\/api\/(offers|featured|stats|price-history|lojas|anuncios|vitrine)(\/|$)/.test(p);
+const isOffersApi = p => /^\/api\/(offers|featured|stats|price-history|lojas|anuncios|vitrine|perfis)(\/|$)/.test(p);
 
 function canSeeOffers(req) {
   if (!loginRequired() || auth.isLoggedIn(req)) return true;

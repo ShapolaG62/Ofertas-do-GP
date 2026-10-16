@@ -12,7 +12,7 @@ const EMPRESA_FIELDS = ['razao_social', 'empresa_nome', 'inscricao_estadual', 't
   'emp_cep', 'emp_logradouro', 'emp_numero', 'emp_complemento', 'emp_bairro', 'emp_cidade', 'emp_uf'];
 
 const COOKIE = 'gp_user';
-const SESSION_DAYS = 30;
+const SESSION_DAYS = 180; // "lembrar de mim": renovado a cada uso (ver renovarSessao)
 const MIN_PASSWORD = 8;
 const TIPOS = ['consumidor', 'empresa', 'afiliado'];
 const NOME_TIPO = { consumidor: 'consumidores', empresa: 'empresas', afiliado: 'afiliados (usuários da ferramenta)' };
@@ -156,6 +156,16 @@ function createSession(req, res, userId) {
   res.setHeader('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
 }
 
+// Sessão deslizante: quem continua usando o site nunca precisa entrar de novo (renova no máximo 1 vez por dia).
+function renovarSessao(req, res) {
+  const token = parseCookies(req.headers.cookie)[COOKIE];
+  if (!token) return;
+  const r = db.run(`UPDATE user_sessions SET expires_at = datetime('now', ?) WHERE token_hash = ?
+                    AND expires_at > datetime('now') AND expires_at < datetime('now', ?)`,
+  `+${SESSION_DAYS} days`, tokenHash(token), `+${SESSION_DAYS - 1} days`);
+  if (r.changes) res.append('Set-Cookie', `${COOKIE}=${token}; Max-Age=${SESSION_DAYS * 86400}; ${cookieFlags(req)}`);
+}
+
 function destroySession(req, res) {
   const token = parseCookies(req.headers.cookie)[COOKIE];
   if (token) db.run('DELETE FROM user_sessions WHERE token_hash = ?', tokenHash(token));
@@ -216,6 +226,7 @@ function deleteOwnAccount(u, body) {
   }
   logAction(u, 'conta_excluida_pelo_usuario', null);
   db.run('DELETE FROM users WHERE id = ?', u.id); // loja, anúncios e sessões saem junto (ON DELETE CASCADE)
+  require('./perfis').excluir(`u:${u.id}`); // perfil, conquistas e fotos
 }
 
 // ── Moderação (usado pelo painel do administrador) ────────────────────────────
@@ -282,6 +293,7 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
       break;
     }
     case 'excluir':
+      require('./perfis').excluir(`u:${id}`);
       if (bloquearEmail) {
         // Bloqueia e-mail, CPF e CNPJ para a pessoa não voltar com outro e-mail.
         for (const key of [u.email, u.cpf && `cpf:${u.cpf}`, u.cnpj && `cnpj:${u.cnpj}`].filter(Boolean)) {
@@ -340,6 +352,7 @@ function detailForAdmin(id) {
 }
 
 module.exports = {
+  renovarSessao,
   ACTIVE_SQL, TIPOS, SIGNUP_MODES, signupMode, register, login, createSession, destroySession, currentUser,
   requireUser, requireActive, loginWithGoogle, completeProfile, publicUser, updateProfile, changePassword, deleteOwnAccount, moderate, listForAdmin, detailForAdmin,
   getById, logAction,

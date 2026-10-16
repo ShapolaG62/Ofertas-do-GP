@@ -4,6 +4,9 @@ const planos = require('../planos');
 const pagamentos = require('../pagamentos');
 
 const cadastro = require('../cadastro');
+const settings = require('../settings');
+const offers = require('../offers');
+const vitrine = require('../vitrine');
 const { createLimiter } = require('../ratelimit');
 
 const router = express.Router();
@@ -11,8 +14,23 @@ const pedidoLimiter = createLimiter(20, 60);   // 20 tentativas de pedido por ho
 const statusLimiter = createLimiter(240, 10);  // consultas da página de pagamento
 
 router.get('/api/planos', (req, res) => {
-  res.json({ planos: planos.listar(), metodos: pagamentos.metodosDisponiveis(), ufs: cadastro.UFS, ramos: cadastro.RAMOS,
-    idade_minima: cadastro.IDADE_MINIMA });
+  const s = settings.getAll();
+  res.json({ planos: planos.listar(s), metodos: pagamentos.metodosDisponiveis(s, req.query.plano ? String(req.query.plano) : null),
+    whatsapp: String(s.pag_whatsapp || s.whatsapp_anuncios || '').replace(/\D/g, ''),
+    ufs: cadastro.UFS, ramos: cadastro.RAMOS, idade_minima: cadastro.IDADE_MINIMA });
+});
+
+// Números e fotos para a apresentação da página inicial (sem preços nem links: só o "aperitivo").
+let apresentacaoCache = { at: 0, dados: null };
+router.get('/api/apresentacao', async (req, res) => {
+  if (!apresentacaoCache.dados || Date.now() - apresentacaoCache.at > 10 * 60 * 1000) {
+    const st = offers.stats();
+    let fotos = [];
+    try { fotos = (await vitrine.itens()).map(o => ({ id: o.id, tipo: o.tipo, desconto: Math.round(o.desconto_pct) })); } catch { /* sem fotos */ }
+    apresentacaoCache = { at: Date.now(), dados: { ofertas: st.offer_count, hoje: st.offers_today, lojas: st.stores, diamantes: st.diamonds, fotos } };
+  }
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.json(apresentacaoCache.dados);
 });
 
 router.post('/api/assinatura', async (req, res) => {

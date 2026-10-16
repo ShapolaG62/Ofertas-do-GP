@@ -3,7 +3,8 @@ const settings = require('./settings');
 
 const PLANOS = {
   consumidor: {
-    conta: 'usuario', perfil: 'consumidor', chamada: 'Para quem quer economizar',
+    conta: 'usuario', perfil: 'consumidor', chamada: 'Para quem quer economizar', icone: 'consumidor',
+    ideal: 'Para você que compra online e não quer pagar caro nem cair em desconto falso.',
     beneficios: [
       'Acesso imediato, sem esperar aprovação',
       'Milhares de ofertas reais de Amazon, Mercado Livre, AliExpress, KaBuM! e mais',
@@ -13,7 +14,8 @@ const PLANOS = {
     ],
   },
   empresa: {
-    conta: 'usuario', perfil: 'empresa', chamada: 'Para lojas que querem vender mais',
+    conta: 'usuario', perfil: 'empresa', chamada: 'Para lojas que querem vender mais', icone: 'empresa',
+    ideal: 'Para lojas físicas e virtuais que querem mostrar suas promoções a quem está pronto para comprar.',
     beneficios: [
       'Tudo do plano Caçador de Ofertas',
       'Sua loja dentro do site, com página própria',
@@ -23,7 +25,8 @@ const PLANOS = {
     ],
   },
   pro: {
-    conta: 'cliente', perfil: null, chamada: 'Para quem divulga ofertas e ganha comissão', destaque: true,
+    conta: 'cliente', perfil: null, chamada: 'Para quem divulga ofertas e ganha comissão', destaque: true, icone: 'pro',
+    ideal: 'Para afiliados e donos de grupos de ofertas que querem postar no automático e ganhar comissão.',
     beneficios: [
       'Painel próprio com os SEUS links de afiliado (Amazon, Mercado Livre, KaBuM!, AliExpress, Shopee, Magalu)',
       'Mais de 20 mil ofertas reais mineradas para você postar',

@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Entrar — Ofertas do GP</title>
+<title>Ofertas do GP — ofertas reais das maiores lojas do Brasil</title>
+<meta name="description" content="Ofertas reais de Amazon, Mercado Livre, AliExpress, Shopee, KaBuM! e Magalu, conferidas várias vezes por dia. Planos para consumidores, lojas e afiliados.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0c8f4f">
 <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
@@ -11,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261037">
+<link rel="stylesheet" href="/css/site.css?v=20261038">
 </head>
 <body>
 <header class="site-header">
@@ -20,7 +21,11 @@
       <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
       <span class="brand-name">Ofertas do <b>GP</b></span>
     </a>
+    <nav class="lp-nav" id="lp-nav" hidden aria-label="Seções">
+      <a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a>
+    </nav>
     <div class="header-actions">
+      <a class="btn btn-sm btn-primary" href="#entrar" id="header-entrar" hidden>Entrar</a>
       <a class="btn btn-sm" href="/" id="header-offers">Ver ofertas</a>
       <button class="btn btn-sm" id="logout" type="button" hidden>Sair</button>
     </div>
@@ -30,63 +35,173 @@
 <main class="page">
   <div class="container">
 
-    <!-- ── Login / criar conta ── -->
-    <section id="view-login" class="auth-wrap" hidden>
-      <div class="auth-brand">
-        <img src="/images/pet-capi.png" alt="Capi, o mascote do Ofertas do GP" width="190" height="235">
-        <h1>Ofertas reais, num só lugar.</h1>
-        <p class="auth-intro">O Ofertas do GP procura descontos <b>de verdade</b> nas maiores lojas do Brasil — Amazon, Mercado Livre, AliExpress, KaBuM! e outras — várias vezes por dia e junta tudo aqui, com filtros e histórico de preço. Só entra oferta que a própria loja exibe; quando acaba, sai do ar.</p>
-        <ul>
-          <li>Milhares de ofertas reais, conferidas o dia todo</li>
-          <li>Lojas parceiras anunciam os próprios produtos com desconto</li>
-          <li>Afiliados postam as ofertas nos próprios grupos e ganham comissão</li>
-        </ul>
-        <a class="link-btn auth-planos-link" href="#planos">Ver planos e preços ↓</a>
-      </div>
-      <div class="panel-card auth-card">
-        <div class="tabs-line" role="tablist">
-          <button type="button" role="tab" data-auth="entrar" aria-selected="true">Entrar</button>
-          <button type="button" role="tab" data-auth="criar" aria-selected="false">Criar conta</button>
-        </div>
-        <div class="form-msg err" id="auth-error" hidden></div>
+    <!-- ── Página inicial (apresentação, planos e login) ── -->
+    <div id="view-login" class="landing" hidden>
 
-        <a class="btn btn-google btn-block" id="google-btn" href="/auth/google">
-          <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-          <span id="google-label">Entrar com Google</span>
-        </a>
-        <div class="divider" id="google-divider"><span>ou</span></div>
-
-        <form class="form" id="form-entrar">
-          <label class="field"><span>E-mail</span><input type="text" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
-          <label class="field"><span>Senha</span><input type="password" name="senha" autocomplete="current-password" required></label>
-          <div class="form-msg" hidden></div>
-          <button class="btn btn-primary btn-block" type="submit">Entrar</button>
-          <p class="muted" style="margin:0;font-size:13px;text-align:center">Assinante da ferramenta? <a class="link-btn" href="/cliente">Entre no painel do cliente</a></p>
-        </form>
-
-        <form class="form" id="form-criar" hidden>
-          <label class="field"><span>E-mail</span><input type="email" name="email" autocomplete="email" maxlength="120" required></label>
-          <div class="form-row">
-            <label class="field"><span>Senha <small class="hint-inline">mín. 8 caracteres</small></span><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
-            <label class="field"><span>Confirme a senha</span><input type="password" name="senha_confirmacao" autocomplete="new-password" minlength="8" required></label>
+      <!-- Topo: apresentação + entrar -->
+      <section class="lp-hero">
+        <div class="lp-hero-text">
+          <span class="lp-eyebrow"><span class="live-dot"></span> <span id="lp-ao-vivo">Ofertas conferidas o dia todo</span></span>
+          <h1>As melhores ofertas da internet, <em>conferidas</em> e num só lugar.</h1>
+          <p class="lp-lead">O Ofertas do GP procura descontos <b>de verdade</b> nas maiores lojas do Brasil várias vezes por dia, confere o preço na própria loja e junta tudo aqui — com filtros, busca e histórico de preço. Oferta que acaba sai do ar.</p>
+          <div class="lp-cta">
+            <a class="btn btn-primary btn-lg" href="#planos">Ver planos e preços</a>
+            <a class="btn btn-lg" href="#como-funciona">Como funciona</a>
           </div>
-          <div class="form-msg" hidden></div>
-          <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
-          <p class="muted" style="margin:0;font-size:13px">No próximo passo você escolhe se a conta é de consumidor ou de empresa.</p>
-        </form>
-        <p class="auth-aprovacao"><b>Conta gratuita:</b> ao criar a conta ou entrar com o Google sem escolher um plano, seu perfil é <b>avaliado pela nossa equipe</b> e o acesso é liberado depois da aprovação. Quer acesso na hora? <a class="link-btn" href="#planos">Escolha um plano</a>.</p>
-      </div>
-    </section>
+          <ul class="lp-stats">
+            <li><b id="st-ofertas">Milhares</b><span>ofertas ativas</span></li>
+            <li><b id="st-lojas">6</b><span>grandes lojas</span></li>
+            <li><b id="st-hoje">Todo dia</b><span>ofertas novas</span></li>
+          </ul>
+          <div class="lp-fotos" id="lp-fotos" hidden></div>
+        </div>
 
-    <!-- ── Planos (na página de login) ── -->
-    <section class="planos-sec" id="planos" hidden>
-      <div class="planos-head">
-        <h2>Escolha seu plano</h2>
-        <p>Acesso liberado assim que o pagamento é confirmado. Pague com <b>Pix</b> ou <b>Mercado Pago</b>.</p>
-      </div>
-      <div class="planos-grid" id="planos-grid"></div>
-      <p class="planos-nota">Sem fidelidade: o plano vale pelo período contratado. Para renovar, assine de novo com o mesmo e-mail e senha e os dias são somados.</p>
-    </section>
+        <div class="panel-card auth-card" id="entrar">
+          <h2 class="auth-title">Acesse sua conta</h2>
+          <div class="tabs-line" role="tablist">
+            <button type="button" role="tab" data-auth="entrar" aria-selected="true">Entrar</button>
+            <button type="button" role="tab" data-auth="criar" aria-selected="false">Criar conta</button>
+          </div>
+          <div class="form-msg err" id="auth-error" hidden></div>
+
+          <a class="btn btn-google btn-block" id="google-btn" href="/auth/google">
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+            <span id="google-label">Entrar com Google</span>
+          </a>
+          <div class="divider" id="google-divider"><span>ou</span></div>
+
+          <form class="form" id="form-entrar">
+            <label class="field"><span>E-mail</span><input type="text" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
+            <label class="field"><span>Senha</span><input type="password" name="senha" autocomplete="current-password" required></label>
+            <div class="form-msg" hidden></div>
+            <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+            <p class="muted" style="margin:0;font-size:13px;text-align:center">Assinante do Afiliado Pro? <a class="link-btn" href="/cliente">Entre no painel do cliente</a></p>
+          </form>
+
+          <form class="form" id="form-criar" hidden>
+            <label class="field"><span>E-mail</span><input type="email" name="email" autocomplete="email" maxlength="120" required></label>
+            <div class="form-row">
+              <label class="field"><span>Senha <small class="hint-inline">mín. 8 caracteres</small></span><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
+              <label class="field"><span>Confirme a senha</span><input type="password" name="senha_confirmacao" autocomplete="new-password" minlength="8" required></label>
+            </div>
+            <div class="form-msg" hidden></div>
+            <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
+            <p class="muted" style="margin:0;font-size:13px">No próximo passo você escolhe se a conta é de consumidor ou de empresa.</p>
+          </form>
+          <p class="auth-aprovacao"><b>Conta gratuita:</b> ao criar a conta ou entrar com o Google <b>sem escolher um plano</b>, seu perfil passa por uma <b>avaliação da nossa equipe</b> e o acesso é liberado depois da aprovação. Quer acesso na hora? <a class="link-btn" href="#planos">Escolha um plano</a>.</p>
+        </div>
+      </section>
+
+      <!-- Lojas -->
+      <section class="lp-lojas" aria-label="Lojas acompanhadas">
+        <span>Ofertas de</span>
+        <b>Amazon</b><b>Mercado Livre</b><b>AliExpress</b><b>Shopee</b><b>KaBuM!</b><b>Magalu</b>
+        <span>e lojas parceiras</span>
+      </section>
+
+      <!-- Como funciona -->
+      <section class="lp-sec" id="como-funciona">
+        <div class="lp-head">
+          <p class="lp-kicker">Como funciona</p>
+          <h2>Do desconto na loja até você, em 3 passos</h2>
+        </div>
+        <ol class="lp-passos">
+          <li>
+            <span class="lp-num">1</span>
+            <h3>Garimpamos as lojas</h3>
+            <p>Nosso robô percorre centenas de buscas em Amazon, Mercado Livre, AliExpress, Shopee, KaBuM! e Magalu, várias vezes por dia.</p>
+          </li>
+          <li>
+            <span class="lp-num">2</span>
+            <h3>Conferimos o preço</h3>
+            <p>Só entra oferta com desconto que a própria loja mostra. Guardamos o histórico para você não cair em “desconto” de mentira.</p>
+          </li>
+          <li>
+            <span class="lp-num">3</span>
+            <h3>Você aproveita</h3>
+            <p>Filtre por loja, categoria, preço e desconto, ache em segundos e compre direto na loja — ou poste nos seus grupos e ganhe comissão.</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Recursos -->
+      <section class="lp-sec lp-band" id="recursos">
+        <div class="lp-head">
+          <p class="lp-kicker">Recursos</p>
+          <h2>Tudo o que você precisa para economizar — ou para vender mais</h2>
+        </div>
+        <div class="lp-recursos">
+          <article><span class="lp-ico"><svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><circle cx="17" cy="14" r="1.5"/></svg></span>
+            <h3>Ofertas reais</h3><p>Preço e desconto conferidos na loja. Se a promoção acaba, a oferta some do site.</p></article>
+          <article><span class="lp-ico"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg></span>
+            <h3>Histórico de preço</h3><p>Veja se o preço de hoje é mesmo o menor antes de comprar.</p></article>
+          <article><span class="lp-ico"><svg viewBox="0 0 24 24"><path d="M4 5h16M7 12h10M10 19h4"/></svg></span>
+            <h3>Filtros e busca</h3><p>18 categorias, filtros por loja, faixa de preço e desconto mínimo.</p></article>
+          <article><span class="lp-ico"><svg viewBox="0 0 24 24"><path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg></span>
+            <h3>Vitrine para lojas</h3><p>Empresas ganham página própria, criam anúncios e importam o catálogo sozinhas.</p></article>
+          <article><span class="lp-ico"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span>
+            <h3>Seus links de afiliado</h3><p>No Afiliado Pro, cada oferta sai com o seu link — a comissão é sua.</p></article>
+          <article><span class="lp-ico"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3.6-7.2L21 3v6h-6"/><path d="M12 7v5l3 2"/></svg></span>
+            <h3>Postagem automática</h3><p>WhatsApp, Telegram, Facebook, Instagram e X, de manhã, à tarde e à noite.</p></article>
+        </div>
+      </section>
+
+      <!-- Planos -->
+      <section class="lp-sec planos-sec" id="planos">
+        <div class="lp-head">
+          <p class="lp-kicker">Planos</p>
+          <h2>Escolha o plano ideal para você</h2>
+          <p>Acesso liberado assim que o pagamento é confirmado. Sem fidelidade.</p>
+        </div>
+        <div class="planos-grid" id="planos-grid">
+          <p class="muted" style="text-align:center;grid-column:1/-1">Carregando planos…</p>
+        </div>
+        <div class="lp-pagamento" id="lp-pagamento" hidden></div>
+        <p class="planos-nota">O plano vale pelo período contratado. Para renovar, assine de novo com o mesmo e-mail e senha: os dias são somados.</p>
+      </section>
+
+      <!-- Comparativo -->
+      <section class="lp-sec" id="comparar" hidden>
+        <div class="lp-head">
+          <p class="lp-kicker">Compare</p>
+          <h2>O que cada plano inclui</h2>
+        </div>
+        <div class="lp-tabela-wrap"><table class="lp-tabela" id="lp-tabela"></table></div>
+      </section>
+
+      <!-- Perguntas frequentes -->
+      <section class="lp-sec lp-band" id="duvidas">
+        <div class="lp-head">
+          <p class="lp-kicker">Dúvidas</p>
+          <h2>Perguntas frequentes</h2>
+        </div>
+        <div class="lp-faq">
+          <details><summary>As ofertas são reais mesmo?</summary>
+            <p>Sim. Só publicamos ofertas com desconto que a própria loja exibe, conferidas várias vezes por dia. Quando o preço volta ao normal ou o produto acaba, a oferta sai do site. Mesmo assim, confira sempre o valor final na loja antes de comprar.</p></details>
+          <details><summary>Quando recebo o acesso?</summary>
+            <p>No Pix e no cartão pelo Mercado Pago, o acesso é liberado sozinho assim que o pagamento é aprovado. Nas formas com comprovante (Pix pela chave, transferência ou link), liberamos assim que conferimos. Você recebe um e-mail com a data de validade.</p></details>
+          <details><summary>Posso criar uma conta grátis?</summary>
+            <p>Pode. Ao criar a conta (ou entrar com o Google) sem escolher um plano, seu perfil é avaliado pela nossa equipe e o acesso é liberado depois da aprovação. Com um plano, o acesso é imediato.</p></details>
+          <details><summary>Como funciona o Afiliado Pro?</summary>
+            <p>Você ganha um painel próprio, cadastra os seus links de afiliado (Amazon, Mercado Livre, KaBuM!, AliExpress, Shopee, Magalu) e conecta os seus canais. As ofertas do site saem com os seus links — e a comissão das vendas é sua.</p></details>
+          <details><summary>Tem fidelidade ou renovação automática?</summary>
+            <p>Não. O plano vale pelo período contratado. Para continuar, é só assinar de novo com o mesmo e-mail e senha: os dias novos são somados aos que ainda restam.</p></details>
+          <details><summary>Sou empresa. Como meus produtos aparecem?</summary>
+            <p>No plano para empresas você cria a página da sua loja, publica anúncios com fotos, cupom e frete, ou importa automaticamente o catálogo (Shopify, WooCommerce ou feed XML). Seus produtos em promoção aparecem para todos os visitantes.</p></details>
+        </div>
+      </section>
+
+      <!-- Chamada final -->
+      <section class="lp-final">
+        <img src="/images/pet-capi-head.png" alt="" width="72" height="72">
+        <h2>Comece a economizar hoje</h2>
+        <p>Escolha um plano e tenha acesso na hora, ou crie sua conta grátis e aguarde a aprovação.</p>
+        <div class="lp-cta">
+          <a class="btn btn-primary btn-lg" href="#planos">Ver planos</a>
+          <a class="btn btn-lg lp-btn-claro" href="#entrar" data-ir-criar>Criar conta grátis</a>
+        </div>
+      </section>
+    </div>
 
     <!-- ── Primeiro acesso: escolha do perfil ── -->
     <section id="view-perfil" class="wide-form" hidden>
@@ -334,7 +449,20 @@
   </div>
 </main>
 
+<footer class="site-footer" id="lp-footer" hidden>
+  <div class="container">
+    <div class="footer-row">
+      <div>
+        <a class="brand" href="/conta"><img src="/images/pet-capi-head.png" alt="" width="32" height="32"><span class="brand-name" style="display:inline">Ofertas do <b>GP</b></span></a>
+        <p>Ofertas encontradas nas próprias lojas. Os preços podem mudar a qualquer momento: confira sempre o valor final na loja antes de comprar.</p>
+      </div>
+      <div class="footer-links"><a href="#planos">Planos</a><a href="/anuncie">Anuncie aqui</a><a href="/cliente">Painel do afiliado</a><a href="/privacidade">Termos e privacidade</a></div>
+    </div>
+    <div class="footer-legal">© <span id="lp-ano"></span> Ofertas do GP. Podemos receber comissão pelas compras feitas pelos links (programas de afiliados), sem custo extra para você.</div>
+  </div>
+</footer>
+
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261037" defer></script>
+<script src="/js/conta.js?v=20261038" defer></script>
 </body>
 </html>

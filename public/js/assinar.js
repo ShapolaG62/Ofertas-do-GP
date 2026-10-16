@@ -1,4 +1,4 @@
-/* Ofertas do GP — assinatura de planos: dados do cadastro, pagamento (Pix ou Mercado Pago) e confirmação */
+/* Ofertas do GP — assinatura de planos: dados do cadastro, pagamento (Pix, cartão, transferência ou link) e confirmação */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -41,7 +41,7 @@
   }
 
   async function iniciarForm(id) {
-    const d = await fetch('/api/planos').then(r => r.json());
+    const d = await fetch(`/api/planos?plano=${encodeURIComponent(id)}`).then(r => r.json());
     PLANO = d.planos.find(p => p.id === id);
     if (!PLANO) return show('erro');
     document.title = `Assinar ${PLANO.nome} — Ofertas do GP`;
@@ -49,14 +49,11 @@
     $('#uf').insertAdjacentHTML('beforeend', ufs);
     $('#emp_uf').insertAdjacentHTML('beforeend', ufs);
     $('#ramo').insertAdjacentHTML('beforeend', d.ramos.map(r => `<option>${esc(r)}</option>`).join(''));
-    const m = d.metodos;
-    const opcoes = [];
-    if (m.pix) opcoes.push(['pix', 'Pix', m.pix_automatico ? 'QR code na hora, confirmação automática' : 'Chave Pix, confirmação após o envio do comprovante']);
-    if (m.mercadopago) opcoes.push(['mercadopago', 'Mercado Pago', 'Cartão de crédito, saldo ou Pix pelo Mercado Pago']);
-    $('#metodos').innerHTML = opcoes.length ? opcoes.map(([v, t, sub], i) => `
-      <label class="ass-metodo"><input type="radio" name="metodo" value="${v}" ${i === 0 ? 'checked' : ''}>
-        <span><b>${t}</b><small>${esc(sub)}</small></span></label>`).join('')
-      : '<p class="form-msg err">Os pagamentos ainda não foram configurados. Tente mais tarde.</p>';
+    const opcoes = d.metodos?.lista || [];
+    $('#metodos').innerHTML = opcoes.length ? opcoes.map((m, i) => `
+      <label class="ass-metodo"><input type="radio" name="metodo" value="${esc(m.id)}" ${i === 0 ? 'checked' : ''}>
+        <span><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small></span>${m.automatico ? '<em class="ass-auto">liberação automática</em>' : ''}</label>`).join('')
+      : `<p class="form-msg err">Os pagamentos online ainda não foram configurados.${d.whatsapp ? ` <a class="link-btn" target="_blank" rel="noopener" href="https://wa.me/${esc(d.whatsapp)}?text=${encodeURIComponent(`Olá! Quero assinar o plano ${PLANO.nome}.`)}">Fale com a gente no WhatsApp</a>.` : ' Tente mais tarde.'}</p>`;
     $('#ass-enviar').disabled = !opcoes.length;
     resumo();
     aplicarPlano();
@@ -152,19 +149,40 @@
       $('#copiar').addEventListener('click', () => navigator.clipboard.writeText(p.pix.copia_cola).then(() => toast('Código Pix copiado!')));
       return;
     }
-    if (p.pix_manual) {
-      const wa = String(p.pix_manual.whatsapp || '').replace(/\D/g, '');
+    if (p.manual) {
+      const m = p.manual;
+      const wa = String(m.whatsapp || '').replace(/\D/g, '');
+      const comprovante = wa
+        ? `pelo <a class="link-btn" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(`Olá! Paguei o plano ${p.plano} (${p.email}). Segue o comprovante.`)}">WhatsApp</a>`
+        : '';
+      const linha = (rot, val, copiar) => (val ? `<div class="ass-dado"><span>${rot}</span><b>${esc(val)}</b>${copiar ? `<button class="btn btn-sm" type="button" data-copiar="${esc(val)}">Copiar</button>` : ''}</div>` : '');
+      let titulo, dados, passo1;
+      if (m.tipo === 'pix_manual') {
+        titulo = 'Pague com Pix';
+        dados = `<div class="ass-chave"><span>Chave Pix${m.chave_tipo ? ` (${esc(m.chave_tipo)})` : ''}</span><b>${esc(m.chave)}</b>
+          ${m.nome || m.banco ? `<small>${esc([m.nome, m.banco].filter(Boolean).join(' · '))}</small>` : ''}
+          <button class="btn btn-sm" type="button" data-copiar="${esc(m.chave)}">Copiar chave</button></div>`;
+        passo1 = `Faça um Pix de <b>${brl(p.valor)}</b> para a chave acima.`;
+      } else if (m.tipo === 'transferencia') {
+        titulo = 'Pague por transferência';
+        dados = `<div class="ass-dados">${linha('Banco', m.banco)}${linha('Agência', m.agencia, true)}${linha(`Conta ${esc(m.tipo_conta).toLowerCase()}`, m.conta, true)}${linha('Titular', m.titular)}${linha('CPF/CNPJ', m.documento, true)}</div>`;
+        passo1 = `Transfira <b>${brl(p.valor)}</b> para a conta acima.`;
+      } else {
+        titulo = `Pague com ${esc(m.nome || 'o link de pagamento')}`;
+        dados = m.url ? `<a class="btn btn-primary btn-lg" href="${esc(m.url)}" target="_blank" rel="noopener">Abrir página de pagamento ↗</a>` : '';
+        passo1 = `Pague <b>${brl(p.valor)}</b> pela página de pagamento (abre em outra aba).`;
+      }
       box.innerHTML = `
-        <h1>Pague com Pix</h1>${valor}
-        <div class="ass-chave"><span>Chave Pix</span><b id="chave">${esc(p.pix_manual.chave)}</b>${p.pix_manual.nome ? `<small>${esc(p.pix_manual.nome)}</small>` : ''}
-          <button class="btn btn-sm" type="button" id="copiar">Copiar chave</button></div>
+        <h1>${titulo}</h1>${valor}
+        ${dados}
         <ol class="cli-steps">
-          <li>Faça um Pix de <b>${brl(p.valor)}</b> para a chave acima.</li>
-          <li>Envie o comprovante${wa ? ` pelo <a class="link-btn" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(`Olá! Paguei o plano ${p.plano} (${p.email}). Segue o comprovante.`)}">WhatsApp</a>` : ''} informando o e-mail <b>${esc(p.email)}</b>.</li>
+          <li>${passo1}</li>
+          <li>Envie o comprovante ${comprovante} informando o e-mail <b>${esc(p.email)}</b>.</li>
           <li>Assim que confirmarmos, seu acesso é liberado — esta página atualiza sozinha.</li>
         </ol>
+        ${m.recado ? `<p class="cli-hint">${esc(m.recado)}</p>` : ''}
         <p class="ass-aguarde"><span class="live-dot"></span> Aguardando a confirmação do pagamento…</p>`;
-      $('#copiar').addEventListener('click', () => navigator.clipboard.writeText(p.pix_manual.chave).then(() => toast('Chave Pix copiada!')));
+      box.querySelectorAll('[data-copiar]').forEach(b => b.addEventListener('click', () => navigator.clipboard.writeText(b.dataset.copiar).then(() => toast('Copiado!'))));
       return;
     }
     box.innerHTML = `<h1>Aguardando o Mercado Pago</h1>${valor}

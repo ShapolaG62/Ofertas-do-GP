@@ -91,10 +91,32 @@ const DEFAULTS = {
   plano_pro_preco: '79.90',
   plano_pro_dias: '30',
   plano_pro_ativo: '1',
-  // Pagamento: Mercado Pago (Pix e checkout com confirmação automática) ou Pix manual (chave do admin)
+  // Formas de recebimento (Painel → Planos). Cada uma liga/desliga sozinha.
+  //  • Mercado Pago: Pix com QR code e cartão pelo checkout, confirmação automática.
+  //  • Pix pela chave, transferência bancária e link de pagamento: o admin confirma cada pedido.
   mp_access_token: '',
+  pag_mp_pix: '1',
+  pag_mp_cartao: '1',
+  pag_mp_parcelas: '1',         // parcelas máximas no cartão
+  pag_pix_ativo: '1',
   pix_chave: '',
+  pix_tipo: '',                 // cpf, cnpj, email, telefone ou aleatoria
   pix_nome: '',
+  pix_banco: '',
+  pag_ted_ativo: '0',
+  ted_banco: '',
+  ted_agencia: '',
+  ted_conta: '',
+  ted_tipo_conta: 'corrente',
+  ted_titular: '',
+  ted_documento: '',
+  pag_link_ativo: '0',
+  pag_link_nome: 'Cartão de crédito',
+  pag_link_consumidor: '',      // links de pagamento prontos (PagBank, InfinitePay, PicPay…), um por plano
+  pag_link_empresa: '',
+  pag_link_pro: '',
+  pag_whatsapp: '',             // WhatsApp para o comprovante (vazio = o mesmo dos anúncios)
+  pag_instrucoes: '',           // recado extra na tela de pagamento
   // E-mail de confirmação (SMTP — ex.: Gmail com "senha de app")
   smtp_host: '',
   smtp_port: '587',

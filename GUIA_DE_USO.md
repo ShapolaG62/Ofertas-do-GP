@@ -206,7 +206,7 @@ Você pode vender o acesso à ferramenta. Cada cliente usa as ofertas mineradas 
 
 ## 12. Planos pagos (assinaturas)
 
-A página de entrada (**/conta**) apresenta o site e mostra 3 planos. Ao clicar em um plano, a pessoa vai para **/assinar**, preenche os dados e paga. Após a confirmação, a conta é criada (ou renovada), ela recebe um e-mail com a data de vencimento e é levada para as ofertas.
+A página de entrada (**/conta**) é a página inicial do site: apresentação, números de ofertas ao vivo, como funciona, recursos, os 3 planos lado a lado, comparativo do que cada plano inclui, perguntas frequentes e o login. Ao clicar em um plano, a pessoa vai para **/assinar**, preenche os dados e paga. Após a confirmação, a conta é criada (ou renovada), ela recebe um e-mail com a data de vencimento e é levada para as ofertas.
 
 | Plano | Para quem | Preço sugerido (30 dias) |
 |---|---|---|
@@ -216,9 +216,14 @@ A página de entrada (**/conta**) apresenta o site e mostra 3 planos. Ao clicar 
 
 Nomes, preços, dias e quais planos ficam visíveis: **Painel → Planos**.
 
-**Formas de pagamento** (Painel → Planos → Recebimento):
-- **Mercado Pago (recomendado):** cole o *Access Token* de produção (Mercado Pago → Seu negócio → Configurações → Credenciais). Gera Pix com QR Code e o checkout do Mercado Pago (cartão, saldo etc.). A confirmação é automática.
-- **Pix manual:** informe sua chave Pix e o nome do recebedor. O cliente paga e envia o comprovante pelo WhatsApp; você confere e clica **Confirmar** no pedido.
+**Formas de recebimento** (Painel → Planos → Formas de recebimento). Cada uma tem *Ativo/Desligado*; para trocar uma chave, conta ou link, é só editar e salvar:
+- **Mercado Pago (recomendado):** cole o *Access Token* de produção (mercadopago.com.br/developers → Suas integrações → Credenciais de produção). Liga **Pix com QR code** e **cartão de crédito/débito** (com parcelas, se quiser). Confirmação automática.
+- **Pix pela sua chave:** tipo e chave Pix, nome do recebedor e banco. Usado quando o Pix do Mercado Pago está desligado.
+- **Transferência bancária:** banco, agência, conta, tipo, titular e CPF/CNPJ.
+- **Link de pagamento:** para cartão sem Mercado Pago — crie um link de valor fixo (PagBank, InfinitePay, PicPay, Stone…) para cada plano e cole aqui.
+- **WhatsApp para comprovantes** e um **recado** opcional na tela de pagamento.
+
+Nas formas com comprovante, o pedido fica em **Pedidos de assinatura** e você clica **Confirmar pagamento**. Sem nenhuma forma ligada, os planos continuam aparecendo, com o botão **Assinar pelo WhatsApp**.
 
 **E-mail de confirmação:** configure o SMTP em Painel → Planos (ex.: Gmail com *senha de app*: smtp.gmail.com, porta 465) e use **Enviar e-mail de teste**. Sem SMTP o pagamento funciona, mas o e-mail não é enviado (dá para reenviar depois pelo botão do pedido).
 

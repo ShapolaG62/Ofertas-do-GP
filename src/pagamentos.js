@@ -2,7 +2,8 @@
 // criação (ou renovação) da conta, e-mail de confirmação com a data de validade e login automático.
 //  • Com o Access Token do Mercado Pago no painel: Pix (QR code) e checkout do Mercado Pago, confirmação automática
 //    (consultando a API — o aviso do Mercado Pago só serve de gatilho, nunca é aceito sem conferir).
-//  • Sem o token: Pix manual com a chave do admin, que confirma o pagamento no painel.
+//  • Pix pela chave, transferência bancária ou link de pagamento (PagBank, InfinitePay…): o admin confere e confirma no painel.
+// Cada forma liga/desliga em Painel → Planos → Formas de recebimento.
 const crypto = require('crypto');
 const axios = require('axios');
 const db = require('./db');
@@ -21,9 +22,26 @@ const sqlDe = d => d.toISOString().replace('T', ' ').slice(0, 19);
 const isBlocked = key => Boolean(db.get('SELECT 1 FROM blocked_emails WHERE email = ?', key));
 const PIX_MINUTOS = 30;
 
-function metodosDisponiveis(s = settings.getAll()) {
+// Formas que o cliente pode escolher. "pix" é automático (Mercado Pago) quando possível; senão, pela chave do admin.
+function metodosDisponiveis(s = settings.getAll(), planoId = null) {
   const mp = Boolean(s.mp_access_token);
-  return { pix: mp || Boolean(s.pix_chave), mercadopago: mp, pix_automatico: mp };
+  const pixAuto = mp && s.pag_mp_pix !== '0';
+  const pixManual = s.pag_pix_ativo !== '0' && Boolean(String(s.pix_chave || '').trim());
+  const ted = s.pag_ted_ativo === '1' && Boolean(s.ted_banco && s.ted_conta && s.ted_titular);
+  const links = ['consumidor', 'empresa', 'pro'].filter(id => /^https:\/\//i.test(String(s[`pag_link_${id}`] || '').trim()));
+  const link = s.pag_link_ativo === '1' && (planoId ? links.includes(planoId) : links.length > 0);
+  const parcelas = Math.min(Math.max(parseInt(s.pag_mp_parcelas, 10) || 1, 1), 12);
+  const lista = [];
+  if (pixAuto || pixManual) lista.push({ id: 'pix', nome: 'Pix', automatico: pixAuto,
+    desc: pixAuto ? 'QR code na hora, liberação automática' : 'Pague pela chave Pix e envie o comprovante' });
+  if (mp && s.pag_mp_cartao !== '0') lista.push({ id: 'mercadopago', nome: 'Cartão de crédito ou débito', automatico: true,
+    desc: `Pelo Mercado Pago${parcelas > 1 ? `, em até ${parcelas}x` : ''} — liberação automática` });
+  if (link) lista.push({ id: 'link', nome: String(s.pag_link_nome || 'Link de pagamento').slice(0, 60), automatico: false,
+    desc: 'Pague pelo link seguro e envie o comprovante' });
+  if (ted) lista.push({ id: 'transferencia', nome: 'Transferência bancária (TED)', automatico: false,
+    desc: 'Transfira para a conta indicada e envie o comprovante' });
+  return { lista, pix: pixAuto || pixManual, pix_automatico: pixAuto, mercadopago: lista.some(m => m.id === 'mercadopago'),
+    algum: lista.length > 0 };
 }
 
 // ── Pedido ───────────────────────────────────────────────────────────────────
@@ -97,8 +115,8 @@ async function criarPedido(b, req) {
   const p = planos.plano(String(b.plano || ''), s);
   if (!p || !p.ativo || !(p.preco > 0)) throw fail('Plano indisponível.');
   const metodo = String(b.metodo || '');
-  const disp = metodosDisponiveis(s);
-  if (!['pix', 'mercadopago'].includes(metodo) || !disp[metodo]) throw fail('Forma de pagamento indisponível no momento.');
+  const disp = metodosDisponiveis(s, p.id);
+  if (!disp.lista.some(m => m.id === metodo)) throw fail('Forma de pagamento indisponível no momento.');
   const dados = validarDados(p, b);
 
   const token = crypto.randomBytes(24).toString('hex');
@@ -132,13 +150,13 @@ async function criarPedido(b, req) {
         external_reference: token,
         back_urls: { success: `${base}/assinar?pedido=${token}`, failure: `${base}/assinar?pedido=${token}`, pending: `${base}/assinar?pedido=${token}` },
         ...(publico ? { auto_return: 'approved', notification_url: `${base}/api/pagamentos/webhook` } : {}),
-        payment_methods: { excluded_payment_types: [{ id: 'ticket' }], installments: 1 },
+        payment_methods: { excluded_payment_types: [{ id: 'ticket' }], installments: Math.min(Math.max(parseInt(s.pag_mp_parcelas, 10) || 1, 1), 12) },
         statement_descriptor: 'OFERTASDOGP',
       }, s);
       db.run('UPDATE pagamentos SET mp_preference_id = ? WHERE id = ?', String(pref.id), id);
       return { token, checkout_url: pref.init_point };
     }
-    return { token }; // Pix manual: a página mostra a chave do admin
+    return { token }; // Pix pela chave, transferência ou link: a página mostra como pagar
   } catch (err) {
     db.run(`UPDATE pagamentos SET status = 'cancelado', observacao = ? WHERE id = ?`, err.message.slice(0, 300), id);
     throw err;
@@ -152,7 +170,7 @@ const MP_STATUS = { approved: 'aprovado', rejected: 'recusado', cancelled: 'canc
 async function verificar(pedido) {
   if (pedido.status !== 'pendente') return pedido;
   const s = settings.getAll();
-  if (pedido.metodo !== 'pix_manual' && s.mp_access_token) {
+  if (['pix', 'mercadopago'].includes(pedido.metodo) && s.mp_access_token) {
     let pay = null;
     if (pedido.mp_payment_id) pay = await mp('get', `/v1/payments/${pedido.mp_payment_id}`, null, s).catch(() => null);
     else {
@@ -271,6 +289,21 @@ function entregarLogin(pedido, req, res) {
   return '/';
 }
 
+// Como pagar nas formas confirmadas pelo admin (dados que o próprio admin cadastrou para receber).
+const MANUAIS = ['pix_manual', 'transferencia', 'link'];
+const TIPO_CHAVE = { cpf: 'CPF', cnpj: 'CNPJ', email: 'E-mail', telefone: 'Telefone', aleatoria: 'Chave aleatória' };
+function instrucoesManuais(pedido, s) {
+  const base = { tipo: pedido.metodo, whatsapp: s.pag_whatsapp || s.whatsapp_anuncios || '', recado: s.pag_instrucoes || '' };
+  if (pedido.metodo === 'pix_manual') {
+    return { ...base, chave: s.pix_chave, chave_tipo: TIPO_CHAVE[s.pix_tipo] || '', nome: s.pix_nome, banco: s.pix_banco };
+  }
+  if (pedido.metodo === 'transferencia') {
+    return { ...base, banco: s.ted_banco, agencia: s.ted_agencia, conta: s.ted_conta,
+      tipo_conta: s.ted_tipo_conta === 'poupanca' ? 'Poupança' : 'Corrente', titular: s.ted_titular, documento: s.ted_documento };
+  }
+  return { ...base, nome: s.pag_link_nome, url: String(s[`pag_link_${pedido.plano}`] || '').trim() };
+}
+
 // Situação do pedido para a página de pagamento (sem dados pessoais).
 function publico(pedido) {
   const p = planos.plano(pedido.plano);
@@ -279,7 +312,7 @@ function publico(pedido) {
     status: pedido.status, plano: p.nome, valor: pedido.valor, dias: pedido.dias, metodo: pedido.metodo, email: pedido.email,
     validade_ate: pedido.validade_ate,
     pix: pedido.metodo === 'pix' ? { copia_cola: pedido.pix_qr, qr_base64: pedido.pix_qr_base64, expira: pedido.pix_expira } : null,
-    pix_manual: pedido.metodo === 'pix_manual' ? { chave: s.pix_chave, nome: s.pix_nome, whatsapp: s.whatsapp_anuncios || '' } : null,
+    manual: MANUAIS.includes(pedido.metodo) ? instrucoesManuais(pedido, s) : null,
     email_configurado: email.configurado(s),
   };
 }

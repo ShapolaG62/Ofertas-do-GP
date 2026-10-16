@@ -176,37 +176,111 @@
 
   // ── Navegação entre telas ──────────────────────────────────────────────────
   const VIEWS = ['login', 'perfil', 'dados', 'aguardando', 'conta'];
-  // Planos pagos (aparecem junto do login): cada cartão leva para a página de pagamento.
+  // ── Página inicial: planos, comparativo e números ─────────────────────────
+  // Cada cartão leva para a página de pagamento. Sem forma de pagamento configurada, o botão chama no WhatsApp.
+  const ICONES = {
+    consumidor: '<svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>',
+    empresa: '<svg viewBox="0 0 24 24"><path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>',
+    pro: '<svg viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8z"/></svg>',
+  };
+  // Linhas do comparativo: [recurso, consumidor, empresa, pro]
+  const COMPARATIVO = [
+    ['Todas as ofertas reais das grandes lojas', 1, 1, 1],
+    ['Acesso liberado na hora, sem esperar aprovação', 1, 1, 1],
+    ['Busca, filtros e histórico de preço', 1, 1, 1],
+    ['Página da sua loja no site', 0, 1, 0],
+    ['Anúncios com fotos, cupom e frete', 0, 1, 0],
+    ['Importação automática do catálogo', 0, 1, 0],
+    ['Seus links de afiliado em todas as ofertas', 0, 0, 1],
+    ['Postagem automática no WhatsApp, Telegram, Facebook, Instagram e X', 0, 0, 1],
+    ['Agendamento de manhã, à tarde e à noite', 0, 0, 1],
+    ['Marca d\'água com o seu nome nas imagens', 0, 0, 1],
+  ];
+  const COLUNA = { consumidor: 1, empresa: 2, pro: 3 };
+  const brlFmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const numFmt = n => Number(n).toLocaleString('pt-BR');
+
   let planosCarregados = false;
   async function loadPlanos() {
     if (planosCarregados) return;
     planosCarregados = true;
+    loadApresentacao();
     const d = await fetch('/api/planos').then(r => r.json()).catch(() => ({ planos: [] }));
-    if (!d.planos?.length || !(d.metodos?.pix || d.metodos?.mercadopago)) return; // sem planos ou sem forma de pagamento
-    const brl = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    $('#planos-grid').innerHTML = d.planos.map(p => `
+    const grid = $('#planos-grid');
+    if (!d.planos?.length) {
+      grid.innerHTML = '<p class="muted" style="text-align:center;grid-column:1/-1">Os planos estarão disponíveis em breve. Enquanto isso, crie sua conta grátis.</p>';
+      return;
+    }
+    const vende = d.metodos?.algum;
+    const botao = p => {
+      if (vende) return `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>`;
+      if (d.whatsapp) {
+        const txt = encodeURIComponent(`Olá! Quero assinar o plano ${p.nome} do Ofertas do GP.`);
+        return `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" target="_blank" rel="noopener" href="https://wa.me/${esc(d.whatsapp)}?text=${txt}">Assinar pelo WhatsApp</a>`;
+      }
+      return `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>`;
+    };
+    grid.innerHTML = d.planos.map(p => {
+      const mensal = p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
+      return `
       <article class="plano-card${p.destaque ? ' is-destaque' : ''}">
-        ${p.destaque ? '<span class="plano-selo">Mais vendido</span>' : ''}
-        <p class="plano-chamada">${esc(p.chamada)}</p>
+        ${p.destaque ? '<span class="plano-selo">Mais completo</span>' : ''}
+        <div class="plano-topo"><span class="plano-ico">${ICONES[p.icone] || ''}</span><p class="plano-chamada">${esc(p.chamada)}</p></div>
         <h3>${esc(p.nome)}</h3>
-        <p class="plano-preco"><b>${brl(p.preco)}</b><span>/${p.dias === 30 ? 'mês' : `${p.dias} dias`}</span></p>
+        <p class="plano-preco"><b>${brlFmt(p.preco)}</b><span>/${p.dias === 30 ? 'mês' : `${p.dias} dias`}</span></p>
+        ${mensal}
+        <p class="plano-ideal">${esc(p.ideal || '')}</p>
         <ul>${p.beneficios.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
-        <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>
-      </article>`).join('');
+        ${botao(p)}
+      </article>`;
+    }).join('');
 
+    // Formas de pagamento aceitas
+    if (vende) {
+      $('#lp-pagamento').innerHTML = `<span>Pagamento seguro:</span>${d.metodos.lista.map(m => `<b>${esc(m.nome)}</b>`).join('')}`;
+      $('#lp-pagamento').hidden = false;
+    }
+
+    // Comparativo só com os planos à venda
+    const cols = d.planos.filter(p => COLUNA[p.id]);
+    $('#lp-tabela').innerHTML = `
+      <thead><tr><th>Recurso</th>${cols.map(p => `<th class="${p.destaque ? 'is-destaque' : ''}">${esc(p.nome)}<small>${brlFmt(p.preco)}</small></th>`).join('')}</tr></thead>
+      <tbody>${COMPARATIVO.map(l => `<tr><td>${esc(l[0])}</td>${cols.map(p => `<td class="${p.destaque ? 'is-destaque' : ''}">${l[COLUNA[p.id]]
+        ? '<span class="lp-sim" aria-label="Incluído">✓</span>' : '<span class="lp-nao" aria-label="Não incluído">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    $('#comparar').hidden = !cols.length;
+  }
+
+  async function loadApresentacao() {
+    const a = await fetch('/api/apresentacao').then(r => (r.ok ? r.json() : null)).catch(() => null);
+    if (!a) return;
+    if (a.ofertas > 0) $('#st-ofertas').textContent = a.ofertas >= 1000 ? `${numFmt(Math.floor(a.ofertas / 1000))} mil+` : numFmt(a.ofertas);
+    if (a.lojas > 0) $('#st-lojas').textContent = numFmt(Math.max(a.lojas, 6));
+    if (a.hoje > 0) $('#st-hoje').textContent = `+${numFmt(a.hoje)}`;
+    if (a.ofertas > 0) $('#lp-ao-vivo').textContent = `${numFmt(a.ofertas)} ofertas ativas agora`;
+    if (a.fotos?.length >= 2) {
+      $('#lp-fotos').innerHTML = `<span class="lp-fotos-tit">Exemplos de agora</span>${a.fotos.map(f => `
+        <span class="lp-foto"><img src="/img/recorte/${Number(f.id)}.webp" alt="" loading="lazy" decoding="async"><b>-${Number(f.desconto)}%</b></span>`).join('')}`;
+      $('#lp-fotos').hidden = false;
+    }
   }
 
   function show(view) {
     for (const v of VIEWS) $(`#view-${v}`).hidden = v !== view;
-    $('#planos').hidden = view !== 'login' || !$('#planos-grid').children.length;
-    if (view === 'login') loadPlanos().then(() => { $('#planos').hidden = $('#view-login').hidden || !$('#planos-grid').children.length; });
+    const inicio = view === 'login';
+    document.body.classList.toggle('is-landing', inicio);
+    $('#lp-nav').hidden = !inicio;
+    $('#lp-footer').hidden = !inicio;
+    $('#header-entrar').hidden = !inicio;
+    if (inicio) { loadPlanos(); $('#lp-ano').textContent = new Date().getFullYear(); }
     $('#logout').hidden = view === 'login';
     // Com login obrigatório, "Ver ofertas" só aparece para contas liberadas.
     const liberado = ME?.status === 'active';
     $('#header-offers').hidden = INFO.exigir_login && !liberado;
     $('#aguardando-offers').hidden = INFO.exigir_login;
-    document.title = `${view === 'login' ? 'Entrar' : 'Minha conta'} — Ofertas do GP`;
-    window.scrollTo(0, 0);
+    document.title = inicio ? 'Ofertas do GP — ofertas reais das maiores lojas do Brasil' : 'Minha conta — Ofertas do GP';
+    // Na página inicial, respeita o link para uma seção (#planos, #entrar…); nas outras telas, volta ao topo.
+    const alvo = inicio && /^#[\w-]+$/.test(location.hash) && document.querySelector(location.hash === '#cadastro' ? '#entrar' : location.hash);
+    if (alvo) setTimeout(() => alvo.scrollIntoView(), 350); else window.scrollTo(0, 0);
   }
 
   async function route() {
@@ -263,6 +337,7 @@
     if (tab === 'criar' && closed) msg($('#form-criar'), 'Os cadastros estão fechados no momento.');
   }
   $$('[data-auth]').forEach(b => b.addEventListener('click', () => setAuthTab(b.dataset.auth)));
+  $$('[data-ir-criar]').forEach(a => a.addEventListener('click', () => setAuthTab('criar')));
 
   bind('#form-entrar', async (form, d) => {
     const r = await api('/api/conta/entrar', { method: 'POST', body: d });

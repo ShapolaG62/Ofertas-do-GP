@@ -14,6 +14,7 @@ const isOffersApi = p => /^\/api\/(offers|featured|stats|price-history|lojas|anu
 
 function canSeeOffers(req) {
   if (!loginRequired() || auth.isLoggedIn(req)) return true;
+  if (require('./clientes').atual(req)) return true; // cliente da ferramenta com acesso válido
   const u = users.currentUser(req);
   return Boolean(u && u.status === 'active');
 }

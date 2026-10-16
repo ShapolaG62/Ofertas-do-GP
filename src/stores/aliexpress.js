@@ -83,6 +83,29 @@ async function searchApi(query, s) {
   }));
 }
 
+// Link de comissão de um produto já minerado, com as chaves de afiliado informadas (usado pelos clientes).
+async function gerarLink(url, s) {
+  const params = {
+    app_key: s.aliexpress_app_key,
+    method: 'aliexpress.affiliate.link.generate',
+    sign_method: 'sha256',
+    timestamp: String(Date.now()),
+    format: 'json',
+    v: '2.0',
+    promotion_link_type: '0',
+    source_values: url,
+    tracking_id: s.aliexpress_tracking_id,
+  };
+  params.sign = sign(params, s.aliexpress_app_secret);
+  const res = await http.get('https://api-sg.aliexpress.com/sync', { params, validateStatus: () => true });
+  const data = res.data || {};
+  if (data.error_response) throw new Error(data.error_response.msg || data.error_response.code);
+  const result = data.aliexpress_affiliate_link_generate_response?.resp_result;
+  const link = result?.result?.promotion_links?.promotion_link?.[0]?.promotion_link;
+  if (!link) throw new Error(result?.resp_msg || 'a API não devolveu o link');
+  return link;
+}
+
 function apiConfigured(s) {
   return Boolean(s.aliexpress_app_key && s.aliexpress_app_secret && s.aliexpress_tracking_id);
 }
@@ -108,6 +131,8 @@ module.exports = {
   isReady: () => ({ ready: true }),
   search,
   affiliateLink: offer => offer.original_url,
+  gerarLink,
+  apiConfigured,
   matchesUrl: url => /aliexpress\./i.test(url),
   productIdFromUrl: url => (String(url).match(/\/item\/(\d+)/) || [])[1] || null,
 };

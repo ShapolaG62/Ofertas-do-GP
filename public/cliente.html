@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel do cliente — Ofertas do GP</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0c8f4f">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261036">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertas do GP — ofertas">
+      <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertas do <b>GP</b> · Cliente</span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-sm" href="/" id="go-offers" hidden>Ver ofertas e escolher</a>
+      <a class="btn btn-sm" href="/postagens" id="go-posts" hidden>Postagens</a>
+      <button class="btn btn-sm" type="button" id="logout" hidden>Sair</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+<div class="container cli-page">
+
+  <!-- LOGIN -->
+  <section class="panel-card cli-login" id="view-login" hidden>
+    <h1>Painel do cliente</h1>
+    <p class="cli-sub">Entre com o e-mail e a senha que você recebeu.</p>
+    <form id="login-form" class="cli-form" novalidate>
+      <label class="field">E-mail <input name="email" type="email" autocomplete="username" required></label>
+      <label class="field">Senha <input name="senha" type="password" autocomplete="current-password" required></label>
+      <div class="form-msg err" id="login-msg" hidden></div>
+      <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <!-- PAINEL -->
+  <section id="view-app" hidden>
+    <div class="cli-head">
+      <div><h1 id="cli-nome">Olá</h1><p class="cli-sub" id="cli-validade"></p></div>
+    </div>
+    <div class="tabs-line" role="tablist">
+      <button type="button" role="tab" data-tab="inicio" aria-selected="true">Início</button>
+      <button type="button" role="tab" data-tab="afiliados">Links de afiliado</button>
+      <button type="button" role="tab" data-tab="redes">Redes sociais</button>
+      <button type="button" role="tab" data-tab="agenda">Agendamento</button>
+      <button type="button" role="tab" data-tab="historico">Histórico</button>
+      <button type="button" role="tab" data-tab="conta">Minha conta</button>
+    </div>
+    <div class="form-msg" id="global-msg" hidden></div>
+
+    <!-- INÍCIO -->
+    <div class="cli-tab" data-body="inicio">
+      <div class="panel-card">
+        <h2>Como usar</h2>
+        <ol class="cli-steps">
+          <li><b>Links de afiliado:</b> coloque os seus. Todos os produtos que você postar vão com a sua comissão.</li>
+          <li><b>Redes sociais:</b> conecte o seu WhatsApp, Telegram, Facebook/Instagram ou X.</li>
+          <li><b>Escolha as ofertas:</b> em <a class="link-btn" href="/">Ver ofertas</a>, toque no ✓ dos produtos e vá para <a class="link-btn" href="/postagens">Postagens</a> para postar na hora ou colocar na fila.</li>
+          <li><b>Agendamento (opcional):</b> o site posta sozinho nos seus horários.</li>
+        </ol>
+        <div class="notice" id="aviso-afiliado" hidden></div>
+      </div>
+    </div>
+
+    <!-- LINKS DE AFILIADO -->
+    <div class="cli-tab" data-body="afiliados" hidden>
+      <form class="cfg-form">
+        <div class="cli-grid">
+          <div class="panel-card">
+            <h2>Amazon</h2>
+            <p class="cli-hint">Sua tag de associado (ex.: <code>seunome-20</code>), do painel de associados.amazon.com.br.</p>
+            <label class="field">Tag de associado <input name="amazon_tag" placeholder="seunome-20"></label>
+          </div>
+          <div class="panel-card">
+            <h2>Mercado Livre</h2>
+            <p class="cli-hint">Gere um link no programa de afiliados e copie os valores de <code>matt_word</code> e <code>matt_tool</code> que aparecem nele.</p>
+            <label class="field">matt_word <input name="ml_matt_word"></label>
+            <label class="field">matt_tool <input name="ml_matt_tool"></label>
+          </div>
+          <div class="panel-card">
+            <h2>KaBuM!</h2>
+            <p class="cli-hint">Gere o link de afiliado de qualquer produto da KaBuM! e cole aqui.</p>
+            <label class="field">Seu link de afiliado (de qualquer produto) <input name="kabum_afiliado" placeholder="Cole aqui o link gerado"></label>
+          </div>
+          <div class="panel-card">
+            <h2>AliExpress</h2>
+            <p class="cli-hint">Em portals.aliexpress.com → Open Platform, crie um app e copie as três informações.</p>
+            <label class="field">App Key <input name="aliexpress_app_key"></label>
+            <label class="field">App Secret <input name="aliexpress_app_secret" type="password" autocomplete="off" data-secret></label>
+            <label class="field">Tracking ID <input name="aliexpress_tracking_id"></label>
+          </div>
+          <div class="panel-card">
+            <h2>Shopee</h2>
+            <p class="cli-hint">Em affiliate.shopee.com.br → Open API (precisa ser liberada pela Shopee).</p>
+            <label class="field">App ID <input name="shopee_app_id"></label>
+            <label class="field">Senha da API <input name="shopee_app_secret" type="password" autocomplete="off" data-secret></label>
+          </div>
+          <div class="panel-card">
+            <h2>Magalu</h2>
+            <p class="cli-hint">Nome da sua loja Magazine Você (o que vem depois de magazinevoce.com.br/magazine).</p>
+            <label class="field">Nome da loja <input name="magalu_store"></label>
+          </div>
+        </div>
+        <div class="cli-actions"><button class="btn btn-primary" type="submit">Salvar links de afiliado</button></div>
+      </form>
+    </div>
+
+    <!-- REDES SOCIAIS -->
+    <div class="cli-tab" data-body="redes" hidden>
+      <form class="cfg-form panel-card">
+        <h2>WhatsApp (use um número só para isso)</h2>
+        <p class="cli-hint">Conecte um número pela <b>Z-API</b> (paga, na nuvem) ou pela <b>Evolution API</b> (grátis, roda no seu servidor). O WhatsApp pode banir números automatizados: use um chip separado e não diminua muito o intervalo.</p>
+        <div class="cli-grid2">
+          <label class="field">Serviço
+            <select name="whatsapp_provider" id="wa-provider"><option value="">— escolha —</option><option value="zapi">Z-API</option><option value="evolution">Evolution API</option></select></label>
+          <label class="field">Intervalo entre ofertas (segundos) <input name="whatsapp_intervalo_s" type="number" min="20" max="900"></label>
+          <label class="field wa-zapi">ID da instância <input name="zapi_instance"></label>
+          <label class="field wa-zapi">Token da instância <input name="zapi_token" type="password" autocomplete="off" data-secret></label>
+          <label class="field wa-zapi">Token de segurança da conta <input name="zapi_client_token" type="password" autocomplete="off" data-secret></label>
+          <label class="field wa-evolution">Endereço do servidor <input name="evolution_url" placeholder="https://..."></label>
+          <label class="field wa-evolution">Chave (apikey) <input name="evolution_api_key" type="password" autocomplete="off" data-secret></label>
+          <label class="field wa-evolution">Nome da instância <input name="evolution_instance"></label>
+        </div>
+        <div class="cli-actions">
+          <button class="btn btn-primary" type="submit">Salvar WhatsApp</button>
+          <button class="btn" type="button" id="wa-test">Testar conexão</button>
+          <button class="btn" type="button" id="wa-load">Carregar meus grupos</button>
+        </div>
+        <div id="wa-msg"></div>
+        <div id="wa-groups-box" hidden>
+          <h3 class="cli-h3">Grupos de destino</h3>
+          <div id="wa-groups" class="cli-checks"></div>
+          <div class="cli-actions"><button class="btn btn-primary" type="button" id="wa-save-groups">Salvar grupos</button></div>
+        </div>
+        <p class="cli-hint" id="wa-chosen"></p>
+      </form>
+
+      <form class="cfg-form panel-card">
+        <h2>Telegram</h2>
+        <p class="cli-hint">Crie um bot no @BotFather, adicione-o como administrador do seu canal/grupo e informe o token e o canal (@nome ou ID que começa com -100).</p>
+        <div class="cli-grid2">
+          <label class="field">Token do bot <input name="telegram_bot_token" type="password" autocomplete="off" data-secret></label>
+          <label class="field">Canal ou grupo <input name="telegram_chat_id" placeholder="@meucanal"></label>
+        </div>
+        <div class="cli-actions"><button class="btn btn-primary" type="submit">Salvar Telegram</button></div>
+      </form>
+
+      <form class="cfg-form panel-card">
+        <h2>Facebook e Instagram</h2>
+        <p class="cli-hint">Precisa de uma Página do Facebook (e conta profissional do Instagram ligada a ela) e de um token de página com permissão de publicar.</p>
+        <div class="cli-grid2">
+          <label class="field">ID da página <input name="facebook_page_id"></label>
+          <label class="field">Token da página <input name="facebook_page_token" type="password" autocomplete="off" data-secret></label>
+          <label class="field">ID da conta do Instagram <input name="instagram_business_id"></label>
+        </div>
+        <div class="cli-actions"><button class="btn btn-primary" type="submit">Salvar Facebook e Instagram</button></div>
+      </form>
+
+      <form class="cfg-form panel-card">
+        <h2>X (Twitter)</h2>
+        <p class="cli-hint">App em developer.x.com com permissão "Read and write"; copie as 4 chaves.</p>
+        <div class="cli-grid2">
+          <label class="field">API Key <input name="x_api_key"></label>
+          <label class="field">API Key Secret <input name="x_api_secret" type="password" autocomplete="off" data-secret></label>
+          <label class="field">Access Token <input name="x_access_token" type="password" autocomplete="off" data-secret></label>
+          <label class="field">Access Token Secret <input name="x_access_secret" type="password" autocomplete="off" data-secret></label>
+        </div>
+        <div class="cli-actions"><button class="btn btn-primary" type="submit">Salvar X</button></div>
+      </form>
+
+      <form class="cfg-form panel-card">
+        <h2>Marca d'água nas imagens</h2>
+        <p class="cli-hint">Um selo com o seu nome no canto das fotos das postagens.</p>
+        <div class="cli-grid2">
+          <label class="field">Marca d'água <select name="marca_ativa"><option value="0">Desligada</option><option value="1">Ligada</option></select></label>
+          <label class="field">Texto do selo <input name="marca_texto" maxlength="40" placeholder="Ex.: Ofertas do João"></label>
+          <label class="field">Posição
+            <select name="marca_posicao"><option value="inferior-direito">Canto inferior direito</option><option value="inferior-esquerdo">Canto inferior esquerdo</option>
+              <option value="superior-direito">Canto superior direito</option><option value="superior-esquerdo">Canto superior esquerdo</option><option value="centro">Centro</option></select></label>
+          <label class="field">Opacidade (%) <input name="marca_opacidade" type="number" min="30" max="100"></label>
+        </div>
+        <div class="cli-actions"><button class="btn btn-primary" type="submit">Salvar marca d'água</button></div>
+      </form>
+    </div>
+
+    <!-- AGENDAMENTO -->
+    <div class="cli-tab" data-body="agenda" hidden>
+      <form class="cfg-form panel-card">
+        <h2>Postagens agendadas</h2>
+        <p class="cli-hint">Nos horários abaixo (Brasília), o site posta nos seus canais: primeiro as ofertas da sua <b>fila</b> (botão "Adicionar à fila agendada" na tela de Postagens) e, se faltar, as melhores ofertas do momento.</p>
+        <div class="cli-grid2">
+          <label class="field">Agendamento <select name="agenda_ativa"><option value="0">Desligado</option><option value="1">Ligado</option></select></label>
+          <label class="field">Horários (separe por vírgula) <input name="agenda_horarios" placeholder="09:00,14:00,20:00"></label>
+          <label class="field">Ofertas por horário <input name="agenda_qtd" type="number" min="1" max="20"></label>
+          <label class="field">Se a fila não tiver ofertas suficientes
+            <select name="agenda_completar"><option value="1">Completar com as melhores ofertas</option><option value="0">Postar só o que estiver na fila</option></select></label>
+        </div>
+        <h3 class="cli-h3">Redes do agendamento</h3>
+        <div class="cli-checks cli-inline">
+          <label class="check-line"><input type="checkbox" data-agenda-rede="whatsapp"> WhatsApp</label>
+          <label class="check-line"><input type="checkbox" data-agenda-rede="telegram"> Telegram</label>
+          <label class="check-line"><input type="checkbox" data-agenda-rede="facebook"> Facebook</label>
+          <label class="check-line"><input type="checkbox" data-agenda-rede="instagram"> Instagram</label>
+          <label class="check-line"><input type="checkbox" data-agenda-rede="x"> X (Twitter)</label>
+        </div>
+        <div class="cli-actions">
+          <button class="btn btn-primary" type="submit">Salvar agendamento</button>
+          <button class="btn" type="button" id="agenda-run">Postar uma rodada agora</button>
+        </div>
+        <p class="cli-hint" id="agenda-estado"></p>
+        <h3 class="cli-h3">Minha fila <button class="btn btn-sm" type="button" id="fila-limpar">Limpar fila</button></h3>
+        <div class="cli-table"><table><thead><tr><th>Produto</th><th>Situação</th><th>Resultado</th><th></th></tr></thead><tbody id="fila-body"></tbody></table></div>
+      </form>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="cli-tab" data-body="historico" hidden>
+      <div class="panel-card">
+        <h2>Minhas postagens</h2>
+        <div class="cli-table"><table><thead><tr><th>Data</th><th>Produto</th><th>Rede</th><th>Resultado</th></tr></thead><tbody id="hist-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- CONTA -->
+    <div class="cli-tab" data-body="conta" hidden>
+      <form class="panel-card cli-form" id="senha-form" style="max-width:460px">
+        <h2>Trocar senha</h2>
+        <label class="field">Senha atual <input name="atual" type="password" autocomplete="current-password" required></label>
+        <label class="field">Nova senha (mín. 8 caracteres) <input name="nova" type="password" autocomplete="new-password" minlength="8" required></label>
+        <div class="cli-actions"><button class="btn btn-primary" type="submit">Salvar nova senha</button></div>
+      </form>
+    </div>
+  </section>
+</div>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/js/cliente.js?v=20261035" defer></script>
+</body>
+</html>

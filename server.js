@@ -10,6 +10,7 @@ const publicRoutes = require('./src/routes/public');
 const adminRoutes = require('./src/routes/admin');
 const contaRoutes = require('./src/routes/conta');
 const postagens = require('./src/routes/postagens');
+const clienteRoutes = require('./src/routes/cliente');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -41,7 +42,7 @@ app.use((req, res, next) => {
   if (req.method === 'GET' && /^\/admin(\.html)?\/?$/.test(req.path) && auth.hasPassword() && !auth.isLoggedIn(req)) {
     return res.redirect('/conta?voltar=/admin');
   }
-  // Tela de postagens: só o admin e os usuários que ele liberou.
+  // Tela de postagens: só o admin, os usuários que ele liberou e os clientes da ferramenta.
   if (req.method === 'GET' && /^\/postagens(\.html)?\/?$/.test(req.path) && !postagens.poster(req)) {
     return res.redirect('/conta?voltar=/postagens');
   }
@@ -65,10 +66,12 @@ app.use(publicRoutes);
 app.use(adminRoutes);
 app.use(contaRoutes);
 app.use(postagens.router);
+app.use(clienteRoutes);
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));
 app.get('/postagens', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'postagens.html')));
+app.get('/cliente', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'cliente.html')));
 app.get('/anuncie', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'anuncie.html')));
 app.get('/privacidade', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'privacidade.html')));
 app.get('/loja/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'loja.html')));

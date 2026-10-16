@@ -49,11 +49,13 @@ async function baixarFoto(imagem) {
 }
 
 // Selo: Capi + nome do site (e o endereço, se houver) numa etiqueta escura arredondada.
+// Selo de cliente da ferramenta (marca_logo = '0'): só o texto dele, sem a Capi e sem o endereço do site.
 async function selo(s) {
-  const texto = String(s.marca_texto || 'Ofertas do GP').trim().slice(0, 40) || 'Ofertas do GP';
-  const site = String(s.site_url || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').slice(0, 40);
+  const semLogo = s.marca_logo === '0';
+  const texto = String(s.marca_texto || (semLogo ? '' : 'Ofertas do GP')).trim().slice(0, 40) || (semLogo ? 'Ofertas' : 'Ofertas do GP');
+  const site = semLogo ? '' : String(s.site_url || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').slice(0, 40);
   const op = Math.min(Math.max(Number(s.marca_opacidade) || 90, 30), 100) / 100;
-  const logo = 92, padX = 22, h = 120;
+  const logo = semLogo ? -16 : 92, padX = semLogo ? 30 : 22, h = 120;
   const largTexto = Math.max(texto.length * 20.5, site.length * 13.5) + 6;
   const w = padX + logo + 16 + largTexto + padX;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">
@@ -63,6 +65,7 @@ async function selo(s) {
       fill="#ffffff" fill-opacity="${op.toFixed(2)}">${escXml(texto)}</text>
     ${site ? `<text x="${padX + logo + 16}" y="92" font-family="Figtree, Segoe UI, Arial, sans-serif" font-size="25" font-weight="600" fill="#9be3bf" fill-opacity="${op.toFixed(2)}">${escXml(site)}</text>` : ''}
   </svg>`;
+  if (semLogo) return sharp(Buffer.from(svg)).png().toBuffer();
   const capi = await sharp(LOGO).resize(logo, logo, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .ensureAlpha(op).png().toBuffer();
   return sharp(Buffer.from(svg)).composite([{ input: capi, left: padX, top: Math.round((h - logo) / 2) }]).png().toBuffer();
@@ -94,7 +97,7 @@ async function compor(foto, s) {
 // Imagem com marca d'água de uma oferta (guardada em disco; refeita se a foto ou a configuração mudar).
 async function paraOferta(o, s = settings.getAll()) {
   const chave = crypto.createHash('sha1')
-    .update([o.imagem, s.marca_texto, s.marca_posicao, s.marca_opacidade, s.site_url, logoVersao()].join('|')).digest('hex').slice(0, 12);
+    .update([o.imagem, s.marca_texto, s.marca_posicao, s.marca_opacidade, s.site_url, s.marca_logo, logoVersao()].join('|')).digest('hex').slice(0, 12);
   const arquivo = path.join(CACHE_DIR, `${o.id}-${chave}.jpg`);
   try { return await fs.promises.readFile(arquivo); } catch { /* ainda não existe */ }
   const buf = await compor(await baixarFoto(o.imagem), s);

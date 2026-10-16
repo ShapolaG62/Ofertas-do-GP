@@ -268,6 +268,46 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_post_queue_status ON post_queue (status, id);
 `);
 
+// Clientes da ferramenta (acesso vendido): painel próprio, links de afiliado e canais próprios.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS clientes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    senha_hash TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo', 'bloqueado')),
+    validade TEXT NOT NULL,
+    observacoes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_login_at TEXT
+  );
+  CREATE TABLE IF NOT EXISTS cliente_sessions (
+    token_hash TEXT PRIMARY KEY,
+    cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS cliente_config (
+    cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value TEXT,
+    PRIMARY KEY (cliente_id, key)
+  );
+  -- Links de comissão gerados pela API (AliExpress/Shopee) com as chaves do cliente.
+  CREATE TABLE IF NOT EXISTS cliente_links (
+    cliente_id INTEGER NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+    offer_id INTEGER NOT NULL,
+    chave TEXT NOT NULL,
+    link TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (cliente_id, offer_id)
+  );
+`);
+for (const t of ['social_posts', 'post_queue']) {
+  if (!db.prepare(`PRAGMA table_info(${t})`).all().some(c => c.name === 'cliente_id')) {
+    db.exec(`ALTER TABLE ${t} ADD COLUMN cliente_id INTEGER`);
+  }
+}
+
 // Vídeo (sem som) nos banners de publicidade; a imagem continua obrigatória como capa.
 const bannerCols = db.prepare('PRAGMA table_info(banners)').all().map(c => c.name);
 if (!bannerCols.includes('video')) db.exec('ALTER TABLE banners ADD COLUMN video TEXT');

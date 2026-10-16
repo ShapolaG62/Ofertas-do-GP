@@ -44,8 +44,7 @@ const REDES = {
   },
 };
 
-function listarRedes() {
-  const s = settings.getAll();
+function listarRedes(s = settings.getAll()) {
   return Object.entries(REDES).map(([id, r]) => {
     const motivo = r.pronta(s);
     return { id, nome: r.nome, pronta: !motivo, motivo };
@@ -58,6 +57,7 @@ const slugOf = o => `${String(o.produto || '').toLowerCase().normalize('NFD').re
 
 // Link publicado: passa pelo site (conta o clique) quando ele tem endereço público; senão vai direto à loja.
 function postLink(o, s = settings.getAll()) {
+  if (o.__link) return o.__link; // postagem de cliente: link de afiliado dele
   const site = String(s.site_url || '').replace(/\/+$/, '');
   return /^https:\/\//i.test(site) ? `${site}/oferta/${slugOf(o)}` : (o.affiliate_url || o.original_url);
 }
@@ -263,10 +263,12 @@ function textoPadrao(o, s = settings.getAll()) {
 }
 
 // Publica uma oferta nas redes pedidas; cada rede responde independentemente.
-async function publicar(offerId, redes, texto, autor) {
-  const s = settings.getAll();
+// ctx (postagem de cliente da ferramenta): { s: configurações do cliente, clienteId, link: link de afiliado dele }.
+async function publicar(offerId, redes, texto, autor, ctx = {}) {
+  const s = ctx.s || settings.getAll();
   const o = db.get('SELECT * FROM offers WHERE id = ?', offerId);
   if (!o) throw Object.assign(new Error('Oferta não encontrada.'), { status: 404 });
+  if (ctx.link) o.__link = ctx.link;
   const msg = String(texto || '').trim().slice(0, 4000);
   if (!msg) throw Object.assign(new Error('O texto da postagem está vazio.'), { status: 400 });
 
@@ -281,18 +283,19 @@ async function publicar(offerId, redes, texto, autor) {
       try { r = { rede: id, ok: true, mensagem: await rede.publicar(o, msg, s) }; }
       catch (err) { r = { rede: id, ok: false, mensagem: err.message.slice(0, 300) }; }
     }
-    db.run('INSERT INTO social_posts (offer_id, produto, rede, ok, mensagem, autor) VALUES (?, ?, ?, ?, ?, ?)',
-      o.id, o.produto, id, r.ok ? 1 : 0, r.mensagem, autor);
+    db.run('INSERT INTO social_posts (offer_id, produto, rede, ok, mensagem, autor, cliente_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      o.id, o.produto, id, r.ok ? 1 : 0, r.mensagem, autor, ctx.clienteId || null);
     resultados.push(r);
   }
   return resultados;
 }
 
-function historico(offerIds) {
+// clienteId: só as postagens daquele cliente; null = as do site (admin e usuários liberados).
+function historico(offerIds, clienteId = null) {
   if (!offerIds.length) return {};
   const rows = db.all(
     `SELECT offer_id, rede, MAX(created_at) AS em FROM social_posts
-     WHERE ok = 1 AND offer_id IN (${offerIds.map(() => '?').join(',')}) GROUP BY offer_id, rede`, ...offerIds);
+     WHERE ok = 1 AND cliente_id IS ? AND offer_id IN (${offerIds.map(() => '?').join(',')}) GROUP BY offer_id, rede`, clienteId, ...offerIds);
   const out = {};
   for (const r of rows) (out[r.offer_id] ||= {})[r.rede] = r.em;
   return out;

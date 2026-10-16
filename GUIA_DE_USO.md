@@ -183,3 +183,23 @@ Em **Painel → Redes sociais → Postagens agendadas**: ligue o agendamento, co
 - O agendamento só funciona com o site ligado (no seu computador ou na VPS). Se o computador estiver desligado no horário, a rodada acontece quando ele voltar, até 2 horas depois.
 
 O link publicado leva direto à loja com o seu código de afiliado. Quando o site tiver endereço público (Painel → Usuários → "Endereço público do site"), o link passa pelo site e o clique é contado. O histórico das publicações fica em Painel → Redes sociais.
+
+## 11. Clientes da ferramenta (venda de acesso)
+
+Você pode vender o acesso à ferramenta. Cada cliente usa as ofertas mineradas pelo site com **os links de afiliado dele** e posta **nos canais dele** — o site principal e as suas configurações continuam só seus.
+
+**No seu painel (Painel → Clientes):**
+
+- **Cadastrar:** nome, e-mail (login), senha inicial, validade em dias e observações (plano, valor). Envie ao cliente o endereço `/cliente`, o e-mail e a senha.
+- **+30 dias / Renovar…:** soma dias à validade (a partir de hoje, se já tiver vencido).
+- **Bloquear / Desbloquear**, **Nova senha** e **Excluir** a qualquer momento.
+- Quando a validade vence ou você bloqueia, o cliente perde o acesso e as postagens agendadas dele param.
+
+**O que o cliente faz (em /cliente):**
+
+1. **Links de afiliado:** Amazon (tag), Mercado Livre (matt_word e matt_tool), KaBuM! (link de qualquer produto), AliExpress e Shopee (chaves da API de afiliados dele) e Magalu.
+2. **Redes sociais:** WhatsApp (Z-API ou Evolution, número dele), Telegram, Facebook/Instagram, X e marca d'água com o nome dele (sem a Capi).
+3. **Ofertas:** navega pelas ofertas do site, marca com ✓ e vai para **Postagens** — os textos já saem com os links dele e publicam nos canais dele. Também pode pôr ofertas na fila.
+4. **Agendamento** próprio (horários, quantidade, redes) e **histórico** só das postagens dele.
+
+**Segurança:** o cliente nunca vê nem usa as suas chaves, links ou canais. Se ele não configurou o link de uma loja, os produtos dessa loja vão sem comissão (nunca com a sua) e o painel avisa. Ele não acessa o painel admin, a busca nas lojas nem o histórico do site.

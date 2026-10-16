@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261033">
+<link rel="stylesheet" href="/css/site.css?v=20261036">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -25,6 +25,7 @@
       <span class="brand-name">Ofertas do <b>GP</b></span>
     </a>
     <div class="header-actions">
+      <a class="btn btn-sm" href="/cliente" id="painel-cliente" hidden>Meu painel</a>
       <a class="btn btn-sm" href="/" id="more-link">+ Escolher mais produtos</a>
     </div>
   </div>
@@ -44,6 +45,7 @@
     <p class="posts-hint">Marque as redes e clique em postar. Cada produto marcado abaixo é publicado com o texto que está na caixa dele.</p>
     <div class="net-list" id="net-list"></div>
     <p class="posts-hint" id="net-hint" hidden></p>
+    <p class="notice" id="afiliado-aviso" hidden></p>
     <div class="posts-actions">
       <button class="btn btn-primary" type="button" id="auto-post">Postar automaticamente</button>
       <button class="btn" type="button" id="auto-stop" hidden>Parar</button>
@@ -60,6 +62,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/postagens.js?v=20261034" defer></script>
+<script src="/js/postagens.js?v=20261035" defer></script>
 </body>
 </html>

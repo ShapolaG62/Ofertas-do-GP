@@ -62,9 +62,17 @@
     const off = REDES.filter(r => !r.pronta);
     const hint = $('#net-hint');
     hint.hidden = !off.length;
-    hint.innerHTML = off.length ? (info.admin
-      ? `Redes não configuradas: ${off.map(r => esc(r.nome)).join(', ')}. Configure em <a class="link-btn" href="/admin">Painel → Redes sociais</a>.`
-      : `Redes não configuradas: ${off.map(r => esc(r.nome)).join(', ')}. Peça ao administrador para configurar.`) : '';
+    const onde = info.admin ? '<a class="link-btn" href="/admin">Painel → Redes sociais</a>'
+      : info.cliente ? '<a class="link-btn" href="/cliente">Meu painel → Redes sociais</a>' : null;
+    hint.innerHTML = off.length
+      ? `Redes não configuradas: ${off.map(r => esc(r.nome)).join(', ')}. ${onde ? `Configure em ${onde}.` : 'Peça ao administrador para configurar.'}`
+      : '';
+    // Cliente da ferramenta: avisa as lojas sem o link de afiliado dele (esses produtos vão sem comissão).
+    const falta = info.cliente?.sem_afiliado || [];
+    $('#afiliado-aviso').hidden = !falta.length;
+    $('#afiliado-aviso').innerHTML = falta.length
+      ? `Sem link de afiliado seu para: <b>${falta.map(esc).join(', ')}</b>. Produtos dessas lojas vão sem comissão — configure em <a class="link-btn" href="/cliente">Meu painel → Links de afiliado</a>.`
+      : '';
   }
   $('#net-list').addEventListener('change', () => {
     save(NET_KEY, [...document.querySelectorAll('#net-list input:checked')].map(i => i.value));
@@ -88,7 +96,7 @@
       const posted = Object.entries(o.postado_em || {}).map(([r, em]) => `${esc(REDES.find(x => x.id === r)?.nome || r)} ${fmtWhen(parseDate(em))}`);
       return `<article class="post-item post-card${excluded.has(o.id) ? ' is-excluded' : ''}" data-id="${o.id}">
         <header>
-          <img src="/img/marca/${o.id}.jpg" alt="" loading="lazy">
+          <img src="${esc(o.imagem_url || `/api/img/${o.id}`)}" alt="" loading="lazy">
           <div class="post-card-info">
             <strong>${esc(o.produto)}</strong>
             <span><s>R$ ${brl(o.preco_anterior)}</s> <b>R$ ${brl(o.preco_atual)}</b> · -${Math.round(o.desconto_pct)}% · ${esc(STORES[o.store_id] || o.plataforma)}</span>
@@ -101,7 +109,7 @@
         <textarea class="post-text" data-text="${o.id}" rows="9" aria-label="Texto da postagem">${esc(text)}</textarea>
         <div class="post-actions">
           <button class="btn btn-sm" type="button" data-copy="${o.id}">Copiar texto</button>
-          <a class="btn btn-sm" href="/img/marca/${o.id}.jpg" download="oferta-${o.id}.jpg">Baixar imagem</a>
+          <a class="btn btn-sm" href="${esc(o.imagem_url || `/api/img/${o.id}`)}" download="oferta-${o.id}.jpg">Baixar imagem</a>
           <a class="btn btn-sm" data-share="wa" href="#" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>WhatsApp</a>
           <a class="btn btn-sm" data-share="tg" href="#" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Telegram</a>
           <button class="btn btn-sm" type="button" data-reset="${o.id}">Texto original</button>
@@ -263,6 +271,7 @@
         return r.json();
       });
       REDES = info.redes;
+      $('#painel-cliente').hidden = !info.cliente;
       WA_INTERVALO = Math.max(20, Number(info.whatsapp_intervalo_s) || 90);
       renderNets(info);
       const ids = selection();

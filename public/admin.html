@@ -160,6 +160,7 @@
       <button class="tab" data-tab="mining">Mineração</button>
       <button class="tab" data-tab="users">Usuários<span class="count-badge hidden" id="pending-badge">0</span></button>
       <button class="tab" data-tab="ads">Publicidade<span class="count-badge hidden" id="leads-badge">0</span></button>
+      <button class="tab" data-tab="clientes">Clientes</button>
       <button class="tab" data-tab="social">Redes sociais</button>
       <button class="tab" data-tab="site">Site</button>
       <button class="tab" data-tab="account">Conta</button>
@@ -408,6 +409,31 @@
         <h2>Histórico de moderação</h2>
         <p class="hint">Todas as ações feitas sobre usuários e lojas.</p>
         <div class="log-list" id="mod-log"></div>
+      </div>
+    </div>
+
+    <!-- CLIENTES DA FERRAMENTA -->
+    <div class="tab-body hidden" data-body="clientes">
+      <div class="panel">
+        <h2>Clientes da ferramenta</h2>
+        <p class="hint">Quem você cadastrar aqui entra em <b><a href="/cliente" target="_blank">/cliente</a></b> com e-mail e senha, coloca os <b>próprios links de afiliado</b> e os <b>próprios canais</b> (WhatsApp, Telegram…) e usa as ofertas do site para postar com a comissão dele. O site principal e as suas configurações continuam só seus: o cliente não vê nem altera nada disso. Quando a validade vence (ou você bloqueia), o acesso e as postagens agendadas dele param.</p>
+        <form id="cli-form" class="grid" style="margin-top:6px">
+          <label class="field">Nome <input type="text" name="nome" maxlength="80" required></label>
+          <label class="field">E-mail (login) <input type="email" name="email" maxlength="120" required></label>
+          <label class="field">Senha inicial (mín. 8) <input type="text" name="senha" minlength="8" autocomplete="off" required></label>
+          <label class="field">Validade (dias) <input type="number" name="dias" min="1" max="3650" value="30"></label>
+          <label class="field">Observações (plano, valor, pagamento) <input type="text" name="observacoes" maxlength="500"></label>
+        </form>
+        <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" id="cli-criar">Cadastrar cliente</button></div>
+        <div id="cli-msg"></div>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Cliente</th><th>Situação</th><th>Validade</th><th>Último acesso</th><th>Postagens</th><th></th></tr></thead>
+            <tbody id="cli-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -750,6 +776,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
   if (t.dataset.tab === 'ads') loadAds();
   if (t.dataset.tab === 'social') loadSocialLog();
+  if (t.dataset.tab === 'clientes') loadClientes();
 }));
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
@@ -1128,6 +1155,65 @@ $('#user-dlg').addEventListener('click', async e => {
     } else return;
     await openUser(id);
     loadUsers(); loadModLog();
+  } catch (err) { globalMsg(err.message, false); }
+});
+
+// ── Clientes da ferramenta ────────────────────────────────────────────────────
+const fmtDia = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');
+async function loadClientes() {
+  const rows = await api('/api/admin/clientes');
+  $('#cli-body').innerHTML = rows.length ? rows.map(c => {
+    const sit = c.status === 'bloqueado' ? '<span class="badge b-banned">Bloqueado</span>'
+      : c.vencido ? '<span class="badge b-pending">Vencido</span>' : '<span class="badge b-active">Ativo</span>';
+    return `<tr>
+      <td><b>${esc(c.nome)}</b><br><span class="hint" style="margin:0">${esc(c.email)}</span>${c.observacoes ? `<br><span class="hint" style="margin:0">${esc(c.observacoes)}</span>` : ''}</td>
+      <td>${sit}</td>
+      <td class="num">${fmtDia(c.validade)}</td>
+      <td class="num">${fmtDate(c.last_login_at)}</td>
+      <td class="num">${c.postagens}</td>
+      <td class="num">
+        <button class="btn small primary" data-cli="renovar" data-id="${c.id}">+30 dias</button>
+        <button class="btn small" data-cli="renovar-x" data-id="${c.id}">Renovar…</button>
+        <button class="btn small" data-cli="${c.status === 'bloqueado' ? 'ativar' : 'bloquear'}" data-id="${c.id}">${c.status === 'bloqueado' ? 'Desbloquear' : 'Bloquear'}</button>
+        <button class="btn small" data-cli="senha" data-id="${c.id}">Nova senha</button>
+        <button class="btn small danger" data-cli="excluir" data-id="${c.id}">Excluir</button>
+      </td></tr>`;
+  }).join('') : '<tr><td colspan="6" class="hint">Nenhum cliente cadastrado.</td></tr>';
+}
+
+$('#cli-criar').addEventListener('click', async () => {
+  const f = $('#cli-form');
+  const body = Object.fromEntries(new FormData(f));
+  try {
+    await api('/api/admin/clientes', { method: 'POST', body });
+    flash($('#cli-msg'), `Cliente cadastrado. Envie a ele: endereço ${location.origin}/cliente, e-mail ${body.email} e a senha inicial.`);
+    f.reset(); f.dias.value = 30;
+    loadClientes();
+  } catch (err) { flash($('#cli-msg'), err.message, false); }
+});
+
+$('#cli-body').addEventListener('click', async e => {
+  const b = e.target.closest('[data-cli]');
+  if (!b) return;
+  const id = b.dataset.id;
+  try {
+    if (b.dataset.cli === 'renovar') await api(`/api/admin/clientes/${id}/renovar`, { method: 'POST', body: { dias: 30 } });
+    else if (b.dataset.cli === 'renovar-x') {
+      const dias = prompt('Renovar por quantos dias?', '30');
+      if (!dias) return;
+      await api(`/api/admin/clientes/${id}/renovar`, { method: 'POST', body: { dias } });
+    } else if (b.dataset.cli === 'bloquear' || b.dataset.cli === 'ativar') {
+      await api(`/api/admin/clientes/${id}/status`, { method: 'POST', body: { status: b.dataset.cli === 'bloquear' ? 'bloqueado' : 'ativo' } });
+    } else if (b.dataset.cli === 'senha') {
+      const senha = prompt('Nova senha do cliente (mínimo 8 caracteres):', '');
+      if (!senha) return;
+      await api(`/api/admin/clientes/${id}`, { method: 'PUT', body: { senha } });
+      globalMsg('Senha alterada. O cliente precisa entrar de novo.');
+    } else if (b.dataset.cli === 'excluir') {
+      if (!confirm('Excluir este cliente? As configurações, a fila e o acesso dele serão apagados.')) return;
+      await api(`/api/admin/clientes/${id}`, { method: 'DELETE' });
+    }
+    loadClientes();
   } catch (err) { globalMsg(err.message, false); }
 });
 

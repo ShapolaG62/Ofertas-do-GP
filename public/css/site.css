@@ -699,3 +699,32 @@ body:not(.can-post) .poster-only { display: none !important; }
 .vitrine-tv .vitrine-preco { bottom: 10%; }
 @keyframes flutuar { 0%, 100% { translate: 0 0; } 50% { translate: 0 -8px; } }
 @media (prefers-reduced-motion: reduce) { .vitrine-item { animation: none; } }
+.notice[hidden] { display: none; }
+
+/* ── Painel do cliente da ferramenta ────────────────────── */
+.cli-page { display: grid; gap: 16px; }
+.cli-page h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+.cli-sub { margin: 4px 0 0; color: var(--ink-2); font-size: 14px; }
+.cli-login { max-width: 440px; width: 100%; justify-self: center; }
+.cli-form { display: grid; gap: 12px; margin-top: 14px; }
+.cli-tab { display: grid; gap: 16px; }
+.cli-tab[hidden] { display: none; }
+.cli-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+.cli-grid .panel-card { display: grid; gap: 10px; align-content: start; }
+.cli-grid2 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); margin-top: 12px; }
+.cli-grid2 [hidden] { display: none; }
+.cli-hint { margin: 2px 0 0; color: var(--ink-3); font-size: 13px; line-height: 1.5; }
+.cli-h3 { font-size: 15px; margin: 18px 0 8px; display: flex; align-items: center; gap: 10px; }
+.cli-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.cli-checks { display: grid; gap: 6px; max-height: 280px; overflow: auto; }
+.cli-inline { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.cli-steps { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 8px; color: var(--ink-2); line-height: 1.5; }
+.cli-table { overflow-x: auto; }
+.cli-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cli-table th, .cli-table td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cli-table th { color: var(--ink-3); font-size: 12px; font-weight: 700; }
+#global-msg[hidden] { display: none; }
+.cli-page > *, .cli-tab > *, .cli-page .panel-card { min-width: 0; }
+.cli-page .notice, #afiliado-aviso { display: block; line-height: 1.5; margin-top: 14px; }
+.cli-page .notice[hidden], #afiliado-aviso[hidden] { display: none; }
+.cli-steps li { overflow-wrap: anywhere; }

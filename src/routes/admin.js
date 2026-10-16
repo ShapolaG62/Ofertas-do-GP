@@ -10,6 +10,7 @@ const lojas = require('../lojas');
 const banners = require('../banners');
 const whatsapp = require('../whatsapp');
 const agenda = require('../agenda');
+const clientes = require('../clientes');
 const anuncios = require('../anuncios');
 const { STORES, getStore, storeFromUrl } = require('../stores');
 const { CATEGORIES } = require('../categorize');
@@ -229,6 +230,30 @@ router.delete('/api/admin/emails-bloqueados', (req, res) => {
 
 router.get('/api/admin/store-list', (req, res) => {
   res.json(STORES.map(s => ({ id: s.id, name: s.name, automatic: s.automatic })));
+});
+
+// ── Clientes da ferramenta (acesso vendido) ──────────────────────────────────
+router.get('/api/admin/clientes', (req, res) => res.json(clientes.listar()));
+
+router.post('/api/admin/clientes', (req, res) => {
+  try { res.json({ ok: true, id: clientes.criar(req.body || {}) }); } catch (err) { sendError(res, err); }
+});
+
+router.put('/api/admin/clientes/:id', (req, res) => {
+  try { clientes.editar(Number(req.params.id), req.body || {}); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+});
+
+router.post('/api/admin/clientes/:id/renovar', (req, res) => {
+  try { clientes.renovar(Number(req.params.id), req.body?.dias); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+});
+
+router.post('/api/admin/clientes/:id/status', (req, res) => {
+  try { clientes.definirStatus(Number(req.params.id), String(req.body?.status || '')); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+});
+
+router.delete('/api/admin/clientes/:id', (req, res) => {
+  clientes.excluir(Number(req.params.id));
+  res.json({ ok: true });
 });
 
 // ── WhatsApp e postagens agendadas ───────────────────────────────────────────

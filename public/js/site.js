@@ -625,6 +625,7 @@
   $('#logout-site').addEventListener('click', async () => {
     await fetch('/api/conta/sair', { method: 'POST' });
     await fetch('/api/admin/logout', { method: 'POST' });
+    await fetch('/api/cliente/sair', { method: 'POST' });
     location.href = '/conta';
   });
   fetch('/api/admin/session').then(r => r.json()).then(s => {
@@ -636,6 +637,11 @@
   fetch('/api/postagens/permissao').then(r => r.json()).then(p => {
     document.body.classList.toggle('can-post', Boolean(p.pode));
     if (p.pode) updateSelection();
+    if (p.cliente) { // cliente da ferramenta: atalho para o painel dele
+      $('#account-link').textContent = 'Meu painel';
+      $('#account-link').href = '/cliente';
+      $('#logout-site').hidden = false;
+    }
   }).catch(() => {});
 
   loadOffers();

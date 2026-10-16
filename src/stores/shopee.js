@@ -46,7 +46,30 @@ async function search(query, s) {
   return { status: 'ok', deals, message: 'via API de afiliados' };
 }
 
+// Chamada assinada à API GraphQL do Shopee Afiliados.
+async function gql(query, s) {
+  const payload = JSON.stringify({ query });
+  const ts = Math.floor(Date.now() / 1000);
+  const signature = crypto.createHash('sha256').update(`${s.shopee_app_id}${ts}${payload}${s.shopee_app_secret}`).digest('hex');
+  const res = await http.post(ENDPOINT, payload, {
+    headers: { 'Content-Type': 'application/json', Authorization: `SHA256 Credential=${s.shopee_app_id}, Timestamp=${ts}, Signature=${signature}` },
+    validateStatus: () => true,
+  });
+  const data = res.data || {};
+  if (data.errors?.length) throw new Error(`API Shopee: ${data.errors[0].message}`);
+  return data.data || {};
+}
+
+// Link de comissão de um produto já minerado, com as chaves de afiliado informadas (usado pelos clientes).
+async function gerarLink(url, s) {
+  const d = await gql(`mutation { generateShortLink(input: { originUrl: ${JSON.stringify(url)}, subIds: [] }) { shortLink } }`, s);
+  const link = d.generateShortLink?.shortLink;
+  if (!link) throw new Error('a API da Shopee não devolveu o link');
+  return link;
+}
+
 module.exports = {
+  gerarLink,
   id: 'shopee',
   name: 'Shopee',
   method: 'API oficial Shopee Afiliados',

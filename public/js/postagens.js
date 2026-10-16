@@ -88,7 +88,7 @@
       const posted = Object.entries(o.postado_em || {}).map(([r, em]) => `${esc(REDES.find(x => x.id === r)?.nome || r)} ${fmtWhen(parseDate(em))}`);
       return `<article class="post-item post-card${excluded.has(o.id) ? ' is-excluded' : ''}" data-id="${o.id}">
         <header>
-          <img src="/api/img/${o.id}" alt="" loading="lazy">
+          <img src="/img/marca/${o.id}.jpg" alt="" loading="lazy">
           <div class="post-card-info">
             <strong>${esc(o.produto)}</strong>
             <span><s>R$ ${brl(o.preco_anterior)}</s> <b>R$ ${brl(o.preco_atual)}</b> · -${Math.round(o.desconto_pct)}% · ${esc(STORES[o.store_id] || o.plataforma)}</span>
@@ -101,7 +101,7 @@
         <textarea class="post-text" data-text="${o.id}" rows="9" aria-label="Texto da postagem">${esc(text)}</textarea>
         <div class="post-actions">
           <button class="btn btn-sm" type="button" data-copy="${o.id}">Copiar texto</button>
-          <a class="btn btn-sm" href="/api/img/${o.id}" download="oferta-${o.id}.jpg">Baixar imagem</a>
+          <a class="btn btn-sm" href="/img/marca/${o.id}.jpg" download="oferta-${o.id}.jpg">Baixar imagem</a>
           <a class="btn btn-sm" data-share="wa" href="#" target="_blank" rel="noopener"><svg><use href="#i-wa"/></svg>WhatsApp</a>
           <a class="btn btn-sm" data-share="tg" href="#" target="_blank" rel="noopener"><svg><use href="#i-tg"/></svg>Telegram</a>
           <button class="btn btn-sm" type="button" data-reset="${o.id}">Texto original</button>

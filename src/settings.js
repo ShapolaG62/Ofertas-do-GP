@@ -71,6 +71,12 @@ const DEFAULTS = {
   whatsapp_groups: '[]',        // grupos de destino: [{ id, nome }]
   whatsapp_intervalo_s: '90',   // espera entre uma oferta e outra no WhatsApp
 
+  // Marca d'água nas imagens das postagens
+  marca_ativa: '1',
+  marca_texto: 'Ofertas do GP',
+  marca_posicao: 'inferior-direito', // inferior-direito | inferior-esquerdo | superior-direito | superior-esquerdo | centro
+  marca_opacidade: '90',             // 30 a 100 (%)
+
   // Postagens agendadas (3 vezes por dia)
   agenda_ativa: '0',
   agenda_horarios: '09:00,14:00,20:00', // horário de Brasília

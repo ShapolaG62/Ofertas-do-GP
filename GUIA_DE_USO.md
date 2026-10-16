@@ -162,6 +162,15 @@ Depois clique em **Testar conexão**, **Carregar grupos do número**, marque os 
 
 > O WhatsApp pode banir números automatizados. Use um chip só para isso (de preferência com algumas semanas de uso), mantenha o intervalo e poste só em grupos onde as pessoas entraram por vontade própria.
 
+### Marca d'água nas imagens
+
+As fotos das postagens vão num quadrado 1080×1080 com o selo do site: a Capi + "Ofertas do GP" (e o endereço do site, quando ele estiver configurado em "Endereço público do site").
+
+- Configure em **Painel → Redes sociais → Marca d'água**: ligar/desligar, texto, posição (cantos ou centro) e opacidade. A prévia mostra o resultado numa oferta real.
+- Vale para WhatsApp, Telegram, Facebook e para o botão **Baixar imagem** da tela de postagens (a miniatura de cada produto já mostra a versão com marca).
+- No **Instagram**, a marca só entra quando o site tiver endereço público (VPS), porque o Instagram baixa a foto pelo endereço; antes disso, ele recebe a foto da loja.
+- As imagens prontas ficam guardadas em data/marca (são refeitas se você mudar a configuração) e as com mais de 7 dias são apagadas sozinhas.
+
 ### Postagens agendadas (manhã, tarde e noite)
 
 Em **Painel → Redes sociais → Postagens agendadas**: ligue o agendamento, confira os horários (padrão **09:00, 14:00 e 20:00**, horário de Brasília), a quantidade por horário (padrão **5**) e as redes (padrão WhatsApp).

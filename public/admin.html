@@ -412,6 +412,34 @@
 
       <form class="settings-form">
         <div class="panel">
+          <h2>Marca d'água nas imagens</h2>
+          <p class="hint">As fotos das postagens vão num quadrado 1080×1080 com o selo do site (a Capi + o nome e, se houver, o endereço público do site). Vale para WhatsApp, Telegram, Facebook e para o "Baixar imagem" da tela de postagens. No Instagram, só depois que o site tiver endereço público (VPS), porque ele baixa a foto pelo endereço.</p>
+          <div class="row" style="align-items:flex-start;gap:20px">
+            <div class="grid" style="flex:1;min-width:260px">
+              <label class="field">Marca d'água
+                <select name="marca_ativa"><option value="1">Ligada</option><option value="0">Desligada (usa a foto da loja)</option></select></label>
+              <label class="field">Texto <input type="text" name="marca_texto" maxlength="40" placeholder="Ofertas do GP"></label>
+              <label class="field">Posição
+                <select name="marca_posicao">
+                  <option value="inferior-direito">Canto inferior direito</option>
+                  <option value="inferior-esquerdo">Canto inferior esquerdo</option>
+                  <option value="superior-direito">Canto superior direito</option>
+                  <option value="superior-esquerdo">Canto superior esquerdo</option>
+                  <option value="centro">Centro</option>
+                </select></label>
+              <label class="field">Opacidade (%) <input type="number" name="marca_opacidade" min="30" max="100"></label>
+            </div>
+            <figure style="margin:0;width:260px">
+              <img id="marca-prev" alt="Prévia da marca d'água" style="width:260px;height:260px;border-radius:12px;border:1px solid var(--border);background:#fff;object-fit:contain">
+              <figcaption class="hint" style="margin:6px 0 0">Prévia com uma oferta real. <button class="btn small" type="button" id="marca-refresh">Outra oferta</button></figcaption>
+            </figure>
+          </div>
+          <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Salvar marca d'água</button></div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
           <h2>WhatsApp (número separado para as postagens)</h2>
           <p class="hint">O WhatsApp não tem API oficial para grupos. A postagem automática usa um serviço que conecta um número ao WhatsApp Web: <b>Z-API</b> (pago, na nuvem, funciona sem servidor) ou <b>Evolution API</b> (grátis, roda no seu computador ou VPS com Docker). <b>Use um número só para isso</b>: o WhatsApp pode banir números automatizados. Para reduzir o risco, use um chip com algumas semanas de uso, mantenha o intervalo entre mensagens e poste só em grupos onde as pessoas entraram por vontade própria.</p>
           <div class="grid">
@@ -1178,8 +1206,23 @@ $('#agenda-run').addEventListener('click', async () => {
   } catch (err) { globalMsg(err.message, false); }
 });
 
+// Prévia da marca d'água: pega uma oferta no ar e mostra a imagem gerada (recarrega depois de salvar).
+let previewIds = [], previewIdx = 0;
+async function marcaPreview(next = false) {
+  if (!previewIds.length) {
+    const d = await api('/api/admin/offers?state=active&page=1');
+    previewIds = d.rows.filter(o => o.imagem).map(o => o.id);
+  }
+  if (!previewIds.length) return;
+  if (next) previewIdx = (previewIdx + 1) % previewIds.length;
+  $('#marca-prev').src = `/img/marca/${previewIds[previewIdx]}.jpg?t=${Date.now()}`;
+}
+$('#marca-refresh').addEventListener('click', () => marcaPreview(true));
+$('[name=marca_texto]').form.addEventListener('submit', () => setTimeout(() => marcaPreview(), 800));
+
 async function loadSocialLog() {
   loadAgenda().catch(() => {});
+  marcaPreview().catch(() => {});
   const rows = await api('/api/postagens/historico');
   $('#social-log').innerHTML = rows.length ? rows.map(r => `<tr>
       <td class="num">${fmtDate(r.created_at)}</td>

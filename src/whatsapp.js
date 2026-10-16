@@ -76,9 +76,14 @@ async function listarGrupos(s) {
 }
 
 // Envia foto com legenda (ou só texto, sem foto) para um grupo.
+// imagem: endereço https da foto ou o arquivo (Buffer JPEG, ex.: a foto com marca d'água).
 async function enviar(s, grupoId, { imagem, texto }) {
   const c = config(s);
   if (c.erro) throw new Error(c.erro);
+  if (Buffer.isBuffer(imagem)) {
+    const b64 = imagem.toString('base64');
+    imagem = c.tipo === 'zapi' ? `data:image/jpeg;base64,${b64}` : b64; // Z-API pede o prefixo; Evolution, só o base64
+  }
   try {
     if (c.tipo === 'zapi') {
       const r = imagem

@@ -6,6 +6,7 @@ const settings = require('../settings');
 const offers = require('../offers');
 const { safeGet } = require('../net');
 const banners = require('../banners');
+const watermark = require('../watermark');
 const { createLimiter } = require('../ratelimit');
 
 // Tipos de imagem aceitos no proxy (SVG fica de fora: pode conter scripts).
@@ -83,6 +84,23 @@ router.get('/api/img/:id', async (req, res) => {
     res.send(Buffer.from(img.data));
   } catch {
     res.redirect('/images/pet-capi-head.png');
+  }
+});
+
+// Foto da oferta com a marca d'água do site (usada nas postagens, no Instagram e no "Baixar imagem").
+const marcaLimiter = createLimiter(120, 1); // até 120 imagens novas por minuto por IP
+router.get('/img/marca/:id.jpg', async (req, res) => {
+  const o = db.get('SELECT id, imagem FROM offers WHERE id = ?', Number(req.params.id));
+  if (!o) return res.status(404).send('Não encontrado');
+  if (!watermark.ativa()) return res.redirect(`/api/img/${o.id}`);
+  if (marcaLimiter.hit(req.ip)) return res.status(429).send('Muitas imagens. Tente em instantes.');
+  try {
+    const buf = await watermark.paraOferta(o);
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(buf);
+  } catch {
+    res.redirect(`/api/img/${o.id}`);
   }
 });
 

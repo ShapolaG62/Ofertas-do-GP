@@ -8,6 +8,7 @@
   const fmtDia = s => (s ? new Date(String(s).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '');
   const params = new URLSearchParams(location.search);
   let PLANO = null;
+  let LOGADO = null; // conta do site já logada (ex.: voltou do Google)
   let pollTimer = null;
 
   let toastTimer;
@@ -21,12 +22,18 @@
   function aplicarPlano() {
     const conta = PLANO.conta === 'usuario';
     const empresa = PLANO.perfil === 'empresa';
-    const renovar = $('#renovar').checked;
+    const renovar = !LOGADO && $('#renovar').checked;
+    // Logado: e-mail e senha já são os da conta; os dados pessoais só são pedidos se o perfil ainda não foi preenchido.
+    const temDados = Boolean(LOGADO?.tipo);
+    $('#ass-acesso').hidden = Boolean(LOGADO);
+    $('.ass-renovar').hidden = Boolean(LOGADO);
     // Cada bloco aparece se valer para o plano (conta do site / empresa) e não for só renovação.
     $$('.so-novo, .so-conta, .so-empresa').forEach(el => {
       const c = el.classList;
-      el.hidden = (c.contains('so-novo') && renovar) || (c.contains('so-conta') && !conta) || (c.contains('so-empresa') && !empresa);
+      el.hidden = (c.contains('so-novo') && (renovar || temDados)) || (c.contains('so-conta') && !conta) || (c.contains('so-empresa') && !empresa);
     });
+    $('#ass-google').hidden = Boolean(LOGADO) || renovar;
+    $('#ass-google-div').hidden = $('#ass-google').hidden;
     $('#ass-form [name=senha]').autocomplete = renovar ? 'current-password' : 'new-password';
   }
 
@@ -40,8 +47,28 @@
       <a class="link-btn" href="/conta#planos">Trocar de plano</a>`;
   }
 
+  let GOOGLE = false;
   async function iniciarForm(id) {
-    const d = await fetch(`/api/planos?plano=${encodeURIComponent(id)}`).then(r => r.json());
+    const [d, me, info] = await Promise.all([
+      fetch(`/api/planos?plano=${encodeURIComponent(id)}`).then(r => r.json()),
+      fetch('/api/conta/me', { cache: 'no-store' }).then(r => r.json()).catch(() => ({})),
+      fetch('/api/conta/cadastro-info').then(r => r.json()).catch(() => ({})),
+    ]);
+    LOGADO = me.user || null;
+    GOOGLE = Boolean(info.google);
+    $('#ass-google-btn').href = `/auth/google?voltar=${encodeURIComponent(`/assinar?plano=${id}`)}`;
+    if (LOGADO) {
+      $('#ass-logado').innerHTML = `${LOGADO.avatar_url ? `<img src="${esc(LOGADO.avatar_url)}" alt="" referrerpolicy="no-referrer">` : ''}
+        <span>Comprando com a conta <b>${esc(LOGADO.email)}</b>${LOGADO.google ? ' (Google)' : ''}. <button class="link-btn" type="button" id="ass-sair">Usar outra conta</button></span>`;
+      $('#ass-logado').hidden = false;
+      $('#ass-sair').addEventListener('click', async () => {
+        await fetch('/api/conta/sair', { method: 'POST' });
+        location.reload();
+      });
+      const nome = $('#ass-form [name=nome]');
+      if (LOGADO.nome && !nome.value) nome.value = LOGADO.nome;
+    }
+    if (params.get('erro')) { $('#ass-msg').textContent = params.get('erro'); $('#ass-msg').hidden = false; }
     PLANO = d.planos.find(p => p.id === id);
     if (!PLANO) return show('erro');
     document.title = `Assinar ${PLANO.nome} — Ofertou!`;
@@ -61,6 +88,13 @@
   }
 
   $('#renovar').addEventListener('change', aplicarPlano);
+  // O botão do Google fica sempre visível; sem o login do Google configurado no painel, avisa em vez de sair da página.
+  $('#ass-google-btn').addEventListener('click', e => {
+    if (GOOGLE) return;
+    e.preventDefault();
+    $('#ass-msg').textContent = 'O cadastro com Google ainda não foi ativado. Por enquanto, preencha com e-mail e senha.';
+    $('#ass-msg').hidden = false;
+  });
   $('[name=mesmo_endereco]').addEventListener('change', e => { $('#emp-endereco').hidden = e.target.checked; });
 
   // Máscaras simples e preenchimento do endereço pelo CEP (ViaCEP).

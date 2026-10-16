@@ -23,6 +23,7 @@ router.get('/api/conta/cadastro-info', (req, res) => {
   res.json({
     consumidor: users.signupMode('consumidor'),
     empresa: users.signupMode('empresa'),
+    afiliado: users.signupMode('afiliado'),
     google: google.isEnabled(),
     exigir_login: settings.get('exigir_login') !== '0',
     ufs: cadastro.UFS,
@@ -36,9 +37,17 @@ router.get('/api/conta/cadastro-info', (req, res) => {
 });
 
 // ── Login com Google ─────────────────────────────────────────────────────────
+// Para onde voltar depois do Google (só a página de assinatura de um plano).
+const VOLTAR_COOKIE = 'gp_voltar';
+const voltarValido = v => (/^\/assinar\?plano=[a-z]{2,20}$/.test(String(v || '')) ? String(v) : null);
+const voltarCookie = (valor, maxAge) => `${VOLTAR_COOKIE}=${encodeURIComponent(valor)}; Path=/auth/google; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`;
+
 router.get('/auth/google', (req, res) => {
-  if (!google.isEnabled()) return res.redirect('/conta?erro=' + encodeURIComponent('Login com Google não está disponível.'));
-  res.redirect(google.startUrl(req, res));
+  const voltar = voltarValido(req.query.voltar);
+  if (!google.isEnabled()) return res.redirect((voltar || '/conta') + (voltar ? '&' : '?') + 'erro=' + encodeURIComponent('Login com Google não está disponível.'));
+  const url = google.startUrl(req, res);
+  if (voltar) res.append('Set-Cookie', voltarCookie(voltar, 600));
+  res.redirect(url);
 });
 
 router.get('/auth/google/callback', async (req, res) => {
@@ -46,7 +55,14 @@ router.get('/auth/google/callback', async (req, res) => {
     const profile = await google.finish(req, res);
     const u = users.loginWithGoogle(profile);
     users.createSession(req, res, u.id);
-    // Conta liberada vai direto para as ofertas; as demais o site leva para /conta (perfil ou aprovação).
+    // Veio da página de um plano: volta para concluir a compra já logado.
+    const voltar = voltarValido(decodeURIComponent(auth.parseCookies(req.headers.cookie)[VOLTAR_COOKIE] || ''));
+    if (voltar) {
+      res.append('Set-Cookie', voltarCookie('', 0));
+      return res.redirect(voltar);
+    }
+    // Conta liberada vai direto para as ofertas (afiliado, para o painel); as demais vão para /conta (perfil ou aprovação).
+    if (u.status === 'active' && u.tipo === 'afiliado') return res.redirect('/cliente');
     res.redirect(u.status === 'active' ? '/' : '/conta');
   } catch (err) {
     res.redirect('/conta?erro=' + encodeURIComponent(err.message));

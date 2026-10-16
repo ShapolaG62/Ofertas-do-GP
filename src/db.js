@@ -23,7 +23,7 @@ const USER_DATA_COLUMNS = [
 ];
 const USERS_COLUMNS = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tipo TEXT CHECK (tipo IS NULL OR tipo IN ('consumidor', 'empresa')),
+    tipo TEXT CHECK (tipo IS NULL OR tipo IN ('consumidor', 'empresa', 'afiliado')),
     nome TEXT,
     email TEXT NOT NULL UNIQUE,
     senha_hash TEXT,
@@ -37,6 +37,9 @@ const USERS_COLUMNS = `
     suspenso_ate TEXT,
     bloqueio_publicacao INTEGER NOT NULL DEFAULT 0,
     pode_postar INTEGER NOT NULL DEFAULT 0,
+    plano TEXT,
+    assinatura_ate TEXT,
+    cliente_id INTEGER,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     last_login_at TEXT,
     ${USER_DATA_COLUMNS.map(c => `${c} TEXT`).join(',\n    ')}
@@ -153,9 +156,10 @@ if (!offerColumns.includes('loja_id')) {
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_offers_loja ON offers (loja_id)');
 
-// Bancos antigos: a tabela de usuários exigia tipo e senha. Recria com a estrutura nova copiando os dados.
+// Bancos antigos: a tabela de usuários exigia tipo e senha (e depois não aceitava o perfil afiliado).
+// Recria com a estrutura nova copiando os dados.
 const usersSql = db.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'`).get()?.sql || '';
-if (!usersSql.includes("'onboarding'")) {
+if (!usersSql.includes("'afiliado'")) {
   const oldCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
   db.exec('PRAGMA foreign_keys = OFF');
   db.exec('BEGIN');

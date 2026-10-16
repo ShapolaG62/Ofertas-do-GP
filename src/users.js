@@ -14,7 +14,8 @@ const EMPRESA_FIELDS = ['razao_social', 'empresa_nome', 'inscricao_estadual', 't
 const COOKIE = 'gp_user';
 const SESSION_DAYS = 30;
 const MIN_PASSWORD = 8;
-const TIPOS = ['consumidor', 'empresa'];
+const TIPOS = ['consumidor', 'empresa', 'afiliado'];
+const NOME_TIPO = { consumidor: 'consumidores', empresa: 'empresas', afiliado: 'afiliados (usuários da ferramenta)' };
 const SIGNUP_MODES = ['aberto', 'aprovacao', 'fechado'];
 
 // SQL reutilizado: conta liberada (ativa ou com suspensão já vencida)
@@ -25,7 +26,9 @@ const fmtDate = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('pt
 
 function signupMode(tipo) {
   const mode = settings.get(`signup_${tipo}`);
-  return SIGNUP_MODES.includes(mode) ? mode : 'aprovacao';
+  const m = SIGNUP_MODES.includes(mode) ? mode : 'aprovacao';
+  // Acesso grátis à ferramenta nunca é liberado sozinho: sempre passa pela aprovação do admin.
+  return tipo === 'afiliado' && m === 'aberto' ? 'aprovacao' : m;
 }
 
 // Formato enviado ao próprio usuário (sem hash de senha).
@@ -38,6 +41,7 @@ function publicUser(u) {
     assinatura_vencida: Boolean(u.assinatura_ate && u.assinatura_ate < nowSql()),
     created_at: u.created_at,
     avatar_url: u.avatar_url, google: Boolean(u.google_id), tem_senha: Boolean(u.senha_hash),
+    ferramenta: Boolean(u.cliente_id),
   };
   for (const k of [...PESSOA_FIELDS, ...(u.tipo === 'empresa' ? EMPRESA_FIELDS : [])]) out[k] = u[k] ?? null;
   return out;
@@ -95,9 +99,9 @@ function loginWithGoogle(profile) {
 function completeProfile(u, body) {
   if (u.status !== 'onboarding') throw new Error('Seu perfil já foi definido.');
   const tipo = String(body.tipo || '');
-  if (!TIPOS.includes(tipo)) throw new Error('Escolha o perfil: consumidor ou empresarial.');
+  if (!TIPOS.includes(tipo)) throw new Error('Escolha o perfil: consumidor, empresarial ou usuário da ferramenta.');
   const mode = signupMode(tipo);
-  if (mode === 'fechado') throw new Error(`Os cadastros de ${tipo === 'empresa' ? 'empresas' : 'consumidores'} estão fechados no momento.`);
+  if (mode === 'fechado') throw new Error(`Os cadastros de ${NOME_TIPO[tipo]} estão fechados no momento.`);
   if (!(body.aceite_termos === true || body.aceite_termos === 'on' || body.aceite_termos === '1')) {
     throw new Error('É preciso aceitar os Termos de uso e a Política de privacidade.');
   }
@@ -230,6 +234,8 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
   switch (action) {
     case 'aprovar':
       db.run(`UPDATE users SET status = 'active', status_motivo = NULL, suspenso_ate = NULL WHERE id = ?`, id);
+      // Afiliado aprovado ganha o acesso à ferramenta (painel do cliente) ligado à mesma conta.
+      if (u.tipo === 'afiliado') require('./clientes').vincularUsuario(getById(id));
       logAction(u, 'aprovado');
       break;
     case 'recusar':

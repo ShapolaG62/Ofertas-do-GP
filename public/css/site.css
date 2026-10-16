@@ -905,3 +905,24 @@ body.is-landing { overflow-x: clip; }
 .ass-dado { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .ass-dado span { color: var(--ink-3); font-size: 13px; min-width: 110px; }
 .ass-dado b { flex: 1; word-break: break-all; }
+
+/* ── Primeiro acesso: planos + perfis gratuitos ─────────── */
+.perfil-wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+.perfil-wrap[hidden] { display: none; }
+.perfil-head { text-align: center; }
+.perfil-head h1 { margin: 0; font-size: clamp(26px, 3.2vw, 36px); letter-spacing: -.03em; }
+.perfil-head .muted { margin: 8px 0 0; }
+.perfil-bloco { display: grid; gap: 16px; }
+.perfil-bloco[hidden] { display: none; }
+.perfil-bloco-head { display: grid; gap: 8px; justify-items: center; text-align: center; }
+.perfil-bloco-head h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+.perfil-aviso { margin: 0; display: inline-flex; gap: 8px; align-items: flex-start; padding: 10px 16px; border-radius: 12px; font-size: 14px; line-height: 1.45; text-align: left; max-width: 760px; }
+.perfil-aviso.is-ok { background: var(--brand-soft); color: var(--brand-strong); }
+.perfil-aviso.is-espera { background: var(--gold-soft); color: var(--ink); }
+.profile-choice-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.profile-note { color: var(--gold); }
+.auth-google-ass { display: grid; gap: 10px; padding: 14px; border-radius: 12px; background: var(--surface-2); }
+.auth-google-ass p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.ass-logado { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--brand-soft); color: var(--brand-strong); font-size: 14px; }
+.ass-logado img { width: 32px; height: 32px; border-radius: 50%; }
+@media (max-width: 900px) { .profile-choice-3 { grid-template-columns: 1fr; } }

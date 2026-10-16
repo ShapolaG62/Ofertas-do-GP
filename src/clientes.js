@@ -121,11 +121,31 @@ const encerrarSessoes = id => db.run('DELETE FROM cliente_sessions WHERE cliente
 // Cliente logado, com acesso válido (ativo e dentro da validade); senão null.
 function atual(req) {
   const token = auth.parseCookies(req.headers.cookie)[COOKIE];
-  if (!token) return null;
-  const c = db.get(
+  const c = token && db.get(
     `SELECT c.* FROM cliente_sessions s JOIN clientes c ON c.id = s.cliente_id
      WHERE s.token_hash = ? AND s.expires_at > datetime('now')`, auth.tokenHash(token));
-  return c && !motivoBloqueio(c) ? c : null;
+  if (c) return motivoBloqueio(c) ? null : c;
+  // Conta do site (e-mail/senha ou Google) ligada a um acesso da ferramenta: entra no painel com a mesma sessão.
+  const u = require('./users').currentUser(req);
+  if (!u || !u.cliente_id || u.status !== 'active') return null;
+  const v = getById(u.cliente_id);
+  return v && !motivoBloqueio(v) ? v : null;
+}
+
+// Liga (ou cria) o acesso da ferramenta de uma conta do site — cadastro gratuito de afiliado aprovado pelo admin.
+function vincularUsuario(u, dias = null) {
+  const ligado = u.cliente_id && getById(u.cliente_id);
+  if (ligado) return ligado.id;
+  let c = db.get('SELECT * FROM clientes WHERE email = ?', u.email);
+  if (!c) {
+    const d = dias || Math.min(Math.max(parseInt(settings.get('plano_pro_dias'), 10) || 30, 1), 3650);
+    const senha = u.senha_hash || auth.hashPassword(crypto.randomBytes(24).toString('hex')); // só Google: entra pela conta do site
+    const id = Number(db.run('INSERT INTO clientes (nome, email, senha_hash, validade, observacoes) VALUES (?, ?, ?, ?, ?)',
+      u.nome || u.email.split('@')[0], u.email, senha, addDays(nowSql(), d), 'Cadastro gratuito de afiliado aprovado no painel').lastInsertRowid);
+    c = getById(id);
+  }
+  db.run('UPDATE users SET cliente_id = ? WHERE id = ?', c.id, u.id);
+  return c.id;
 }
 
 function exigir(req, res, next) {
@@ -215,6 +235,7 @@ function publico(c) {
 }
 
 module.exports = {
+  vincularUsuario,
   CLIENT_KEYS, SECRET_KEYS, criar, editar, renovar, definirStatus, excluir, listar, getById, login, criarSessao,
   encerrarSessao, atual, exigir, config, configParaPainel, salvarConfig, linkAfiliado, lojasSemAfiliado, publico, motivoBloqueio,
 };

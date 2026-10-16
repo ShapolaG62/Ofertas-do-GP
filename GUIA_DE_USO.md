@@ -229,4 +229,6 @@ Nas formas com comprovante, o pedido fica em **Pedidos de assinatura** e você c
 
 **Vencimento:** ao vencer, o acesso às ofertas é bloqueado e a conta mostra o link **Renovar**. Renovar soma os dias ao prazo que ainda restava.
 
-**Contas sem plano:** quem só cria conta ou entra com o Google continua passando pela sua aprovação (Painel → Usuários), e a página avisa isso.
+**Contas sem plano:** depois de criar a conta (ou entrar com o Google), a pessoa vê primeiro os planos pagos (acesso imediato após o pagamento) e, abaixo, os 3 perfis gratuitos — Consumidor, Empresarial e **Usuário da ferramenta** — que passam pela sua aprovação (Painel → Usuários). Ao aprovar um usuário da ferramenta, ele ganha o painel de afiliado (aba Clientes) pelo número de dias do Afiliado Pro.
+
+**Google na compra:** na tela de pagamento há o botão **Cadastrar com Google**; a pessoa volta já logada e só completa os dados e paga.

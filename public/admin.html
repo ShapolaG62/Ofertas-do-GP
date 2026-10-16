@@ -341,7 +341,7 @@
       <form class="settings-form">
         <div class="panel">
           <h2>Cadastros no site</h2>
-          <p class="hint">Defina como novos usuários entram. Estas contas são do site (consumidores e empresas) e <b>não</b> dão acesso a este painel.</p>
+          <p class="hint">Defina como novos usuários entram. Estas contas são do site (consumidores, empresas e usuários da ferramenta) e <b>não</b> dão acesso a este painel. Ao aprovar um usuário da ferramenta, ele ganha o painel de afiliado (aba Clientes) pelo número de dias do plano Afiliado Pro; dá para mudar a validade lá.</p>
           <div class="grid">
             <label class="field">Consumidores
               <select name="signup_consumidor">
@@ -354,6 +354,11 @@
                 <option value="aberto">Aberto — entra na hora</option>
                 <option value="aprovacao">Com aprovação — eu libero cada cadastro</option>
                 <option value="fechado">Fechado — ninguém se cadastra</option>
+              </select></label>
+            <label class="field">Usuários da ferramenta (afiliados grátis)
+              <select name="signup_afiliado">
+                <option value="aprovacao">Com aprovação — eu libero cada cadastro</option>
+                <option value="fechado">Fechado — só pelo plano pago</option>
               </select></label>
             <label class="field">Limite de produtos por loja <input type="number" name="loja_max_produtos" min="1" max="5000"></label>
             <label class="field">Quem pode ver as ofertas
@@ -391,7 +396,7 @@
         <div class="row" style="margin-bottom:10px">
           <h2 style="flex:1">Usuários</h2>
           <input type="text" id="u-q" placeholder="Nome, e-mail, CPF, CNPJ ou loja..." style="width:220px">
-          <select id="u-tipo" style="width:150px"><option value="">Todos os tipos</option><option value="consumidor">Consumidores</option><option value="empresa">Empresas</option></select>
+          <select id="u-tipo" style="width:150px"><option value="">Todos os tipos</option><option value="consumidor">Consumidores</option><option value="empresa">Empresas</option><option value="afiliado">Usuários da ferramenta</option></select>
           <select id="u-status" style="width:170px">
             <option value="">Todas as situações</option><option value="pending">Aguardando aprovação</option><option value="onboarding">Cadastro incompleto</option><option value="active">Ativos</option>
             <option value="suspended">Suspensos</option><option value="banned">Banidos</option><option value="rejected">Recusados</option>
@@ -1092,7 +1097,7 @@ async function loadUsers() {
     <button class="btn small" ${data.page >= pages ? 'disabled' : ''} data-upage="${data.page + 1}">→</button>`;
 }
 
-const tipoLabel = t => (t === 'empresa' ? 'Empresa' : t === 'consumidor' ? 'Consumidor' : 'Não escolhido');
+const tipoLabel = t => ({ empresa: 'Empresa', consumidor: 'Consumidor', afiliado: 'Usuário da ferramenta' }[t] || 'Não escolhido');
 
 // Endereço de retorno do Google, para copiar e colar no Google Cloud.
 function updateRedirectUri() {

@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261039">
+<link rel="stylesheet" href="/css/site.css?v=20261040">
 </head>
 <body>
 <header class="site-header">
@@ -203,13 +203,28 @@
       </section>
     </div>
 
-    <!-- ── Primeiro acesso: escolha do perfil ── -->
-    <section id="view-perfil" class="wide-form" hidden>
-      <div class="panel-card">
+    <!-- ── Primeiro acesso: planos pagos ou perfil gratuito ── -->
+    <section id="view-perfil" class="perfil-wrap" hidden>
+      <div class="perfil-head">
         <p class="step-label">Passo 1 de 2</p>
         <h1>Como você quer usar o Ofertou!?</h1>
-        <p class="muted">Escolha o perfil da sua conta. Ele define as ferramentas que você terá.</p>
-        <div class="profile-choice">
+        <p class="muted">Assine um plano para entrar na hora, ou escolha um perfil gratuito e aguarde a aprovação.</p>
+      </div>
+
+      <div class="perfil-bloco" id="perfil-pago" hidden>
+        <div class="perfil-bloco-head">
+          <h2>Assine um plano</h2>
+          <p class="perfil-aviso is-ok"><span aria-hidden="true">⚡</span> <span><b>Acesso imediato:</b> liberado logo após a confirmação do pagamento.</span></p>
+        </div>
+        <div class="planos-grid" id="perfil-planos"></div>
+      </div>
+
+      <div class="perfil-bloco">
+        <div class="perfil-bloco-head">
+          <h2>Ou crie uma conta gratuita</h2>
+          <p class="perfil-aviso is-espera"><span aria-hidden="true">⏳</span> <span><b>Passa por aprovação:</b> quem escolher uma destas 3 opções tem o perfil avaliado pela nossa equipe antes de o acesso ser liberado.</span></p>
+        </div>
+        <div class="profile-choice profile-choice-3">
           <button type="button" class="profile-card" data-tipo="consumidor">
             <span class="profile-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
@@ -225,6 +240,14 @@
             <strong>Empresarial</strong>
             <span>Veja as ofertas e crie sua loja no site: anuncie seus produtos em promoção ou importe pelo link da sua loja virtual.</span>
             <small class="profile-note" data-note="empresa"></small>
+          </button>
+          <button type="button" class="profile-card" data-tipo="afiliado">
+            <span class="profile-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-8-8 18-2-8z"/></svg>
+            </span>
+            <strong>Usuário da ferramenta</strong>
+            <span>Painel de afiliado com os seus links de comissão e postagem das ofertas nos seus grupos e redes sociais.</span>
+            <small class="profile-note" data-note="afiliado"></small>
           </button>
         </div>
       </div>
@@ -463,6 +486,6 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261039" defer></script>
+<script src="/js/conta.js?v=20261040" defer></script>
 </body>
 </html>

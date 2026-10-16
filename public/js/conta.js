@@ -200,21 +200,10 @@
   const brlFmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const numFmt = n => Number(n).toLocaleString('pt-BR');
 
-  let planosCarregados = false;
-  async function loadPlanos() {
-    if (planosCarregados) return;
-    planosCarregados = true;
-    loadApresentacao();
-    const d = await fetch('/api/planos').then(r => r.json()).catch(() => ({ planos: [] }));
-    const grid = $('#planos-grid');
-    if (!d.planos?.length) {
-      grid.innerHTML = '<p class="muted" style="text-align:center;grid-column:1/-1">Os planos estarão disponíveis em breve. Enquanto isso, crie sua conta grátis.</p>';
-      return;
-    }
-    const vende = d.metodos?.algum;
-    const botao = p => `<a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>`;
-    grid.innerHTML = d.planos.map(p => {
-      const mensal = p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
+  let planosPromise = null;
+  const dadosPlanos = () => (planosPromise ||= fetch('/api/planos').then(r => r.json()).catch(() => ({ planos: [] })));
+  const planosHtml = planos => planos.map(p => {
+    const mensal = p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
       return `
       <article class="plano-card${p.destaque ? ' is-destaque' : ''}">
         ${p.destaque ? '<span class="plano-selo">Mais completo</span>' : ''}
@@ -224,9 +213,23 @@
         ${mensal}
         <p class="plano-ideal">${esc(p.ideal || '')}</p>
         <ul>${p.beneficios.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
-        ${botao(p)}
+        <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>
       </article>`;
-    }).join('');
+  }).join('');
+
+  let planosCarregados = false;
+  async function loadPlanos() {
+    if (planosCarregados) return;
+    planosCarregados = true;
+    loadApresentacao();
+    const d = await dadosPlanos();
+    const grid = $('#planos-grid');
+    if (!d.planos?.length) {
+      grid.innerHTML = '<p class="muted" style="text-align:center;grid-column:1/-1">Os planos estarão disponíveis em breve. Enquanto isso, crie sua conta grátis.</p>';
+      return;
+    }
+    const vende = d.metodos?.algum;
+    grid.innerHTML = planosHtml(d.planos);
 
     // Formas de pagamento aceitas
     if (vende) {
@@ -285,13 +288,15 @@
     if (ME.status === 'onboarding') return showProfileChoice();
     if (ME.assinatura_vencida) {
       $('#aguardando-text').innerHTML = `Sua assinatura venceu em ${esc(new Date(ME.assinatura_ate.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR'))}. `
-        + `<a class="link-btn" href="/assinar?plano=${encodeURIComponent(ME.plano || (ME.tipo === 'empresa' ? 'empresa' : 'consumidor'))}">Renove o plano</a> para voltar a ver as ofertas.`;
+        + `<a class="link-btn" href="/assinar?plano=${encodeURIComponent(ME.plano || ({ empresa: 'empresa', afiliado: 'pro' }[ME.tipo] || 'consumidor'))}">Renove o plano</a> para voltar a ver as ofertas.`;
       return show('aguardando');
     }
     if (ME.status === 'pending') {
-      $('#aguardando-text').textContent = `Seu cadastro de ${ME.tipo === 'empresa' ? 'empresa' : 'consumidor'} foi enviado e está aguardando a aprovação do administrador. Assim que for aprovado, as ferramentas da sua conta serão liberadas aqui.`;
+      $('#aguardando-text').textContent = `Seu cadastro de ${NOME_PERFIL[ME.tipo] || 'consumidor'} foi enviado e está aguardando a aprovação da nossa equipe. Assim que for aprovado, ${ME.tipo === 'afiliado' ? 'o seu painel de afiliado será liberado' : 'as ferramentas da sua conta serão liberadas aqui'}. Não quer esperar? Assinando um plano, o acesso é liberado logo após a confirmação do pagamento.`;
       return show('aguardando');
     }
+    // Usuário da ferramenta liberado usa o painel de afiliado.
+    if (ME.tipo === 'afiliado' && ME.ferramenta) return location.replace('/cliente');
     renderAccount();
   }
 
@@ -337,7 +342,7 @@
     if (r.admin) return goToSite('/admin');
     location.hash = '';
     const me = await api('/api/conta/me');
-    if (me.user?.status === 'active') return goToSite();
+    if (me.user?.status === 'active') return goToSite(me.user.tipo === 'afiliado' && me.user.ferramenta ? '/cliente' : '/');
     route();
   });
 
@@ -351,15 +356,20 @@
   // ── Primeiro acesso: perfil e dados ────────────────────────────────────────
   let chosenTipo = null;
 
+  const NOME_PERFIL = { consumidor: 'consumidor', empresa: 'empresa', afiliado: 'usuário da ferramenta' };
   function showProfileChoice() {
     show('perfil');
-    for (const tipo of ['consumidor', 'empresa']) {
-      const mode = INFO[tipo];
+    for (const tipo of ['consumidor', 'empresa', 'afiliado']) {
+      const mode = INFO[tipo] || 'aprovacao';
       const card = $(`.profile-card[data-tipo="${tipo}"]`);
       card.disabled = mode === 'fechado';
-      $(`[data-note="${tipo}"]`).textContent = mode === 'fechado' ? 'Cadastros fechados no momento.'
-        : mode === 'aprovacao' ? 'Liberado após aprovação do administrador.' : 'Acesso liberado na hora.';
+      $(`[data-note="${tipo}"]`).textContent = mode === 'fechado' ? 'Cadastros gratuitos fechados no momento — assine um plano acima.'
+        : mode === 'aprovacao' ? '⏳ Gratuito · passa por aprovação' : 'Gratuito · acesso liberado na hora';
     }
+    dadosPlanos().then(d => {
+      $('#perfil-planos').innerHTML = d.planos?.length ? planosHtml(d.planos) : '';
+      $('#perfil-pago').hidden = !d.planos?.length;
+    });
   }
 
   $$('.profile-card').forEach(card => card.addEventListener('click', () => {
@@ -367,7 +377,7 @@
     chosenTipo = card.dataset.tipo;
     const empresa = chosenTipo === 'empresa';
     $('#dados-title').textContent = empresa ? 'Dados do responsável e da empresa' : 'Seus dados';
-    $('#dados-sub').textContent = `Perfil escolhido: ${empresa ? 'Empresarial' : 'Consumidor'}.`;
+    $('#dados-sub').textContent = `Perfil escolhido: ${{ empresa: 'Empresarial', consumidor: 'Consumidor', afiliado: 'Usuário da ferramenta (Afiliado)' }[chosenTipo]} — gratuito${INFO[chosenTipo] === 'aberto' ? '' : ', passa por aprovação'}.`;
     $('#form-dados [data-fields="empresa"]').hidden = !empresa;
     const form = $('#form-dados');
     if (ME?.nome && !form.nome.value) form.nome.value = ME.nome;

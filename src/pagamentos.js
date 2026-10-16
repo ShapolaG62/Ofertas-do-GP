@@ -48,8 +48,51 @@ function metodosDisponiveis(s = settings.getAll(), planoId = null) {
 }
 
 // ── Pedido ───────────────────────────────────────────────────────────────────
+// Quem já está logado no site (e-mail/senha ou Google) compra para a própria conta, sem digitar e-mail e senha.
+function validarLogado(p, b, u) {
+  if (!['onboarding', 'pending', 'active', 'suspended'].includes(u.status)) throw fail('Esta conta não pode assinar. Fale com o administrador.', 403);
+  if (!(b.aceite_termos === true || b.aceite_termos === 'on' || b.aceite_termos === '1')) {
+    throw fail('É preciso aceitar os Termos de uso e a Política de privacidade.');
+  }
+  // Conta sem perfil ainda: os dados pessoais (e da empresa) vêm do formulário.
+  const novosDados = () => {
+    const dados = { ...cadastro.dadosPessoa(b), ...(p.perfil === 'empresa' ? cadastro.dadosEmpresa(b) : {}) };
+    if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) throw fail('Não é possível concluir com estes dados. Fale com o administrador.');
+    if (db.get('SELECT 1 FROM users WHERE cpf = ? AND id <> ?', dados.cpf, u.id)) throw fail('Já existe uma conta com este CPF.', 409);
+    if (dados.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ? AND id <> ?', dados.cnpj, u.id)) throw fail('Já existe uma conta com este CNPJ.', 409);
+    return dados;
+  };
+
+  if (p.conta === 'cliente') {
+    const existente = (u.cliente_id && clientes.getById(u.cliente_id)) || db.get('SELECT * FROM clientes WHERE email = ?', u.email);
+    if (existente) return { email: u.email, nome: existente.nome, renovar_cliente_id: existente.id, vincular_user_id: u.id };
+    // O Afiliado Pro só pede nome, CPF e celular (o formulário não tem endereço nem nascimento).
+    let dados = { nome: u.nome, cpf: u.cpf, telefone: u.telefone };
+    if (!u.tipo) {
+      const nome = String(b.nome || '').trim().replace(/\s+/g, ' ');
+      if (nome.length < 5 || !/\s/.test(nome)) throw fail('Informe nome e sobrenome.');
+      const cpf = cadastro.digits(b.cpf);
+      if (!cadastro.validCpf(cpf)) throw fail('CPF inválido.');
+      const telefone = cadastro.digits(b.telefone);
+      if (telefone.length < 10 || telefone.length > 11) throw fail('Informe o celular com DDD.');
+      if (isBlocked(`cpf:${cpf}`)) throw fail('Não é possível concluir com estes dados. Fale com o administrador.');
+      if (db.get('SELECT 1 FROM users WHERE cpf = ? AND id <> ?', cpf, u.id)) throw fail('Já existe uma conta com este CPF.', 409);
+      dados = { nome, cpf, telefone };
+    }
+    return { email: u.email, nome: dados.nome || u.nome, cpf: dados.cpf, telefone: dados.telefone, vincular_user_id: u.id,
+      senha_hash: u.senha_hash || auth.hashPassword(crypto.randomBytes(24).toString('hex')),
+      ...(u.tipo ? {} : { perfil_dados: dados }) };
+  }
+  if (u.tipo && u.tipo !== p.perfil) {
+    const nomes = { consumidor: 'consumidor', empresa: 'empresa', afiliado: 'usuário da ferramenta' };
+    throw fail(`Sua conta é de ${nomes[u.tipo]}. Para trocar de perfil, fale com o administrador.`, 409);
+  }
+  return { email: u.email, nome: u.nome, renovar_user_id: u.id, ...(u.tipo ? {} : { perfil_dados: novosDados() }) };
+}
+
 // Valida os dados do formulário conforme o plano. Se o e-mail já tem conta e a senha confere, é renovação.
-function validarDados(p, b) {
+function validarDados(p, b, logado = null) {
+  if (logado) return validarLogado(p, b, logado);
   const emailN = String(b.email || '').trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailN) || emailN.length > 120) throw fail('Informe um e-mail válido.');
   const senha = String(b.senha || '');
@@ -120,7 +163,7 @@ async function criarPedido(b, req) {
   const metodo = String(b.metodo || '');
   const disp = metodosDisponiveis(s, p.id);
   if (!disp.lista.some(m => m.id === metodo)) throw fail('Forma de pagamento indisponível no momento.');
-  const dados = validarDados(p, b);
+  const dados = validarDados(p, b, users.currentUser(req));
 
   const token = crypto.randomBytes(24).toString('hex');
   const ins = db.run(`INSERT INTO pagamentos (token, plano, valor, dias, metodo, email, nome, dados) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -218,6 +261,18 @@ function aprovar(pedidoId, origem) {
             d.nome, d.email, d.senha_hash, validade, `Assinatura online (${p.nome}) — CPF ${d.cpf}, tel ${d.telefone}`).lastInsertRowid);
         }
       }
+      // Comprado logado no site: o acesso da ferramenta fica ligado à conta (entra pelo mesmo login, inclusive Google).
+      if (d.vincular_user_id && users.getById(d.vincular_user_id)) {
+        const u = users.getById(d.vincular_user_id);
+        db.run('UPDATE users SET cliente_id = ? WHERE id = ?', contaId, u.id);
+        if (!u.tipo || u.tipo === 'afiliado') {
+          const pd = d.perfil_dados || {};
+          const cols = { ...pd, tipo: 'afiliado', plano: p.id, assinatura_ate: validade,
+            status: ['pending', 'onboarding'].includes(u.status) ? 'active' : u.status,
+            ...(u.tipo ? {} : { aceite_termos_em: nowSql() }) };
+          db.run(`UPDATE users SET ${Object.keys(cols).map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(cols), u.id);
+        }
+      }
     } else {
       contaTipo = 'usuario';
       if (d.renovar_user_id && users.getById(d.renovar_user_id)) {
@@ -226,6 +281,11 @@ function aprovar(pedidoId, origem) {
         validade = somaDias(u.assinatura_ate, pedido.dias);
         db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = COALESCE(tipo, ?),
                 status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, p.perfil, contaId);
+        // Conta que ainda não tinha perfil: grava os dados preenchidos na compra.
+        if (d.perfil_dados && !u.tipo) {
+          const cols = { ...d.perfil_dados, aceite_termos_em: nowSql() };
+          db.run(`UPDATE users SET ${Object.keys(cols).map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(cols), contaId);
+        }
       } else {
         validade = somaDias(null, pedido.dias);
         const { email: em, nome, senha_hash, ...resto } = d;

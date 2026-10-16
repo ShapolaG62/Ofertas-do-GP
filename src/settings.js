@@ -39,6 +39,7 @@ const DEFAULTS = {
   // Cadastro de usuários do site: 'aberto' (entra na hora), 'aprovacao' (admin libera) ou 'fechado'
   signup_consumidor: 'aprovacao',
   signup_empresa: 'aprovacao',
+  signup_afiliado: 'aprovacao',
   loja_max_produtos: '300',
 
   // '1' = só usuários logados e liberados veem as ofertas (a primeira página vira o login)

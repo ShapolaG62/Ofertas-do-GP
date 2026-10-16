@@ -22,7 +22,9 @@ router.post('/api/cliente/entrar', (req, res) => {
 });
 
 router.post('/api/cliente/sair', (req, res) => {
-  clientes.encerrarSessao(req, res);
+  // Sai também da conta do site, quando o acesso à ferramenta é pela conta (afiliado / Google).
+  require('../users').destroySession(req, res);
+  clientes.encerrarSessao(req, res); // acrescenta o próprio cookie, sem apagar o da conta
   res.json({ ok: true });
 });
 

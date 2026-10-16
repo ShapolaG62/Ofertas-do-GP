@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 
 const { UPLOADS_DIR } = require('./src/db');
@@ -59,6 +60,31 @@ app.use((req, res, next) => {
     return res.redirect('/conta?voltar=/postagens');
   }
   next();
+});
+
+// Google AdSense: coloca a meta de verificação e o script do AdSense no <head> das páginas HTML.
+// (Sem ID configurado, as páginas são servidas sem mudança.)
+const paginaCache = new Map();
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const client = String(require('./src/settings').get('adsense_client') || '').trim();
+  if (!/^ca-pub-\d{10,20}$/.test(client)) return next();
+  let nome = req.path === '/' ? 'index.html' : req.path.replace(/^\/+/, '');
+  if (!nome.endsWith('.html')) nome += '.html';
+  if (!/^[a-z0-9-]+\.html$/.test(nome) || nome === 'admin.html') return next();
+  const arquivo = path.join(PUBLIC_DIR, nome);
+  let st;
+  try { st = fs.statSync(arquivo); } catch { return next(); }
+  const chave = `${arquivo}|${st.mtimeMs}|${client}`;
+  let html = paginaCache.get(chave);
+  if (!html) {
+    html = fs.readFileSync(arquivo, 'utf8').replace('</head>', `<meta name="google-adsense-account" content="${client}">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}" crossorigin="anonymous"></script>
+</head>`);
+    paginaCache.set(chave, html);
+  }
+  res.type('html').setHeader('Cache-Control', 'no-cache');
+  res.send(html);
 });
 
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.

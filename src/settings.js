@@ -10,7 +10,12 @@ const DEFAULTS = {
   whatsapp_anuncios: '556282417271', // número que atende empresas interessadas em anunciar
   telegram_link: '',
   instagram_user: '',
-  adsense_client: '',
+  adsense_client: '',            // ID de editor do Google AdSense (ca-pub-...)
+  adsense_ativo: '0',            // mostrar anúncios do Google nos espaços sem campanha de anunciante
+  adsense_slot_topo: '',         // códigos dos blocos de anúncio (data-ad-slot) de cada espaço
+  adsense_slot_meio: '',
+  adsense_slot_lateral: '',
+  adsense_slot_paginas: '',
   ga_id: '',
 
   // Mineração

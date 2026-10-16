@@ -1177,3 +1177,8 @@ body.pf-body {
 
 .pf-social { margin: 8px 0 0; font-size: 13.5px; color: var(--ink-2); }
 .pf-social b { color: var(--ink); }
+
+/* Anúncio do Google AdSense nos espaços */
+.ad-google { position: relative; min-height: 90px; border-radius: var(--radius); overflow: hidden; background: var(--surface); border: 1px solid var(--line); padding: 18px 8px 8px; }
+.ad-side .ad-google { min-height: 250px; }
+.ad-tag-google { position: absolute; top: 4px; left: 8px; font-size: 10.5px; color: var(--ink-3); background: none; padding: 0; }

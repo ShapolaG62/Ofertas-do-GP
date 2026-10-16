@@ -585,12 +585,6 @@
     if (ig) links.push(`<a href="https://instagram.com/${esc(ig)}" target="_blank" rel="noopener">Instagram</a>`);
     $('#footer-links').innerHTML = links.join('');
 
-    if (/^ca-pub-\d{10,20}$/.test(s.adsense_client || '')) {
-      const sc = document.createElement('script');
-      sc.async = true; sc.crossOrigin = 'anonymous';
-      sc.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${s.adsense_client}`;
-      document.head.appendChild(sc);
-    }
     if (/^G-[A-Z0-9]{4,20}$/.test(s.ga_id || '')) {
       const sc = document.createElement('script');
       sc.async = true; sc.src = `https://www.googletagmanager.com/gtag/js?id=${s.ga_id}`;

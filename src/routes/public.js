@@ -140,12 +140,32 @@ router.get('/oferta/:slug', (req, res) => {
 const leadLimiter = createLimiter(5, 60); // 5 pedidos de contato por hora por IP
 
 // Banners no ar para os espaços pedidos (?espacos=topo,meio,lateral). Espaço sem campanha volta null.
+// Google AdSense: espaço sem campanha de anunciante mostra um anúncio do Google (se configurado no painel).
+const adsenseCliente = () => {
+  const c = String(settings.get('adsense_client') || '').trim();
+  return /^ca-pub-\d{10,20}$/.test(c) ? c : '';
+};
+function googleAds(espacos) {
+  const s = settings.getAll();
+  const client = adsenseCliente();
+  if (!client || s.adsense_ativo !== '1') return null;
+  const slots = Object.fromEntries(espacos.map(e => [e, String(s[`adsense_slot_${e}`] || '').trim()]).filter(([, v]) => /^\d{6,14}$/.test(v)));
+  return { client, slots };
+}
+
 router.get('/api/publicidade', (req, res) => {
   const espacos = String(req.query.espacos || '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4);
   res.setHeader('Cache-Control', 'no-store');
   // Para cada espaço livre, o convite leva direto à conversa no WhatsApp.
   const whatsapp = Object.fromEntries(espacos.map(e => [e, banners.whatsappLink(e)]));
-  res.json({ ...banners.pick(espacos), whatsapp });
+  res.json({ ...banners.pick(espacos), whatsapp, google: googleAds(espacos) });
+});
+
+// ads.txt: autoriza o Google a vender anúncios no site (exigido pelo AdSense).
+router.get('/ads.txt', (req, res) => {
+  const client = adsenseCliente();
+  res.type('text/plain').setHeader('Cache-Control', 'public, max-age=3600');
+  res.send(client ? `google.com, ${client.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n` : '');
 });
 
 // Informações da página "Anuncie aqui".

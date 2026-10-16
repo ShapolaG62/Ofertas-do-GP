@@ -329,7 +329,6 @@
             <label class="field">WhatsApp para anunciantes (com DDI e DDD) <input type="text" name="whatsapp_anuncios" placeholder="5562982417271"></label>
             <label class="field">Telegram (link ou @canal) <input type="text" name="telegram_link"></label>
             <label class="field">Instagram (usuário) <input type="text" name="instagram_user" placeholder="ofertou"></label>
-            <label class="field">Google AdSense (ca-pub-...) <input type="text" name="adsense_client" placeholder="ca-pub-0000000000000000"></label>
             <label class="field">Google Analytics (G-...) <input type="text" name="ga_id" placeholder="G-XXXXXXXXXX"></label>
           </div>
           <div class="actions"><button class="btn primary" type="submit">Salvar site</button></div>
@@ -768,6 +767,28 @@
 
     <!-- PUBLICIDADE -->
     <div class="tab-body hidden" data-body="ads">
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Google AdSense (anúncios do Google)</h2>
+          <p class="hint">Os espaços sem campanha de anunciante passam a mostrar anúncios do Google, e você recebe pelo AdSense. As campanhas das empresas que você cadastrar abaixo continuam com prioridade. Dentro do app das lojas os anúncios do Google não aparecem (regra do AdSense).</p>
+          <ol class="hint" style="padding-left:18px;line-height:1.7">
+            <li>Crie a conta em <a href="https://adsense.google.com" target="_blank" rel="noopener">adsense.google.com</a> com o <b>domínio do site</b> (ex.: ofertou.com.br — precisa estar no ar com https).</li>
+            <li>Copie o <b>ID de editor</b> (Conta → Informações da conta, começa com <code>ca-pub-</code>), cole abaixo e salve. O site já coloca sozinho o código de verificação nas páginas e o arquivo <code>/ads.txt</code>.</li>
+            <li>No AdSense, peça a <b>análise do site</b>. A aprovação costuma levar de alguns dias a 2 semanas.</li>
+            <li>Depois de aprovado: Anúncios → <b>Por bloco de anúncios</b> → crie um bloco de <b>display</b> para cada espaço e cole o número do <code>data-ad-slot</code> de cada um abaixo. Ligue "Mostrar anúncios do Google".</li>
+          </ol>
+          <div class="grid">
+            <label class="field">ID de editor <input type="text" name="adsense_client" placeholder="ca-pub-0000000000000000"></label>
+            <label class="field">Mostrar anúncios do Google <select name="adsense_ativo"><option value="0">Desligado</option><option value="1">Ligado (nos espaços livres)</option></select></label>
+            <label class="field">Bloco — topo da página de ofertas <input type="text" name="adsense_slot_topo" inputmode="numeric" placeholder="1234567890"></label>
+            <label class="field">Bloco — meio da lista de ofertas <input type="text" name="adsense_slot_meio" inputmode="numeric" placeholder="1234567890"></label>
+            <label class="field">Bloco — lateral (300 x 300) <input type="text" name="adsense_slot_lateral" inputmode="numeric" placeholder="1234567890"></label>
+            <label class="field">Bloco — páginas de loja e anúncio <input type="text" name="adsense_slot_paginas" inputmode="numeric" placeholder="1234567890"></label>
+          </div>
+          <p class="hint">Os pagamentos do AdSense são feitos pelo Google direto na sua conta bancária, quando o saldo passa do mínimo (cerca de R$ 100). Configure os dados de pagamento e de impostos no próprio AdSense.</p>
+          <div class="actions"><a class="btn small" href="/ads.txt" target="_blank">Ver /ads.txt</a> <button class="btn primary" type="submit">Salvar AdSense</button></div>
+        </div>
+      </form>
       <div class="panel">
         <div class="row" style="margin-bottom:6px">
           <h2 style="flex:1">Campanhas de anunciantes</h2>

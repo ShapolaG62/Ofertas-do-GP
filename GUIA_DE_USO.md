@@ -259,3 +259,14 @@ Todo mundo que acessa o site tem um perfil em **/perfil** (link "Perfil" no topo
 - **Plano pago** (inclusive o Afiliado Pro): durante **todo o prazo contratado**. Quando o plano vence, a sessão acaba e, ao tentar entrar, aparece *"Seu plano … venceu em DD/MM. Reative o plano…"* com o botão **Reativar plano** (abre a página do plano já no modo renovar; os dias novos começam quando o pagamento é confirmado). Quem entra com o Google vai direto para essa página.
 - **Conta gratuita aprovada:** enquanto usar o site (expira após 6 meses sem uso).
 - **Painel admin:** expira após 30 dias sem uso.
+
+## 14. Anúncios do Google (AdSense)
+
+Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram anúncios do Google, e você recebe pelo AdSense. Campanhas de empresas cadastradas em Painel → Publicidade continuam tendo prioridade. Dentro do app das lojas os anúncios do Google não aparecem (regra do AdSense).
+
+1. O site precisa estar **no ar no seu domínio com https** (o Google não aprova endereço local nem da Vercel temporária).
+2. Crie a conta em https://adsense.google.com e adicione o domínio.
+3. **Painel → Publicidade → Google AdSense:** cole o **ID de editor** (`ca-pub-…`) e salve. O site coloca sozinho o código de verificação em todas as páginas e publica o arquivo `/ads.txt`.
+4. No AdSense, peça a **análise do site** (de alguns dias a 2 semanas). Como as ofertas ficam atrás do login, o Google analisa a página inicial (apresentação, planos, perguntas frequentes) — mantenha-a completa.
+5. Aprovado: em AdSense → Anúncios → **Por bloco de anúncios**, crie um bloco **display** para cada espaço (topo, meio, lateral e páginas), cole o número de cada `data-ad-slot` no painel e ligue **Mostrar anúncios do Google**.
+6. Pagamentos: o Google paga direto na sua conta bancária quando o saldo passa do mínimo (cerca de R$ 100); cadastre os dados de pagamento e impostos no AdSense.

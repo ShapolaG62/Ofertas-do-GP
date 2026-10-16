@@ -51,13 +51,42 @@
       <span class="ad-invite-cta">Quero anunciar</span></a>`;
   }
 
+  // Anúncio do Google AdSense (bloco responsivo). Dentro do app das lojas não é usado (regra do AdSense).
+  const noApp = () => document.documentElement.classList.contains('is-app');
+  function googleHtml(espaco) {
+    const g = cache.google;
+    const slot = g && g.slots && g.slots[espaco];
+    if (!slot || noApp()) return '';
+    return `<div class="ad-google"><span class="ad-tag ad-tag-google">Publicidade</span>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="${esc(g.client)}" data-ad-slot="${esc(slot)}"
+        data-ad-format="${espaco === 'lateral' ? 'rectangle' : 'auto'}" data-full-width-responsive="true"></ins></div>`;
+  }
+  function carregarGoogle(el) {
+    const ins = el.querySelector('ins.adsbygoogle');
+    if (!ins || ins.dataset.adsbygoogleStatus) return;
+    if (!document.querySelector('script[src*="adsbygoogle.js"]')) { // páginas sem o script no <head>
+      const sc = document.createElement('script');
+      sc.async = true; sc.crossOrigin = 'anonymous';
+      sc.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${cache.google.client}`;
+      document.head.appendChild(sc);
+    }
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch { /* bloqueador de anúncios */ }
+  }
+
   function fillSlot(el) {
     const espaco = el.dataset.espaco;
     const b = cache[espaco];
-    const html = (b && bannerHtml(b)) || conviteHtml(espaco);
+    // Prioridade: campanha de anunciante → anúncio do Google → convite "Anuncie aqui"
+    const banner = b && bannerHtml(b);
+    const google = !banner && googleHtml(espaco);
+    // Espaço já com anúncio do Google carregado: não recria (evita gastar impressões ao redesenhar a lista)
+    if (google && el.querySelector('ins.adsbygoogle[data-adsbygoogle-status]')) return;
+    const html = banner || google || conviteHtml(espaco);
     el.innerHTML = html;
     el.hidden = !html;
-    el.classList.toggle('is-filled', Boolean(b));
+    el.classList.toggle('is-filled', Boolean(banner || google));
+    el.classList.toggle('is-google', Boolean(google));
+    if (google) carregarGoogle(el);
   }
 
   // Preenche (ou repreenche, depois que a lista de ofertas é redesenhada) os espaços dentro de root.

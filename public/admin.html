@@ -82,6 +82,21 @@
   .msg.err { background: transparent; border: 1px solid currentColor; color: var(--red); }
   .center-box { max-width: 420px; margin: 10vh auto; }
   .hidden { display: none !important; }
+  .gn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .gn-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface-2); display: grid; gap: 2px; }
+  .gn-card.is-pronto { border-color: var(--green-line); box-shadow: 0 0 0 1px var(--green-line); }
+  .gn-card.is-off { opacity: .55; }
+  .gn-card-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .gn-saldo { font-size: 24px; font-weight: 800; margin-top: 6px; }
+  .gn-saldo small { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .gn-barra { height: 6px; border-radius: 6px; background: var(--border); overflow: hidden; margin-top: 6px; }
+  .gn-barra span { display: block; height: 100%; background: var(--green); }
+  .gn-card-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .gn-aviso { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--green-line); background: var(--green-soft); margin-bottom: 8px; }
+  .gn-aviso-acoes { display: flex; gap: 6px; flex-shrink: 0; }
+  .gn-status { font-size: 12px; padding: 4px 6px; border-radius: 8px; background: var(--surface-2); }
+  .gn-dlg { display: grid; gap: 8px; min-width: min(420px, 86vw); }
+  .gn-dlg h3 { margin: 0 0 4px; }
   .count-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; }
   dialog { border: 0; padding: 0; border-radius: 16px; background: var(--surface); color: var(--text); width: min(860px, calc(100vw - 24px)); max-height: calc(100vh - 32px); }
   dialog::backdrop { background: rgba(0,0,0,.5); }
@@ -149,6 +164,7 @@
     <header class="top">
       <div class="logo"><img src="/images/pet-capi-head.png" alt=""><span>Ofertou<b>!</b> · Painel</span></div>
       <div class="spacer"></div>
+      <button class="btn small" type="button" id="sino" title="Avisos de saldo para sacar">🔔<span class="count-badge hidden" id="sino-badge">0</span></button>
       <a class="btn small" href="/perfil" target="_blank">🏅 Meu perfil</a>
       <a class="btn small" href="/" target="_blank">Ver site ↗</a>
       <button class="btn small" id="logout">Sair</button>
@@ -162,6 +178,7 @@
       <button class="tab" data-tab="users">Usuários<span class="count-badge hidden" id="pending-badge">0</span></button>
       <button class="tab" data-tab="ads">Publicidade<span class="count-badge hidden" id="leads-badge">0</span></button>
       <button class="tab" data-tab="planos">Planos<span class="count-badge hidden" id="pedidos-badge">0</span></button>
+      <button class="tab" data-tab="ganhos">Ganhos<span class="count-badge hidden" id="ganhos-badge">0</span></button>
       <button class="tab" data-tab="clientes">Clientes</button>
       <button class="tab" data-tab="social">Redes sociais</button>
       <button class="tab" data-tab="site">Site</button>
@@ -564,6 +581,75 @@
       </form>
     </div>
 
+    <!-- GANHOS DOS PROGRAMAS DE AFILIADOS -->
+    <div class="tab-body hidden" data-body="ganhos">
+      <div class="panel" id="gn-avisos-panel" hidden>
+        <div class="row" style="margin-bottom:6px"><h2 style="flex:1">🔔 Avisos</h2><button class="btn small" type="button" id="gn-avisos-lidos">Marcar todos como lidos</button></div>
+        <div id="gn-avisos"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Saldo por plataforma</h2>
+        <p class="hint">Comissões <b>confirmadas</b> ficam disponíveis depois do prazo de liberação de cada programa. Quando o saldo disponível passa do <b>mínimo de saque</b>, aparece um aviso aqui, no sininho do topo e no seu perfil. Nenhum programa permite sacar por API: o saque é feito no portal de cada um. Depois de sacar (ou de receber o pagamento automático), registre em <b>Registrar saque</b> para o saldo zerar.</p>
+        <div class="gn-grid" id="gn-plataformas"></div>
+        <details class="hint" style="margin-top:12px">
+          <summary><b>Como fazer o dinheiro cair direto no Mercado Pago</b></summary>
+          <p style="margin:8px 0 0">Nenhum programa envia para o Mercado Pago por integração, mas a sua conta Mercado Pago tem dados bancários próprios: no app do Mercado Pago, toque em <b>Seu perfil → Seus dados → Dados da conta</b> (banco 323 – Mercado Pago, agência e número da conta). Cadastre esses dados como <b>conta de recebimento</b> no portal de cada programa (Amazon, Shopee, Magalu, Awin…). Assim os pagamentos automáticos e os saques caem direto no Mercado Pago. O Mercado Livre Afiliados já paga na conta Mercado Pago.</p>
+        </details>
+      </div>
+
+      <div class="panel">
+        <h2>Importar vendas do portal (planilha CSV)</h2>
+        <p class="hint">No portal de cada programa, abra o relatório de comissões/conversões e <b>exporte em CSV</b> (Amazon: Relatórios → Relatório de ganhos; Shopee: Relatório de conversões; Magalu, Awin, AliExpress: relatório de pedidos). Importe aqui: vendas repetidas são atualizadas, não duplicadas.</p>
+        <div class="grid">
+          <label class="field">Plataforma <select id="gn-csv-plat"></select></label>
+          <label class="field">Arquivo CSV <input type="file" id="gn-csv-arq" accept=".csv,text/csv,text/plain"></label>
+        </div>
+        <div id="gn-csv-mapa" hidden style="margin-top:12px">
+          <p class="hint" id="gn-csv-info"></p>
+          <div class="grid" id="gn-csv-campos"></div>
+          <div class="table-wrap" style="margin-top:10px"><table id="gn-csv-previa"></table></div>
+          <div class="actions"><button class="btn primary" type="button" id="gn-csv-importar">Importar vendas</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="row" style="margin-bottom:6px">
+          <h2 style="flex:1">Vendas registradas</h2>
+          <select id="gn-filtro-plat" style="max-width:200px"></select>
+          <select id="gn-filtro-status" style="max-width:160px"><option value="">Todas as situações</option><option value="pendente">Pendentes</option><option value="confirmada">Confirmadas</option><option value="paga">Pagas</option><option value="cancelada">Canceladas</option></select>
+        </div>
+        <form class="grid gn-nova" id="gn-nova">
+          <label class="field">Plataforma <select name="plataforma" id="gn-nova-plat"></select></label>
+          <label class="field">Data da venda <input type="date" name="data_venda" required></label>
+          <label class="field">Pedido / produto <input type="text" name="produto" maxlength="200" placeholder="Ex.: Fone JBL (pedido 123)"></label>
+          <label class="field">Valor da venda (opcional) <input type="text" name="valor_venda" inputmode="decimal" placeholder="199,90"></label>
+          <label class="field">Sua comissão <input type="text" name="comissao" inputmode="decimal" placeholder="9,99" required></label>
+          <label class="field">Situação <select name="status"><option value="pendente">Pendente</option><option value="confirmada">Confirmada</option><option value="paga">Paga</option><option value="cancelada">Cancelada</option></select></label>
+          <div class="actions" style="align-self:end"><button class="btn primary" type="submit">Adicionar venda</button></div>
+        </form>
+        <div class="table-wrap" style="margin-top:12px">
+          <table>
+            <thead><tr><th>Data</th><th>Plataforma</th><th>Produto / pedido</th><th>Venda</th><th>Comissão</th><th>Situação</th><th>Libera em</th><th></th></tr></thead>
+            <tbody id="gn-vendas"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Saques e pagamentos recebidos</h2>
+        <div class="table-wrap"><table><thead><tr><th>Data</th><th>Plataforma</th><th>Valor</th><th>Observação</th><th></th></tr></thead><tbody id="gn-saques"></tbody></table></div>
+      </div>
+    </div>
+
+    <dialog id="gn-dlg">
+      <form method="dialog" class="gn-dlg" id="gn-dlg-form">
+        <h3 id="gn-dlg-titulo"></h3>
+        <div id="gn-dlg-campos"></div>
+        <div class="actions"><button class="btn" value="cancel" type="button" id="gn-dlg-cancelar">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
+      </form>
+    </dialog>
+
     <!-- CLIENTES DA FERRAMENTA -->
     <div class="tab-body hidden" data-body="clientes">
       <div class="panel">
@@ -952,6 +1038,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'ads') loadAds();
   if (t.dataset.tab === 'social') loadSocialLog();
   if (t.dataset.tab === 'clientes') loadClientes();
+  if (t.dataset.tab === 'ganhos') loadGanhos();
   if (t.dataset.tab === 'planos') { loadPedidos(); $('#rc-webhook-url').textContent = `${location.origin}/api/app/webhook/revenuecat`; }
 }));
 
@@ -1388,6 +1475,183 @@ $('#email-teste-btn').addEventListener('click', async () => {
   try { await api('/api/admin/email/teste', { method: 'POST', body: { para: $('#email-teste').value } }); globalMsg('E-mail de teste enviado.'); }
   catch (err) { globalMsg(err.message, false); }
 });
+
+// ── Ganhos dos programas de afiliados ─────────────────────────────────────────
+const GN_STATUS = { pendente: ['b-pending', 'Pendente'], confirmada: ['b-active', 'Confirmada'], paga: ['b-none', 'Paga'], cancelada: ['b-banned', 'Cancelada'] };
+let GN = null;
+const gnMoeda = (v, moeda) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: moeda || 'BRL' });
+const gnDia = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');
+
+async function loadGanhos() {
+  const plat = $('#gn-filtro-plat').value || '';
+  const st = $('#gn-filtro-status').value || '';
+  GN = await api(`/api/admin/ganhos?plataforma=${encodeURIComponent(plat)}&status=${encodeURIComponent(st)}`);
+  const P = Object.fromEntries(GN.plataformas.map(p => [p.id, p]));
+  // Avisos
+  $('#gn-avisos-panel').hidden = !GN.notificacoes.length;
+  $('#gn-avisos').innerHTML = GN.notificacoes.map(n => `
+    <div class="gn-aviso"><div><b>${esc(n.titulo)}</b><br><span class="hint" style="margin:0">${esc(n.texto || '')} · ${fmtDate(n.created_at)}</span></div>
+      <div class="gn-aviso-acoes">${n.link ? `<a class="btn small primary" href="${esc(n.link)}" target="_blank" rel="noopener">Abrir portal ↗</a>` : ''}
+      <button class="btn small" data-gn-lida="${n.id}">Ok</button></div></div>`).join('');
+  // Cartões das plataformas
+  $('#gn-plataformas').innerHTML = GN.plataformas.map(p => {
+    const pct = p.minimo > 0 ? Math.min(100, Math.round((p.disponivel / p.minimo) * 100)) : (p.disponivel > 0 ? 100 : 0);
+    return `<div class="gn-card${p.pode_sacar ? ' is-pronto' : ''}${p.ativo ? '' : ' is-off'}">
+      <div class="gn-card-topo"><b>${esc(p.nome)}</b>${p.pode_sacar ? '<span class="badge b-active">Pode sacar</span>' : ''}</div>
+      <div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div>
+      <div class="gn-barra" title="${pct}% do mínimo"><span style="width:${pct}%"></span></div>
+      <div class="hint" style="margin:6px 0 0">Mínimo: <b>${p.minimo ? gnMoeda(p.minimo, p.moeda) : 'não informado'}</b>${p.falta > 0 ? ` · faltam ${gnMoeda(p.falta, p.moeda)}` : ''}</div>
+      <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>
+      <div class="hint" style="margin:2px 0 0">${p.vendas} venda(s) · libera em ${p.dias_liberacao} dias</div>
+      <div class="gn-card-acoes">
+        <button class="btn small${p.pode_sacar ? ' primary' : ''}" data-gn-saque="${p.id}">Registrar saque</button>
+        <button class="btn small" data-gn-regras="${p.id}">Regras</button>
+        ${p.portal ? `<a class="btn small" href="${esc(p.portal)}" target="_blank" rel="noopener">Portal ↗</a>` : ''}
+      </div></div>`;
+  }).join('');
+  // Selects de plataforma
+  const opcoes = GN.plataformas.map(p => `<option value="${p.id}">${esc(p.nome)}</option>`).join('');
+  for (const sel of ['#gn-csv-plat', '#gn-nova-plat']) { const v = $(sel).value; $(sel).innerHTML = opcoes; if (v) $(sel).value = v; }
+  const vf = $('#gn-filtro-plat').value;
+  $('#gn-filtro-plat').innerHTML = `<option value="">Todas as plataformas</option>${opcoes}`;
+  $('#gn-filtro-plat').value = vf;
+  // Vendas
+  $('#gn-vendas').innerHTML = GN.vendas.length ? GN.vendas.map(v => {
+    const p = P[v.plataforma] || {};
+    const [cls] = GN_STATUS[v.status] || ['b-none'];
+    return `<tr>
+      <td class="num">${gnDia(v.data_venda)}</td><td>${esc(p.nome || v.plataforma)}</td>
+      <td>${esc(v.produto || v.pedido || '—')}${v.pedido && v.produto ? `<br><span class="hint" style="margin:0">${esc(v.pedido)}</span>` : ''}</td>
+      <td class="num">${v.valor_venda ? gnMoeda(v.valor_venda, p.moeda) : '—'}</td>
+      <td class="num"><b>${gnMoeda(v.comissao, p.moeda)}</b></td>
+      <td><select class="gn-status ${cls}" data-gn-status="${v.id}">${Object.entries(GN_STATUS).map(([k, [, t]]) => `<option value="${k}"${k === v.status ? ' selected' : ''}>${t}</option>`).join('')}</select></td>
+      <td class="num">${v.status === 'confirmada' ? gnDia(v.liberada_em) : '—'}</td>
+      <td class="num"><button class="btn small danger" data-gn-del="${v.id}" title="Excluir">✕</button></td></tr>`;
+  }).join('') : '<tr><td colspan="8" class="hint">Nenhuma venda registrada ainda. Importe a planilha do portal ou adicione à mão.</td></tr>';
+  // Saques
+  $('#gn-saques').innerHTML = GN.saques.length ? GN.saques.map(s => `<tr><td class="num">${gnDia(s.data)}</td><td>${esc((P[s.plataforma] || {}).nome || s.plataforma)}</td>
+    <td class="num">${gnMoeda(s.valor, (P[s.plataforma] || {}).moeda)}</td><td>${esc(s.observacao || '')}</td>
+    <td class="num"><button class="btn small danger" data-gn-del-saque="${s.id}">✕</button></td></tr>`).join('')
+    : '<tr><td colspan="5" class="hint">Nenhum saque registrado.</td></tr>';
+  atualizarSino(GN.notificacoes.length);
+}
+
+// Janela simples para saque e regras
+function gnJanela(titulo, campos, aoSalvar) {
+  $('#gn-dlg-titulo').textContent = titulo;
+  $('#gn-dlg-campos').innerHTML = campos;
+  const form = $('#gn-dlg-form');
+  form.onsubmit = async e => {
+    e.preventDefault();
+    try { await aoSalvar(Object.fromEntries(new FormData(form))); $('#gn-dlg').close(); loadGanhos(); } catch (err) { alert(err.message); }
+  };
+  $('#gn-dlg').showModal();
+}
+$('#gn-dlg-cancelar').addEventListener('click', () => $('#gn-dlg').close());
+
+$('[data-body="ganhos"]').addEventListener('click', async e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const P = GN ? Object.fromEntries(GN.plataformas.map(p => [p.id, p])) : {};
+  try {
+    if (b.dataset.gnSaque) {
+      const p = P[b.dataset.gnSaque];
+      gnJanela(`Registrar saque — ${p.nome}`, `
+        <p class="hint">Use depois de sacar no portal (ou quando o pagamento automático cair na conta). Disponível agora: <b>${gnMoeda(p.disponivel, p.moeda)}</b>.</p>
+        <label class="field">Valor (${esc(p.moeda)}) <input name="valor" inputmode="decimal" value="${String(p.disponivel).replace('.', ',')}" required></label>
+        <label class="field" style="margin-top:8px">Data <input type="date" name="data" value="${new Date().toISOString().slice(0, 10)}"></label>
+        <label class="field" style="margin-top:8px">Observação <input name="observacao" maxlength="200" placeholder="Ex.: saque para o Mercado Pago"></label>`,
+      dados => api('/api/admin/ganhos/saques', { method: 'POST', body: { ...dados, plataforma: p.id } }));
+    } else if (b.dataset.gnRegras) {
+      const p = P[b.dataset.gnRegras];
+      gnJanela(`Regras — ${p.nome}`, `
+        <p class="hint">Confira no portal do programa e ajuste: os valores mudam com o tempo.</p>
+        <label class="field">Valor mínimo para saque (${esc(p.moeda)}) <input name="minimo" inputmode="decimal" value="${String(p.minimo).replace('.', ',')}"></label>
+        <label class="field" style="margin-top:8px">Dias até a comissão ficar disponível <input type="number" name="dias_liberacao" min="0" max="365" value="${p.dias_liberacao}"></label>
+        <label class="field" style="margin-top:8px">Como o dinheiro chega <input name="pagamento" maxlength="300" value="${esc(p.pagamento || '')}"></label>
+        <label class="field" style="margin-top:8px">Link do portal <input type="url" name="portal" value="${esc(p.portal || '')}"></label>
+        <label class="field" style="margin-top:8px">Acompanhar esta plataforma <select name="ativo"><option value="1"${p.ativo ? ' selected' : ''}>Sim</option><option value="0"${p.ativo ? '' : ' selected'}>Não</option></select></label>`,
+      dados => api(`/api/admin/ganhos/plataformas/${p.id}`, { method: 'PUT', body: { ...dados, ativo: dados.ativo === '1' } }));
+    } else if (b.dataset.gnDel) {
+      if (!confirm('Excluir esta venda?')) return;
+      await api(`/api/admin/ganhos/vendas/${b.dataset.gnDel}`, { method: 'DELETE' }); loadGanhos();
+    } else if (b.dataset.gnDelSaque) {
+      if (!confirm('Excluir este saque? O saldo volta a contar esse valor.')) return;
+      await api(`/api/admin/ganhos/saques/${b.dataset.gnDelSaque}`, { method: 'DELETE' }); loadGanhos();
+    } else if (b.dataset.gnLida) {
+      await api(`/api/admin/notificacoes/${b.dataset.gnLida}/lida`, { method: 'POST', body: {} }); loadGanhos();
+    } else if (b.id === 'gn-avisos-lidos') {
+      await api('/api/admin/notificacoes/lidas', { method: 'POST', body: {} }); loadGanhos();
+    }
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#gn-vendas').addEventListener('change', async e => {
+  const sel = e.target.closest('[data-gn-status]');
+  if (!sel) return;
+  try { await api(`/api/admin/ganhos/vendas/${sel.dataset.gnStatus}`, { method: 'PATCH', body: { status: sel.value } }); loadGanhos(); }
+  catch (err) { globalMsg(err.message, false); }
+});
+$('#gn-filtro-plat').addEventListener('change', loadGanhos);
+$('#gn-filtro-status').addEventListener('change', loadGanhos);
+$('#gn-nova').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    await api('/api/admin/ganhos/vendas', { method: 'POST', body: Object.fromEntries(new FormData(e.target)) });
+    e.target.reset(); globalMsg('Venda registrada.'); loadGanhos();
+  } catch (err) { globalMsg(err.message, false); }
+});
+
+// Importação do CSV: prévia com as colunas sugeridas → escolha → importação
+let gnCsv = null;
+const GN_CAMPOS = [['data_venda', 'Data da venda *'], ['comissao', 'Comissão *'], ['status', 'Situação'], ['pedido', 'Pedido / ID'], ['produto', 'Produto'], ['valor_venda', 'Valor da venda']];
+$('#gn-csv-arq').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (f.size > 8 * 1024 * 1024) { globalMsg('Arquivo grande demais (máx. 8 MB).', false); return; }
+  gnCsv = await f.text();
+  try {
+    const res = await fetch('/api/admin/ganhos/csv/previa', { method: 'POST', headers: { 'Content-Type': 'text/csv' }, body: gnCsv });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error);
+    const opcoes = ['<option value="-1">— não usar —</option>', ...d.cabecalho.map((h, i) => `<option value="${i}">${esc(h || `Coluna ${i + 1}`)}</option>`)].join('');
+    $('#gn-csv-info').textContent = `${d.total} linha(s) encontradas. Confira qual coluna é cada informação (sugerimos pelo nome):`;
+    $('#gn-csv-campos').innerHTML = GN_CAMPOS.map(([k, t]) => `<label class="field">${t} <select data-gn-col="${k}">${opcoes}</select></label>`).join('');
+    GN_CAMPOS.forEach(([k]) => { $(`[data-gn-col="${k}"]`).value = String(d.sugestao[k] ?? -1); });
+    $('#gn-csv-previa').innerHTML = `<thead><tr>${d.cabecalho.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>${d.exemplos.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    $('#gn-csv-mapa').hidden = false;
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#gn-csv-importar').addEventListener('click', async () => {
+  if (!gnCsv) return;
+  const mapa = Object.fromEntries(GN_CAMPOS.map(([k]) => [k, Number($(`[data-gn-col="${k}"]`).value)]).filter(([, v]) => v >= 0));
+  try {
+    const res = await fetch(`/api/admin/ganhos/csv/importar?plataforma=${encodeURIComponent($('#gn-csv-plat').value)}&mapa=${encodeURIComponent(JSON.stringify(mapa))}`,
+      { method: 'POST', headers: { 'Content-Type': 'text/csv' }, body: gnCsv });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error);
+    globalMsg(`Importado: ${d.novas} nova(s), ${d.atualizadas} atualizada(s)${d.ignoradas ? `, ${d.ignoradas} linha(s) ignorada(s) sem data ou comissão` : ''}.`);
+    $('#gn-csv-mapa').hidden = true; $('#gn-csv-arq').value = ''; gnCsv = null;
+    loadGanhos();
+  } catch (err) { globalMsg(err.message, false); }
+});
+
+// Sininho do topo: avisos não lidos (confere a cada 5 min)
+function atualizarSino(n) {
+  $('#sino-badge').textContent = n;
+  $('#sino-badge').classList.toggle('hidden', !n);
+  $('#ganhos-badge').textContent = n;
+  $('#ganhos-badge').classList.toggle('hidden', !n);
+}
+async function conferirSino() {
+  try {
+    const r = await fetch('/api/admin/notificacoes', { cache: 'no-store' });
+    if (r.ok) atualizarSino((await r.json()).itens.length);
+  } catch { /* sem conexão */ }
+}
+$('#sino').addEventListener('click', () => $('.tab[data-tab="ganhos"]').click());
+conferirSino();
+setInterval(conferirSino, 5 * 60 * 1000);
 
 // ── Clientes da ferramenta ────────────────────────────────────────────────────
 const fmtDia = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');

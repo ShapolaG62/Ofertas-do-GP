@@ -1202,3 +1202,10 @@ body.pf-body {
 .ad-google { position: relative; min-height: 90px; border-radius: var(--radius); overflow: hidden; background: var(--surface); border: 1px solid var(--line); padding: 18px 8px 8px; }
 .ad-side .ad-google { min-height: 250px; }
 .ad-tag-google { position: absolute; top: 4px; left: 8px; font-size: 10.5px; color: var(--ink-3); background: none; padding: 0; }
+
+/* Avisos do admin no perfil */
+.pf-avisos { border-color: #2c6b45; }
+.pf-aviso { display: grid; gap: 3px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid #2c6b45; margin-bottom: 8px; }
+.pf-aviso small { color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
+.pf-aviso-acoes { display: flex; gap: 12px; font-size: 13px; font-weight: 700; margin-top: 4px; }
+.pf-aviso-acoes a, .pf-aviso-link { color: var(--pf-b); font-weight: 700; font-size: 13px; }

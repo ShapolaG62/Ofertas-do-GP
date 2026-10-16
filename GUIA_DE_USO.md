@@ -270,3 +270,13 @@ Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram 
 4. No AdSense, peça a **análise do site** (de alguns dias a 2 semanas). Como as ofertas ficam atrás do login, o Google analisa a página inicial (apresentação, planos, perguntas frequentes) — mantenha-a completa.
 5. Aprovado: em AdSense → Anúncios → **Por bloco de anúncios**, crie um bloco **display** para cada espaço (topo, meio, lateral e páginas), cole o número de cada `data-ad-slot` no painel e ligue **Mostrar anúncios do Google**.
 6. Pagamentos: o Google paga direto na sua conta bancária quando o saldo passa do mínimo (cerca de R$ 100); cadastre os dados de pagamento e impostos no AdSense.
+
+## 15. Ganhos dos programas de afiliados
+
+**Painel → Ganhos** registra as vendas feitas pelos seus links e mostra, por plataforma (Amazon, Mercado Livre, Shopee, Magalu, AliExpress, KaBuM!/Awin): saldo **disponível**, valor **a liberar**, **mínimo para saque** e quanto já foi recebido.
+
+- **Registrar vendas:** exporte o relatório de comissões em **CSV** no portal de cada programa e importe em "Importar vendas" (o site reconhece as colunas pelo nome; confira e clique em Importar — repetir a importação atualiza, não duplica). Também dá para adicionar vendas à mão.
+- **Saldo disponível:** comissões *confirmadas* entram no saldo depois do prazo de liberação de cada programa. Os mínimos e prazos vêm preenchidos com o que os guias informam hoje — **confira no portal de cada programa** e ajuste em **Regras**.
+- **Aviso de saque:** quando o saldo disponível passa do mínimo, aparece um aviso na aba Ganhos, no **sininho 🔔** do topo do painel, no seu **perfil** e por e-mail (se o SMTP estiver configurado). O site confere a cada hora.
+- **Depois de sacar** (ou de cair o pagamento automático), clique em **Registrar saque** para zerar o saldo e preparar o próximo aviso.
+- **Saque automático:** nenhum programa permite pedir saque por integração. Para o dinheiro cair direto no **Mercado Pago**, cadastre os dados bancários da sua conta Mercado Pago (app do Mercado Pago → Seu perfil → Seus dados → Dados da conta: banco 323, agência e conta) como conta de recebimento no portal de cada programa.

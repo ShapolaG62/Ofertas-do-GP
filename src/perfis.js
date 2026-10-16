@@ -145,6 +145,8 @@ function metricas(ctx, perfil) {
     m.postagens = db.get(`SELECT COUNT(*) n FROM social_posts WHERE ok = 1 AND cliente_id IS NULL AND autor = 'admin'`).n;
     m.anuncios = db.get('SELECT COUNT(*) n FROM offers WHERE loja_id IS NOT NULL').n;
     m.cliques_anuncios = db.get('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers WHERE loja_id IS NOT NULL').n;
+    // Vendas confirmadas nos programas de afiliados (Painel → Ganhos) contam para as conquistas do admin
+    try { m.vendas_afiliado += require('./ganhos').vendasConfirmadas(); } catch { /* sem ganhos */ }
     return m;
   }
   const u = ctx.user;

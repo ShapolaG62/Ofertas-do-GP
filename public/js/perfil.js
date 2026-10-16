@@ -140,6 +140,7 @@
       navigator.clipboard.writeText(`${location.origin}/perfil/${P.slug}`).then(() => toast('Link do perfil copiado!'));
     });
     if (P.admin_vendo) renderAdmin();
+    if (P.proprio && P.plano === 'admin') renderAvisosAdmin();
   }
 
   // ── Editor ─────────────────────────────────────────────────────────────────
@@ -279,6 +280,18 @@
       $('#pf-capa-prev').style.backgroundImage = P.capa ? `url("${P.capa}")` : '';
     } catch (err) { toast(err.message); }
   }));
+
+  // ── Avisos do admin (saldo disponível para sacar nas plataformas de afiliados) ──
+  async function renderAvisosAdmin() {
+    const box = $('#pf-avisos');
+    let d;
+    try { d = await api('/api/admin/notificacoes'); } catch { return; }
+    box.hidden = false;
+    box.innerHTML = `<h2>🔔 Avisos</h2>${d.itens.length ? d.itens.map(n => `
+      <div class="pf-aviso"><b>${esc(n.titulo)}</b><small>${esc(n.texto || '')}</small>
+        <span class="pf-aviso-acoes">${n.link ? `<a href="${esc(n.link)}" target="_blank" rel="noopener">Abrir portal ↗</a>` : ''}<a href="/admin">Ver ganhos</a></span></div>`).join('')
+    : '<p class="pf-vazio">Nenhum saldo pronto para sacar agora.</p><a class="pf-aviso-link" href="/admin">Ver ganhos no painel</a>'}`;
+  }
 
   // ── Admin vendo o perfil de outra pessoa ──────────────────────────────────
   async function renderAdmin() {

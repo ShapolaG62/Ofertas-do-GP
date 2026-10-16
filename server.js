@@ -15,6 +15,7 @@ const clienteRoutes = require('./src/routes/cliente');
 const assinaturaRoutes = require('./src/routes/assinatura');
 const appRoutes = require('./src/routes/app');
 const perfilRoutes = require('./src/routes/perfil');
+const ganhosRoutes = require('./src/routes/ganhos');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -108,6 +109,7 @@ app.use(clienteRoutes);
 app.use(assinaturaRoutes);
 app.use(appRoutes);
 app.use(perfilRoutes);
+app.use(ganhosRoutes);
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));
@@ -143,6 +145,7 @@ if (process.env.VERCEL) {
     console.log('==================================================\n');
     if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
     if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar(); // postagens agendadas (manhã, tarde, noite)
+    require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
     const limparMarcas = () => {
       try { require('./src/watermark').limparCache(); require('./src/vitrine').limparCache(); } catch (err) { console.error('[MARCA]', err.message); }
     };

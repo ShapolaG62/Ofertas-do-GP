@@ -108,6 +108,14 @@ sudo certbot --nginx -d seusite.com.br -d www.seusite.com.br
 
 ---
 
+## 🔄 Atualizar o site depois de mudanças
+
+```bash
+cd ~/ofertas-do-gp && git pull && npm ci --omit=dev && npm run ia && pm2 restart all
+```
+
+`npm run ia` instala o motor de IA que recorta o fundo das fotos da vitrine (opcional). O modelo (~176 MB) é baixado sozinho na primeira vez para `data/modelos/`.
+
 ## 📋 Comandos Úteis do PM2
 
 | Ação | Comando |

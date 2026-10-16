@@ -12,7 +12,8 @@
     "mine": "node scripts/mine-once.js",
     "start:vps": "pm2 start ecosystem.config.js",
     "stop:vps": "pm2 stop ofertas-do-gp",
-    "logs": "pm2 logs ofertas-do-gp"
+    "logs": "pm2 logs ofertas-do-gp",
+    "ia": "npm install --no-save --no-audit --no-fund onnxruntime-node@1.30.0"
   },
   "dependencies": {
     "axios": "^1.7.9",

@@ -38,6 +38,10 @@ fi
 echo "📦 Instalando dependências do projeto Node.js..."
 npm ci --omit=dev
 
+# Recorte de fundo com IA para a vitrine (opcional; o modelo de ~176 MB é baixado na primeira vez)
+echo "🧠 Instalando o motor de IA de recorte (opcional)..."
+npm run ia || echo "⚠️ Motor de IA não instalado: a vitrine usa o recorte simples."
+
 # 6. Liberar portas no Firewall UFW (se ativo)
 if command -v ufw &> /dev/null; then
     echo "🛡️ Liberando portas no Firewall UFW..."

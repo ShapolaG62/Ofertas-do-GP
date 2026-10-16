@@ -111,4 +111,4 @@ function limparCache() {
   }
 }
 
-module.exports = { ativa, paraOferta, limparCache, POSICOES };
+module.exports = { ativa, paraOferta, limparCache, baixarFoto, POSICOES };

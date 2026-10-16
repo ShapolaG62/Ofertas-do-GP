@@ -12,7 +12,7 @@ const RULES = [
   ['informatica', /cabo (hdmi|displayport|vga|de rede)|suporte (articulado )?(para |de )?monitor|caixa de som (para )?(pc|computador)|microfone (usb|condensador|para (pc|computador))|adaptador (wi-?fi|usb|bluetooth)|pasta t[ée]rmica|fonte (atx|para pc|real|\d{3,4} ?w)|fonte de alimenta[çc][ãa]o|\bfonte\b.{0,40}\b(atx|80 plus)\b|\bmini ?pc\b|water ?cooler|cooler (para |do )?(processador|cpu|gabinete)|\bfan\b|\bcooler\b|gabinete (gamer|mid|full|atx|micro)/],
   ['games', /cadeira gamer|volante (gamer|para (ps|xbox|pc))|dock (station )?(para )?(nintendo )?switch|(carregador|base|doca|esta[çc][ãa]o)\b.{0,50}\b(controles?|dualsense|joy-?cons?)\b|skin (para )?(console|controle|ps[45]|xbox)|jogo (de )?m[íi]dia f[íi]sica|jogos? (para |de )?(ps[45]|playstation|xbox|nintendo|switch)/],
   ['casa', /gabinete (de |para )?banheiro|cadeira (de escrit[óo]rio|ergon[ôo]mica|presidente|diretor)|cadeiras? (de )?jantar|mesa (de escrit[óo]rio|para escrit[óo]rio|escrit[óo]rio|de jantar|de centro|de cabeceira|para computador|gamer)|painel (para )?tv|rack (para )?tv|cama box|jogo de (len[çc]ol|cama|banho|toalhas|panelas)/],
-  ['brinquedos', /carrinho de (beb[êe]|controle)|beb[êe] conforto|jogo de tabuleiro|piscina de bolinhas/],
+  ['brinquedos', /carrinho de (beb[êe]|controle)|beb[êe] conforto|jogo de tabuleiro|piscina de bolinhas|(notebook|laptop|tablet|celular|computador) (infantil|educativo|de brinquedo)|brinquedo educativo/],
   ['beleza', /maquin(inh)?a de cortar cabelo|cortador de cabelo|secador de cabelo|escova (secadora|alisadora|rotativa)|prancha (alisadora|de cabelo)|protetor solar|base (facial|l[íi]quida)|paleta de sombras/],
   ['saude', /balan[çc]a (digital|de banheiro|corporal|bioimped)|aparelho de press[ãa]o|medidor de press[ãa]o/],
 
@@ -85,7 +85,7 @@ const SUBCATEGORIES = {
     ['Consoles', /(console|nintendo switch|playstation ?5|\bps5\b|xbox series).{0,40}\b\d+ ?(gb|tb)\b|\b\d+ ?(gb|tb)\b.{0,40}(nintendo switch|playstation|xbox)|playstation ?5 (edi[çc][ãa]o|digital|slim|pro)/],
     ['Cadeiras gamer', /cadeira/],
     ['Volantes', /volante/],
-    ['Acessórios', /^para |adaptador|\bcabo\b|suporte|base de carregamento|\bdock\b|\bskin\b|\bcase\b|pel[íi]cula|carregador|leitor de disco|figuras?\b/],
+    ['Acessórios', /^para |adaptador|\bcabo\b|suporte|\bbase\b|carregamento|\bdock\b|\bskin\b|\bcase\b|pel[íi]cula|carregador|cooler|ventilador|\bcapa\b|bolsa|leitor de disco|figuras?\b/],
     ['Jogos', /\bjogos? |m[íi]dia f[íi]sica|edition|remaster|- (playstation|ps[45]|xbox|nintendo|switch)/],
     ['Controles', /controle|joystick|gamepad|dualsense|joy-con|manete/],
     ['Consoles', /\bconsole\b|ps5 (slim|pro|digital)|xbox series [sx]|nintendo switch|playstation ?[45]|\bps[45]\b|\bretr[ôo]\b/],

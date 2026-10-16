@@ -10,7 +10,7 @@ const loginRequired = () => settings.get('exigir_login') !== '0';
 const isOffersPage = p => p === '/' || /^\/(index|loja|anuncio)\.html$/.test(p) || /^\/(loja|anuncio)\//.test(p);
 
 // Rotas da API que entregam ofertas, lojas e anúncios.
-const isOffersApi = p => /^\/api\/(offers|featured|stats|price-history|lojas|anuncios)(\/|$)/.test(p);
+const isOffersApi = p => /^\/api\/(offers|featured|stats|price-history|lojas|anuncios|vitrine)(\/|$)/.test(p);
 
 function canSeeOffers(req) {
   if (!loginRequired() || auth.isLoggedIn(req)) return true;

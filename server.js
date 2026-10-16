@@ -98,7 +98,9 @@ if (process.env.VERCEL) {
     console.log('==================================================\n');
     if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
     if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar(); // postagens agendadas (manhã, tarde, noite)
-    const limparMarcas = () => { try { require('./src/watermark').limparCache(); } catch (err) { console.error('[MARCA]', err.message); } };
+    const limparMarcas = () => {
+      try { require('./src/watermark').limparCache(); require('./src/vitrine').limparCache(); } catch (err) { console.error('[MARCA]', err.message); }
+    };
     limparMarcas();
     setInterval(limparMarcas, 24 * 3600 * 1000); // imagens com marca d'água geradas há mais de 7 dias
   });

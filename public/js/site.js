@@ -336,6 +336,23 @@
     $('#pagination').innerHTML = parts.join('');
   }
 
+  // Vitrine do topo: notebook, TV, PS5 e iPhone das melhores ofertas, com a foto recortada. Com menos de
+  // dois produtos disponíveis, o mascote continua no lugar.
+  async function loadVitrine() {
+    try {
+      const itens = await fetch('/api/vitrine').then(r => (r.ok ? r.json() : []));
+      if (!Array.isArray(itens) || itens.length < 2) return;
+      $('#vitrine').innerHTML = itens.map(o => `
+        <a class="vitrine-item vitrine-${esc(o.tipo)}" href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"
+           title="${esc(o.produto)}" aria-label="${esc(o.nome)}: ${esc(o.produto)}, por R$ ${brl(o.preco_atual)}">
+          <img src="/img/recorte/${o.id}.webp" alt="" decoding="async">
+          <span class="vitrine-preco"><b>-${Math.round(o.desconto_pct)}%</b>R$ ${brl(o.preco_atual)}</span>
+        </a>`).join('');
+      $('#vitrine').hidden = false;
+      $('#hero-pet').hidden = true;
+    } catch { /* fica o mascote */ }
+  }
+
   function renderHero() {
     const stores = new Set(ALL.map(o => o.store_id)).size;
     const maxDisc = ALL.reduce((m, o) => Math.max(m, o.desconto_pct || 0), 0);
@@ -621,5 +638,6 @@
   }).catch(() => {});
 
   loadOffers();
+  loadVitrine();
   setInterval(loadOffers, 5 * 60 * 1000);
 })();

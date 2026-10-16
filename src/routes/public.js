@@ -7,6 +7,7 @@ const offers = require('../offers');
 const { safeGet } = require('../net');
 const banners = require('../banners');
 const watermark = require('../watermark');
+const vitrine = require('../vitrine');
 const { createLimiter } = require('../ratelimit');
 
 // Tipos de imagem aceitos no proxy (SVG fica de fora: pode conter scripts).
@@ -102,6 +103,24 @@ router.get('/img/marca/:id.jpg', async (req, res) => {
   } catch {
     res.redirect(`/api/img/${o.id}`);
   }
+});
+
+// Vitrine da página inicial: notebook, TV, PS5 e iPhone das melhores ofertas, com foto recortada.
+router.get('/api/vitrine', async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.json(await vitrine.itens());
+  } catch (err) {
+    console.error('[VITRINE]', err.message);
+    res.json([]);
+  }
+});
+
+router.get('/img/recorte/:id.webp', async (req, res) => {
+  const arquivo = await vitrine.arquivoRecorte(Number(req.params.id)).catch(() => null);
+  if (!arquivo) return res.status(404).send('Não encontrado');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(arquivo);
 });
 
 // Redireciona para a loja (link de afiliado). Só funciona para ofertas válidas e visíveis.

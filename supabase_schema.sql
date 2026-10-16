@@ -157,6 +157,8 @@ CREATE TABLE IF NOT EXISTS public.banners (
   link TEXT NOT NULL,
   imagem TEXT NOT NULL,
   imagem_mobile TEXT,
+  video TEXT,
+  video_mobile TEXT,
   texto_alt TEXT,
   inicio TIMESTAMPTZ NOT NULL,
   fim TIMESTAMPTZ NOT NULL,
@@ -309,4 +311,199 @@ CREATE POLICY "Service role tem acesso total a affiliate_links"
   ON public.affiliate_links FOR ALL
   TO service_role
   USING (true);
+
+-- ==============================================================================
+-- 12. CONFIGURAÇÕES E MINERADORES (Backend / Admin)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.store_status (
+  store_id TEXT PRIMARY KEY, -- ex: 'mercadolivre', 'amazon', 'shopee', etc.
+  status TEXT,
+  message TEXT,
+  found INTEGER DEFAULT 0,
+  saved INTEGER DEFAULT 0,
+  last_run_at TIMESTAMPTZ,
+  last_success_at TIMESTAMPTZ
+);
+
+-- ==============================================================================
+-- 13. DETALHES DE ANÚNCIOS LOCAIS E LEADS DE PUBLICIDADE
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.ad_details (
+  offer_id UUID PRIMARY KEY REFERENCES public.offers(id) ON DELETE CASCADE,
+  descricao TEXT,
+  marca TEXT,
+  modelo TEXT,
+  condicao TEXT,
+  garantia TEXT,
+  parcelamento TEXT,
+  frete TEXT,
+  frete_valor NUMERIC(10, 2),
+  prazo_entrega TEXT,
+  estoque INTEGER,
+  sku TEXT,
+  ean TEXT,
+  cupom_codigo TEXT,
+  cupom_descricao TEXT,
+  whatsapp TEXT,
+  imagens JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+DROP TRIGGER IF EXISTS trigger_ad_details_updated_at ON public.ad_details;
+CREATE TRIGGER trigger_ad_details_updated_at
+  BEFORE UPDATE ON public.ad_details
+  FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
+
+-- Pedidos de contato de empresas interessadas em anunciar (página /anuncie)
+CREATE TABLE IF NOT EXISTS public.ad_leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nome TEXT NOT NULL,
+  empresa TEXT NOT NULL,
+  email TEXT NOT NULL,
+  telefone TEXT,
+  espaco TEXT,
+  mensagem TEXT,
+  status TEXT NOT NULL DEFAULT 'novo' CHECK (status IN ('novo', 'em_contato', 'fechado', 'arquivado')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+-- ==============================================================================
+-- 14. AUTOMAÇÃO DE REDES SOCIAIS (Postagens Agendadas e Histórico)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.post_queue (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  offer_id UUID REFERENCES public.offers(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  texto TEXT,
+  autor TEXT,
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'processando', 'postado', 'falhou')),
+  resultado TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  posted_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_post_queue_status ON public.post_queue (status, id);
+
+CREATE TABLE IF NOT EXISTS public.social_posts (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  offer_id UUID REFERENCES public.offers(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  produto TEXT,
+  rede TEXT NOT NULL, -- ex: 'telegram', 'whatsapp', 'instagram'
+  ok BOOLEAN NOT NULL DEFAULT false,
+  mensagem TEXT,
+  autor TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+CREATE INDEX IF NOT EXISTS idx_social_posts_offer ON public.social_posts (offer_id);
+
+-- ==============================================================================
+-- 15. ASSINATURAS E PAGAMENTOS (Mercado Pago / PIX)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.pagamentos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  token TEXT NOT NULL UNIQUE,
+  plano TEXT NOT NULL,
+  valor NUMERIC(10, 2) NOT NULL,
+  dias INTEGER NOT NULL,
+  metodo TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'aprovado', 'recusado', 'cancelado', 'expirado')),
+  email TEXT NOT NULL,
+  nome TEXT,
+  dados JSONB DEFAULT '{}'::jsonb,
+  mp_payment_id TEXT,
+  mp_preference_id TEXT,
+  pix_qr TEXT,
+  pix_qr_base64 TEXT,
+  pix_expira TIMESTAMPTZ,
+  validade_ate TIMESTAMPTZ,
+  login_entregue BOOLEAN NOT NULL DEFAULT false,
+  email_enviado BOOLEAN NOT NULL DEFAULT false,
+  observacao TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+  aprovado_em TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_status ON public.pagamentos (status, created_at DESC);
+
+-- ==============================================================================
+-- 16. RLS PARA AS TABELAS COMPLEMENTARES
+-- ==============================================================================
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.store_status ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ad_details ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ad_leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.post_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.social_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pagamentos ENABLE ROW LEVEL SECURITY;
+
+-- Configurações e status de minerador: acessíveis via service_role ou leitura por admin
+DROP POLICY IF EXISTS "Service role acessa settings" ON public.settings;
+CREATE POLICY "Service role acessa settings" ON public.settings FOR ALL TO service_role USING (true);
+
+DROP POLICY IF EXISTS "Service role acessa store_status" ON public.store_status;
+CREATE POLICY "Service role acessa store_status" ON public.store_status FOR ALL TO service_role USING (true);
+
+-- Detalhes de anúncios (ad_details): visíveis publicamente
+DROP POLICY IF EXISTS "Detalhes de anúncios públicos" ON public.ad_details;
+CREATE POLICY "Detalhes de anúncios públicos" ON public.ad_details FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Service role gerencia ad_details" ON public.ad_details;
+CREATE POLICY "Service role gerencia ad_details" ON public.ad_details FOR ALL TO service_role USING (true);
+
+-- Leads: Qualquer visitante pode enviar um pedido de orçamento via /anuncie
+DROP POLICY IF EXISTS "Qualquer um pode enviar lead de anúncio" ON public.ad_leads;
+CREATE POLICY "Qualquer um pode enviar lead de anúncio" ON public.ad_leads FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Service role gerencia ad_leads" ON public.ad_leads;
+CREATE POLICY "Service role gerencia ad_leads" ON public.ad_leads FOR ALL TO service_role USING (true);
+
+-- Fila e Histórico de postagens sociais: service_role gerencia
+DROP POLICY IF EXISTS "Service role gerencia post_queue" ON public.post_queue;
+CREATE POLICY "Service role gerencia post_queue" ON public.post_queue FOR ALL TO service_role USING (true);
+
+DROP POLICY IF EXISTS "Service role gerencia social_posts" ON public.social_posts;
+CREATE POLICY "Service role gerencia social_posts" ON public.social_posts FOR ALL TO service_role USING (true);
+
+-- Pagamentos: Usuário vê seus pagamentos e service_role controla
+DROP POLICY IF EXISTS "Usuário consulta seus pagamentos" ON public.pagamentos;
+CREATE POLICY "Usuário consulta seus pagamentos" ON public.pagamentos FOR SELECT TO authenticated USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Service role gerencia pagamentos" ON public.pagamentos;
+CREATE POLICY "Service role gerencia pagamentos" ON public.pagamentos FOR ALL TO service_role USING (true);
+
+-- ==============================================================================
+-- 17. MODERAÇÃO E SEGURANÇA (Admin)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.moderation_log (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  user_email TEXT,
+  acao TEXT NOT NULL,
+  detalhe TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE TABLE IF NOT EXISTS public.blocked_emails (
+  email TEXT PRIMARY KEY,
+  motivo TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+ALTER TABLE public.moderation_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blocked_emails ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Service role gerencia moderation_log" ON public.moderation_log;
+CREATE POLICY "Service role gerencia moderation_log" ON public.moderation_log FOR ALL TO service_role USING (true);
+
+DROP POLICY IF EXISTS "Service role gerencia blocked_emails" ON public.blocked_emails;
+CREATE POLICY "Service role gerencia blocked_emails" ON public.blocked_emails FOR ALL TO service_role USING (true);
+
+
 

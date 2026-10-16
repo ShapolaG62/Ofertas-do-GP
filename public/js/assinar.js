@@ -255,6 +255,8 @@
   }
 
   // ── Início ─────────────────────────────────────────────────────────────────
-  if (params.get('pedido')) acompanhar(params.get('pedido'));
+  // Dentro do app, a assinatura é feita pela Google Play / App Store (regra das lojas).
+  if (window.OfertouApp?.nativo && !params.get('pedido')) window.OfertouApp.telaAssinatura(params.get('plano') || '');
+  else if (params.get('pedido')) acompanhar(params.get('pedido'));
   else iniciarForm(params.get('plano') || '').catch(() => show('erro'));
 })();

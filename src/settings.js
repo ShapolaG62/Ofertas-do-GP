@@ -116,6 +116,15 @@ const DEFAULTS = {
   pag_link_consumidor: '',      // links de pagamento prontos (PagBank, InfinitePay, PicPay…), um por plano
   pag_link_empresa: '',
   pag_link_pro: '',
+  // App nas lojas (Google Play / App Store) com compras validadas pelo RevenueCat
+  app_ativo: '0',
+  rc_chave_android: '',         // chave pública do SDK (goog_...)
+  rc_chave_ios: '',             // chave pública do SDK (appl_...)
+  rc_chave_secreta: '',         // chave secreta da API (sk_...)
+  rc_webhook_auth: '',          // valor do cabeçalho Authorization configurado no webhook do RevenueCat
+  app_produto_consumidor: 'ofertou_consumidor_mensal',
+  app_produto_empresa: 'ofertou_empresa_mensal',
+  app_produto_pro: 'ofertou_pro_mensal',
   pag_whatsapp: '',             // WhatsApp para o comprovante (vazio = o mesmo dos anúncios)
   pag_instrucoes: '',           // recado extra na tela de pagamento
   // E-mail de confirmação (SMTP — ex.: Gmail com "senha de app")
@@ -139,7 +148,7 @@ const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsens
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
   'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret',
-  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'mp_access_token', 'smtp_pass'];
+  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'mp_access_token', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
 const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas'];

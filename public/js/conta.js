@@ -205,7 +205,7 @@
   const planosHtml = planos => planos.map(p => {
     const mensal = p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
       return `
-      <article class="plano-card${p.destaque ? ' is-destaque' : ''}">
+      <article class="plano-card${p.destaque ? ' is-destaque' : ''}" data-plano="${esc(p.id)}">
         ${p.destaque ? '<span class="plano-selo">Mais completo</span>' : ''}
         <div class="plano-topo"><span class="plano-ico">${ICONES[p.icone] || ''}</span><p class="plano-chamada">${esc(p.chamada)}</p></div>
         <h3>${esc(p.nome)}</h3>

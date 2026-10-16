@@ -1,0 +1,25 @@
+{
+  "appId": "br.com.ofertou.app",
+  "appName": "Ofertou!",
+  "webDir": "www",
+  "server": {
+    "url": "https://ofertou.com.br",
+    "errorPath": "erro.html",
+    "androidScheme": "https"
+  },
+  "appendUserAgent": "OfertouApp",
+  "backgroundColor": "#0e1210",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "backgroundColor": "#0c8f4f",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": false,
+      "backgroundColor": "#0c8f4f",
+      "style": "DARK"
+    }
+  }
+}

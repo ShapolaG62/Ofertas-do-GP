@@ -1,0 +1,25 @@
+{
+  "name": "ofertou-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ofertou! — app para Android (Play Store) e iPhone (App Store), feito com Capacitor. Abre o site e acrescenta compras pelas lojas.",
+  "scripts": {
+    "icones": "capacitor-assets generate --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#0e1210' --splashBackgroundColor '#0c8f4f' --splashBackgroundColorDark '#0e1210'",
+    "sync": "cap sync",
+    "android": "cap open android",
+    "ios": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4",
+    "@revenuecat/purchases-capacitor": "13.7.4"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.3"
+  }
+}

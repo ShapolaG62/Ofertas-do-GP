@@ -522,6 +522,28 @@
 
       <form class="settings-form">
         <div class="panel">
+          <h2>App (Google Play e App Store)</h2>
+          <p class="hint">Dentro do app, as lojas exigem que os planos sejam vendidos pelo pagamento delas (Google Play e Apple ficam com 15% a 30%). As compras são conferidas pelo <a href="https://app.revenuecat.com" target="_blank" rel="noopener">RevenueCat</a> (grátis até US$ 2.500/mês) e liberam o plano na conta do site até a data de vencimento da loja; renovações chegam sozinhas. No site, Pix e Mercado Pago continuam como estão. Passo a passo completo no arquivo <b>GUIA_DO_APP.md</b>.</p>
+          <div class="grid">
+            <label class="field">Vender planos no app <select name="app_ativo"><option value="0">Desligado</option><option value="1">Ligado</option></select></label>
+            <label class="field">Chave pública Android (goog_…) <input type="text" name="rc_chave_android" autocomplete="off"></label>
+            <label class="field">Chave pública iPhone (appl_…) <input type="text" name="rc_chave_ios" autocomplete="off"></label>
+            <label class="field">Chave secreta da API (sk_…) <input type="password" name="rc_chave_secreta" autocomplete="off" data-secret></label>
+            <label class="field">Autorização do webhook <input type="password" name="rc_webhook_auth" autocomplete="off" data-secret placeholder="Um texto longo e aleatório"></label>
+          </div>
+          <p class="hint" style="margin-top:12px">IDs dos produtos de assinatura (crie com o mesmo ID no Play Console e no App Store Connect, e use os entitlements <code>consumidor</code>, <code>empresa</code> e <code>pro</code> no RevenueCat):</p>
+          <div class="grid">
+            <label class="field">Plano consumidor <input type="text" name="app_produto_consumidor"></label>
+            <label class="field">Plano empresário <input type="text" name="app_produto_empresa"></label>
+            <label class="field">Plano ferramenta <input type="text" name="app_produto_pro"></label>
+          </div>
+          <p class="hint">Endereço do webhook para colar no RevenueCat (Integrations → Webhooks): <code id="rc-webhook-url">https://SEU-DOMINIO/api/app/webhook/revenuecat</code>, com o mesmo texto de <b>Autorização do webhook</b> no campo "Authorization header value".</p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar app</button></div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
           <h2>E-mail de confirmação</h2>
           <p class="hint">Usado para mandar ao cliente a confirmação do pagamento com a data de validade. Gmail: servidor <code>smtp.gmail.com</code>, porta <code>587</code>, usuário = seu e-mail e senha = uma <b>senha de app</b> (Conta Google → Segurança → Senhas de app).</p>
           <div class="grid">
@@ -906,7 +928,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'ads') loadAds();
   if (t.dataset.tab === 'social') loadSocialLog();
   if (t.dataset.tab === 'clientes') loadClientes();
-  if (t.dataset.tab === 'planos') loadPedidos();
+  if (t.dataset.tab === 'planos') { loadPedidos(); $('#rc-webhook-url').textContent = `${location.origin}/api/app/webhook/revenuecat`; }
 }));
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
@@ -1292,7 +1314,7 @@ $('#user-dlg').addEventListener('click', async e => {
 // ── Planos e pagamentos ───────────────────────────────────────────────────────
 const PED_STATUS = { pendente: ['b-pending', 'Aguardando'], aprovado: ['b-active', 'Aprovado'], recusado: ['b-banned', 'Recusado'],
   cancelado: ['b-none', 'Cancelado'], expirado: ['b-none', 'Expirado'] };
-const PED_METODO = { pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento', combinar: 'A combinar' };
+const PED_METODO = { pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento', combinar: 'A combinar', app_store: 'App Store (app)', play_store: 'Google Play (app)' };
 const PED_MANUAL = ['pix_manual', 'transferencia', 'link', 'combinar'];
 const PLANO_NOME = { consumidor: 'Consumidor', empresa: 'Empresário', pro: 'Ferramenta' };
 async function loadPedidos() {

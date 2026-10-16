@@ -504,9 +504,11 @@
   });
 
   // Busca um termo nas lojas na hora (útil para produtos que não estão na lista de mineração automática).
-  $('#mine-term').addEventListener('click', async () => {
-    const q = $('#q').value.trim();
-    if (!q) { $('#q').focus(); return toast('Digite na busca o produto que quer procurar nas lojas.'); }
+  // O campo fica na própria barra de postagens; vazio, usa o que estiver na busca do topo.
+  $('#mine-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const q = $('#mine-q').value.trim() || $('#q').value.trim();
+    if (!q) { $('#mine-q').focus(); return toast('Digite o produto que quer procurar nas lojas.'); }
     const btn = $('#mine-term');
     btn.disabled = true;
     btn.textContent = 'Buscando nas lojas…';
@@ -519,7 +521,11 @@
       const saved = (res.results || []).reduce((a, x) => a + (x.saved || 0), 0);
       const lojas = (res.results || []).filter(x => x.saved).map(x => `${STORE_BY_ID[x.store]?.name || x.store} ${x.saved}`).join(', ');
       await loadOffers();
-      toast(saved ? `${saved} ofertas com desconto real (${lojas}). Já aparecem na lista.` : 'As lojas não têm esse produto com desconto real agora.');
+      if (saved) { // mostra na lista o que foi encontrado
+        $('#q').value = q;
+        setFilter({ q });
+      }
+      toast(saved ? `${saved} ofertas com desconto real (${lojas}). A lista abaixo já mostra o resultado.` : 'As lojas não têm esse produto com desconto real agora.');
     } catch (err) {
       toast(err.message === 'Failed to fetch' ? 'Erro de conexão com o servidor.' : err.message);
     } finally {

@@ -46,7 +46,7 @@ Com o painel logado, abra o site: aparecem os botões de seleção nos cards e *
 
 ```bash
 npm run mine                 # próximo lote de termos (rodízio)
-npm run mine -- "air fryer"  # só um termo (no site: digite na busca e clique em "Buscar nas lojas agora", na barra de postagens)
+npm run mine -- "air fryer"  # só um termo (no site: digite o produto no campo "Buscar produto nas lojas…" da barra de postagens e clique em "Buscar nas lojas agora")
 ```
 
 ### Termos e categorias

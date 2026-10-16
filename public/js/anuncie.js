@@ -17,6 +17,15 @@
       <span>Arte: ${esc(e.tamanho)} px${e.mobile ? ` · celular: ${esc(e.mobile)} px` : ''}</span></div>`).join('');
     $('#espaco-sel').insertAdjacentHTML('beforeend',
       info.espacos.map(e => `<option value="${esc(e.id)}">${esc(e.nome)}</option>`).join(''));
+    const v = info.video || {};
+    const mb = b => `${Math.round(b / 1048576)} MB`;
+    $('#formats').innerHTML = `
+      <div class="adv-space"><b>Imagem</b>
+        <span>JPG, PNG ou WEBP · até 3 MB · no tamanho do espaço (veja acima). Pode mandar uma versão para computador e outra para celular.</span></div>
+      <div class="adv-space"><b>Vídeo curto (opcional)</b>
+        <span>${esc(v.formatos || 'MP4 ou WEBM')} · <b>sem som</b> (toca mudo e em repetição) · até ${v.maxSegundos || 15} segundos ·
+        até ${mb(v.maxBytes || 8388608)} (ideal ${mb(v.idealBytes || 4194304)}) · mesma proporção da imagem do espaço.
+        Mande também uma <b>imagem de capa</b>: ela aparece enquanto o vídeo carrega e para quem economiza dados no celular.</span></div>`;
     const pre = new URLSearchParams(location.search).get('espaco');
     if (pre && info.espacos.some(e => e.id === pre)) $('#espaco-sel').value = pre;
     if (/^https:\/\/wa\.me\//.test(info.whatsapp || '')) { $('#lead-wa').href = info.whatsapp; $('#lead-wa').hidden = false; }

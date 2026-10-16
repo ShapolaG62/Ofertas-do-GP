@@ -268,6 +268,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_post_queue_status ON post_queue (status, id);
 `);
 
+// Vídeo (sem som) nos banners de publicidade; a imagem continua obrigatória como capa.
+const bannerCols = db.prepare('PRAGMA table_info(banners)').all().map(c => c.name);
+if (!bannerCols.includes('video')) db.exec('ALTER TABLE banners ADD COLUMN video TEXT');
+if (!bannerCols.includes('video_mobile')) db.exec('ALTER TABLE banners ADD COLUMN video_mobile TEXT');
+
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 

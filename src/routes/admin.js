@@ -271,6 +271,7 @@ const sendError = (res, err) => res.status(err.status || 400).json({ error: err.
 router.get('/api/admin/publicidade', (req, res) => {
   res.json({
     espacos: banners.ESPACOS,
+    video: banners.VIDEO,
     campanhas: banners.listCampaigns(),
     pedidos: banners.listLeads(),
     novos: banners.newLeadsCount(),
@@ -281,6 +282,13 @@ router.post('/api/admin/publicidade/upload',
   express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '3mb' }),
   (req, res) => {
     try { res.json({ ok: true, url: anuncios.saveUpload(req.body) }); } catch (err) { sendError(res, err); }
+  });
+
+// Vídeo do banner (MP4 ou WEBM, sem som, até 15 s e 8 MB).
+router.post('/api/admin/publicidade/video',
+  express.raw({ type: ['video/mp4', 'video/webm'], limit: '8mb' }),
+  (req, res) => {
+    try { res.json({ ok: true, url: banners.saveVideo(req.body) }); } catch (err) { sendError(res, err); }
   });
 
 router.post('/api/admin/publicidade', (req, res) => {

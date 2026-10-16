@@ -13,13 +13,25 @@
       .catch(() => { cache = {}; })
     : Promise.resolve((cache = {}));
 
+  const okVideo = src => /^\/uploads\/[a-f0-9]{32}\.(mp4|webm)$/.test(src || '');
+  const celular = () => window.matchMedia('(max-width: 640px)').matches;
+  // Vídeo só toca quando faz sentido: quem pediu menos movimento ou economia de dados vê a imagem de capa.
+  const semVideo = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches || navigator.connection?.saveData === true;
+
   function bannerHtml(b) {
     const img = okImg(b.imagem) ? b.imagem : '';
     if (!img) return '';
+    const alt = esc(b.texto_alt || b.anunciante);
+    const capa = celular() && okImg(b.imagem_mobile) ? b.imagem_mobile : img;
+    const video = celular() && okVideo(b.video_mobile) ? b.video_mobile : okVideo(b.video) ? b.video : '';
     const mobile = okImg(b.imagem_mobile) ? `<source media="(max-width: 640px)" srcset="${esc(b.imagem_mobile)}">` : '';
+    const midia = video && !semVideo()
+      ? `<video src="${esc(video)}" poster="${esc(capa)}" autoplay muted loop playsinline preload="metadata"
+          disablepictureinpicture aria-label="${alt}"></video>`
+      : `<picture>${mobile}<img src="${esc(img)}" alt="${alt}" loading="lazy"></picture>`;
     return `<a class="ad-banner" href="/publicidade/${Number(b.id)}" target="_blank" rel="sponsored noopener"
         aria-label="Publicidade de ${esc(b.anunciante)}">
-      <picture>${mobile}<img src="${esc(img)}" alt="${esc(b.texto_alt || b.anunciante)}" loading="lazy"></picture>
+      ${midia}
       <span class="ad-tag">Patrocinado</span></a>`;
   }
 

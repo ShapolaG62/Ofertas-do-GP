@@ -644,6 +644,11 @@
       <div class="img-pick"><img id="ad-prev" alt=""><input type="text" name="imagem" placeholder="Envie um arquivo ou cole um link https://"><button class="btn small" type="button" data-upload="imagem">Enviar arquivo</button></div></div>
     <div class="field" id="ad-mobile-field">Imagem para celular (opcional) <span class="hint" style="margin:0;font-weight:400" id="ad-size-mob"></span>
       <div class="img-pick"><img id="ad-prev-m" alt=""><input type="text" name="imagem_mobile" placeholder="Vazio = usa a de computador"><button class="btn small" type="button" data-upload="imagem_mobile">Enviar arquivo</button></div></div>
+    <div class="field">Vídeo (opcional) <span class="hint" style="margin:0;font-weight:400" id="ad-video-req"></span>
+      <div class="img-pick"><span class="tag" id="ad-video-tag">sem vídeo</span><input type="text" name="video" readonly placeholder="Envie um arquivo de vídeo"><button class="btn small" type="button" data-upload-video="video">Enviar vídeo</button><button class="btn small" type="button" data-clear-video="video">Tirar</button></div></div>
+    <div class="field" id="ad-video-mobile-field">Vídeo para celular (opcional)
+      <div class="img-pick"><span class="tag" id="ad-video-m-tag">sem vídeo</span><input type="text" name="video_mobile" readonly placeholder="Vazio = usa o de computador"><button class="btn small" type="button" data-upload-video="video_mobile">Enviar vídeo</button><button class="btn small" type="button" data-clear-video="video_mobile">Tirar</button></div></div>
+    <input type="file" id="ad-video-file" accept="video/mp4,video/webm" hidden>
     <label class="field">Descrição da imagem (acessibilidade) <input type="text" name="texto_alt" maxlength="150" placeholder="Ex.: Loja X — 20% off em tênis"></label>
     <label class="field">Observações internas (valor combinado, pagamento...) <textarea name="observacoes" maxlength="500"></textarea></label>
     <label class="check"><input type="checkbox" name="ativo" checked> Campanha ativa</label>
@@ -1249,7 +1254,7 @@ async function loadAds() {
   $('#ads-body').innerHTML = ADS.campanhas.length ? ADS.campanhas.map(c => {
     const ctr = c.impressoes ? ((c.cliques / c.impressoes) * 100).toFixed(1).replace('.', ',') + '%' : '—';
     return `<tr>
-      <td>${okAdImg(c.imagem) ? `<img class="ad-thumb" src="${esc(c.imagem)}" alt="">` : '—'}</td>
+      <td>${okAdImg(c.imagem) ? `<img class="ad-thumb" src="${esc(c.imagem)}" alt="">` : '—'}${c.video ? '<span class="tag">▶ vídeo</span>' : ''}</td>
       <td><b>${esc(c.anunciante)}</b>${c.contato ? `<br><span class="hint" style="margin:0">${esc(c.contato)}</span>` : ''}</td>
       <td>${esc(ADS.espacos[c.espaco]?.nome || c.espaco)}</td>
       <td class="num">${fmtDay(c.inicio)} a ${fmtDay(c.fim)}</td>
@@ -1284,7 +1289,41 @@ function updateAdForm() {
   $('#ad-mobile-field').classList.toggle('hidden', !e.mobile);
   $('#ad-prev').src = okAdImg(f.imagem.value) ? f.imagem.value : '';
   $('#ad-prev-m').src = okAdImg(f.imagem_mobile.value) ? f.imagem_mobile.value : '';
+  const v = ADS.video || {};
+  $('#ad-video-req').textContent = v.maxSegundos
+    ? `— sem som, até ${v.maxSegundos} s, até ${v.maxBytes / 1048576} MB (ideal ${v.idealBytes / 1048576} MB), ${v.formatos}, mesma proporção da imagem. A imagem acima vira a capa.`
+    : '';
+  $('#ad-video-mobile-field').classList.toggle('hidden', !e.mobile);
+  $('#ad-video-tag').textContent = f.video.value ? 'vídeo enviado' : 'sem vídeo';
+  $('#ad-video-m-tag').textContent = f.video_mobile.value ? 'vídeo enviado' : 'sem vídeo';
 }
+
+// Envio do vídeo do banner (o servidor confere formato, tamanho e duração).
+let videoTarget = null;
+$('#ad-form').addEventListener('click', e => {
+  const up = e.target.closest('[data-upload-video]');
+  const clr = e.target.closest('[data-clear-video]');
+  if (clr) { $('#ad-form')[clr.dataset.clearVideo].value = ''; updateAdForm(); return; }
+  if (!up) return;
+  videoTarget = up.dataset.uploadVideo;
+  $('#ad-video-file').value = '';
+  $('#ad-video-file').click();
+});
+$('#ad-video-file').addEventListener('change', async () => {
+  const file = $('#ad-video-file').files[0];
+  if (!file || !videoTarget) return;
+  const max = (ADS.video?.maxBytes) || 8388608;
+  if (file.size > max) return flash($('#ad-msg'), `O vídeo pode ter no máximo ${max / 1048576} MB.`, false);
+  const tag = videoTarget === 'video' ? '#ad-video-tag' : '#ad-video-m-tag';
+  $(tag).textContent = 'enviando…';
+  try {
+    const res = await fetch('/api/admin/publicidade/video', { method: 'POST', headers: { 'Content-Type': file.type || 'video/mp4' }, body: file });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || (res.status === 413 ? 'Vídeo grande demais.' : 'Falha no envio.'));
+    $('#ad-form')[videoTarget].value = d.url;
+  } catch (err) { flash($('#ad-msg'), err.message, false); }
+  updateAdForm();
+});
 
 function openAd(c = null, preset = {}) {
   const f = $('#ad-form');
@@ -1293,7 +1332,7 @@ function openAd(c = null, preset = {}) {
   $('#ad-title').textContent = c ? `Editar campanha — ${c.anunciante}` : 'Nova campanha';
   const hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
   const v = c ? { ...c, inicio: isoDay(c.inicio), fim: isoDay(c.fim) } : { inicio: hoje, ativo: 1, ...preset };
-  for (const k of ['anunciante', 'contato', 'espaco', 'link', 'imagem', 'imagem_mobile', 'texto_alt', 'observacoes', 'inicio', 'fim']) {
+  for (const k of ['anunciante', 'contato', 'espaco', 'link', 'imagem', 'imagem_mobile', 'video', 'video_mobile', 'texto_alt', 'observacoes', 'inicio', 'fim']) {
     if (v[k] != null) f[k].value = v[k];
   }
   f.ativo.checked = Boolean(v.ativo);

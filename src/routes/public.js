@@ -132,6 +132,7 @@ router.get('/api/anuncie/info', (req, res) => {
   res.json({
     espacos: Object.entries(banners.ESPACOS).map(([id, e]) => ({ id, ...e })),
     whatsapp: banners.whatsappLink(),
+    video: banners.VIDEO,
   });
 });
 

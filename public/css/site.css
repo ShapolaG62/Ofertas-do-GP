@@ -528,10 +528,10 @@ dialog::backdrop { background: rgba(10, 14, 12, .5); }
 .ad-slot[hidden] { display: none !important; }
 .ad-top { padding-top: 24px; }
 .ad-banner { position: relative; display: block; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
-.ad-banner img { display: block; width: 100%; height: auto; }
-.ad-wide .ad-banner img { max-height: 220px; object-fit: cover; }
+.ad-banner img, .ad-banner video { display: block; width: 100%; height: auto; }
+.ad-wide .ad-banner img, .ad-wide .ad-banner video { max-height: 220px; object-fit: cover; }
 .ad-side { margin-bottom: 20px; }
-.ad-side .ad-banner img { aspect-ratio: 1 / 1; object-fit: cover; }
+.ad-side .ad-banner img, .ad-side .ad-banner video { aspect-ratio: 1 / 1; object-fit: cover; }
 .ad-tag {
   position: absolute; top: 8px; right: 8px; padding: 2px 8px; border-radius: 999px;
   background: rgba(20, 27, 24, .72); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: .02em;
@@ -664,3 +664,5 @@ body:not(.can-post) .poster-only { display: none !important; }
   .posts-dock #dock-label { display: none; }
 }
 .posts-dock:not([hidden]) ~ .toast { bottom: 84px; }
+.adv-formats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); margin: 16px 0 8px; }
+.adv-formats .adv-space span { color: var(--ink-2); line-height: 1.55; }

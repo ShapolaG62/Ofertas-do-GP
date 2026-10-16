@@ -12,6 +12,44 @@ const ESPACOS = {
 };
 
 const LOCAL_IMAGE = /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/;
+const LOCAL_VIDEO = /^\/uploads\/[a-f0-9]{32}\.(mp4|webm)$/;
+
+// Exigências do vídeo dos banners (mostradas no painel e na página "Anuncie").
+const VIDEO = { maxBytes: 8 * 1024 * 1024, idealBytes: 4 * 1024 * 1024, maxSegundos: 15, formatos: 'MP4 (H.264) ou WEBM' };
+
+// Duração de um MP4 lida da caixa "mvhd" do próprio arquivo (sem programas externos). null se não achar.
+function duracaoMp4(buf) {
+  const i = buf.indexOf('mvhd');
+  if (i < 4 || i + 28 > buf.length) return null;
+  const v = buf[i + 4];
+  const escala = v === 1 ? buf.readUInt32BE(i + 24) : buf.readUInt32BE(i + 16);
+  const dur = v === 1 ? Number(buf.readBigUInt64BE(i + 28)) : buf.readUInt32BE(i + 20);
+  return escala ? dur / escala : null;
+}
+
+// Guarda o vídeo enviado no painel: confere o tipo pelo conteúdo, o tamanho e (no MP4) a duração.
+function saveVideo(buf) {
+  if (!Buffer.isBuffer(buf) || !buf.length) throw fail('Arquivo vazio.');
+  if (buf.length > VIDEO.maxBytes) throw fail(`O vídeo pode ter no máximo ${VIDEO.maxBytes / 1024 / 1024} MB.`);
+  let ext = null;
+  if (buf.slice(4, 8).toString() === 'ftyp') ext = 'mp4';
+  else if (buf.slice(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3]))) ext = 'webm';
+  if (!ext) throw fail(`Envie o vídeo em ${VIDEO.formatos}.`);
+  if (ext === 'mp4') {
+    const seg = duracaoMp4(buf);
+    if (seg && seg > VIDEO.maxSegundos + 0.5) throw fail(`O vídeo tem ${Math.round(seg)} segundos; o máximo é ${VIDEO.maxSegundos}.`);
+  }
+  const name = `${require('crypto').randomBytes(16).toString('hex')}.${ext}`;
+  require('fs').writeFileSync(require('path').join(db.UPLOADS_DIR, name), buf);
+  return `/uploads/${name}`;
+}
+
+function videoOrNull(v, label) {
+  const s = String(v || '').trim();
+  if (!s) return null;
+  if (LOCAL_VIDEO.test(s)) return s;
+  throw fail(`Vídeo ${label} inválido: envie o arquivo pelo painel.`);
+}
 const settings = require('./settings');
 
 // Link para a conversa no WhatsApp com quem vende a publicidade (número configurado no painel).
@@ -65,6 +103,8 @@ function parseCampaign(b) {
     link,
     imagem: imageOrNull(b.imagem, 'para computador', true),
     imagem_mobile: ESPACOS[espaco].mobile ? imageOrNull(b.imagem_mobile, 'para celular', false) : null,
+    video: videoOrNull(b.video, 'para computador'),
+    video_mobile: ESPACOS[espaco].mobile ? videoOrNull(b.video_mobile, 'para celular') : null,
     texto_alt: text(b.texto_alt, 'a descrição da imagem', { max: 150 }),
     inicio,
     fim,
@@ -104,7 +144,7 @@ function pick(espacos) {
   for (const espaco of espacos) {
     if (!ESPACOS[espaco]) continue;
     const b = db.get(
-      `SELECT id, anunciante, imagem, imagem_mobile, texto_alt FROM banners WHERE espaco = ? AND ${LIVE_SQL}
+      `SELECT id, anunciante, imagem, imagem_mobile, video, video_mobile, texto_alt FROM banners WHERE espaco = ? AND ${LIVE_SQL}
        ORDER BY random() LIMIT 1`, espaco
     );
     if (b) db.run('UPDATE banners SET impressoes = impressoes + 1 WHERE id = ?', b.id);
@@ -141,6 +181,6 @@ const deleteLead = id => db.run('DELETE FROM ad_leads WHERE id = ?', id);
 const newLeadsCount = () => db.get(`SELECT COUNT(*) AS n FROM ad_leads WHERE status = 'novo'`).n;
 
 module.exports = {
-  ESPACOS, whatsappLink, saveCampaign, listCampaigns, deleteCampaign, setActive, pick, click,
+  ESPACOS, VIDEO, saveVideo, whatsappLink, saveCampaign, listCampaigns, deleteCampaign, setActive, pick, click,
   saveLead, listLeads, setLeadStatus, deleteLead, newLeadsCount,
 };

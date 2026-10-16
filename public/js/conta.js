@@ -176,8 +176,30 @@
 
   // ── Navegação entre telas ──────────────────────────────────────────────────
   const VIEWS = ['login', 'perfil', 'dados', 'aguardando', 'conta'];
+  // Planos pagos (aparecem junto do login): cada cartão leva para a página de pagamento.
+  let planosCarregados = false;
+  async function loadPlanos() {
+    if (planosCarregados) return;
+    planosCarregados = true;
+    const d = await fetch('/api/planos').then(r => r.json()).catch(() => ({ planos: [] }));
+    if (!d.planos?.length || !(d.metodos?.pix || d.metodos?.mercadopago)) return; // sem planos ou sem forma de pagamento
+    const brl = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    $('#planos-grid').innerHTML = d.planos.map(p => `
+      <article class="plano-card${p.destaque ? ' is-destaque' : ''}">
+        ${p.destaque ? '<span class="plano-selo">Mais vendido</span>' : ''}
+        <p class="plano-chamada">${esc(p.chamada)}</p>
+        <h3>${esc(p.nome)}</h3>
+        <p class="plano-preco"><b>${brl(p.preco)}</b><span>/${p.dias === 30 ? 'mês' : `${p.dias} dias`}</span></p>
+        <ul>${p.beneficios.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+        <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>
+      </article>`).join('');
+
+  }
+
   function show(view) {
     for (const v of VIEWS) $(`#view-${v}`).hidden = v !== view;
+    $('#planos').hidden = view !== 'login' || !$('#planos-grid').children.length;
+    if (view === 'login') loadPlanos().then(() => { $('#planos').hidden = $('#view-login').hidden || !$('#planos-grid').children.length; });
     $('#logout').hidden = view === 'login';
     // Com login obrigatório, "Ver ofertas" só aparece para contas liberadas.
     const liberado = ME?.status === 'active';
@@ -194,6 +216,11 @@
     if (!ME && me.admin) return goToSite('/admin');
     if (!ME) return showLogin();
     if (ME.status === 'onboarding') return showProfileChoice();
+    if (ME.assinatura_vencida) {
+      $('#aguardando-text').innerHTML = `Sua assinatura venceu em ${esc(new Date(ME.assinatura_ate.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR'))}. `
+        + `<a class="link-btn" href="/assinar?plano=${encodeURIComponent(ME.plano || (ME.tipo === 'empresa' ? 'empresa' : 'consumidor'))}">Renove o plano</a> para voltar a ver as ofertas.`;
+      return show('aguardando');
+    }
     if (ME.status === 'pending') {
       $('#aguardando-text').textContent = `Seu cadastro de ${ME.tipo === 'empresa' ? 'empresa' : 'consumidor'} foi enviado e está aguardando a aprovação do administrador. Assim que for aprovado, as ferramentas da sua conta serão liberadas aqui.`;
       return show('aguardando');

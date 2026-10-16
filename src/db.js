@@ -308,6 +308,41 @@ for (const t of ['social_posts', 'post_queue']) {
   }
 }
 
+// Assinaturas pagas (planos): validade da assinatura nas contas do site e pedidos de pagamento.
+{
+  const userCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+  if (!userCols.includes('plano')) db.exec('ALTER TABLE users ADD COLUMN plano TEXT');
+  if (!userCols.includes('assinatura_ate')) db.exec('ALTER TABLE users ADD COLUMN assinatura_ate TEXT');
+}
+db.exec(`
+  CREATE TABLE IF NOT EXISTS pagamentos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    token TEXT NOT NULL UNIQUE,
+    plano TEXT NOT NULL,
+    valor REAL NOT NULL,
+    dias INTEGER NOT NULL,
+    metodo TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'aprovado', 'recusado', 'cancelado', 'expirado')),
+    email TEXT NOT NULL,
+    nome TEXT,
+    dados TEXT NOT NULL,
+    mp_payment_id TEXT,
+    mp_preference_id TEXT,
+    pix_qr TEXT,
+    pix_qr_base64 TEXT,
+    pix_expira TEXT,
+    conta_tipo TEXT,
+    conta_id INTEGER,
+    validade_ate TEXT,
+    login_entregue INTEGER NOT NULL DEFAULT 0,
+    email_enviado INTEGER NOT NULL DEFAULT 0,
+    observacao TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    aprovado_em TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_pagamentos_status ON pagamentos (status, created_at);
+`);
+
 // Vídeo (sem som) nos banners de publicidade; a imagem continua obrigatória como capa.
 const bannerCols = db.prepare('PRAGMA table_info(banners)').all().map(c => c.name);
 if (!bannerCols.includes('video')) db.exec('ALTER TABLE banners ADD COLUMN video TEXT');

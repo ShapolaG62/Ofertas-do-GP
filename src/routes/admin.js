@@ -11,6 +11,7 @@ const banners = require('../banners');
 const whatsapp = require('../whatsapp');
 const agenda = require('../agenda');
 const clientes = require('../clientes');
+const pagamentos = require('../pagamentos');
 const anuncios = require('../anuncios');
 const { STORES, getStore, storeFromUrl } = require('../stores');
 const { CATEGORIES } = require('../categorize');
@@ -230,6 +231,33 @@ router.delete('/api/admin/emails-bloqueados', (req, res) => {
 
 router.get('/api/admin/store-list', (req, res) => {
   res.json(STORES.map(s => ({ id: s.id, name: s.name, automatic: s.automatic })));
+});
+
+// ── Planos e pagamentos ──────────────────────────────────────────────────────
+router.get('/api/admin/pagamentos', (req, res) => {
+  res.json({ pedidos: pagamentos.listar(), metodos: pagamentos.metodosDisponiveis(), email: require('../email').configurado() });
+});
+
+router.post('/api/admin/pagamentos/:id/confirmar', (req, res) => {
+  try { res.json({ ok: true, pedido: pagamentos.confirmarManual(Number(req.params.id)) }); } catch (err) { sendError(res, err); }
+});
+
+router.post('/api/admin/pagamentos/:id/cancelar', (req, res) => {
+  pagamentos.cancelar(Number(req.params.id));
+  res.json({ ok: true });
+});
+
+router.post('/api/admin/pagamentos/:id/email', async (req, res) => {
+  try { await pagamentos.reenviarEmail(Number(req.params.id)); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+});
+
+router.post('/api/admin/email/teste', async (req, res) => {
+  const para = String(req.body?.para || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(para)) return res.status(400).json({ error: 'Informe um e-mail válido.' });
+  try {
+    await require('../email').enviar({ para, assunto: 'Teste de e-mail — Ofertas do GP', texto: 'Se você recebeu esta mensagem, o e-mail do site está funcionando.' });
+    res.json({ ok: true });
+  } catch (err) { res.status(400).json({ error: `Falha ao enviar: ${err.message}` }); }
 });
 
 // ── Clientes da ferramenta (acesso vendido) ──────────────────────────────────

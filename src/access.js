@@ -16,7 +16,9 @@ function canSeeOffers(req) {
   if (!loginRequired() || auth.isLoggedIn(req)) return true;
   if (require('./clientes').atual(req)) return true; // cliente da ferramenta com acesso válido
   const u = users.currentUser(req);
-  return Boolean(u && u.status === 'active');
+  // Conta de plano pago com a assinatura vencida perde o acesso até renovar.
+  const vencida = u && u.assinatura_ate && u.assinatura_ate < new Date().toISOString().replace('T', ' ').slice(0, 19);
+  return Boolean(u && u.status === 'active' && !vencida);
 }
 
 // Middleware: bloqueia páginas e APIs de ofertas para quem não tem acesso.

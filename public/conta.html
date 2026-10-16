@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261036">
+<link rel="stylesheet" href="/css/site.css?v=20261037">
 </head>
 <body>
 <header class="site-header">
@@ -35,11 +35,13 @@
       <div class="auth-brand">
         <img src="/images/pet-capi.png" alt="Capi, o mascote do Ofertas do GP" width="190" height="235">
         <h1>Ofertas reais, num só lugar.</h1>
+        <p class="auth-intro">O Ofertas do GP procura descontos <b>de verdade</b> nas maiores lojas do Brasil — Amazon, Mercado Livre, AliExpress, KaBuM! e outras — várias vezes por dia e junta tudo aqui, com filtros e histórico de preço. Só entra oferta que a própria loja exibe; quando acaba, sai do ar.</p>
         <ul>
-          <li>Descontos verificados das maiores lojas do Brasil</li>
-          <li>Empresas criam a própria loja e anunciam promoções</li>
-          <li>Conta gratuita para consumidores e empresas</li>
+          <li>Milhares de ofertas reais, conferidas o dia todo</li>
+          <li>Lojas parceiras anunciam os próprios produtos com desconto</li>
+          <li>Afiliados postam as ofertas nos próprios grupos e ganham comissão</li>
         </ul>
+        <a class="link-btn auth-planos-link" href="#planos">Ver planos e preços ↓</a>
       </div>
       <div class="panel-card auth-card">
         <div class="tabs-line" role="tablist">
@@ -72,7 +74,18 @@
           <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
           <p class="muted" style="margin:0;font-size:13px">No próximo passo você escolhe se a conta é de consumidor ou de empresa.</p>
         </form>
+        <p class="auth-aprovacao"><b>Conta gratuita:</b> ao criar a conta ou entrar com o Google sem escolher um plano, seu perfil é <b>avaliado pela nossa equipe</b> e o acesso é liberado depois da aprovação. Quer acesso na hora? <a class="link-btn" href="#planos">Escolha um plano</a>.</p>
       </div>
+    </section>
+
+    <!-- ── Planos (na página de login) ── -->
+    <section class="planos-sec" id="planos" hidden>
+      <div class="planos-head">
+        <h2>Escolha seu plano</h2>
+        <p>Acesso liberado assim que o pagamento é confirmado. Pague com <b>Pix</b> ou <b>Mercado Pago</b>.</p>
+      </div>
+      <div class="planos-grid" id="planos-grid"></div>
+      <p class="planos-nota">Sem fidelidade: o plano vale pelo período contratado. Para renovar, assine de novo com o mesmo e-mail e senha e os dias são somados.</p>
     </section>
 
     <!-- ── Primeiro acesso: escolha do perfil ── -->
@@ -322,6 +335,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261022" defer></script>
+<script src="/js/conta.js?v=20261037" defer></script>
 </body>
 </html>

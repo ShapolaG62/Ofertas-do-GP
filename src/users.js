@@ -34,6 +34,8 @@ function publicUser(u) {
   const out = {
     id: u.id, tipo: u.tipo, email: u.email, cpf: u.cpf, cnpj: u.cnpj,
     status: u.status, bloqueio_publicacao: Boolean(u.bloqueio_publicacao), pode_postar: Boolean(u.pode_postar),
+    plano: u.plano || null, assinatura_ate: u.assinatura_ate || null,
+    assinatura_vencida: Boolean(u.assinatura_ate && u.assinatura_ate < nowSql()),
     created_at: u.created_at,
     avatar_url: u.avatar_url, google: Boolean(u.google_id), tem_senha: Boolean(u.senha_hash),
   };
@@ -180,6 +182,7 @@ function requireActive(req, res, next) {
   const u = req.user;
   if (u.status === 'onboarding') return res.status(403).json({ error: 'Conclua seu cadastro escolhendo o perfil.' });
   if (u.status === 'pending') return res.status(403).json({ error: 'Seu cadastro está aguardando aprovação do administrador.' });
+  if (u.assinatura_ate && u.assinatura_ate < nowSql()) return res.status(403).json({ error: 'Sua assinatura venceu. Renove o plano para continuar.' });
   next();
 }
 

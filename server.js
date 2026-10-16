@@ -11,6 +11,7 @@ const adminRoutes = require('./src/routes/admin');
 const contaRoutes = require('./src/routes/conta');
 const postagens = require('./src/routes/postagens');
 const clienteRoutes = require('./src/routes/cliente');
+const assinaturaRoutes = require('./src/routes/assinatura');
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -67,11 +68,13 @@ app.use(adminRoutes);
 app.use(contaRoutes);
 app.use(postagens.router);
 app.use(clienteRoutes);
+app.use(assinaturaRoutes);
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));
 app.get('/postagens', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'postagens.html')));
 app.get('/cliente', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'cliente.html')));
+app.get('/assinar', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'assinar.html')));
 app.get('/anuncie', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'anuncie.html')));
 app.get('/privacidade', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'privacidade.html')));
 app.get('/loja/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'loja.html')));

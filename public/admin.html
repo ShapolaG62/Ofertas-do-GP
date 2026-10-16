@@ -160,6 +160,7 @@
       <button class="tab" data-tab="mining">Mineração</button>
       <button class="tab" data-tab="users">Usuários<span class="count-badge hidden" id="pending-badge">0</span></button>
       <button class="tab" data-tab="ads">Publicidade<span class="count-badge hidden" id="leads-badge">0</span></button>
+      <button class="tab" data-tab="planos">Planos<span class="count-badge hidden" id="pedidos-badge">0</span></button>
       <button class="tab" data-tab="clientes">Clientes</button>
       <button class="tab" data-tab="social">Redes sociais</button>
       <button class="tab" data-tab="site">Site</button>
@@ -410,6 +411,85 @@
         <p class="hint">Todas as ações feitas sobre usuários e lojas.</p>
         <div class="log-list" id="mod-log"></div>
       </div>
+    </div>
+
+    <!-- PLANOS E PAGAMENTOS -->
+    <div class="tab-body hidden" data-body="planos">
+      <div class="panel">
+        <h2>Pedidos de assinatura</h2>
+        <p class="hint">Compras feitas pela página de login. Pagamentos pelo Mercado Pago (Pix ou checkout) são confirmados sozinhos; no <b>Pix manual</b>, confira o comprovante e clique em <b>Confirmar pagamento</b> — a conta é criada (ou renovada) na hora e o cliente recebe o e-mail.</p>
+        <p class="hint" id="pag-situacao"></p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Cliente</th><th>Plano</th><th>Valor</th><th>Pagamento</th><th>Situação</th><th></th></tr></thead>
+            <tbody id="pedidos-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Planos e preços</h2>
+          <p class="hint">Aparecem na página de login. Preço em reais (ex.: 9.90) e dias de acesso por compra. Renovar soma os dias.</p>
+          <div class="grid">
+            <div class="store-card"><h4>Consumidor</h4>
+              <label class="field">Nome <input type="text" name="plano_consumidor_nome"></label>
+              <label class="field" style="margin-top:8px">Preço (R$) <input type="text" name="plano_consumidor_preco" inputmode="decimal"></label>
+              <label class="field" style="margin-top:8px">Dias de acesso <input type="number" name="plano_consumidor_dias" min="1" max="3650"></label>
+              <label class="field" style="margin-top:8px">À venda <select name="plano_consumidor_ativo"><option value="1">Sim</option><option value="0">Não</option></select></label>
+            </div>
+            <div class="store-card"><h4>Empresário</h4>
+              <label class="field">Nome <input type="text" name="plano_empresa_nome"></label>
+              <label class="field" style="margin-top:8px">Preço (R$) <input type="text" name="plano_empresa_preco" inputmode="decimal"></label>
+              <label class="field" style="margin-top:8px">Dias de acesso <input type="number" name="plano_empresa_dias" min="1" max="3650"></label>
+              <label class="field" style="margin-top:8px">À venda <select name="plano_empresa_ativo"><option value="1">Sim</option><option value="0">Não</option></select></label>
+            </div>
+            <div class="store-card"><h4>Usuário da ferramenta</h4>
+              <label class="field">Nome <input type="text" name="plano_pro_nome"></label>
+              <label class="field" style="margin-top:8px">Preço (R$) <input type="text" name="plano_pro_preco" inputmode="decimal"></label>
+              <label class="field" style="margin-top:8px">Dias de acesso <input type="number" name="plano_pro_dias" min="1" max="3650"></label>
+              <label class="field" style="margin-top:8px">À venda <select name="plano_pro_ativo"><option value="1">Sim</option><option value="0">Não</option></select></label>
+            </div>
+          </div>
+          <div class="actions"><button class="btn primary" type="submit">Salvar planos</button></div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Recebimento</h2>
+          <ol class="hint" style="padding-left:18px;line-height:1.7">
+            <li><b>Mercado Pago (recomendado):</b> em <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener">mercadopago.com.br/developers</a> → Suas integrações → crie uma aplicação → <b>Credenciais de produção</b> → copie o <b>Access Token</b>. Com ele o cliente paga por Pix (QR code) ou pelo checkout do Mercado Pago, e a confirmação é automática.</li>
+            <li><b>Pix manual (sem Mercado Pago):</b> informe sua chave Pix. O cliente paga, envia o comprovante e você confirma o pedido aqui.</li>
+          </ol>
+          <div class="grid">
+            <label class="field">Access Token do Mercado Pago <input type="password" name="mp_access_token" autocomplete="off" data-secret></label>
+            <label class="field">Chave Pix (manual) <input type="text" name="pix_chave" placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"></label>
+            <label class="field">Nome do recebedor do Pix <input type="text" name="pix_nome"></label>
+          </div>
+          <p class="hint">Com o site em endereço público (https), o Mercado Pago também avisa o site sozinho quando o pagamento é aprovado. No computador local, a página de pagamento consulta o Mercado Pago a cada 5 segundos.</p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar recebimento</button></div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>E-mail de confirmação</h2>
+          <p class="hint">Usado para mandar ao cliente a confirmação do pagamento com a data de validade. Gmail: servidor <code>smtp.gmail.com</code>, porta <code>587</code>, usuário = seu e-mail e senha = uma <b>senha de app</b> (Conta Google → Segurança → Senhas de app).</p>
+          <div class="grid">
+            <label class="field">Servidor SMTP <input type="text" name="smtp_host" placeholder="smtp.gmail.com"></label>
+            <label class="field">Porta <input type="number" name="smtp_port" placeholder="587"></label>
+            <label class="field">Usuário <input type="text" name="smtp_user" autocomplete="off"></label>
+            <label class="field">Senha <input type="password" name="smtp_pass" autocomplete="off" data-secret></label>
+            <label class="field">Remetente (opcional) <input type="text" name="smtp_from" placeholder="Ofertas do GP &lt;seu@email.com&gt;"></label>
+          </div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn primary" type="submit">Salvar e-mail</button>
+            <input type="email" id="email-teste" placeholder="Enviar teste para…" style="max-width:260px">
+            <button class="btn" type="button" id="email-teste-btn">Enviar teste</button>
+          </div>
+        </div>
+      </form>
     </div>
 
     <!-- CLIENTES DA FERRAMENTA -->
@@ -764,6 +844,7 @@ async function showApp() {
   await Promise.all([loadStores(), loadSettings()]);
   api('/api/admin/users?status=pending').then(d => setPendingBadge(d.pending)).catch(() => {});
   loadAds().catch(() => {});
+  loadPedidos().catch(() => {});
   $('#manual-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
   $('#cat-list').textContent = CATEGORIES.join(', ');
 }
@@ -777,6 +858,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'ads') loadAds();
   if (t.dataset.tab === 'social') loadSocialLog();
   if (t.dataset.tab === 'clientes') loadClientes();
+  if (t.dataset.tab === 'planos') loadPedidos();
 }));
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
@@ -1156,6 +1238,59 @@ $('#user-dlg').addEventListener('click', async e => {
     await openUser(id);
     loadUsers(); loadModLog();
   } catch (err) { globalMsg(err.message, false); }
+});
+
+// ── Planos e pagamentos ───────────────────────────────────────────────────────
+const PED_STATUS = { pendente: ['b-pending', 'Aguardando'], aprovado: ['b-active', 'Aprovado'], recusado: ['b-banned', 'Recusado'],
+  cancelado: ['b-none', 'Cancelado'], expirado: ['b-none', 'Expirado'] };
+const PED_METODO = { pix: 'Pix (Mercado Pago)', mercadopago: 'Mercado Pago', pix_manual: 'Pix manual' };
+const PLANO_NOME = { consumidor: 'Consumidor', empresa: 'Empresário', pro: 'Ferramenta' };
+async function loadPedidos() {
+  const d = await api('/api/admin/pagamentos');
+  const pend = d.pedidos.filter(p => p.status === 'pendente' && p.metodo === 'pix_manual').length;
+  $('#pedidos-badge').textContent = pend;
+  $('#pedidos-badge').classList.toggle('hidden', !pend);
+  const m = d.metodos;
+  $('#pag-situacao').innerHTML = `Recebimento: ${m.pix_automatico ? '<b>Mercado Pago ativo</b> (Pix e checkout automáticos)' : m.pix ? '<b>Pix manual</b> (você confirma cada pedido)' : '<b style="color:var(--red)">nenhuma forma configurada — os planos não aparecem para venda</b>'}
+    · E-mail de confirmação: ${d.email ? '<b>configurado</b>' : '<b style="color:var(--yellow)">não configurado</b>'}`;
+  $('#pedidos-body').innerHTML = d.pedidos.length ? d.pedidos.map(p => {
+    const [cls, txt] = PED_STATUS[p.status] || ['b-none', p.status];
+    return `<tr>
+      <td class="num">${fmtDate(p.created_at)}</td>
+      <td><b>${esc(p.nome || '—')}</b><br><span class="hint" style="margin:0">${esc(p.email)}</span></td>
+      <td>${esc(PLANO_NOME[p.plano] || p.plano)}<br><span class="hint" style="margin:0">${p.dias} dias</span></td>
+      <td class="num">${brl(p.valor)}</td>
+      <td>${esc(PED_METODO[p.metodo] || p.metodo)}${p.mp_payment_id ? `<br><span class="hint" style="margin:0">MP ${esc(p.mp_payment_id)}</span>` : ''}</td>
+      <td><span class="badge ${cls}">${txt}</span>${p.status === 'aprovado' ? `<br><span class="hint" style="margin:0">até ${fmtDia(p.validade_ate)}${p.email_enviado ? ' · e-mail enviado' : ''}</span>` : ''}</td>
+      <td class="num">
+        ${['pendente', 'expirado'].includes(p.status) ? `<button class="btn small primary" data-ped="confirmar" data-id="${p.id}">Confirmar pagamento</button>
+          <button class="btn small danger" data-ped="cancelar" data-id="${p.id}">Cancelar</button>` : ''}
+        ${p.status === 'aprovado' ? `<button class="btn small" data-ped="email" data-id="${p.id}">Reenviar e-mail</button>` : ''}
+      </td></tr>`;
+  }).join('') : '<tr><td colspan="7" class="hint">Nenhum pedido ainda.</td></tr>';
+}
+$('#pedidos-body').addEventListener('click', async e => {
+  const b = e.target.closest('[data-ped]');
+  if (!b) return;
+  const id = b.dataset.id;
+  try {
+    if (b.dataset.ped === 'confirmar') {
+      if (!confirm('Confirmar que o pagamento deste pedido foi recebido? A conta será liberada na hora.')) return;
+      await api(`/api/admin/pagamentos/${id}/confirmar`, { method: 'POST', body: {} });
+      globalMsg('Pagamento confirmado e acesso liberado.');
+    } else if (b.dataset.ped === 'cancelar') {
+      if (!confirm('Cancelar este pedido?')) return;
+      await api(`/api/admin/pagamentos/${id}/cancelar`, { method: 'POST', body: {} });
+    } else if (b.dataset.ped === 'email') {
+      await api(`/api/admin/pagamentos/${id}/email`, { method: 'POST', body: {} });
+      globalMsg('E-mail reenviado.');
+    }
+    loadPedidos();
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#email-teste-btn').addEventListener('click', async () => {
+  try { await api('/api/admin/email/teste', { method: 'POST', body: { para: $('#email-teste').value } }); globalMsg('E-mail de teste enviado.'); }
+  catch (err) { globalMsg(err.message, false); }
 });
 
 // ── Clientes da ferramenta ────────────────────────────────────────────────────

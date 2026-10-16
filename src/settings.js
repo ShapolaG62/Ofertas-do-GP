@@ -78,6 +78,30 @@ const DEFAULTS = {
   marca_posicao: 'inferior-direito', // inferior-direito | inferior-esquerdo | superior-direito | superior-esquerdo | centro
   marca_opacidade: '90',             // 30 a 100 (%)
 
+  // Planos pagos (página de login) — nome, preço (R$) e dias de acesso de cada um
+  plano_consumidor_nome: 'Caçador de Ofertas',
+  plano_consumidor_preco: '9.90',
+  plano_consumidor_dias: '30',
+  plano_consumidor_ativo: '1',
+  plano_empresa_nome: 'Loja Parceira',
+  plano_empresa_preco: '49.90',
+  plano_empresa_dias: '30',
+  plano_empresa_ativo: '1',
+  plano_pro_nome: 'Afiliado Pro',
+  plano_pro_preco: '79.90',
+  plano_pro_dias: '30',
+  plano_pro_ativo: '1',
+  // Pagamento: Mercado Pago (Pix e checkout com confirmação automática) ou Pix manual (chave do admin)
+  mp_access_token: '',
+  pix_chave: '',
+  pix_nome: '',
+  // E-mail de confirmação (SMTP — ex.: Gmail com "senha de app")
+  smtp_host: '',
+  smtp_port: '587',
+  smtp_user: '',
+  smtp_pass: '',
+  smtp_from: '',
+
   // Postagens agendadas (3 vezes por dia)
   agenda_ativa: '0',
   agenda_horarios: '09:00,14:00,20:00', // horário de Brasília
@@ -92,7 +116,7 @@ const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsens
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
   'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret',
-  'zapi_token', 'zapi_client_token', 'evolution_api_key'];
+  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'mp_access_token', 'smtp_pass'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
 const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas'];

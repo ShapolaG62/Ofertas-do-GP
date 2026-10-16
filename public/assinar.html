@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assinar — Ofertas do GP</title>
+<meta name="theme-color" content="#0c8f4f">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261037">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/conta" aria-label="Ofertas do GP — início">
+      <img src="/images/pet-capi-head.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertas do <b>GP</b></span>
+    </a>
+    <div class="header-actions"><a class="btn btn-sm" href="/conta#planos">Ver planos</a></div>
+  </div>
+</header>
+
+<main class="page">
+<div class="container ass-page">
+
+  <!-- DADOS + PAGAMENTO -->
+  <section id="view-form" hidden>
+    <div class="ass-grid">
+      <form class="panel-card ass-form" id="ass-form" novalidate>
+        <h1>Finalizar assinatura</h1>
+        <p class="cli-sub">Preencha seus dados para criarmos o seu acesso. Depois é só pagar.</p>
+
+        <label class="check-line ass-renovar"><input type="checkbox" name="renovar" id="renovar"> Já tenho conta e quero <b>renovar</b> (só e-mail e senha)</label>
+
+        <fieldset class="ass-bloco">
+          <legend>Acesso</legend>
+          <div class="cli-grid2">
+            <label class="field">E-mail <input name="email" type="email" autocomplete="email" maxlength="120" required></label>
+            <label class="field">Senha (mín. 8) <input name="senha" type="password" autocomplete="new-password" minlength="8" required></label>
+            <label class="field so-novo">Confirme a senha <input name="senha_confirmacao" type="password" autocomplete="new-password" minlength="8"></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="ass-bloco so-novo">
+          <legend>Seus dados</legend>
+          <div class="cli-grid2">
+            <label class="field">Nome completo <input name="nome" autocomplete="name" maxlength="100"></label>
+            <label class="field">CPF <input name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></label>
+            <label class="field">Celular / WhatsApp <input name="telefone" inputmode="tel" maxlength="16" placeholder="(11) 99999-9999"></label>
+            <label class="field so-conta">Data de nascimento <input name="data_nascimento" type="date"></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="ass-bloco so-novo so-conta">
+          <legend>Endereço</legend>
+          <div class="cli-grid2">
+            <label class="field">CEP <input name="cep" inputmode="numeric" maxlength="9" placeholder="00000-000"></label>
+            <label class="field">Rua / avenida <input name="logradouro" maxlength="120"></label>
+            <label class="field">Número <input name="numero" maxlength="10"></label>
+            <label class="field">Complemento <input name="complemento" maxlength="60"></label>
+            <label class="field">Bairro <input name="bairro" maxlength="60"></label>
+            <label class="field">Cidade <input name="cidade" maxlength="60"></label>
+            <label class="field">Estado (UF) <select name="uf" id="uf"><option value="">—</option></select></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="ass-bloco so-novo so-empresa">
+          <legend>Dados da empresa</legend>
+          <div class="cli-grid2">
+            <label class="field">Razão social <input name="razao_social" maxlength="150"></label>
+            <label class="field">Nome fantasia <input name="empresa_nome" maxlength="80"></label>
+            <label class="field">CNPJ <input name="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
+            <label class="field">Inscrição estadual (opcional) <input name="inscricao_estadual" maxlength="20"></label>
+            <label class="field">Telefone da empresa <input name="telefone_empresa" inputmode="tel" maxlength="16"></label>
+            <label class="field">Ramo de atividade <select name="ramo" id="ramo"><option value="">—</option></select></label>
+            <label class="field">Site (opcional) <input name="site_empresa" type="url" maxlength="200" placeholder="https://"></label>
+          </div>
+          <label class="check-line" style="margin-top:10px"><input type="checkbox" name="mesmo_endereco" checked> O endereço da empresa é o mesmo informado acima</label>
+          <div class="cli-grid2" id="emp-endereco" hidden>
+            <label class="field">CEP da empresa <input name="emp_cep" inputmode="numeric" maxlength="9"></label>
+            <label class="field">Rua / avenida <input name="emp_logradouro" maxlength="120"></label>
+            <label class="field">Número <input name="emp_numero" maxlength="10"></label>
+            <label class="field">Complemento <input name="emp_complemento" maxlength="60"></label>
+            <label class="field">Bairro <input name="emp_bairro" maxlength="60"></label>
+            <label class="field">Cidade <input name="emp_cidade" maxlength="60"></label>
+            <label class="field">Estado (UF) <select name="emp_uf" id="emp_uf"><option value="">—</option></select></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="ass-bloco">
+          <legend>Forma de pagamento</legend>
+          <div class="ass-metodos" id="metodos"></div>
+        </fieldset>
+
+        <label class="check-line"><input type="checkbox" name="aceite_termos" required> Li e aceito os <a class="link-btn" href="/privacidade" target="_blank">Termos de uso e a Política de privacidade</a>.</label>
+        <div class="form-msg err" id="ass-msg" hidden></div>
+        <button class="btn btn-primary btn-block" type="submit" id="ass-enviar">Continuar para o pagamento</button>
+      </form>
+
+      <aside class="panel-card ass-resumo" id="resumo"></aside>
+    </div>
+  </section>
+
+  <!-- PAGAMENTO / SITUAÇÃO -->
+  <section class="panel-card ass-status" id="view-status" hidden></section>
+
+  <!-- PLANO INVÁLIDO -->
+  <section class="panel-card ass-status" id="view-erro" hidden>
+    <h1>Plano não encontrado</h1>
+    <p class="cli-sub">Escolha um dos planos disponíveis.</p>
+    <a class="btn btn-primary" href="/conta#planos">Ver planos</a>
+  </section>
+</div>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/js/assinar.js?v=20261037" defer></script>
+</body>
+</html>

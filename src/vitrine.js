@@ -59,11 +59,8 @@ const VALIDADE_MS = 10 * 60 * 1000; // a vitrine é refeita a cada 10 min
 // (sem remover o fundo, então nenhuma parte do produto some). O recorte serve só para escolher boas fotos:
 // produto de estúdio, sem textos, selos ou montagens; a imagem mostrada é sempre a foto completa.
 async function avaliarFoto(foto) {
-  if (!ia.disponivel()) return recortarSimples(foto);
-  try { return await ia.recortarEstudio(foto); } catch (err) {
-    if (/textos|recorte ruim/.test(err.message)) throw err;
-  }
-  return ia.recortarIA(foto);
+  // Só fotos de estúdio (fundo branco): numa foto de ambiente (sala, cozinha) o produto ficaria pequeno no cartão.
+  return ia.disponivel() ? ia.recortarEstudio(foto) : recortarSimples(foto);
 }
 async function recortar(foto) {
   await avaliarFoto(foto); // lança erro se a foto não servir
@@ -125,7 +122,7 @@ async function recortarSimples(foto) {
 }
 
 async function recorteDaOferta(o) {
-  const chave = crypto.createHash('sha1').update(`cartao1|${ia.disponivel() ? 'ia' : 's'}|${o.imagem}`).digest('hex').slice(0, 12);
+  const chave = crypto.createHash('sha1').update(`cartao2|${ia.disponivel() ? 'ia' : 's'}|${o.imagem}`).digest('hex').slice(0, 12);
   const ok = path.join(CACHE_DIR, `${o.id}-${chave}.webp`);
   const ruim = path.join(CACHE_DIR, `${o.id}-${chave}.ruim`);
   if (fs.existsSync(ok)) return ok;

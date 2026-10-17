@@ -1,7 +1,7 @@
 // Pedidos feitos às lojas parceiras pelo site, formas de pagamento de cada loja, taxa de uso do site e contadores.
 //  • A empresa configura como recebe (Minha conta → Vendas e pagamentos): Mercado Pago conectado (Pix ou cartão
 //    com confirmação automática), Pix pela chave dela (o site gera o "copia e cola" com o valor do pedido),
-//    cartão pelo link de pagamento dela e/ou "combinar pelo chat".
+//    e/ou cartão pelo link de pagamento dela. Sem nenhuma forma configurada, a loja não recebe pedidos pelo site.
 //  • TAXA DE USO DO SITE (Painel → Atendimento; padrão 1%): somada ao valor do produto na finalização do pedido.
 //      – Mercado Pago conectado: o pagamento é dividido pelo próprio Mercado Pago (marketplace_fee) e a taxa cai
 //        direto no saldo da conta Mercado Pago do dono do site, na aprovação.
@@ -231,10 +231,9 @@ function metodosDaLoja(l) {
   if (l.mp_access_token) m.push({ id: 'mercadopago', nome: 'Pix ou cartão pelo Mercado Pago', desc: 'Pague no Mercado Pago, com confirmação automática', automatico: true });
   if (l.pag_pix_ativo && l.pag_pix_chave) m.push({ id: 'pix', nome: 'Pix', desc: 'Código Pix "copia e cola" com o valor do pedido' });
   if (l.pag_cartao_ativo && l.pag_cartao_link) m.push({ id: 'cartao', nome: 'Cartão', desc: 'Pague pelo link de pagamento da loja' });
-  if (l.pag_combinar || !m.length) m.push({ id: 'combinar', nome: 'Combinar pelo chat', desc: 'A loja passa as opções de pagamento na conversa' });
   return m;
 }
-const publicoLoja = l => ({ aceita_pedidos: Boolean(l.aceita_pedidos), metodos: metodosDaLoja(l), instrucoes: l.pedido_instrucoes || '', taxa_pct: taxaPct() });
+const publicoLoja = l => ({ aceita_pedidos: Boolean(l.aceita_pedidos) && metodosDaLoja(l).length > 0, metodos: metodosDaLoja(l), instrucoes: l.pedido_instrucoes || '', taxa_pct: taxaPct() });
 
 // ── Pix "copia e cola" (BR Code estático do Banco Central) ──────────────────
 function crc16(s) {
@@ -267,7 +266,7 @@ async function criar(dono, b) {
   if (!o || !o.loja_id || o.oculto || !require('./offers').isActive(o.id)) throw fail('Produto indisponível.', 404);
   const loja = db.get('SELECT * FROM lojas WHERE id = ?', o.loja_id);
   if (!loja || loja.oculta) throw fail('Loja indisponível.', 404);
-  if (!loja.aceita_pedidos) throw fail('Esta loja não está recebendo pedidos pelo site no momento. Fale com ela pelo chat.');
+  if (!loja.aceita_pedidos || !metodosDaLoja(loja).length) throw fail('Esta loja não está recebendo pedidos pelo site no momento. Fale com ela pelo chat.');
   if (`u:${loja.user_id}` === dono) throw fail('Você não pode fazer pedido na sua própria loja.');
   const metodo = String(b.metodo || '');
   if (!metodosDaLoja(loja).some(m => m.id === metodo)) throw fail('Forma de pagamento indisponível nesta loja.');

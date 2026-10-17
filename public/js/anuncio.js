@@ -65,7 +65,7 @@
           </ul>
           <div class="ad-cta">
             ${a.pedidos?.aceita_pedidos ? '<button class="btn btn-primary btn-block" type="button" id="ad-pedir">Fazer pedido pelo site</button>' : ''}
-            <button class="btn btn-block" type="button" id="ad-conversar">💬 Conversar com a loja</button>
+            <button class="btn btn-block" type="button" id="ad-conversar"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Conversar com a loja</button>
             <a class="btn btn-block" href="${buy}" target="_blank" rel="noopener sponsored" id="ad-externo">Comprar no site da loja ↗</a>
             ${wa ? `<a class="btn btn-block btn-wa" href="${esc(wa)}" target="_blank" rel="noopener">Tirar dúvida no WhatsApp</a>` : ''}
           </div>

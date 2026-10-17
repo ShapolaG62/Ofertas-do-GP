@@ -479,6 +479,7 @@
     if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
   }
   $('#account-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) openTab(b.dataset.tab); });
+  $('#view-conta').addEventListener('click', e => { const b = e.target.closest('.tab-pane [data-tab]'); if (b) openTab(b.dataset.tab); });
   $('#hello-new-ad').addEventListener('click', () => { openTab('anuncios'); openEditor(); });
 
   // ── Vendas e pagamentos da loja / Meus pedidos ───────────────────────────
@@ -541,7 +542,7 @@
       <ol class="muted" style="margin:0;padding-left:20px">${m.mais_vistos.map(t => `<li>${esc(t.produto)} — <b>${t.n}</b></li>`).join('')}</ol>` : '';
     $('#vendas-pedidos').innerHTML = d.pedidos.length ? d.pedidos.map(linhaPedido).join('') : '<p class="muted">Nenhum pedido ainda.</p>';
     const f = $('#form-pagloja'), pg = d.pagamento;
-    for (const k of ['aceita_pedidos', 'pag_pix_ativo', 'pag_cartao_ativo', 'pag_combinar']) f[k].checked = pg[k];
+    for (const k of ['aceita_pedidos', 'pag_pix_ativo', 'pag_cartao_ativo']) f[k].checked = pg[k];
     for (const k of ['pag_pix_tipo', 'pag_pix_chave', 'pag_pix_nome', 'pag_pix_cidade', 'pag_cartao_link', 'pedido_instrucoes']) f[k].value = pg[k] || '';
     if (!pg.pag_pix_nome) f.pag_pix_nome.value = LOJA?.nome || '';
   }

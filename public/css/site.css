@@ -1602,3 +1602,9 @@ body.pf-body {
 .nav-n { margin-left: 8px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 11px; font-weight: 800; display: inline-grid; place-items: center; }
 .nav-n[hidden] { display: none; }
 .aba-mensagens .chatf { display: none !important; }
+
+.ico-btn { width: 18px !important; height: 18px !important; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn .ico-btn { margin-right: 2px; }
+/* Prévia do produto e pedido: rolagem sem barra aparente */
+.prod-dlg, .prod-dlg textarea, .prod-miniaturas { scrollbar-width: none; -ms-overflow-style: none; }
+.prod-dlg::-webkit-scrollbar, .prod-dlg textarea::-webkit-scrollbar, .prod-miniaturas::-webkit-scrollbar { display: none; width: 0; height: 0; }

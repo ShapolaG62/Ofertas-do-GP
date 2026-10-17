@@ -42,17 +42,18 @@
   const corpo = () => janela().querySelector('.prod-corpo');
 
   async function conversar(lojaId, ofertaId, botao) {
+    const original = botao ? botao.innerHTML : '';
     if (botao) { botao.disabled = true; botao.textContent = 'Abrindo conversa…'; }
     try {
       const r = await api('/api/chat/iniciar', { loja_id: lojaId, oferta_id: ofertaId || null });
       // Abre a conversa no painel flutuante de mensagens (sem sair da página); sem ele, na tela de mensagens
       if (window.OfertouChat) {
         if (dlg && dlg.open) dlg.close();
-        if (botao) { botao.disabled = false; botao.textContent = '💬 Conversar com a loja'; }
+        if (botao) { botao.disabled = false; botao.innerHTML = original; }
         window.OfertouChat.abrir(r.id);
       } else location.href = `/mensagens?c=${r.id}`;
     } catch (err) {
-      if (botao) { botao.disabled = false; botao.textContent = 'Conversar com a loja'; }
+      if (botao) { botao.disabled = false; botao.innerHTML = original; }
       alert(err.message);
     }
   }
@@ -93,7 +94,7 @@
           ${a.cupom_codigo ? `<p class="prod-cupom">Cupom: <b>${esc(a.cupom_codigo)}</b>${a.cupom_descricao ? ` — ${esc(a.cupom_descricao)}` : ''}</p>` : ''}
           <div class="prod-acoes">
             ${ped.aceita_pedidos ? '<button class="btn btn-primary btn-block" type="button" data-prod="pedir">Fazer pedido</button>' : ''}
-            <button class="btn btn-block" type="button" data-prod="conversar">💬 Conversar com a loja</button>
+            <button class="btn btn-block" type="button" data-prod="conversar"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Conversar com a loja</button>
             ${o.fonte === 'empresa' ? `<a class="link-btn" href="/anuncio/${o.id}">Abrir a página completa do anúncio</a>` : ''}
           </div>
           ${ped.aceita_pedidos && ped.metodos.length ? `<p class="muted prod-nota">Pagamento direto à loja: ${ped.metodos.map(m => esc(m.nome)).join(', ')}. O pedido e a conversa ficam registrados no site.</p>` : ''}
@@ -124,7 +125,7 @@
         <h2>Fazer pedido</h2>
         <div class="prod-resumo"><img src="/api/img/${o.id}" alt="" referrerpolicy="no-referrer"><div><b>${esc(o.produto)}</b>
           <span class="muted">${esc(loja.nome)} · R$ ${brl(o.preco_atual)} cada</span></div></div>
-        <label class="field"><span>Quantidade</span><input type="number" name="quantidade" min="1" max="99" value="1" required></label>
+        <label class="field"><span>Quantidade</span><input type="text" name="quantidade" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="1" required></label>
         <fieldset class="prod-metodos"><legend>Como você quer pagar?</legend>
           ${ped.metodos.map((m, i) => `<label class="ass-metodo"><input type="radio" name="metodo" value="${esc(m.id)}" ${i ? '' : 'checked'}>
             <span><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small></span></label>`).join('')}
@@ -150,7 +151,7 @@
         ${taxa ? `<dt>Taxa de uso do site (${String(pct).replace('.', ',')}%)</dt><dd>R$ ${brl(taxa)}</dd>` : ''}
         <dt class="prod-conta-total">Total</dt><dd class="prod-conta-total">R$ ${brl(sub + taxa)}</dd>`;
     };
-    f.quantidade.addEventListener('input', conta);
+    f.quantidade.addEventListener('input', () => { f.quantidade.value = f.quantidade.value.replace(/\D/g, '').slice(0, 2); conta(); });
     conta();
     corpo().querySelector('[data-voltar]').onclick = () => abrir(o, loja);
     f.addEventListener('submit', async e => {

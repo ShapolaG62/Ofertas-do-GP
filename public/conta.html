@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261070">
-<script src="/js/app-nativo.js?v=20261070"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261071">
+<script src="/js/app-nativo.js?v=20261071"></script>
 </head>
 <body>
 <header class="site-header">
@@ -507,7 +507,7 @@
           <!-- Vendas e pagamentos (empresa) -->
           <div class="tab-pane" data-pane="vendas" hidden>
             <div class="panel-card">
-              <div class="row-between"><h2>Números da sua loja</h2><a class="btn btn-sm" href="/mensagens">💬 Mensagens</a></div>
+              <div class="row-between"><h2>Números da sua loja</h2><button class="btn btn-sm" type="button" data-tab="mensagens"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Mensagens</button></div>
               <p class="muted">Compras finalizadas pelo site (pagamento confirmado por você), acessos à página da loja e ao catálogo, e cliques no seu site oficial.</p>
               <div class="vendas-numeros" id="vendas-numeros"><p class="muted">Carregando…</p></div>
               <div id="vendas-top"></div>
@@ -534,7 +534,7 @@
 
             <div class="panel-card">
               <h2>Como seus clientes pagam</h2>
-              <p class="muted">O pagamento vai direto para você. O Ofertou! gera o Pix "copia e cola" com o valor de cada pedido e registra tudo; você confirma o recebimento.</p>
+              <p class="muted">O pagamento vai direto para você. O Ofertou! gera o Pix "copia e cola" com o valor de cada pedido e registra tudo; você confirma o recebimento. <b>Ative pelo menos uma forma (Mercado Pago, Pix ou cartão) para o botão "Fazer pedido" aparecer nos seus produtos.</b></p>
               <form class="form" id="form-pagloja">
                 <label class="check-line"><input type="checkbox" name="aceita_pedidos"> <span><b>Receber pedidos pelo site</b> (botão "Fazer pedido" nos seus produtos)</span></label>
                 <fieldset class="vendas-bloco">
@@ -552,7 +552,6 @@
                   <legend><label class="check-line"><input type="checkbox" name="pag_cartao_ativo"> <span><b>Cartão</b> (link de pagamento seu)</span></label></legend>
                   <label class="field"><span>Link de pagamento <small>(crie no Mercado Pago, PagBank, InfinitePay, PicPay… e cole aqui)</small></span><input type="url" name="pag_cartao_link" maxlength="400" placeholder="https://"></label>
                 </fieldset>
-                <label class="check-line"><input type="checkbox" name="pag_combinar"> <span><b>Combinar pelo chat</b> (você passa as opções de pagamento na conversa)</span></label>
                 <label class="field"><span>Recado no pedido <small>(prazo de envio, retirada, frete…)</small></span><textarea name="pedido_instrucoes" maxlength="400" rows="2"></textarea></label>
                 <div class="form-msg" hidden></div>
                 <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar formas de pagamento</button></div>
@@ -563,7 +562,7 @@
           <!-- Meus pedidos (todos) -->
           <div class="tab-pane" data-pane="pedidos" hidden>
             <div class="panel-card">
-              <div class="row-between"><h2>Meus pedidos</h2><a class="btn btn-sm" href="/mensagens">💬 Mensagens</a></div>
+              <div class="row-between"><h2>Meus pedidos</h2><button class="btn btn-sm" type="button" data-tab="mensagens"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Mensagens</button></div>
               <p class="muted">Pedidos que você fez às lojas parceiras pelo site. Cada um tem a conversa com a loja e o histórico completo.</p>
               <div id="meus-pedidos"><p class="muted">Carregando…</p></div>
             </div>
@@ -611,7 +610,7 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261070" defer></script>
-<script src="/js/chat-topo.js?v=20261070" defer></script>
+<script src="/js/conta.js?v=20261071" defer></script>
+<script src="/js/chat-topo.js?v=20261071" defer></script>
 </body>
 </html>

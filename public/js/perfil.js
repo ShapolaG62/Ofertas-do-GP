@@ -93,7 +93,7 @@
         <div class="pf-topo-acoes">
           ${P.proprio ? '<button class="btn btn-primary" type="button" id="pf-editar">Editar perfil</button>' : ''}
           ${P.pode_seguir ? `<button class="btn ${P.eu_sigo ? '' : 'btn-primary'}" type="button" id="pf-seguir">${P.eu_sigo ? 'Seguindo ✓' : '+ Seguir'}</button>` : ''}
-          ${P.pode_seguir ? '<button class="btn" type="button" id="pf-msg">💬 Mensagem</button>' : ''}
+          ${P.pode_seguir ? '<button class="btn" type="button" id="pf-msg"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Mensagem</button>' : ''}
           <button class="btn" type="button" id="pf-copiar">Copiar link</button>
         </div>
       </div>`;
@@ -175,7 +175,7 @@
       const brl = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const itens = d.ofertas.slice(0, 12);
       box.innerHTML = `<div class="pf-card-head"><h2>🏪 Catálogo — ${esc(loja.nome)}</h2><span class="pf-contagem">${d.ofertas.length} produto(s)</span></div>
-        <div class="row-actions" style="margin-top:6px">${P.proprio ? '' : '<button class="btn btn-sm btn-primary" type="button" id="pf-falar-loja">💬 Conversar com a loja</button>'}
+        <div class="row-actions" style="margin-top:6px">${P.proprio ? '' : '<button class="btn btn-sm btn-primary" type="button" id="pf-falar-loja"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Conversar com a loja</button>'}
           <a class="btn btn-sm" href="/loja/${esc(loja.slug)}">Ver loja completa</a></div>
         ${itens.length ? `<div class="grid">${itens.map(o => `<button class="card card-btn" type="button" data-oferta="${o.id}">
           <div class="card-media"><img src="/api/img/${o.id}" alt="" loading="lazy"><span class="card-off">-${Math.round(o.desconto_pct)}%</span></div>

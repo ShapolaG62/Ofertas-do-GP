@@ -23,7 +23,7 @@
     sacola: '<svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
     entrega: '<svg viewBox="0 0 24 24"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
     pessoas: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.4c2.2.7 3.5 2.8 3.5 5.6"/></svg>',
-    verificado: '<svg viewBox="0 0 24 24" class="lj-ok"><path d="m12 2 2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8l1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8"/></svg>',
+    verificado: '<span class="selo-ok" title="Loja parceira verificada">✓</span>',
     editar: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
   };
   const estrelas = (n, cls = '') => `<span class="lj-estrelas ${cls}" aria-label="${n} de 5 estrelas">${[1, 2, 3, 4, 5].map(i => `<span class="${n >= i ? 'on' : n >= i - 0.5 ? 'meia' : ''}">★</span>`).join('')}</span>`;

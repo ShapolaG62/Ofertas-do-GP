@@ -43,7 +43,7 @@
     sacola: '<svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
     entrega: '<svg viewBox="0 0 24 24"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
     chat: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
-    verificado: '<svg viewBox="0 0 24 24"><path d="m12 2 2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8l1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none"/></svg>',
+    verificado: '✓',
   };
   const ROTULOS_NOTA = ['Ruim', 'Regular', 'Bom', 'Muito bom', 'Ótimo'];
   const vendidosTxt = n => (n >= 1000 ? `+${num(Math.floor(n / 1000))}mil` : n > 0 ? `+${num(n)}` : '0');
@@ -55,7 +55,7 @@
     return `<li class="parc">
       <a class="parc-topo" href="${l ? `/loja/${esc(l.slug)}` : `/perfil/${esc(p.slug)}`}">
         <span class="parc-logo">${logo}</span>
-        <span class="parc-nome"><b>${esc(l?.nome || p.nome)}</b><small>Loja parceira no Ofertou! <span class="parc-ok" title="Empresa com cadastro aprovado">${ICONE.verificado}</span></small>
+        <span class="parc-nome"><b>${esc(l?.nome || p.nome)}</b><small>Loja parceira no Ofertou! <span class="selo-ok" title="Empresa com cadastro aprovado">${ICONE.verificado}</span></small>
           ${l?.avaliacoes?.total ? `<small class="parc-estrelas"><b>★ ${String(l.avaliacoes.media).replace('.', ',')}</b> · ${num(l.avaliacoes.total)} avaliaç${l.avaliacoes.total === 1 ? 'ão' : 'ões'}</small>` : ''}</span>
       </a>
       <div class="parc-acoes">

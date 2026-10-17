@@ -325,3 +325,20 @@ Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram 
 **Editor da loja** (Minha conta → **Minha loja**): nome, frase de destaque, apresentação, logo e banner (enviar imagem), cor da loja, contatos, horário, endereço, políticas e se as avaliações aparecem. Na mesma aba: **Catálogos** (criar, editar, excluir; escolher os produtos de cada um) e **Avaliações dos clientes** (responder publicamente).
 
 **Avaliações:** 1 a 5 estrelas com mensagem, uma por pessoa e loja (dá para editar ou apagar). Quem comprou pela loja no site aparece com **✓ Compra verificada**. A loja recebe aviso por e-mail (com o SMTP configurado) e pode responder. O admin, logado, vê o botão **Ocultar/Mostrar** em cada avaliação na página da loja. A nota média aparece no topo da loja e no cartão de parceiro da Comunidade.
+
+
+## 18. Pagamentos dos pedidos às lojas parceiras e carteira das empresas
+
+*(Substitui o que as seções 16 e 17 diziam sobre formas de pagamento das lojas, Mercado Pago da empresa e taxa como débito.)*
+
+**Como o cliente paga:** escolhe **Pix** ou **cartão** (o que a loja aceitar) e paga no **seu Mercado Pago**, o Access Token de Painel → Planos → Formas de recebimento (as parcelas máximas do cartão também vêm de lá). O total já inclui a **taxa de uso do site** (padrão 1%), que fica com você. Pix: QR code e copia e cola aparecem no pedido (vale 60 minutos; vencido, o pedido é cancelado). Cartão: abre o checkout do Mercado Pago. Sem o Access Token configurado, o botão "Fazer pedido" não aparece.
+
+**Confirmação automática:** o site consulta o Mercado Pago na tela do pedido, pelo aviso do Mercado Pago (com o site em https) e a cada 2 minutos no servidor. Pago: a empresa recebe aviso no **sino 🔔** (topo das páginas), na **conversa** e no **e-mail**; o cliente também é avisado. Não existe mais o botão "Já paguei".
+
+**Carteira da empresa** (Minha conta → **Vendas e pagamentos → Minha carteira**): cada venda entra com o valor dos produtos **menos a tarifa real do Mercado Pago** daquela venda. Fica **a liberar** até 7 dias depois de o pedido ser **concluído** ou 14 dias depois de **pago** (o que vier primeiro) e então vira **disponível**. Com o mínimo (padrão **R$ 50**), a empresa pede o **saque** para a chave Pix cadastrada em "Recebimento dos saques". Extrato e saques ficam na mesma tela.
+
+**Você (Painel → Atendimento):** configure taxa, saque mínimo e prazos de liberação. Em **Carteiras e saques** ficam os saques pedidos: pague pelo app do Mercado Pago (Pix para a chave mostrada) e clique em **Marcar como pago** (ou **Recusar**, e o valor volta ao saldo). A empresa é avisada no site e por e-mail. Também há o saldo e o extrato de cada empresa.
+
+**Cancelamento depois de pago:** a loja cancela e o dinheiro é devolvido ao cliente pelo Mercado Pago automaticamente; a venda sai da carteira.
+
+**Atenção:** neste modelo o dinheiro das vendas das empresas passa pela sua conta Mercado Pago até o saque. Converse com um contador sobre a declaração desses valores e confira as regras do Mercado Pago para esse uso.

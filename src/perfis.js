@@ -480,7 +480,8 @@ function cartao(p, ctx, visitante) {
 
 const POR_PAGINA = 24;
 const recalculado = new Map();
-function listar({ q = '', filtro = 'todos', pagina = 1, visitante = null } = {}) {
+// grupo: 'empresas' (contas de empresa) | 'consumidores' (as demais pessoas: consumidores, afiliados e o perfil do site) | vazio = todos
+function listar({ q = '', filtro = 'todos', pagina = 1, visitante = null, grupo = '' } = {}) {
   garantirTodos();
   const termo = String(q || '').trim().replace(/^#+/, '').trim().slice(0, 40);
   const params = [];
@@ -499,6 +500,8 @@ function listar({ q = '', filtro = 'todos', pagina = 1, visitante = null } = {})
   for (const p of linhas) {
     const ctx = contexto(p.dono);
     if (!visivel(ctx)) continue;
+    if (grupo === 'empresas' && papel(ctx) !== 'empresa') continue;
+    if (grupo === 'consumidores' && papel(ctx) === 'empresa') continue;
     // Perfil sem conquistas calculadas (ex.: nunca aberto): calcula agora, no máximo a cada 10 min.
     if (!db.get('SELECT 1 FROM conquistas_obtidas WHERE dono = ?', p.dono) && Date.now() - (recalculado.get(p.dono) || 0) > 600000) {
       recalculado.set(p.dono, Date.now());

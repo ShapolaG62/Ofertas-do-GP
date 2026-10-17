@@ -40,26 +40,34 @@
 
   // ── Cartão na lateral ──────────────────────────────────────────────────────
   let buscaCardTimer;
+  let grupoCard = 'consumidores'; // categoria do quadro: consumidores ou empresas
   async function carregarCard(q = '') {
     try {
-      const d = await api(`/api/perfis?q=${encodeURIComponent(q)}`);
+      const d = await api(`/api/perfis?grupo=${grupoCard}&q=${encodeURIComponent(q)}`);
       $('#comu-card').hidden = false;
       $('#comu-abrir').hidden = false;
       $('#comu-lista-card').innerHTML = d.itens.slice(0, 6).map(item).join('')
-        || `<li class="comu-vazio">${q ? 'Nenhum perfil com esse nome.' : 'Ainda não há perfis.'}</li>`;
+        || `<li class="comu-vazio">${q ? 'Nenhum perfil com esse nome.' : grupoCard === 'empresas' ? 'Ainda não há empresas.' : 'Ainda não há perfis.'}</li>`;
     } catch { /* sem login: a comunidade não aparece */ }
   }
   $('#comu-busca-card').addEventListener('input', e => {
     clearTimeout(buscaCardTimer);
     buscaCardTimer = setTimeout(() => carregarCard(e.target.value), 250);
   });
-  $('#comu-ver-todos').addEventListener('click', () => abrir($('#comu-busca-card').value));
+  $('#comu-grupos-card').addEventListener('click', e => {
+    const b = e.target.closest('[data-grupo]');
+    if (!b) return;
+    grupoCard = b.dataset.grupo;
+    $('#comu-grupos-card').querySelectorAll('[data-grupo]').forEach(x => x.setAttribute('aria-selected', x === b));
+    carregarCard($('#comu-busca-card').value);
+  });
+  $('#comu-ver-todos').addEventListener('click', () => abrir($('#comu-busca-card').value, grupoCard));
   $('#comu-abrir').addEventListener('click', () => abrir(''));
 
   // ── Gaveta com todos os perfis ─────────────────────────────────────────────
-  const estado = { filtro: 'todos', q: '', pagina: 1 };
+  const estado = { filtro: 'todos', q: '', pagina: 1, grupo: '' };
   async function listar(acrescentar = false) {
-    const d = await api(`/api/perfis?filtro=${estado.filtro}&q=${encodeURIComponent(estado.q)}&pagina=${estado.pagina}`).catch(() => null);
+    const d = await api(`/api/perfis?filtro=${estado.filtro}&grupo=${estado.grupo}&q=${encodeURIComponent(estado.q)}&pagina=${estado.pagina}`).catch(() => null);
     if (!d) return;
     const html = d.itens.map(item).join('');
     $('#comu-lista').innerHTML = acrescentar ? $('#comu-lista').innerHTML + html
@@ -67,7 +75,9 @@
     $('#comu-total').textContent = `${num(d.total)} perfil${d.total === 1 ? '' : 's'}${estado.q ? ` para "#${estado.q.replace(/^#+/, '')}"` : ''}`;
     $('#comu-mais').hidden = !d.mais;
   }
-  function abrir(q = '') {
+  function abrir(q = '', grupo = '') {
+    estado.grupo = grupo;
+    $('#comu-grupos').querySelectorAll('[data-grupo]').forEach(x => x.setAttribute('aria-selected', x.dataset.grupo === grupo));
     estado.q = String(q || '').replace(/^#+/, '');
     estado.pagina = 1;
     $('#comu-busca').value = estado.q ? `#${estado.q}` : '';
@@ -84,6 +94,13 @@
     if (!b) return;
     estado.filtro = b.dataset.filtro; estado.pagina = 1;
     $('#comu-abas').querySelectorAll('[data-filtro]').forEach(x => x.setAttribute('aria-selected', x === b));
+    listar();
+  });
+  $('#comu-grupos').addEventListener('click', e => {
+    const b = e.target.closest('[data-grupo]');
+    if (!b) return;
+    estado.grupo = b.dataset.grupo; estado.pagina = 1;
+    $('#comu-grupos').querySelectorAll('[data-grupo]').forEach(x => x.setAttribute('aria-selected', x === b));
     listar();
   });
   $('#comu-mais').addEventListener('click', () => { estado.pagina++; listar(true); });

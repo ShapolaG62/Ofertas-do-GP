@@ -47,7 +47,7 @@ router.get('/api/perfis', (req, res) => {
   const visitante = perfis.donoDe(req);
   if (!visitante) return res.status(401).json({ error: 'Entre na sua conta para ver a comunidade.' });
   try {
-    res.json(perfis.listar({ q: req.query.q, filtro: req.query.filtro, pagina: req.query.pagina, visitante }));
+    res.json(perfis.listar({ q: req.query.q, filtro: req.query.filtro, pagina: req.query.pagina, grupo: String(req.query.grupo || ''), visitante }));
   } catch (err) { sendError(res, err); }
 });
 

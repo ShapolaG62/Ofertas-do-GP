@@ -168,11 +168,13 @@
     return `<div class="msg-pedido" data-pedido="${p.id}">
       <div class="msg-pedido-topo"><b>Pedido ${esc(p.codigo)}</b><span class="status-pill st-${esc(p.status)}">${esc(p.status_nome)}</span></div>
       <div class="msg-pedido-prod">${p.imagem ? `<img src="/api/img/${p.oferta_id}" alt="" referrerpolicy="no-referrer">` : ''}
-        <div><b>${esc(p.produto)}</b><span>${p.quantidade}x ${brl(p.preco_unit)} · <b>${brl(p.total)}</b></span><span>Pagamento: ${esc(p.metodo_nome)}</span>
+        <div><b>${esc(p.produto)}</b><span>${p.quantidade}x ${brl(p.preco_unit)}${p.taxa_valor ? ` + taxa do site ${brl(p.taxa_valor)}` : ''} · <b>Total ${brl(p.total)}</b></span><span>Pagamento: ${esc(p.metodo_nome)}</span>
         ${p.observacao ? `<span class="muted">Obs.: ${esc(p.observacao)}</span>` : ''}</div></div>
       ${pg && pg.pix ? `<div class="msg-pix"><span>Pix copia e cola (valor ${brl(p.total)} para <b>${esc(pg.recebedor)}</b>):</span>
         <div class="ass-copia"><input readonly value="${esc(pg.pix)}" aria-label="Código Pix"><button class="btn btn-sm" type="button" data-copiar="${esc(pg.pix)}">Copiar</button></div>
         <small class="muted">No app do banco: Pix → Pix copia e cola. Depois toque em "Já paguei".</small></div>` : ''}
+      ${pg && pg.mercadopago ? `<div class="msg-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.mercadopago)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} no Mercado Pago ↗</a>
+        <small class="muted">Pix ou cartão. A confirmação é automática: esta conversa atualiza sozinha.</small></div>` : ''}
       ${pg && pg.link ? `<div class="msg-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.link)}" target="_blank" rel="noopener nofollow">Pagar com cartão (link da loja) ↗</a>
         <small class="muted">Pague ${brl(p.total)} no link e depois toque em "Já paguei".</small></div>` : ''}
       ${p.instrucoes ? `<p class="muted" style="margin:6px 0 0;font-size:12.5px">${esc(p.instrucoes)}</p>` : ''}
@@ -198,8 +200,18 @@
     } catch (err) { toast(err.message); b.disabled = false; }
   });
 
+  // Pedidos pelo Mercado Pago esperando pagamento: confere de tempos em tempos (a confirmação vira mensagem)
+  let ultimaConferencia = 0;
+  async function conferirMP() {
+    if (Date.now() - ultimaConferencia < 15000) return;
+    ultimaConferencia = Date.now();
+    const abertos = Object.values(PEDIDOS).filter(p => p.metodo === 'mercadopago' && ['aguardando_pagamento', 'pagamento_informado'].includes(p.status));
+    for (const p of abertos) { try { await api(`/api/pedidos/${p.id}`); } catch { /* tenta depois */ } }
+  }
+
   async function atualizar(forcar = false) {
     if (!ATUAL) return;
+    conferirMP().catch(() => {});
     const ultimo = MSGS.length ? MSGS[MSGS.length - 1].id : 0;
     const d = await api(`/api/chat/conversas/${ATUAL.id}?depois=${ultimo}`);
     const mudouStatus = d.conversa.status !== ATUAL.status;

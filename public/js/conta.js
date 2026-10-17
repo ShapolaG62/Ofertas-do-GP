@@ -450,6 +450,13 @@
     $('#excluir-confirma').hidden = ME.tem_senha;
 
     if (empresa) fillStore();
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('aba') && tabs.some(([k]) => k === qs.get('aba'))) {
+      currentTab = qs.get('aba');
+      if (qs.get('mp') === 'ok') toast('Mercado Pago conectado!');
+      if (qs.get('mp_erro')) toast(qs.get('mp_erro'));
+      history.replaceState(null, '', '/conta');
+    }
     openTab(currentTab);
   }
 
@@ -498,6 +505,28 @@
       num(a.link.total, 'Cliques para comprar no seu site', `${a.link.d30} em 30 dias`),
       num(m.conversas, 'Conversas de atendimento'),
     ].join('');
+    // Taxa de uso do site
+    const tx = d.taxa;
+    const pctTxt = String(tx.pct).replace('.', ',');
+    $('#taxa-explica').innerHTML = `O cliente paga <b>${pctTxt}%</b> a mais sobre o valor dos produtos em cada pedido feito pelo site (aparece separado na finalização). Pedidos pagos pelo <b>Mercado Pago conectado</b>: a taxa é separada automaticamente. Pedidos pagos por Pix na sua chave, link de cartão ou combinados: você recebe o valor total e repassa a taxa ao Ofertou!.`;
+    $('#taxa-numeros').innerHTML = [
+      num(brlFmt(tx.a_pagar.valor), 'Taxa a repassar', `${tx.a_pagar.n} pedido(s) confirmados`),
+      num(brlFmt(tx.automaticas.valor), 'Separada pelo Mercado Pago', `${tx.automaticas.n} pedido(s)`),
+      num(brlFmt(tx.quitadas.valor), 'Já repassada', `${tx.quitadas.n} pedido(s)`),
+    ].join('');
+    $('#taxa-pagar').innerHTML = tx.pagar ? `<div class="msg-pix" style="margin-top:12px">
+        <span>Pix "copia e cola" de <b>${brlFmt(tx.pagar.valor)}</b> para <b>${esc(tx.pagar.recebedor)}</b>:</span>
+        <div class="ass-copia"><input readonly value="${esc(tx.pagar.pix)}" aria-label="Pix da taxa"><button class="btn btn-sm" type="button" data-copiar-taxa="${esc(tx.pagar.pix)}">Copiar</button></div>
+        <div class="row-actions"><button class="btn btn-primary btn-sm" type="button" id="taxa-paguei">Já paguei a taxa</button>
+        ${tx.aviso_pagamento_em ? `<span class="muted">Você avisou o pagamento em ${fmtDate(tx.aviso_pagamento_em)}: aguardando a confirmação.</span>` : ''}</div></div>`
+      : tx.a_pagar.valor > 0 ? '<p class="muted">O Ofertou! vai enviar os dados para o pagamento da taxa.</p>' : '';
+    // Mercado Pago
+    const mp = d.pagamento.mp;
+    $('#mp-status').innerHTML = mp.conectado
+      ? `<p><span class="status-pill ok">Conectado</span> desde ${fmtDate(mp.desde)}. Seus clientes já veem a opção "Pix ou cartão pelo Mercado Pago".</p>
+         <button class="btn btn-sm" type="button" id="mp-desconectar">Desconectar</button>`
+      : mp.disponivel ? '<a class="btn btn-primary" href="/api/conta/loja/mp/conectar">Conectar minha conta Mercado Pago</a>'
+        : `<p class="muted">${esc(mp.motivo)}</p>`;
     $('#vendas-top').innerHTML = m.mais_vistos.length ? `<h3 style="margin:16px 0 6px;font-size:15px">Mais vistos no catálogo (30 dias)</h3>
       <ol class="muted" style="margin:0;padding-left:20px">${m.mais_vistos.map(t => `<li>${esc(t.produto)} — <b>${t.n}</b></li>`).join('')}</ol>` : '';
     $('#vendas-pedidos').innerHTML = d.pedidos.length ? d.pedidos.map(linhaPedido).join('') : '<p class="muted">Nenhum pedido ainda.</p>';
@@ -509,6 +538,20 @@
   bind('#form-pagloja', async (form, d) => {
     await api('/api/conta/loja/pagamento', { method: 'PUT', body: d });
     msg(form, 'Formas de pagamento salvas!', true);
+  });
+
+  $('[data-pane="vendas"]').addEventListener('click', async e => {
+    const cp = e.target.closest('[data-copiar-taxa]');
+    if (cp) return navigator.clipboard.writeText(cp.dataset.copiarTaxa).then(() => toast('Pix copiado!'));
+    if (e.target.closest('#taxa-paguei')) {
+      try { await api('/api/conta/loja/taxa/paguei', { method: 'POST', body: {} }); toast('Aviso enviado. Assim que o pagamento for conferido, a taxa sai da lista.'); loadVendas(); }
+      catch (err) { toast(err.message); }
+    }
+    if (e.target.closest('#mp-desconectar')) {
+      if (!confirm('Desconectar o Mercado Pago? Seus clientes deixam de ver o pagamento automático.')) return;
+      await api('/api/conta/loja/mp/desconectar', { method: 'POST', body: {} }).catch(err => toast(err.message));
+      loadVendas();
+    }
   });
 
   async function loadMeusPedidos() {

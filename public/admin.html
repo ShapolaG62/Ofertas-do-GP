@@ -510,6 +510,7 @@
               <label class="field" style="margin-top:8px">Chave Pix <input type="text" name="pix_chave" autocomplete="off"></label>
               <label class="field" style="margin-top:8px">Nome do recebedor <input type="text" name="pix_nome"></label>
               <label class="field" style="margin-top:8px">Banco (opcional) <input type="text" name="pix_banco" placeholder="Ex.: Nubank"></label>
+              <label class="field" style="margin-top:8px">Cidade (vai no Pix das taxas das lojas) <input type="text" name="pix_cidade" maxlength="40" placeholder="Ex.: Goiânia"></label>
             </div>
 
             <div class="store-card">
@@ -659,10 +660,25 @@
           <button class="btn" type="button" id="at-buscar">Buscar</button>
         </div>
       </div>
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Taxa de uso do site</h2>
+          <p class="hint">Somada ao valor dos produtos em cada pedido feito às lojas parceiras pelo site (o cliente vê a linha "Taxa de uso do site" na finalização). <b>Lojas com Mercado Pago conectado:</b> o Mercado Pago divide o pagamento e a taxa cai direto no saldo da <b>sua</b> conta Mercado Pago (a dona do app abaixo). <b>Outras formas</b> (Pix da loja, link de cartão, combinar): a taxa fica como débito da loja, que paga por Pix para a sua chave (Planos → Formas de recebimento → Pix pela sua chave) e você dá baixa na tabela abaixo.</p>
+          <div class="grid">
+            <label class="field">Taxa (%) <input type="text" name="taxa_site_pct" inputmode="decimal" placeholder="1"></label>
+            <label class="field">Mercado Pago — Client ID do app <input type="text" name="mp_mkt_client_id" autocomplete="off"></label>
+            <label class="field">Mercado Pago — Client Secret <input type="password" name="mp_mkt_client_secret" autocomplete="off" data-secret></label>
+          </div>
+          <p class="hint" style="margin-top:10px">Para a divisão automática: em <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener">mercadopago.com.br/developers</a> → Suas integrações → <b>Criar aplicação</b> (com a sua conta, a que vai receber as taxas) → modelo de integração <b>Marketplace / pagamentos online</b> → em <b>URLs de redirecionamento</b> cole <code id="taxa-redirect">https://SEU-DOMINIO/api/mp/oauth/retorno</code> → copie o <b>Client ID</b> e o <b>Client Secret</b> (Credenciais de produção) para cá. Funciona com o site online em https (VPS): cada empresa clica em "Conectar minha conta Mercado Pago" na conta dela.</p>
+          <p class="hint" id="taxa-situacao"></p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar taxa</button></div>
+        </div>
+      </form>
+
       <div class="panel">
         <h2>Empresas</h2>
         <p class="hint">Compras finalizadas = pedidos com pagamento confirmado pela loja. Acessos: página da loja e perfil; produtos: aberturas no catálogo; site: cliques no site oficial (30 dias).</p>
-        <div class="table-wrap"><table><thead><tr><th>Loja</th><th>Compras finalizadas</th><th>Valor</th><th>Pedidos</th><th>Conversas</th><th>Acessos (30d / total)</th><th>Produtos vistos (30d)</th><th>Cliques no site (30d)</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>Loja</th><th>Compras finalizadas</th><th>Valor</th><th>Pedidos</th><th>Conversas</th><th>Acessos (30d / total)</th><th>Produtos vistos (30d)</th><th>Cliques no site (30d)</th><th>Taxa do site</th></tr></thead>
           <tbody id="at-lojas"></tbody></table></div>
       </div>
       <div class="panel">
@@ -1556,12 +1572,28 @@ async function loadAtendimento() {
     <td><a href="/loja/${esc(l.slug)}" target="_blank">${esc(l.nome)}</a>${l.oculta ? ' <span class="tag">oculta</span>' : ''}${l.aceita_pedidos ? '' : ' <span class="tag">sem pedidos</span>'}</td>
     <td class="num"><b>${l.finalizacoes.total}</b> <span class="hint" style="margin:0">(${l.finalizacoes.d30} em 30d)</span></td>
     <td class="num">${brl(l.finalizacoes.valor)}</td><td class="num">${l.pedidos}</td><td class="num">${l.conversas}</td>
-    <td class="num">${l.acessos30} / ${l.acessos}</td><td class="num">${l.produtos30}</td><td class="num">${l.site30}</td></tr>`).join('')
-    : '<tr><td colspan="8" class="hint">Nenhuma loja cadastrada.</td></tr>';
+    <td class="num">${l.acessos30} / ${l.acessos}</td><td class="num">${l.produtos30}</td><td class="num">${l.site30}</td>
+    <td class="num">${l.taxas.total ? `total ${brl(l.taxas.total)}<br><span class="hint" style="margin:0">automática ${brl(l.taxas.automaticas.valor)} · repassada ${brl(l.taxas.quitadas.valor)}</span>` : '—'}
+      ${l.taxas.a_pagar.valor > 0 ? `<br><b style="color:var(--yellow)">a receber ${brl(l.taxas.a_pagar.valor)}</b>${l.taxas.aviso_pagamento_em ? ' <span class="tag">loja avisou que pagou</span>' : ''}
+        <br><button class="btn small primary" type="button" data-quitar="${l.id}" data-valor="${l.taxas.a_pagar.valor}">Recebi</button>` : ''}</td></tr>`).join('')
+    : '<tr><td colspan="9" class="hint">Nenhuma loja cadastrada.</td></tr>';
+  $('#taxa-redirect').textContent = d.taxa.redirect.startsWith('http') ? d.taxa.redirect : `${location.origin}/api/mp/oauth/retorno`;
+  $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(d.taxa.pct).replace('.', ',')}%</b> · divisão pelo Mercado Pago: ${d.taxa.mp_pronto ? '<b>app configurado</b>' : '<b style="color:var(--yellow)">app não configurado</b>'}
+    · Pix para receber as taxas: ${d.taxa.pix_dono ? '<b>configurado</b>' : '<b style="color:var(--yellow)">configure em Planos → Pix pela sua chave</b>'}`;
   $('#at-pedidos').innerHTML = linhasPedidos(d.pedidos);
   $('#at-conversas').innerHTML = linhasConversas(d.conversas);
 }
 $('#at-buscar').addEventListener('click', () => loadAtendimento().catch(e => globalMsg(e.message, false)));
+$('#at-lojas').addEventListener('click', async e => {
+  const b = e.target.closest('[data-quitar]');
+  if (!b) return;
+  if (!confirm(`Confirmar que você recebeu ${brl(Number(b.dataset.valor))} de taxa desta loja?`)) return;
+  try {
+    await api(`/api/admin/taxas/${b.dataset.quitar}/quitar`, { method: 'POST', body: {} });
+    globalMsg('Baixa registrada.');
+    loadAtendimento();
+  } catch (err) { globalMsg(err.message, false); }
+});
 $('#at-busca').addEventListener('keydown', e => { if (e.key === 'Enter') $('#at-buscar').click(); });
 
 async function abrirTicket(tipo, id) {

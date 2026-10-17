@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261057">
-<script src="/js/app-nativo.js?v=20261057"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261058">
+<script src="/js/app-nativo.js?v=20261058"></script>
 </head>
 <body>
 <header class="site-header">
@@ -461,6 +461,19 @@
             </div>
 
             <div class="panel-card">
+              <h2>Taxa de uso do site</h2>
+              <p class="muted" id="taxa-explica"></p>
+              <div class="vendas-numeros" id="taxa-numeros"></div>
+              <div id="taxa-pagar"></div>
+            </div>
+
+            <div class="panel-card">
+              <h2>Mercado Pago <small class="muted" style="font-weight:500">· confirmação automática</small></h2>
+              <p class="muted">Conecte a sua conta Mercado Pago: o cliente paga por Pix ou cartão no Mercado Pago, o pedido é confirmado sozinho, o valor dos produtos cai na sua conta e a taxa do site é separada automaticamente (você não precisa repassar nada).</p>
+              <div id="mp-status"></div>
+            </div>
+
+            <div class="panel-card">
               <h2>Como seus clientes pagam</h2>
               <p class="muted">O pagamento vai direto para você. O Ofertou! gera o Pix "copia e cola" com o valor de cada pedido e registra tudo; você confirma o recebimento.</p>
               <form class="form" id="form-pagloja">
@@ -539,7 +552,7 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261057" defer></script>
-<script src="/js/chat-topo.js?v=20261057" defer></script>
+<script src="/js/conta.js?v=20261058" defer></script>
+<script src="/js/chat-topo.js?v=20261058" defer></script>
 </body>
 </html>

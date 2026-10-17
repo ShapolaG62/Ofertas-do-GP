@@ -1312,3 +1312,8 @@ body.pf-body {
 .pf-catalogo .grid { margin-top: 10px; }
 .vendas-bloco { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; display: grid; gap: 10px; }
 .vendas-bloco legend { padding: 0 6px; }
+
+.prod-conta { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; font-size: 14px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.prod-conta dt { color: var(--ink-2); }
+.prod-conta dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.prod-conta .prod-conta-total { font-weight: 800; color: var(--ink); font-size: 16px; border-top: 1px solid var(--line); padding-top: 6px; }

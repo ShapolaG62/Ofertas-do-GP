@@ -57,17 +57,23 @@ router.post('/api/chat/iniciar', exigirDono, (req, res) => {
 });
 
 // ── Pedidos ──────────────────────────────────────────────────────────────────
-router.post('/api/pedidos', exigirDono, (req, res) => {
+router.post('/api/pedidos', exigirDono, async (req, res) => {
   const wait = pedidoLimiter.hit(req.dono);
   if (wait) return res.status(429).json({ error: `Muitos pedidos. Tente de novo em ${wait} min.` });
-  try { res.json(pedidos.criar(req.dono, req.body || {})); } catch (err) { sendError(res, err); }
+  try { res.json(await pedidos.criar(req.dono, req.body || {})); } catch (err) { sendError(res, err); }
 });
 router.get('/api/pedidos', exigirDono, (req, res) => res.json(pedidos.meusPedidos(req.dono)));
-router.get('/api/pedidos/:id', exigirDono, (req, res) => {
-  try { res.json(pedidos.detalhe(req.dono, req.params.id)); } catch (err) { sendError(res, err); }
+router.get('/api/pedidos/:id', exigirDono, async (req, res) => {
+  try { res.json(await pedidos.detalhe(req.dono, req.params.id)); } catch (err) { sendError(res, err); }
 });
-router.post('/api/pedidos/:id/acao', exigirDono, (req, res) => {
-  try { res.json(pedidos.acao(req.dono, req.params.id, String(req.body?.acao || ''), req.body?.motivo)); } catch (err) { sendError(res, err); }
+router.post('/api/pedidos/:id/acao', exigirDono, async (req, res) => {
+  try { res.json(await pedidos.acao(req.dono, req.params.id, String(req.body?.acao || ''), req.body?.motivo)); } catch (err) { sendError(res, err); }
+});
+// Aviso do Mercado Pago: só serve de gatilho — o pagamento é conferido pela API com o token da loja
+router.post('/api/pedidos/mp-webhook', async (req, res) => {
+  res.sendStatus(200);
+  const id = Number(req.query.pedido);
+  if (id) pedidos.verificarMP(id, true).catch(err => console.error('[PEDIDOS] Mercado Pago:', err.message));
 });
 
 // ── Loja do usuário (empresa): pagamentos, pedidos recebidos e números ───────
@@ -81,10 +87,30 @@ function exigirEmpresa(req, res, next) {
 router.get('/api/conta/loja/vendas', exigirEmpresa, (req, res) => {
   if (!req.loja) return res.json({ loja: null });
   res.json({ loja: { id: req.loja.id, nome: req.loja.nome, slug: req.loja.slug }, pagamento: pedidos.configPagamento(req.loja),
-    pedidos: pedidos.pedidosDaLoja(req.user), metricas: pedidos.metricas(req.loja.id) });
+    pedidos: pedidos.pedidosDaLoja(req.user), metricas: pedidos.metricas(req.loja.id), taxa: pedidos.painelTaxas(req.user) });
 });
 router.put('/api/conta/loja/pagamento', exigirEmpresa, (req, res) => {
   try { res.json({ ok: true, pagamento: pedidos.salvarPagamento(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
+});
+
+// Taxa do site: a empresa avisa que pagou (o admin confere e dá baixa)
+router.post('/api/conta/loja/taxa/paguei', exigirEmpresa, (req, res) => {
+  try { res.json(pedidos.avisarTaxaPaga(req.user)); } catch (err) { sendError(res, err); }
+});
+
+// Mercado Pago da empresa: conectar (OAuth), retorno e desconectar
+router.get('/api/conta/loja/mp/conectar', exigirEmpresa, (req, res) => {
+  try { res.redirect(pedidos.linkConectarMP(req.user)); } catch (err) { res.redirect(`/conta?aba=vendas&mp_erro=${encodeURIComponent(err.message)}`); }
+});
+router.get('/api/mp/oauth/retorno', async (req, res) => {
+  try {
+    await pedidos.retornoMP(req.query.code, req.query.state);
+    res.redirect('/conta?aba=vendas&mp=ok');
+  } catch (err) { res.redirect(`/conta?aba=vendas&mp_erro=${encodeURIComponent(err.message)}`); }
+});
+router.post('/api/conta/loja/mp/desconectar', exigirEmpresa, (req, res) => {
+  pedidos.desconectarMP(req.user);
+  res.json({ ok: true });
 });
 
 // ── Contadores de acesso (página da loja, produtos do catálogo, site oficial, links) ──

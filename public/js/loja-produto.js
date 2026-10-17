@@ -132,17 +132,26 @@
         <label class="field"><span>Observações para a loja <small class="muted">(endereço de entrega, cor, tamanho…)</small></span>
           <textarea name="observacao" maxlength="600" rows="3"></textarea></label>
         ${ped.instrucoes ? `<p class="muted prod-nota">${esc(ped.instrucoes)}</p>` : ''}
-        <p class="prod-total">Total: <b id="prod-total">R$ ${brl(o.preco_atual)}</b> <span class="muted">(frete e prazo: combine com a loja pelo chat, se houver)</span></p>
+        <dl class="prod-conta" id="prod-conta"></dl>
+        <p class="muted prod-nota" style="margin:0">Frete e prazo: combine com a loja pelo chat, se houver.</p>
         <div class="form-msg err" id="prod-msg" hidden></div>
         <button class="btn btn-primary btn-block" type="submit">Confirmar pedido</button>
         <button class="btn btn-block" type="button" data-voltar>Voltar ao produto</button>
         <p class="muted prod-nota">O pagamento vai direto para a loja. O Ofertou! registra o pedido e a conversa, mas não cobra nem entrega o produto.</p>
       </form>`;
     const f = corpo().querySelector('#prod-pedido');
-    f.quantidade.addEventListener('input', () => {
+    // Produtos + taxa de uso do site (somada na finalização) = total
+    const pct = Number(ped.taxa_pct) || 0;
+    const conta = () => {
       const q = Math.min(Math.max(parseInt(f.quantidade.value, 10) || 1, 1), 99);
-      corpo().querySelector('#prod-total').textContent = `R$ ${brl(o.preco_atual * q)}`;
-    });
+      const sub = Math.round(o.preco_atual * q * 100) / 100;
+      const taxa = Math.round(sub * pct) / 100;
+      corpo().querySelector('#prod-conta').innerHTML = `<dt>Produtos (${q}x)</dt><dd>R$ ${brl(sub)}</dd>
+        ${taxa ? `<dt>Taxa de uso do site (${String(pct).replace('.', ',')}%)</dt><dd>R$ ${brl(taxa)}</dd>` : ''}
+        <dt class="prod-conta-total">Total</dt><dd class="prod-conta-total">R$ ${brl(sub + taxa)}</dd>`;
+    };
+    f.quantidade.addEventListener('input', conta);
+    conta();
     corpo().querySelector('[data-voltar]').onclick = () => abrir(o, loja);
     f.addEventListener('submit', async e => {
       e.preventDefault();

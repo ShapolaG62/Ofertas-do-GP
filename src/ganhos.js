@@ -335,7 +335,7 @@ function iniciar() {
 }
 
 module.exports = {
-  painel, resumo, verificar, iniciar, notificacoes, marcarLida, marcarTodasLidas,
+  notificar, painel, resumo, verificar, iniciar, notificacoes, marcarLida, marcarTodasLidas,
   registrar, atualizarStatus, excluir, listar, registrarSaque, saques, excluirSaque, editarPlataforma,
   previa, importar, vendasConfirmadas, statusDe, numero, data, STATUS,
 };

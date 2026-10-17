@@ -248,10 +248,15 @@ router.get('/api/admin/atendimento', (req, res) => {
   const q = String(req.query.q || '');
   const lojasLista = db.all(`SELECT l.id, l.nome, l.slug, l.user_id, l.oculta, l.aceita_pedidos FROM lojas l ORDER BY l.nome`).map(l => {
     const m = pedidosLoja.metricas(l.id);
-    return { ...l, finalizacoes: m.finalizacoes, pedidos: m.pedidos.total, conversas: m.conversas,
+    return { ...l, finalizacoes: m.finalizacoes, pedidos: m.pedidos.total, conversas: m.conversas, taxas: m.taxas,
       acessos30: m.acessos.pagina.d30, produtos30: m.acessos.produto.d30, site30: m.acessos.site.d30, acessos: m.acessos.pagina.total };
   });
-  res.json({ conversas: chat.listarAdmin({ q }), pedidos: pedidosLoja.listarAdmin({ q }), lojas: lojasLista });
+  res.json({ conversas: chat.listarAdmin({ q }), pedidos: pedidosLoja.listarAdmin({ q }), lojas: lojasLista,
+    taxa: { pct: pedidosLoja.taxaPct(), mp_pronto: pedidosLoja.mpAppPronto(), redirect: pedidosLoja.mpRedirect(),
+      pix_dono: Boolean(settings.get('pix_chave')) } });
+});
+router.post('/api/admin/taxas/:lojaId/quitar', (req, res) => {
+  try { res.json(require('../pedidos-loja').quitarTaxas(req.params.lojaId, req.body?.observacao)); } catch (err) { sendError(res, err); }
 });
 router.get('/api/admin/conversas/:id', (req, res) => {
   try { res.json(require('../chat').transcricao(req.params.id)); } catch (err) { sendError(res, err); }

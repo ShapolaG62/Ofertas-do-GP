@@ -110,6 +110,11 @@ const DEFAULTS = {
   pix_tipo: '',                 // cpf, cnpj, email, telefone ou aleatoria
   pix_nome: '',
   pix_banco: '',
+  pix_cidade: '',               // cidade do recebedor (vai no Pix "copia e cola" das taxas das lojas)
+  // Taxa de uso do site nos pedidos às lojas parceiras (%) e app do Mercado Pago para dividir o pagamento
+  taxa_site_pct: '1',
+  mp_mkt_client_id: '',
+  mp_mkt_client_secret: '',
   pag_ted_ativo: '0',
   ted_banco: '',
   ted_agencia: '',
@@ -154,7 +159,7 @@ const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsens
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
   'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret',
-  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'mp_access_token', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
+  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
 const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas'];

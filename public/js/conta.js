@@ -479,7 +479,12 @@
     if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
   }
   $('#account-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) openTab(b.dataset.tab); });
-  $('#view-conta').addEventListener('click', e => { const b = e.target.closest('.tab-pane [data-tab]'); if (b) openTab(b.dataset.tab); });
+  $('#view-conta').addEventListener('click', e => {
+    const b = e.target.closest('.tab-pane [data-tab]');
+    if (b) openTab(b.dataset.tab);
+    const c = e.target.closest('[data-abrir-chat]'); // conversa do pedido: no painel de mensagens
+    if (c) { if (window.OfertouChat) window.OfertouChat.abrir(c.dataset.abrirChat, c.dataset.pedido); else location.href = `/mensagens?c=${c.dataset.abrirChat}&pedido=${c.dataset.pedido}`; }
+  });
   $('#hello-new-ad').addEventListener('click', () => { openTab('anuncios'); openEditor(); });
 
   // ── Vendas e pagamentos da loja / Meus pedidos ───────────────────────────
@@ -494,7 +499,7 @@
       <span class="status-pill st-${esc(p.status)}">${esc(p.status_nome)}</span>
       <div class="row-actions">
         ${p.acoes.map(a => `<button class="btn btn-sm${a === 'cancelar' ? ' danger-txt' : a === 'confirmar_pagamento' || a === 'recebido' ? ' btn-primary' : ''}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO_ACAO[a]}</button>`).join('')}
-        ${p.conversa_id ? `<a class="btn btn-sm" href="/mensagens?c=${p.conversa_id}&pedido=${p.id}">Conversa</a>` : ''}
+        ${p.conversa_id ? `<button class="btn btn-sm" type="button" data-abrir-chat="${p.conversa_id}" data-pedido="${p.id}">Conversa</button>` : ''}
       </div></div>`;
 
   async function loadVendas() {
@@ -609,7 +614,7 @@
   async function embutirMensagens() {
     if (mensagensEmbutidas) return;
     mensagensEmbutidas = true;
-    const html = await fetch('/mensagens', { cache: 'no-store' }).then(r => r.text());
+    const html = await fetch('/mensagens/tela', { cache: 'no-store' }).then(r => r.text());
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const pagina = doc.querySelector('main.msg-page');
     if (!pagina) throw new Error('mensagens');

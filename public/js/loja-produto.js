@@ -160,7 +160,7 @@
       btn.disabled = true; btn.textContent = 'Enviando…';
       try {
         const p = await api('/api/pedidos', { oferta_id: o.id, quantidade: f.quantidade.value, metodo: f.metodo ? f.metodo.value : '', observacao: f.observacao.value });
-        location.href = `/mensagens?c=${p.conversa_id}&pedido=${p.id}`;
+        if (window.OfertouChat) { dlg.close(); window.OfertouChat.abrir(p.conversa_id, p.id); } else location.href = `/mensagens?c=${p.conversa_id}&pedido=${p.id}`;
       } catch (err) {
         const m = corpo().querySelector('#prod-msg'); m.textContent = err.message; m.hidden = false;
         btn.disabled = false; btn.textContent = 'Confirmar pedido';

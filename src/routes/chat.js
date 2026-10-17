@@ -1,5 +1,4 @@
-// Mensagens (/mensagens), pedidos às lojas parceiras, pagamentos e números da loja, e contadores de acesso.
-const path = require('path');
+// Mensagens (painel flutuante e aba da conta), pedidos às lojas parceiras, pagamentos e números da loja, e contadores de acesso.
 const express = require('express');
 const db = require('../db');
 const chat = require('../chat');
@@ -14,7 +13,6 @@ const iniciarLimiter = createLimiter(30, 60);   // novas conversas por hora por 
 const pedidoLimiter = createLimiter(20, 60);    // pedidos por hora por pessoa
 const visitaLimiter = createLimiter(600, 60);   // registros de acesso por hora por IP
 
-router.get('/mensagens', (req, res) => res.sendFile(path.join(__dirname, '..', '..', 'public', 'mensagens.html')));
 
 // Quem está usando (conta do site, cliente da ferramenta ou admin)
 function exigirDono(req, res, next) {

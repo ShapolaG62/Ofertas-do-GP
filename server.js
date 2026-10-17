@@ -66,6 +66,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Mensagens ficam no painel flutuante do canto inferior direito: /mensagens?c=ID&pedido=ID abre a página de ofertas
+// com a conversa aberta no painel. A tela completa só é usada dentro de Minha conta (aba Mensagens): /mensagens/tela.
+app.get(['/mensagens', '/mensagens.html'], (req, res) => {
+  const q = new URLSearchParams();
+  q.set('chat', String(Number(req.query.c) || ''));
+  if (Number(req.query.pedido)) q.set('pedido', String(Number(req.query.pedido)));
+  res.redirect(`/?${q}`);
+});
+app.get('/mensagens/tela', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'mensagens.html')));
+
 // O próprio perfil fica em Minha conta (aba "Meu perfil"); admin e clientes só da ferramenta continuam em /perfil.
 app.get(['/perfil', '/perfil.html'], (req, res, next) => {
   const dono = require('./src/perfis').donoDe(req);

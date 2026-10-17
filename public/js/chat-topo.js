@@ -1,8 +1,9 @@
 /* Ofertou! — Mensagens flutuante: botão no canto inferior direito (com o número de não lidas e pedidos de
-   mensagem) que abre um painel com as conversas, sem sair da página. A tela completa continua em /mensagens. */
+   mensagem) que abre um painel com as conversas, sem sair da página. É o lugar das mensagens no site: os links
+   para /mensagens (e-mails, pedidos) abrem este painel. Mostra também os pedidos (Pix, pagamento e ações). */
 (() => {
   'use strict';
-  if (location.pathname.startsWith('/mensagens')) return;
+  const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const hora = s => {
     const d = new Date(String(s).replace(' ', 'T') + 'Z');
@@ -27,7 +28,7 @@
       <header class="chatf-topo">
         <button class="chatf-icone" type="button" data-chatf="voltar" hidden aria-label="Voltar">‹</button>
         <div class="chatf-titulo" id="chatf-titulo"><b>Mensagens</b></div>
-        <a class="chatf-icone" href="/mensagens" id="chatf-cheia" title="Abrir em tela cheia" aria-label="Abrir em tela cheia">⤢</a>
+        <button class="chatf-icone" type="button" data-chatf="menu" hidden title="Bloquear ou desbloquear" aria-label="Bloquear ou desbloquear">⋯</button>
         <button class="chatf-icone" type="button" data-chatf="fechar" aria-label="Fechar">✕</button>
       </header>
       <div class="chatf-corpo" id="chatf-corpo"></div>
@@ -62,7 +63,7 @@
     ATUAL = null; clearInterval(timer);
     $('[data-chatf="voltar"]').hidden = true;
     $('#chatf-titulo').innerHTML = '<b>Mensagens</b>';
-    $('#chatf-cheia').href = '/mensagens';
+    $('[data-chatf="menu"]').hidden = true;
     form.hidden = true; banner.hidden = true;
     corpo.innerHTML = '<p class="chatf-vazio">Carregando…</p>';
     try {
@@ -81,13 +82,15 @@
   }
 
   // ── Conversa ─────────────────────────────────────────────────────────────
-  async function abrirConversa(id) {
+  let pedidoFoco = null;
+  async function abrirConversa(id, foco = null) {
     const d = await api(`/api/chat/conversas/${id}`);
     ATUAL = d.conversa; MSGS = d.mensagens;
+    pedidoFoco = foco;
     $('[data-chatf="voltar"]').hidden = false;
-    $('#chatf-cheia').href = `/mensagens?c=${id}`;
+    $('[data-chatf="menu"]').hidden = false;
     cabecalho();
-    render(true);
+    await render(true);
     clearInterval(timer);
     timer = setInterval(() => { if (document.visibilityState === 'visible') novas().catch(() => {}); }, 4000);
     atualizarContador();
@@ -106,19 +109,56 @@
       banner.hidden = false; banner.innerHTML = `<p>Pedido enviado: você pode mandar até 3 mensagens até ${esc(o.nome)} aceitar.</p>`;
     } else if (c.status === 'recusada' || c.status === 'bloqueada') {
       form.hidden = true; banner.hidden = false;
-      banner.innerHTML = `<p>${c.status === 'recusada' ? `${esc(o.nome)} recusou receber suas mensagens.` : c.bloqueada_por_mim ? 'Você bloqueou esta conversa (desbloqueie na tela cheia).' : 'Esta conversa foi bloqueada.'}</p>`;
+      banner.innerHTML = `<p>${c.status === 'recusada' ? `${esc(o.nome)} recusou receber suas mensagens.` : c.bloqueada_por_mim ? 'Você bloqueou esta conversa (desbloqueie no menu ⋯).' : 'Esta conversa foi bloqueada.'}</p>`;
     }
   }
-  function render(rolar) {
+  // Pedidos: a última mensagem de cada pedido mostra o cartão (situação, valores, Pix/pagamento e ações)
+  const PEDIDOS = {};
+  const ROTULO = {
+    informar_pagamento: ['Já paguei', 'btn-primary'], confirmar_pagamento: ['Confirmar pagamento recebido', 'btn-primary'],
+    enviado: ['Marcar como enviado', ''], concluido: ['Concluir pedido', ''], recebido: ['Recebi o pedido', 'btn-primary'], cancelar: ['Cancelar pedido', 'danger-txt'],
+  };
+  function cartaoPedido(p) {
+    const pg = p.pagamento;
+    return `<div class="chatf-pedido${pedidoFoco === p.id ? ' is-foco' : ''}" data-pedido="${p.id}">
+      <div class="chatf-pedido-topo"><b>Pedido ${esc(p.codigo)}</b><span class="status-pill st-${esc(p.status)}">${esc(p.status_nome)}</span></div>
+      <div class="chatf-pedido-prod"><img src="/api/img/${p.oferta_id}" alt="" referrerpolicy="no-referrer">
+        <div><b>${esc(p.produto)}</b><span>${p.quantidade}x ${brl(p.preco_unit)}${p.taxa_valor ? ` + taxa do site ${brl(p.taxa_valor)}` : ''}</span>
+        <span><b>Total ${brl(p.total)}</b> · ${esc(p.metodo_nome)}</span>${p.observacao ? `<span class="muted">Obs.: ${esc(p.observacao)}</span>` : ''}</div></div>
+      ${pg && pg.pix ? `<div class="chatf-pix"><span>Pix copia e cola para <b>${esc(pg.recebedor)}</b>:</span>
+        <div class="ass-copia"><input readonly value="${esc(pg.pix)}" aria-label="Código Pix"><button class="btn btn-sm" type="button" data-copiar="${esc(pg.pix)}">Copiar</button></div>
+        <small class="muted">No app do banco: Pix → Pix copia e cola. Depois toque em "Já paguei".</small></div>` : ''}
+      ${pg && pg.mercadopago ? `<a class="btn btn-primary btn-sm" href="${esc(pg.mercadopago)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} no Mercado Pago ↗</a>` : ''}
+      ${pg && pg.link ? `<a class="btn btn-primary btn-sm" href="${esc(pg.link)}" target="_blank" rel="noopener nofollow">Pagar com cartão (link da loja) ↗</a>` : ''}
+      ${p.instrucoes ? `<small class="muted">${esc(p.instrucoes)}</small>` : ''}
+      ${p.acoes.length ? `<div class="chatf-acoes">${p.acoes.map(a => `<button class="btn btn-sm ${ROTULO[a][1]}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO[a][0]}</button>`).join('')}</div>` : ''}
+    </div>`;
+  }
+  async function render(rolar) {
     const noFim = corpo.scrollHeight - corpo.scrollTop - corpo.clientHeight < 60;
-    corpo.innerHTML = MSGS.map(m => {
-      if (m.sistema) return `<div class="chatf-sis">${esc(m.texto)}${m.pedido_id ? ` <a href="/mensagens?c=${ATUAL.id}&pedido=${m.pedido_id}">Ver pedido</a>` : ''}</div>`;
+    const ultimo = {};
+    MSGS.forEach((m, i) => { if (m.pedido_id) ultimo[m.pedido_id] = i; });
+    await Promise.all([...new Set(MSGS.filter(m => m.pedido_id).map(m => m.pedido_id))]
+      .map(async id => { try { PEDIDOS[id] = await api(`/api/pedidos/${id}`); } catch { /* sem acesso */ } }));
+    corpo.innerHTML = MSGS.map((m, i) => {
+      if (m.sistema) return `<div class="chatf-sis">${esc(m.texto)}</div>${m.pedido_id && ultimo[m.pedido_id] === i && PEDIDOS[m.pedido_id] ? cartaoPedido(PEDIDOS[m.pedido_id]) : ''}`;
       return `<div class="chatf-bolha ${m.minha ? 'minha' : 'dele'}"><p>${esc(m.texto).replace(/\n/g, '<br>')}</p><small>${hora(m.em)}</small></div>`;
     }).join('') || '<p class="chatf-vazio">Nenhuma mensagem ainda. Diga olá!</p>';
+    const foco = pedidoFoco && corpo.querySelector(`[data-pedido="${pedidoFoco}"]`);
+    if (foco && rolar) { foco.scrollIntoView({ block: 'center' }); return; }
     if (rolar || noFim) corpo.scrollTop = corpo.scrollHeight;
   }
-  async function novas() {
+  // Mercado Pago esperando pagamento: confere de tempos em tempos (a confirmação vira mensagem)
+  let ultimaConferencia = 0;
+  function conferirMP() {
+    if (Date.now() - ultimaConferencia < 15000) return;
+    ultimaConferencia = Date.now();
+    Object.values(PEDIDOS).filter(p => p.metodo === 'mercadopago' && ['aguardando_pagamento', 'pagamento_informado'].includes(p.status))
+      .forEach(p => api(`/api/pedidos/${p.id}`).catch(() => {}));
+  }
+  async function novas(forcar = false) {
     if (!ATUAL) return;
+    conferirMP();
     const ult = MSGS.length ? MSGS[MSGS.length - 1].id : 0;
     const d = await api(`/api/chat/conversas/${ATUAL.id}?depois=${ult}`);
     const mudou = d.conversa.status !== ATUAL.status;
@@ -126,16 +166,16 @@
     // (duas atualizações ao mesmo tempo não repetem mensagens)
     const vistas = new Set(MSGS.map(m => m.id));
     const novasMsgs = d.mensagens.filter(m => !vistas.has(m.id));
-    if (novasMsgs.length) { MSGS = MSGS.concat(novasMsgs); render(novasMsgs.some(m => m.minha)); }
+    if (novasMsgs.length || forcar) { MSGS = MSGS.concat(novasMsgs); await render(novasMsgs.some(m => m.minha)); }
     if (mudou) cabecalho();
   }
 
   // ── Eventos ──────────────────────────────────────────────────────────────
-  function abrirPainel() {
+  function abrirPainel(lista = true) {
     painel.hidden = false;
     $('#chatf-botao').setAttribute('aria-expanded', 'true');
     raiz.classList.add('is-aberto');
-    mostrarLista();
+    if (lista) mostrarLista();
   }
   function fecharPainel() {
     painel.hidden = true;
@@ -148,6 +188,25 @@
   raiz.addEventListener('click', async e => {
     if (e.target.closest('[data-chatf="fechar"]')) return fecharPainel();
     if (e.target.closest('[data-chatf="voltar"]')) return mostrarLista();
+    const cp = e.target.closest('[data-copiar]');
+    if (cp) { navigator.clipboard.writeText(cp.dataset.copiar).then(() => { cp.textContent = 'Copiado!'; setTimeout(() => { cp.textContent = 'Copiar'; }, 1500); }); return; }
+    const pa = e.target.closest('[data-pacao]');
+    if (pa && ATUAL) {
+      const acao = pa.dataset.pacao;
+      let motivo = '';
+      if (acao === 'cancelar') { motivo = prompt('Motivo do cancelamento (opcional):'); if (motivo === null) return; }
+      else if (acao === 'confirmar_pagamento' && !confirm('Confirma que o valor do pedido já caiu na sua conta?')) return;
+      pa.disabled = true;
+      try { await api(`/api/pedidos/${pa.dataset.pid}/acao`, { acao, motivo }); await novas(true); } catch (err) { alert(err.message); pa.disabled = false; }
+      return;
+    }
+    if (e.target.closest('[data-chatf="menu"]') && ATUAL) {
+      const desbloquear = ATUAL.status === 'bloqueada' && ATUAL.bloqueada_por_mim;
+      if (ATUAL.status === 'bloqueada' && !desbloquear) return alert('Esta conversa foi bloqueada pela outra pessoa.');
+      if (!confirm(desbloquear ? 'Desbloquear esta conversa?' : `Bloquear ${ATUAL.outro.nome}? Ninguém poderá mandar mensagens nesta conversa.`)) return;
+      try { ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: desbloquear ? 'desbloquear' : 'bloquear' }); cabecalho(); await novas(true); } catch (err) { alert(err.message); }
+      return;
+    }
     const c = e.target.closest('[data-conv]');
     if (c) return abrirConversa(Number(c.dataset.conv)).catch(err => { corpo.innerHTML = `<p class="chatf-vazio">${esc(err.message)}</p>`; });
     const r = e.target.closest('[data-resp]');
@@ -180,7 +239,16 @@
   form.texto.addEventListener('input', e => { e.target.style.height = ''; e.target.style.height = `${Math.min(e.target.scrollHeight, 110)}px`; });
 
   // Outras partes do site podem abrir uma conversa direto no painel (ex.: OfertouChat.abrir(12))
-  window.OfertouChat = { abrir: id => { abrirPainel(); abrirConversa(Number(id)).catch(() => {}); } };
+  window.OfertouChat = { abrir: (id, pedido = null) => { abrirPainel(false); abrirConversa(Number(id), pedido ? Number(pedido) : null).catch(() => mostrarLista()); } };
+
+  // Link para uma conversa (?chat=ID&pedido=ID, vindo de /mensagens, e-mails ou do pedido): abre direto no painel
+  const qs = new URLSearchParams(location.search);
+  if (qs.has('chat')) {
+    const id = Number(qs.get('chat')), ped = Number(qs.get('pedido')) || null;
+    qs.delete('chat'); qs.delete('pedido');
+    history.replaceState(null, '', location.pathname + (qs.toString() ? `?${qs}` : '') + location.hash);
+    setTimeout(() => { raiz.hidden = false; if (id) window.OfertouChat.abrir(id, ped); else abrirPainel(); }, 0);
+  }
 
   atualizarContador();
   setInterval(() => { if (document.visibilityState === 'visible' && painel.hidden) atualizarContador(); }, 30000);

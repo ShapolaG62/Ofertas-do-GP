@@ -19,13 +19,24 @@ fs.mkdirSync(DIR, { recursive: true });
 const CORES_BASICAS = ['verde', 'azul', 'roxo', 'laranja', 'vermelho', 'grafite'];
 const CORES_EXTRAS = ['rosa', 'dourado', 'ciano', 'vinho'];
 const GRADIENTES = ['aurora', 'por-do-sol', 'oceano', 'neon', 'galaxia'];
-const LIMITES = {
-  gratis: { rotulo: 'Conta gratuita', vitrine: 3, bio: 160, capa: false, links: 0, slug_livre: false, cores: CORES_BASICAS, gradiente: false },
-  consumidor: { rotulo: 'Caçador de Ofertas', vitrine: 4, bio: 300, capa: true, links: 1, slug_livre: false, cores: [...CORES_BASICAS, ...CORES_EXTRAS], gradiente: false },
-  empresa: { rotulo: 'Loja Parceira', vitrine: 6, bio: 400, capa: true, links: 4, slug_livre: false, cores: [...CORES_BASICAS, ...CORES_EXTRAS], gradiente: false },
-  pro: { rotulo: 'Afiliado Pro', vitrine: 8, bio: 500, capa: true, links: 5, slug_livre: true, cores: [...CORES_BASICAS, ...CORES_EXTRAS, ...GRADIENTES], gradiente: true },
-  admin: { rotulo: 'Administrador', vitrine: 12, bio: 800, capa: true, links: 6, slug_livre: true, cores: [...CORES_BASICAS, ...CORES_EXTRAS, ...GRADIENTES], gradiente: true },
+// Conta gratuita e admin têm limites fixos; os planos pagos têm os do próprio plano (Painel → Planos).
+const FIXOS = {
+  gratis: { rotulo: 'Conta gratuita', vitrine: 3, bio: 160, capa: false, links: 0, slug_livre: false, cores: CORES_BASICAS, gradiente: false, moldura: false, selo: '' },
+  admin: { rotulo: 'Administrador', vitrine: 12, bio: 800, capa: true, links: 6, slug_livre: true, cores: [...CORES_BASICAS, ...CORES_EXTRAS, ...GRADIENTES], gradiente: true, moldura: true, selo: '' },
 };
+function limitesDe(id) {
+  if (FIXOS[id]) return FIXOS[id];
+  const p = require('./planos').plano(id);
+  if (!p) return FIXOS.gratis;
+  const pf = p.recursos.perfil;
+  return {
+    rotulo: p.nome, tipo: p.tipo, vitrine: pf.vitrine, bio: pf.bio, capa: pf.capa, links: pf.links, slug_livre: pf.slug_livre,
+    cores: [...CORES_BASICAS, ...(pf.cores_extras || pf.gradiente ? CORES_EXTRAS : []), ...(pf.gradiente ? GRADIENTES : [])],
+    gradiente: pf.gradiente, moldura: pf.moldura, selo: pf.selo,
+  };
+}
+// Todos os planos (para mostrar no editor qual plano libera cada cor)
+const todosLimites = () => ({ gratis: FIXOS.gratis, ...Object.fromEntries(require('./planos').listar().map(p => [p.id, limitesDe(p.id)])) });
 // Molduras do avatar: liberadas pelo nível (e pelo plano)
 const MOLDURAS = [
   { id: 'nenhuma', nome: 'Sem moldura', nivel: 0 },
@@ -33,9 +44,15 @@ const MOLDURAS = [
   { id: 'prata', nome: 'Prata', nivel: 8 },
   { id: 'ouro', nome: 'Ouro', nivel: 15 },
   { id: 'diamante', nome: 'Diamante', nivel: 25 },
-  { id: 'pro', nome: 'Afiliado Pro', plano: 'pro' },
+  { id: 'pro', nome: 'Moldura do plano', especial: true }, // planos com "moldura exclusiva"
   { id: 'coroa', nome: 'Coroa do admin', plano: 'admin' },
 ];
+function molduraLiberada(mo, pl, lim, nivelAtual) {
+  if (pl === 'admin') return true;
+  if (mo.plano) return mo.plano === pl;
+  if (mo.especial) return Boolean(lim.moldura);
+  return nivelAtual >= mo.nivel;
+}
 const TIPOS_LINK = { site: 'Site', instagram: 'Instagram', whatsapp: 'Grupo de WhatsApp', telegram: 'Telegram', youtube: 'YouTube', tiktok: 'TikTok' };
 const RESERVADOS = new Set(['admin', 'api', 'conta', 'cliente', 'perfil', 'perfis', 'editar', 'ofertou', 'suporte', 'loja', 'oferta']);
 
@@ -73,9 +90,13 @@ function contexto(dono) {
 const ativo = ate => Boolean(ate && ate > nowSql());
 function plano(ctx) {
   if (ctx.tipo === 'admin') return 'admin';
-  if (ctx.tipo === 'cliente') return ativo(ctx.cliente.validade) && ctx.cliente.status === 'ativo' ? 'pro' : 'gratis';
+  if (ctx.tipo === 'cliente') {
+    if (!ativo(ctx.cliente.validade) || ctx.cliente.status !== 'ativo') return 'gratis';
+    const planos = require('./planos');
+    return (ctx.cliente.plano && planos.plano(ctx.cliente.plano) && ctx.cliente.plano) || (planos.plano('pro') && 'pro') || planos.planoFerramenta()?.id || 'gratis';
+  }
   const u = ctx.user;
-  if (u.plano && ativo(u.assinatura_ate) && LIMITES[u.plano]) return u.plano;
+  if (u.plano && ativo(u.assinatura_ate) && require('./planos').plano(u.plano)) return u.plano;
   return 'gratis';
 }
 // Perfil (papel) mostrado no topo: decide quais famílias de conquistas aparecem.
@@ -197,21 +218,20 @@ const json = (t, padrao) => { try { return JSON.parse(t) ?? padrao; } catch { re
 
 function montar(perfil, ctx, { proprio = false, admin = false, visitante = null } = {}) {
   const pl = plano(ctx);
-  const lim = LIMITES[pl];
+  const lim = limitesDe(pl);
   const av = avaliar(ctx, perfil);
   const obtidas = av.lista.filter(c => c.obtida);
   let vitrine = json(perfil.vitrine, []).filter(id => obtidas.some(c => c.id === id)).slice(0, lim.vitrine);
   if (!vitrine.length) vitrine = [...obtidas].sort((a, b) => b.xp - a.xp || (b.obtida_em > a.obtida_em ? 1 : -1)).slice(0, lim.vitrine).map(c => c.id);
   // O admin tem tudo liberado.
-  const molduras = MOLDURAS.filter(mo => pl === 'admin' || (mo.plano ? mo.plano === pl || (mo.plano === 'pro' && pl === 'admin') : av.nivel.nivel >= mo.nivel));
+  const molduras = MOLDURAS.filter(mo => molduraLiberada(mo, pl, lim, av.nivel.nivel));
   const familias = [...FAMILIAS.map(f => ({ id: f.id, nome: f.nome, icone: f.icone })), { id: 'especiais', nome: 'Especiais', icone: '✨' }]
     .map(f => ({ ...f, itens: av.lista.filter(c => c.familia === f.id) })).filter(f => f.itens.length);
   const loja = ctx.user?.tipo === 'empresa' ? db.get('SELECT nome, slug FROM lojas WHERE user_id = ?', ctx.user.id) : null;
   const selos = [];
   if (ctx.tipo === 'admin') selos.push({ id: 'admin', nome: 'Equipe Ofertou!' });
-  if (pl === 'pro') selos.push({ id: 'pro', nome: 'Afiliado Pro' });
-  if (pl === 'empresa' || (loja && pl !== 'gratis')) selos.push({ id: 'loja', nome: 'Loja verificada' });
-  if (pl === 'consumidor') selos.push({ id: 'assinante', nome: 'Assinante' });
+  if (lim.selo && pl !== 'admin' && pl !== 'gratis') selos.push({ id: { ferramenta: 'pro', empresa: 'loja' }[lim.tipo] || 'assinante', nome: lim.selo });
+  else if (loja && pl !== 'gratis' && pl !== 'admin') selos.push({ id: 'loja', nome: 'Loja verificada' });
   const desde = ctx.tipo === 'admin' ? db.get('SELECT MIN(created_at) d FROM offers').d : (ctx.user || ctx.cliente).created_at;
   const out = {
     slug: perfil.slug, nome: perfil.nome, titulo: perfil.titulo || '', bio: perfil.bio || '', cidade: perfil.cidade || '',
@@ -229,7 +249,7 @@ function montar(perfil, ctx, { proprio = false, admin = false, visitante = null 
   };
   if (proprio || admin) {
     out.limites = lim;
-    out.opcoes = { cores: lim.cores, gradientes: GRADIENTES, molduras, tipos_link: TIPOS_LINK, todos_planos: LIMITES };
+    out.opcoes = { cores: lim.cores, gradientes: GRADIENTES, molduras, tipos_link: TIPOS_LINK, todos_planos: todosLimites() };
     out.vitrine_ids = json(perfil.vitrine, []);
   }
   if (admin) out.dono = ctx.dono;
@@ -298,7 +318,7 @@ function salvar(dono, b) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
   const perfil = garantir(ctx);
-  const lim = LIMITES[plano(ctx)];
+  const lim = limitesDe(plano(ctx));
   const nome = texto(b.nome, 40);
   if (nome.length < 2) throw fail('Escolha um nome de exibição (mínimo 2 letras).');
   const cols = {
@@ -312,7 +332,7 @@ function salvar(dono, b) {
   if (b.moldura !== undefined) {
     const av = avaliar(ctx, perfil);
     const pl = plano(ctx);
-    const ok = MOLDURAS.find(mo => mo.id === b.moldura && (pl === 'admin' || (mo.plano ? mo.plano === pl || (mo.plano === 'pro' && pl === 'admin') : av.nivel.nivel >= mo.nivel)));
+    const ok = MOLDURAS.find(mo => mo.id === b.moldura && molduraLiberada(mo, pl, lim, av.nivel.nivel));
     if (!ok) throw fail('Esta moldura ainda não foi liberada.');
     cols.moldura = b.moldura;
   }
@@ -329,7 +349,7 @@ function salvar(dono, b) {
     cols.vitrine = JSON.stringify(ids.filter(id => donas.has(id)));
   }
   if (b.slug !== undefined && String(b.slug).toLowerCase() !== perfil.slug) {
-    if (!lim.slug_livre) throw fail('Endereço personalizado faz parte do Afiliado Pro.');
+    if (!lim.slug_livre) throw fail('Endereço personalizado não faz parte do seu plano.');
     const slug = String(b.slug).toLowerCase().trim();
     if (!/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/.test(slug) || RESERVADOS.has(slug)) throw fail('Endereço inválido: use de 3 a 30 letras, números ou hífen.');
     if (db.get('SELECT 1 FROM perfis WHERE slug = ? AND dono <> ?', slug, dono)) throw fail('Este endereço já está em uso.', 409);
@@ -344,7 +364,7 @@ async function salvarImagem(dono, tipo, buffer) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
   if (!['avatar', 'capa'].includes(tipo)) throw fail('Tipo de imagem inválido.');
-  const lim = LIMITES[plano(ctx)];
+  const lim = limitesDe(plano(ctx));
   if (tipo === 'capa' && !lim.capa) throw fail('A capa do perfil faz parte dos planos pagos.');
   if (!Buffer.isBuffer(buffer) || buffer.length < 100) throw fail('Envie uma imagem JPG, PNG ou WEBP.');
   const sharp = require('sharp');
@@ -445,7 +465,7 @@ function xpDe(dono) {
 }
 
 function cartao(p, ctx, visitante) {
-  const lim = LIMITES[plano(ctx)];
+  const lim = limitesDe(plano(ctx));
   const xp = xpDe(p.dono);
   return {
     slug: p.slug, nome: p.nome, titulo: p.titulo || '', avatar: p.avatar || null,
@@ -520,5 +540,5 @@ function seguir(visitante, slug, ligar) {
 
 module.exports = {
   donoDe, contexto, meu, porSlug, salvar, salvarImagem, removerImagem, incrementar,
-  registrarVenda, resumoAdmin, moderar, excluir, LIMITES, listar, mini, seguir,
+  registrarVenda, resumoAdmin, moderar, excluir, limitesDe, listar, mini, seguir,
 };

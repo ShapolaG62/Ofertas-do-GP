@@ -163,7 +163,8 @@ function vincularUsuario(u, dias = null) {
   if (ligado) return ligado.id;
   let c = db.get('SELECT * FROM clientes WHERE email = ?', u.email);
   if (!c) {
-    const d = dias || Math.min(Math.max(parseInt(settings.get('plano_pro_dias'), 10) || 30, 1), 3650);
+    const pf = require('./planos').planoFerramenta();
+    const d = dias || (pf ? pf.dias : 30);
     const senha = u.senha_hash || auth.hashPassword(crypto.randomBytes(24).toString('hex')); // só Google: entra pela conta do site
     const id = Number(db.run('INSERT INTO clientes (nome, email, senha_hash, validade, observacoes) VALUES (?, ?, ?, ?, ?)',
       u.nome || u.email.split('@')[0], u.email, senha, addDays(nowSql(), d), 'Cadastro gratuito de afiliado aprovado no painel').lastInsertRowid);

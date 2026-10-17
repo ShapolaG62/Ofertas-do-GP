@@ -15,7 +15,7 @@ const statusLimiter = createLimiter(240, 10);  // consultas da página de pagame
 
 router.get('/api/planos', (req, res) => {
   const s = settings.getAll();
-  res.json({ planos: planos.listar(s), metodos: pagamentos.metodosDisponiveis(s, req.query.plano ? String(req.query.plano) : null),
+  res.json({ planos: planos.listar(s), funcoes_base: planos.FUNCOES_TIPO.consumidor, metodos: pagamentos.metodosDisponiveis(s, req.query.plano ? String(req.query.plano) : null),
     whatsapp: String(s.pag_whatsapp || s.whatsapp_anuncios || '').replace(/\D/g, ''),
     ufs: cadastro.UFS, ramos: cadastro.RAMOS, idade_minima: cadastro.IDADE_MINIMA });
 });

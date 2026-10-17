@@ -234,6 +234,26 @@ router.get('/api/admin/store-list', (req, res) => {
 });
 
 // ── Planos e pagamentos ──────────────────────────────────────────────────────
+const planos = require('../planos');
+router.get('/api/admin/planos', (req, res) => {
+  res.json({
+    planos: planos.todos().map(p => ({ ...p, assinantes: planos.assinantes(p.id) })),
+    tipos: planos.TIPOS, funcoes: planos.FUNCOES_TIPO, padrao: planos.PERFIL_PADRAO, limites: planos.PERFIL_LIMITES,
+  });
+});
+router.post('/api/admin/planos', (req, res) => {
+  try { res.json({ ok: true, plano: planos.criar(req.body || {}) }); } catch (err) { sendError(res, err); }
+});
+router.put('/api/admin/planos/:id', (req, res) => {
+  try { res.json({ ok: true, plano: planos.editar(req.params.id, req.body || {}) }); } catch (err) { sendError(res, err); }
+});
+router.delete('/api/admin/planos/:id', (req, res) => {
+  try { res.json({ ok: true, ...planos.excluir(req.params.id) }); } catch (err) { sendError(res, err); }
+});
+router.post('/api/admin/planos/sugerir-beneficios', (req, res) => {
+  res.json({ beneficios: planos.sugerirBeneficios(req.body || {}) });
+});
+
 router.get('/api/admin/pagamentos', (req, res) => {
   res.json({ pedidos: pagamentos.listar(), metodos: pagamentos.metodosDisponiveis(), email: require('../email').configurado() });
 });

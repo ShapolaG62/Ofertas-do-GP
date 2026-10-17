@@ -193,20 +193,24 @@
     empresa: '<svg viewBox="0 0 24 24"><path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>',
     pro: '<svg viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8z"/></svg>',
   };
-  // Linhas do comparativo: [recurso, consumidor, empresa, pro]
-  const COMPARATIVO = [
-    ['Todas as ofertas reais das grandes lojas', 1, 1, 1],
-    ['Acesso liberado na hora, sem esperar aprovação', 1, 1, 1],
-    ['Busca, filtros e histórico de preço', 1, 1, 1],
-    ['Página da sua loja no site', 0, 1, 0],
-    ['Anúncios com fotos, cupom e frete', 0, 1, 0],
-    ['Importação automática do catálogo', 0, 1, 0],
-    ['Seus links de afiliado em todas as ofertas', 0, 0, 1],
-    ['Postagem automática no WhatsApp, Telegram, Facebook, Instagram e X', 0, 0, 1],
-    ['Agendamento de manhã, à tarde e à noite', 0, 0, 1],
-    ['Marca d\'água com o seu nome nas imagens', 0, 0, 1],
-  ];
-  const COLUNA = { consumidor: 1, empresa: 2, pro: 3 };
+  // Comparativo montado a partir dos planos à venda: funções do tipo de acesso + funções do perfil de cada plano.
+  // Cada linha: [recurso, plano => valor] (true/false vira ✓/—; texto aparece como está).
+  function linhasComparativo(planos, base) {
+    const tem = (p, f) => base.includes(f) || p.funcoes.includes(f);
+    const funcoes = [...new Set([...base, ...planos.flatMap(p => p.funcoes)])].map(f => [f, p => tem(p, f)]);
+    const pf = p => p.recursos.perfil;
+    const perfil = [
+      ['Conquistas na vitrine do perfil', p => String(pf(p).vitrine)],
+      ['Imagem de capa no perfil', p => pf(p).capa],
+      ['Links no perfil', p => (pf(p).links ? String(pf(p).links) : false)],
+      ['Cores em degradê no perfil', p => pf(p).gradiente],
+      ['Endereço personalizado do perfil', p => pf(p).slug_livre],
+      ['Moldura exclusiva', p => pf(p).moldura],
+    ].filter(([, v]) => new Set(planos.map(p => String(v(p)))).size > 1);
+    const produtos = planos.some(p => p.tipo === 'empresa' && p.recursos.max_produtos)
+      ? [['Produtos na loja', p => (p.tipo === 'empresa' ? (p.recursos.max_produtos ? numFmt(p.recursos.max_produtos) : true) : false)]] : [];
+    return [...funcoes, ...produtos, ...perfil];
+  }
   const brlFmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const numFmt = n => Number(n).toLocaleString('pt-BR');
 
@@ -216,7 +220,7 @@
     const mensal = p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
       return `
       <article class="plano-card${p.destaque ? ' is-destaque' : ''}" data-plano="${esc(p.id)}">
-        ${p.destaque ? '<span class="plano-selo">Mais completo</span>' : ''}
+        ${p.destaque ? `<span class="plano-selo">${esc(p.destaque)}</span>` : ''}
         <div class="plano-topo"><span class="plano-ico">${ICONES[p.icone] || ''}</span><p class="plano-chamada">${esc(p.chamada)}</p></div>
         <h3>${esc(p.nome)}</h3>
         <p class="plano-preco"><b>${brlFmt(p.preco)}</b><span>/${p.dias === 30 ? 'mês' : `${p.dias} dias`}</span></p>
@@ -248,11 +252,12 @@
     }
 
     // Comparativo só com os planos à venda
-    const cols = d.planos.filter(p => COLUNA[p.id]);
+    const cols = d.planos;
+    const celula = v => (v === true ? '<span class="lp-sim" aria-label="Incluído">✓</span>'
+      : v ? `<b>${esc(v)}</b>` : '<span class="lp-nao" aria-label="Não incluído">—</span>');
     $('#lp-tabela').innerHTML = `
       <thead><tr><th>Recurso</th>${cols.map(p => `<th class="${p.destaque ? 'is-destaque' : ''}">${esc(p.nome)}<small>${brlFmt(p.preco)}</small></th>`).join('')}</tr></thead>
-      <tbody>${COMPARATIVO.map(l => `<tr><td>${esc(l[0])}</td>${cols.map(p => `<td class="${p.destaque ? 'is-destaque' : ''}">${l[COLUNA[p.id]]
-        ? '<span class="lp-sim" aria-label="Incluído">✓</span>' : '<span class="lp-nao" aria-label="Não incluído">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody>`;
+      <tbody>${linhasComparativo(cols, d.funcoes_base || []).map(([nome, v]) => `<tr><td>${esc(nome)}</td>${cols.map(p => `<td class="${p.destaque ? 'is-destaque' : ''}">${celula(v(p))}</td>`).join('')}</tr>`).join('')}</tbody>`;
     $('#comparar').hidden = !cols.length;
   }
 

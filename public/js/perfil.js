@@ -154,9 +154,9 @@
     const contaBio = () => { $('#pf-bio-conta').textContent = `${f.bio.value.length}/${L.bio}`; };
     f.bio.oninput = contaBio; contaBio();
     f.slug.disabled = !L.slug_livre;
-    $('#pf-slug-lock').textContent = L.slug_livre ? '' : '🔒 Afiliado Pro';
+    $('#pf-slug-lock').textContent = L.slug_livre ? '' : '🔒 planos com endereço próprio';
     $('#pf-plano-aviso').innerHTML = `Seu plano: <b>${esc(L.rotulo)}</b> — vitrine com ${L.vitrine} conquistas, resumo de ${L.bio} letras${L.capa ? ', capa' : ''}${L.links ? `, ${L.links} link(s)` : ''}${L.gradiente ? ', cores em degradê' : ''}.`
-      + (P.plano === 'admin' || P.plano === 'pro' ? '' : ' <a class="link-btn so-web" href="/conta#planos">Libere mais com um plano</a>');
+      + (P.plano === 'admin' ? '' : ' <a class="link-btn so-web" href="/conta#planos">Libere mais com um plano</a>');
 
     // Imagens
     $('#pf-avatar-prev').innerHTML = avatarHtml(P);
@@ -177,7 +177,7 @@
     // Molduras liberadas
     escolhaMoldura = P.moldura;
     const todasMolduras = [['nenhuma', 'Sem moldura', 'livre'], ['bronze', 'Bronze', 'nível 3'], ['prata', 'Prata', 'nível 8'], ['ouro', 'Ouro', 'nível 15'],
-      ['diamante', 'Diamante', 'nível 25'], ['pro', 'Afiliado Pro', 'plano Pro'], ['coroa', 'Coroa', 'admin']];
+      ['diamante', 'Diamante', 'nível 25'], ['pro', 'Do plano', 'planos com moldura'], ['coroa', 'Coroa', 'admin']];
     $('#pf-molduras').innerHTML = todasMolduras.filter(([id]) => id !== 'coroa' || P.plano === 'admin').map(([id, nome, req]) => {
       const livre = P.opcoes.molduras.some(m => m.id === id);
       return `<button type="button" class="pf-mold-op${id === escolhaMoldura ? ' is-sel' : ''}" data-moldura="${id}" ${livre ? '' : 'disabled'}>

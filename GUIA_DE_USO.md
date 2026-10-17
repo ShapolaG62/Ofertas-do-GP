@@ -206,7 +206,9 @@ Você pode vender o acesso à ferramenta. Cada cliente usa as ofertas mineradas 
 
 ## 12. Planos pagos (assinaturas)
 
-A página de entrada (**/conta**) é a página inicial do site: apresentação, números de ofertas ao vivo, como funciona, recursos, os 3 planos lado a lado, comparativo do que cada plano inclui, perguntas frequentes e o login. Ao clicar em um plano, a pessoa vai para **/assinar**, preenche os dados e paga. Após a confirmação, a conta é criada (ou renovada), ela recebe um e-mail com a data de vencimento e é levada para as ofertas.
+A página de entrada (**/conta**) é a página inicial do site: apresentação, números de ofertas ao vivo, como funciona, recursos, os planos à venda lado a lado, comparativo do que cada plano inclui (montado sozinho a partir das funções de cada plano), perguntas frequentes e o login. Ao clicar em um plano, a pessoa vai para **/assinar**, preenche os dados e paga. Após a confirmação, a conta é criada (ou renovada), ela recebe um e-mail com a data de vencimento e é levada para as ofertas.
+
+Planos que vêm prontos (dá para editar, excluir e criar outros):
 
 | Plano | Para quem | Preço sugerido (30 dias) |
 |---|---|---|
@@ -214,13 +216,20 @@ A página de entrada (**/conta**) é a página inicial do site: apresentação, 
 | **Loja Parceira** | empresas | R$ 49,90 |
 | **Afiliado Pro** | quem quer vender com os próprios links (vira *cliente da ferramenta*) | R$ 79,90 |
 
-Nomes, preços, dias e quais planos ficam visíveis: **Painel → Planos**.
+**Criar, editar e excluir planos:** **Painel → Planos → Planos à venda**. Use **+ Criar plano** ou **Editar** em um cartão. Cada plano tem:
+1. **O básico:** nome, preço, dias de acesso por compra, ordem na página e se está **à venda**.
+2. **Tipo de acesso:** *Consumidor* (conta no site liberada na hora), *Empresa* (página da loja, anúncios e importação de catálogo, com **limite de produtos** próprio; 0 = limite geral) ou *Ferramenta de afiliado* (painel /cliente com links próprios e postagem automática).
+3. **Funções do perfil:** quantas conquistas na vitrine, tamanho do resumo, quantos links, imagem de capa, cores extras, cores em degradê, endereço personalizado (/perfil/nome), moldura exclusiva e o texto do selo.
+4. **Página inicial:** frase de chamada, "ideal para", etiqueta de destaque (ex.: *Mais vendido*), ícone e a lista de benefícios — o botão **Gerar a partir das funções** escreve a lista sozinho.
+5. **Pagamento:** link de pagamento do plano (se usar a forma *Link de pagamento*) e o ID do produto no app (Google Play / App Store).
+
+**Excluir:** um plano sem assinantes é apagado de vez. Com assinantes, ele sai da venda e da lista, mas continua valendo (com as mesmas funções) para quem já pagou até o fim do prazo; para renovar, a pessoa escolhe outro plano. O tipo de acesso de um plano com assinantes não pode ser trocado — crie um plano novo.
 
 **Formas de recebimento** (Painel → Planos → Formas de recebimento). Cada uma tem *Ativo/Desligado*; para trocar uma chave, conta ou link, é só editar e salvar:
 - **Mercado Pago (recomendado):** cole o *Access Token* de produção (mercadopago.com.br/developers → Suas integrações → Credenciais de produção). Liga **Pix com QR code** e **cartão de crédito/débito** (com parcelas, se quiser). Confirmação automática.
 - **Pix pela sua chave:** tipo e chave Pix, nome do recebedor e banco. Usado quando o Pix do Mercado Pago está desligado.
 - **Transferência bancária:** banco, agência, conta, tipo, titular e CPF/CNPJ.
-- **Link de pagamento:** para cartão sem Mercado Pago — crie um link de valor fixo (PagBank, InfinitePay, PicPay, Stone…) para cada plano e cole aqui.
+- **Link de pagamento:** para cartão sem Mercado Pago — crie um link de valor fixo (PagBank, InfinitePay, PicPay, Stone…) para cada plano e cole no campo **Link de pagamento** do plano (Planos à venda → Editar).
 - **WhatsApp para comprovantes** e um **recado** opcional na tela de pagamento.
 
 Nas formas com comprovante, o pedido fica em **Pedidos de assinatura** e você clica **Confirmar pagamento**. Sem nenhuma forma ligada, o cliente ainda finaliza a compra (dados + confirmação) com o pagamento **a combinar**: o pedido aparece no painel, ele fala com você pelo WhatsApp e você clica **Confirmar pagamento**.
@@ -229,7 +238,7 @@ Nas formas com comprovante, o pedido fica em **Pedidos de assinatura** e você c
 
 **Vencimento:** ao vencer, o acesso às ofertas é bloqueado e a conta mostra o link **Renovar**. Renovar soma os dias ao prazo que ainda restava.
 
-**Contas sem plano:** depois de criar a conta (ou entrar com o Google), a pessoa vê primeiro os planos pagos (acesso imediato após o pagamento) e, abaixo, os 3 perfis gratuitos — Consumidor, Empresarial e **Usuário da ferramenta** — que passam pela sua aprovação (Painel → Usuários). Ao aprovar um usuário da ferramenta, ele ganha o painel de afiliado (aba Clientes) pelo número de dias do Afiliado Pro.
+**Contas sem plano:** depois de criar a conta (ou entrar com o Google), a pessoa vê primeiro os planos pagos (acesso imediato após o pagamento) e, abaixo, os 3 perfis gratuitos — Consumidor, Empresarial e **Usuário da ferramenta** — que passam pela sua aprovação (Painel → Usuários). Ao aprovar um usuário da ferramenta, ele ganha o painel de afiliado (aba Clientes) pelo número de dias do plano de ferramenta.
 
 **Google na compra:** na tela de pagamento há o botão **Cadastrar com Google**; a pessoa volta já logada e só completa os dados e paga.
 

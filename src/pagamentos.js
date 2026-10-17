@@ -28,8 +28,9 @@ function metodosDisponiveis(s = settings.getAll(), planoId = null) {
   const pixAuto = mp && s.pag_mp_pix !== '0';
   const pixManual = s.pag_pix_ativo !== '0' && Boolean(String(s.pix_chave || '').trim());
   const ted = s.pag_ted_ativo === '1' && Boolean(s.ted_banco && s.ted_conta && s.ted_titular);
-  const links = ['consumidor', 'empresa', 'pro'].filter(id => /^https:\/\//i.test(String(s[`pag_link_${id}`] || '').trim()));
-  const link = s.pag_link_ativo === '1' && (planoId ? links.includes(planoId) : links.length > 0);
+  // Link de pagamento: cada plano tem o seu (Painel → Planos → editar plano)
+  const comLink = p => Boolean(p && /^https:\/\//i.test(p.link_pagamento || ''));
+  const link = s.pag_link_ativo === '1' && (planoId ? comLink(planos.plano(planoId)) : planos.listar().some(comLink));
   const parcelas = Math.min(Math.max(parseInt(s.pag_mp_parcelas, 10) || 1, 1), 12);
   const lista = [];
   if (pixAuto || pixManual) lista.push({ id: 'pix', nome: 'Pix', automatico: pixAuto,
@@ -261,6 +262,7 @@ function aprovar(pedidoId, origem) {
             d.nome, d.email, d.senha_hash, validade, `Assinatura online (${p.nome}) — CPF ${d.cpf}, tel ${d.telefone}`).lastInsertRowid);
         }
       }
+      db.run('UPDATE clientes SET plano = ? WHERE id = ?', p.id, contaId); // qual plano de ferramenta ele tem
       // Comprado logado no site: o acesso da ferramenta fica ligado à conta (entra pelo mesmo login, inclusive Google).
       if (d.vincular_user_id && users.getById(d.vincular_user_id)) {
         const u = users.getById(d.vincular_user_id);
@@ -365,7 +367,7 @@ function instrucoesManuais(pedido, s) {
       tipo_conta: s.ted_tipo_conta === 'poupanca' ? 'Poupança' : 'Corrente', titular: s.ted_titular, documento: s.ted_documento };
   }
   if (pedido.metodo === 'combinar') return base;
-  return { ...base, nome: s.pag_link_nome, url: String(s[`pag_link_${pedido.plano}`] || '').trim() };
+  return { ...base, nome: s.pag_link_nome, url: (planos.plano(pedido.plano) || {}).link_pagamento || '' };
 }
 
 // Situação do pedido para a página de pagamento (sem dados pessoais).

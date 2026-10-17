@@ -404,6 +404,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_seguidores_seguido ON seguidores (seguido);
 `);
 
+// Plano assinado pelo cliente da ferramenta (os planos agora são criados no painel)
+if (!db.prepare('PRAGMA table_info(clientes)').all().some(c => c.name === 'plano')) db.exec('ALTER TABLE clientes ADD COLUMN plano TEXT');
+
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 

@@ -142,7 +142,7 @@ function saveAd(user, body, offerId = null) {
   if (!loja) throw fail('Crie sua loja antes de anunciar.');
   const existing = offerId ? ownAd(loja, offerId) : null;
   if (!existing) {
-    const max = settings.getNumber('loja_max_produtos', 300);
+    const max = require('./planos').maxProdutos(user.id); // o do plano da empresa, ou o geral do painel
     if (db.get('SELECT COUNT(*) AS n FROM offers WHERE loja_id = ?', loja.id).n >= max) {
       throw fail(`Limite de ${max} anúncios/produtos atingido. Exclua anúncios antigos.`);
     }

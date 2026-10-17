@@ -58,7 +58,7 @@ Crie **3 assinaturas mensais** com estes IDs (os mesmos nas duas lojas):
 - **Google Play Console** → seu app → Monetizar → Produtos → **Assinaturas** → Criar assinatura → crie um **plano base** mensal com renovação automática e o preço.
 - **App Store Connect** → seu app → Monetização → **Assinaturas** → crie um **grupo** (ex.: "Planos Ofertou!") e as 3 assinaturas de 1 mês, com preço, nome e descrição.
 
-Se usar outros IDs, informe-os no painel do site (passo 5).
+Se usar outros IDs (ou criar planos novos no painel), informe o ID em **Painel → Planos → Planos à venda → Editar → ID do produto no app**.
 
 ---
 
@@ -67,7 +67,7 @@ Se usar outros IDs, informe-os no painel do site (passo 5).
 1. Crie um projeto "Ofertou!" e adicione dois apps: **Google Play** (pacote `br.com.ofertou.app`) e **App Store** (bundle `br.com.ofertou.app`).
 2. Conecte as lojas seguindo as instruções da própria tela do RevenueCat: na Google Play, uma *service account* com acesso ao Play Console; na Apple, a *In-App Purchase Key* do App Store Connect.
 3. **Products**: importe os 3 produtos de cada loja.
-4. **Entitlements**: crie exatamente `consumidor`, `empresa` e `pro`, e ligue cada um ao produto correspondente das duas lojas.
+4. **Entitlements**: crie um para cada plano, com o **código do plano** mostrado no cartão do painel (os prontos são `consumidor`, `empresa` e `pro`), e ligue cada um ao produto correspondente das duas lojas.
 5. **Offerings**: na offering `default`, crie 3 pacotes, cada um com o produto de um plano.
 6. **API keys**: copie a chave pública do Android (`goog_…`), a do iPhone (`appl_…`) e crie uma **Secret API key** (`sk_…`).
 7. **Integrations → Webhooks**: endereço `https://SEU-DOMINIO/api/app/webhook/revenuecat`. Em *Authorization header value*, invente um texto longo e aleatório (vai também no painel do site).
@@ -80,7 +80,7 @@ Se usar outros IDs, informe-os no painel do site (passo 5).
 
 - cole as chaves `goog_…`, `appl_…` e a `sk_…`;
 - cole o mesmo texto da autorização do webhook;
-- confira os IDs dos produtos;
+- confira o ID do produto de cada plano em **Planos à venda → Editar**;
 - em **Vender planos no app**, escolha **Ligado** e salve.
 
 As vendas feitas pelo app aparecem em **Pedidos de assinatura** como "Google Play (app)" ou "App Store (app)".

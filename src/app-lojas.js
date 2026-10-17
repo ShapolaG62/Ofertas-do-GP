@@ -10,7 +10,6 @@ const clientes = require('./clientes');
 const planos = require('./planos');
 
 const RC = 'https://api.revenuecat.com/v1';
-const PLANOS_APP = ['consumidor', 'empresa', 'pro'];
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 const nowSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 const sqlDe = d => new Date(d).toISOString().replace('T', ' ').slice(0, 19);
@@ -25,16 +24,18 @@ function config(s = settings.getAll()) {
   return {
     ativo,
     chaves: ativo ? { android: s.rc_chave_android || '', ios: s.rc_chave_ios || '' } : {},
-    produtos: Object.fromEntries(PLANOS_APP.map(id => [id, s[`app_produto_${id}`] || ''])),
+    produtos: Object.fromEntries(planos.listar().map(p => [p.id, p.produto_app || ''])),
     planos: planos.listar(s).map(p => ({ id: p.id, nome: p.nome, chamada: p.chamada, beneficios: p.beneficios, dias: p.dias })),
   };
 }
 
 // Qual plano um produto/entitlement da loja representa.
 function planoDoProduto(produto, entitlement, s) {
-  if (PLANOS_APP.includes(entitlement)) return entitlement;
+  // O entitlement do RevenueCat tem o mesmo id do plano; senão, procura pelo ID do produto na loja
+  if (entitlement && planos.plano(entitlement)) return entitlement;
   const p = String(produto || '');
-  return PLANOS_APP.find(id => s[`app_produto_${id}`] && (p === s[`app_produto_${id}`] || p.startsWith(`${s[`app_produto_${id}`]}:`))) || null;
+  const achado = planos.todos().find(pl => pl.produto_app && (p === pl.produto_app || p.startsWith(`${pl.produto_app}:`)));
+  return achado ? achado.id : null;
 }
 
 // Libera (ou estende) o plano da conta até a data de expiração da loja. Nunca encurta um prazo maior já existente.
@@ -45,12 +46,12 @@ function liberar(u, plano, expiraSql, origem) {
     const antes = u.cliente_id && clientes.getById(u.cliente_id);
     const cid = clientes.vincularUsuario(u);
     const validade = maior(antes ? antes.validade : null, expiraSql);
-    db.run(`UPDATE clientes SET validade = ?, status = 'ativo' WHERE id = ?`, validade, cid);
+    db.run(`UPDATE clientes SET validade = ?, status = 'ativo', plano = ? WHERE id = ?`, validade, p.id, cid);
     const atual = users.getById(u.id);
     if (!atual.tipo || atual.tipo === 'afiliado') {
-      db.run(`UPDATE users SET tipo = 'afiliado', plano = 'pro', assinatura_ate = ?,
+      db.run(`UPDATE users SET tipo = 'afiliado', plano = ?, assinatura_ate = ?,
               status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`,
-      maior(atual.assinatura_ate, validade), u.id);
+      p.id, maior(atual.assinatura_ate, validade), u.id);
     }
     users.logAction(atual, 'assinatura_app', `${p.nome} até ${validade.slice(0, 10)} (${origem})`);
     return { plano, validade, conta: 'cliente' };
@@ -122,4 +123,4 @@ async function webhook(headers, body) {
   return { liberados };
 }
 
-module.exports = { config, sincronizar, webhook, appUserId, PLANOS_APP, nowSql };
+module.exports = { config, sincronizar, webhook, appUserId, nowSql };

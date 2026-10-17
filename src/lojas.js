@@ -77,7 +77,7 @@ function addProduct(user, body) {
   assertCanPublish(user);
   const loja = getByUser(user.id);
   if (!loja) throw fail('Crie sua loja antes de cadastrar produtos.');
-  const max = settings.getNumber('loja_max_produtos', 300);
+  const max = require('./planos').maxProdutos(user.id); // o do plano da empresa, ou o geral do painel
   if (countProducts(loja.id) >= max) throw fail(`Limite de ${max} produtos atingido. Exclua produtos antigos.`);
 
   const url = httpsUrlOrNull(body.url, 'Link do produto');
@@ -133,7 +133,7 @@ async function syncFeed(lojaId) {
       status, msg, tipo, loja.id);
   try {
     const { tipo, items } = await fetchStoreFeed(loja.feed_url);
-    const max = settings.getNumber('loja_max_produtos', 300);
+    const max = require('./planos').maxProdutos(loja.user_id);
     const manual = db.get(`SELECT COUNT(*) AS n FROM offers WHERE loja_id = ? AND fonte = 'empresa'`, loja.id).n;
     const expires = new Date(Date.now() + FEED_VALIDITY_HOURS * 3600000).toISOString().replace('T', ' ').slice(0, 19);
     const store = pseudoStore(loja);

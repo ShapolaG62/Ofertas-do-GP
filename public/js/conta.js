@@ -271,7 +271,7 @@
     if (a.ofertas > 0) $('#lp-ao-vivo').textContent = `${numFmt(a.ofertas)} ofertas ativas agora`;
     if (a.fotos?.length >= 2) {
       $('#lp-fotos').innerHTML = `<span class="lp-fotos-tit">Exemplos de agora</span>${a.fotos.slice(0, 6).map(f => `
-        <span class="lp-foto"><img src="/img/recorte/${Number(f.id)}.webp" alt="" loading="lazy" decoding="async"><b>-${Number(f.desconto)}%</b></span>`).join('')}`;
+        <span class="lp-foto"><img src="/img/recorte/${Number(f.id)}.webp?c=1" alt="" loading="lazy" decoding="async"><b>-${Number(f.desconto)}%</b></span>`).join('')}`;
       $('#lp-fotos').hidden = false;
     }
   }

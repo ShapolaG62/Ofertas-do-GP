@@ -338,11 +338,11 @@
   }
 
   // Vitrine do topo: carrossel com um produto por vez (TV, notebook, console, celular, geladeira…), com a foto
-  // recortada, trocando sozinho com transição suave. A lista é renovada a cada 10 min. Se não houver produtos,
+  // inteira da loja num cartão branco com o selo do site, trocando sozinho com transição suave. A lista é renovada a cada 10 min. Se não houver produtos,
   // aparece o mascote (ele não pisca antes: começa escondido).
   const VIT = { itens: [], i: 0, timer: null, pausa: false };
   const VIT_MS = 5000;
-  const vitImg = o => `/img/recorte/${o.id}.webp`;
+  const vitImg = o => `/img/recorte/${o.id}.webp?c=1`; // ?c=1: cartão com a foto inteira (não usa o recorte antigo guardado no navegador)
   const preCarregar = o => new Promise(r => { const im = new Image(); im.onload = im.onerror = () => r(); im.src = vitImg(o); });
 
   function vitItem(o, ativo) {

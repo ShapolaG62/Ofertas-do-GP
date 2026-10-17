@@ -94,6 +94,26 @@ async function compor(foto, s) {
     .toBuffer();
 }
 
+// Cartão da vitrine da página inicial: a foto original inteira (sem recorte, nada do produto é cortado) num
+// cartão branco de cantos arredondados, com o selo do site embaixo. Sai em WebP com os cantos transparentes.
+const CARTAO = 720;
+async function cartao(foto, s = settings.getAll()) {
+  const raio = 44, faixaSelo = 84;
+  const produto = await sharp(foto, { failOn: 'none' }).rotate().flatten({ background: '#ffffff' })
+    .trim({ background: '#ffffff', threshold: 12 }) // tira a sobra branca em volta: o produto fica maior
+    .resize(CARTAO - 90, CARTAO - 60 - faixaSelo, { fit: 'inside' }).toBuffer();
+  const meta = await sharp(produto).metadata();
+  const marca = await sharp(await selo({ ...s, marca_opacidade: 100 })).resize({ height: 62 }).toBuffer();
+  const mm = await sharp(marca).metadata();
+  const fundo = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${CARTAO}" height="${CARTAO}">
+    <rect width="${CARTAO}" height="${CARTAO}" rx="${raio}" ry="${raio}" fill="#ffffff"/></svg>`);
+  const areaH = CARTAO - faixaSelo - 30;
+  return sharp(fundo).composite([
+    { input: produto, left: Math.round((CARTAO - meta.width) / 2), top: Math.round(30 + (areaH - meta.height) / 2) },
+    { input: marca, left: CARTAO - mm.width - 26, top: CARTAO - mm.height - 22 },
+  ]).webp({ quality: 88, alphaQuality: 90, effort: 5 }).toBuffer();
+}
+
 // Imagem com marca d'água de uma oferta (guardada em disco; refeita se a foto ou a configuração mudar).
 async function paraOferta(o, s = settings.getAll()) {
   const chave = crypto.createHash('sha1')
@@ -114,4 +134,4 @@ function limparCache() {
   }
 }
 
-module.exports = { ativa, paraOferta, limparCache, baixarFoto, POSICOES };
+module.exports = { ativa, paraOferta, cartao, limparCache, baixarFoto, POSICOES };

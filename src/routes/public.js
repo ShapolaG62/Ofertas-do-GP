@@ -124,7 +124,7 @@ router.get('/img/marca/:id.jpg', async (req, res) => {
   }
 });
 
-// Vitrine da página inicial: notebook, TV, PS5 e iPhone das melhores ofertas, com foto recortada.
+// Vitrine da página inicial: notebook, TV, PS5 e iPhone das melhores ofertas, em cartões com a foto inteira e o selo do site.
 router.get('/api/vitrine', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'private, max-age=300');

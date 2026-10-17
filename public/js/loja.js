@@ -134,7 +134,7 @@
         ${linha('WhatsApp', a.whatsapp)}${linha('Instagram', a.instagram ? `@${a.instagram}` : '')}</dl>
         ${!a.horario && !a.endereco && !a.telefone && !a.email_contato && !a.whatsapp && !a.instagram ? '<p class="muted">Fale com a loja pelo botão "Fale com lojista".</p>' : ''}</section>
       ${a.politica_entrega || a.politica_troca ? `<section class="panel-card"><h2>Políticas</h2><dl class="lj-info">${linha('Entrega', a.politica_entrega)}${linha('Trocas e devoluções', a.politica_troca)}</dl></section>` : ''}
-      ${D.pedidos?.aceita_pedidos ? `<section class="panel-card"><h2>Como comprar</h2><p class="lj-texto">Abra um produto e toque em <b>Fazer pedido</b>. Pagamento direto à loja: ${D.pedidos.metodos.map(m => esc(m.nome)).join(', ')}.</p></section>` : ''}
+      ${D.pedidos?.aceita_pedidos ? `<section class="panel-card"><h2>Como comprar</h2><p class="lj-texto">Abra um produto e toque em <b>Fazer pedido</b>. ${D.pedidos.metodos.length ? `Pagamento direto à loja: ${D.pedidos.metodos.map(m => esc(m.nome)).join(', ')}.` : 'A loja envia a forma de pagamento pela conversa.'}</p></section>` : ''}
     </div>`;
   }
 

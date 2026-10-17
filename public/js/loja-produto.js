@@ -97,7 +97,7 @@
             <button class="btn btn-block" type="button" data-prod="conversar"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Conversar com a loja</button>
             ${o.fonte === 'empresa' ? `<a class="link-btn" href="/anuncio/${o.id}">Abrir a página completa do anúncio</a>` : ''}
           </div>
-          ${ped.aceita_pedidos && ped.metodos.length ? `<p class="muted prod-nota">Pagamento direto à loja: ${ped.metodos.map(m => esc(m.nome)).join(', ')}. O pedido e a conversa ficam registrados no site.</p>` : ''}
+          ${ped.aceita_pedidos ? `<p class="muted prod-nota">${ped.metodos.length ? `Pagamento direto à loja: ${ped.metodos.map(m => esc(m.nome)).join(', ')}.` : 'A loja envia a forma de pagamento pela conversa, logo depois do pedido.'} O pedido e a conversa ficam registrados no site.</p>` : ''}
         </div>
       </div>
       ${a.descricao ? `<div class="prod-desc"><h3>Descrição</h3><p>${esc(a.descricao).replace(/\n/g, '<br>')}</p></div>` : ''}`;
@@ -126,10 +126,10 @@
         <div class="prod-resumo"><img src="/api/img/${o.id}" alt="" referrerpolicy="no-referrer"><div><b>${esc(o.produto)}</b>
           <span class="muted">${esc(loja.nome)} · R$ ${brl(o.preco_atual)} cada</span></div></div>
         <label class="field"><span>Quantidade</span><input type="text" name="quantidade" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="1" required></label>
-        <fieldset class="prod-metodos"><legend>Como você quer pagar?</legend>
+        ${ped.metodos.length ? `<fieldset class="prod-metodos"><legend>Como você quer pagar?</legend>
           ${ped.metodos.map((m, i) => `<label class="ass-metodo"><input type="radio" name="metodo" value="${esc(m.id)}" ${i ? '' : 'checked'}>
             <span><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small></span></label>`).join('')}
-        </fieldset>
+        </fieldset>` : '<p class="muted prod-nota" style="margin:0"><b>Pagamento:</b> a loja envia a forma de pagamento pela conversa assim que receber o pedido.</p>'}
         <label class="field"><span>Observações para a loja <small class="muted">(endereço de entrega, cor, tamanho…)</small></span>
           <textarea name="observacao" maxlength="600" rows="3"></textarea></label>
         ${ped.instrucoes ? `<p class="muted prod-nota">${esc(ped.instrucoes)}</p>` : ''}
@@ -159,7 +159,7 @@
       const btn = f.querySelector('[type=submit]');
       btn.disabled = true; btn.textContent = 'Enviando…';
       try {
-        const p = await api('/api/pedidos', { oferta_id: o.id, quantidade: f.quantidade.value, metodo: f.metodo.value, observacao: f.observacao.value });
+        const p = await api('/api/pedidos', { oferta_id: o.id, quantidade: f.quantidade.value, metodo: f.metodo ? f.metodo.value : '', observacao: f.observacao.value });
         location.href = `/mensagens?c=${p.conversa_id}&pedido=${p.id}`;
       } catch (err) {
         const m = corpo().querySelector('#prod-msg'); m.textContent = err.message; m.hidden = false;

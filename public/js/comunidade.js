@@ -55,7 +55,8 @@
     return `<li class="parc">
       <a class="parc-topo" href="${l ? `/loja/${esc(l.slug)}` : `/perfil/${esc(p.slug)}`}">
         <span class="parc-logo">${logo}</span>
-        <span class="parc-nome"><b>${esc(l?.nome || p.nome)}</b><small>Loja parceira no Ofertou! <span class="parc-ok" title="Empresa com cadastro aprovado">${ICONE.verificado}</span></small></span>
+        <span class="parc-nome"><b>${esc(l?.nome || p.nome)}</b><small>Loja parceira no Ofertou! <span class="parc-ok" title="Empresa com cadastro aprovado">${ICONE.verificado}</span></small>
+          ${l?.avaliacoes?.total ? `<small class="parc-estrelas"><b>★ ${String(l.avaliacoes.media).replace('.', ',')}</b> · ${num(l.avaliacoes.total)} avaliaç${l.avaliacoes.total === 1 ? 'ão' : 'ões'}</small>` : ''}</span>
       </a>
       <div class="parc-acoes">
         ${l && !p.eu ? `<button class="parc-btn parc-falar" type="button" data-falar-loja="${l.id}">${ICONE.chat}Fale com lojista</button>` : ''}

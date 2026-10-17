@@ -66,6 +66,13 @@ app.use((req, res, next) => {
   next();
 });
 
+// O próprio perfil fica em Minha conta (aba "Meu perfil"); admin e clientes só da ferramenta continuam em /perfil.
+app.get(['/perfil', '/perfil.html'], (req, res, next) => {
+  const dono = require('./src/perfis').donoDe(req);
+  if (dono && dono.startsWith('u:')) return res.redirect('/conta?aba=meuperfil');
+  next();
+});
+
 // Google AdSense: coloca a meta de verificação e o script do AdSense no <head> das páginas HTML.
 // (Sem ID configurado, as páginas são servidas sem mudança.)
 const paginaCache = new Map();
@@ -123,7 +130,8 @@ app.use(assinaturaRoutes);
 app.use(appRoutes);
 app.use(perfilRoutes);
 app.use(ganhosRoutes);
-app.use(require('./src/routes/chat')); // mensagens, pedidos às lojas e contadores de acesso
+app.use(require('./src/routes/chat'));
+app.use(require('./src/routes/loja')); // página profissional das lojas: aparência, catálogos e avaliações // mensagens, pedidos às lojas e contadores de acesso
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));

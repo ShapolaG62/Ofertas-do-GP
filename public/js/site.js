@@ -743,6 +743,7 @@
     if (isAdmin) {
       mostrarConta();
       $('#conta-link').href = '/admin';
+      $('#conta-perfil-link').hidden = false; // admin não tem "Minha conta": o perfil fica em /perfil
       $('#conta-link-txt').textContent = 'Painel do administrador';
       $('#conta-link-sub').textContent = 'Ofertas, usuários, planos e configurações';
     }
@@ -754,6 +755,7 @@
     if (p.cliente) { // cliente da ferramenta: atalho para o painel dele
       mostrarConta();
       $('#conta-link').href = '/cliente';
+      $('#conta-perfil-link').hidden = false;
       $('#conta-link-txt').textContent = 'Meu painel de afiliado';
       $('#conta-link-sub').textContent = 'Links, redes e postagens';
     }

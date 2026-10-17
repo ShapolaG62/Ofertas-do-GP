@@ -20,7 +20,7 @@ function exigirDono(req, res, next) {
   next();
 }
 
-router.get(['/perfil', '/perfil/:slug'], (req, res) => res.sendFile(PAGINA));
+router.get(['/perfil', '/perfil/:slug'], (req, res) => res.sendFile(PAGINA)); // (o próprio perfil de conta do site vai para Minha conta: ver server.js)
 
 router.get('/api/perfil', exigirDono, (req, res) => {
   try { res.json(perfis.meu(req.dono)); } catch (err) { sendError(res, err); }

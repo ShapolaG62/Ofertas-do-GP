@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261065">
-<script src="/js/app-nativo.js?v=20261065"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261067">
+<script src="/js/app-nativo.js?v=20261067"></script>
 </head>
 <body>
 <header class="site-header">
@@ -293,6 +293,10 @@
         </aside>
 
         <div>
+          <div class="tab-pane" data-pane="meuperfil" hidden>
+            <div id="pf-embed" class="pf-embed"><p class="muted">Carregando perfil…</p></div>
+          </div>
+
           <div class="tab-pane" data-pane="inicio">
             <div class="panel-card">
               <h2>Olá, <span id="hello-name"></span></h2>
@@ -307,19 +311,70 @@
 
           <!-- Minha loja -->
           <div class="tab-pane" data-pane="loja" hidden>
-            <div class="panel-card">
-              <h2>Minha loja</h2>
-              <p class="muted">Sua loja ganha uma página no site com todos os seus anúncios.</p>
-              <form class="form" id="form-loja">
+            <form class="form" id="form-loja">
+              <div class="panel-card le-secao">
+                <div class="row-between"><h2>Minha loja</h2><a class="btn btn-sm" id="store-link" href="#" target="_blank" hidden>Ver minha loja ↗</a></div>
+                <p class="muted" style="margin:0">Deixe a página da sua loja do seu jeito: é ela que os clientes veem ao abrir o seu perfil, os seus produtos e os parceiros na comunidade.</p>
                 <label class="field"><span>Nome da loja</span><input name="nome" maxlength="60" required></label>
-                <label class="field"><span>Descrição</span><textarea name="descricao" maxlength="500"></textarea></label>
-                <div class="form-row">
-                  <label class="field"><span>Logo (link da imagem)</span><input type="url" name="logo_url" placeholder="https://"></label>
-                  <label class="field"><span>Site da loja</span><input type="url" name="site_url" placeholder="https://"></label>
+                <label class="field"><span>Frase de destaque <small>(aparece abaixo do nome — ex.: "Eletrônicos com garantia e entrega rápida")</small></span><input name="slogan" maxlength="90"></label>
+                <label class="field"><span>Apresentação da loja</span><textarea name="descricao" maxlength="500" rows="4"></textarea></label>
+              </div>
+
+              <div class="panel-card le-secao">
+                <h2>Aparência</h2>
+                <div class="le-imgs">
+                  <div class="le-img"><span class="field" style="margin:0"><span>Logo</span></span>
+                    <div class="le-img-prev logo" id="le-logo-prev">Sem logo</div>
+                    <div class="row-actions"><label class="btn btn-sm"><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-le-upload="logo_url">Enviar</label>
+                      <button class="btn btn-sm" type="button" data-le-limpar="logo_url">Tirar</button></div></div>
+                  <div class="le-img"><span class="field" style="margin:0"><span>Banner <small>(imagem larga, 1600×400 de preferência)</small></span></span>
+                    <div class="le-img-prev banner" id="le-capa-prev">Sem banner: usa a cor da loja</div>
+                    <div class="row-actions"><label class="btn btn-sm"><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-le-upload="capa_url">Enviar</label>
+                      <button class="btn btn-sm" type="button" data-le-limpar="capa_url">Tirar</button></div></div>
                 </div>
-                <div class="form-msg" hidden></div>
-                <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar loja</button> <a class="btn" id="store-link" href="#" target="_blank" hidden>Ver página da loja</a></div>
-              </form>
+                <input type="hidden" name="logo_url"><input type="hidden" name="capa_url"><input type="hidden" name="cor">
+                <div class="field"><span>Cor da loja</span><div class="le-cores" id="le-cores"></div></div>
+              </div>
+
+              <div class="panel-card le-secao">
+                <h2>Contato e atendimento</h2>
+                <div class="form-row">
+                  <label class="field"><span>Site oficial</span><input type="url" name="site_url" placeholder="https://"></label>
+                  <label class="field"><span>WhatsApp</span><input name="whatsapp" inputmode="tel" maxlength="20" placeholder="(11) 99999-9999"></label>
+                </div>
+                <div class="form-row">
+                  <label class="field"><span>Instagram</span><input name="instagram" maxlength="40" placeholder="minhaloja"></label>
+                  <label class="field"><span>Telefone</span><input name="telefone" maxlength="20"></label>
+                </div>
+                <div class="form-row">
+                  <label class="field"><span>E-mail de contato</span><input type="email" name="email_contato" maxlength="120"></label>
+                  <label class="field"><span>Horário de atendimento</span><input name="horario" maxlength="120" placeholder="Seg a sex, 9h às 18h"></label>
+                </div>
+                <label class="field"><span>Endereço <small>(opcional, para retirada ou loja física)</small></span><input name="endereco" maxlength="200"></label>
+              </div>
+
+              <div class="panel-card le-secao">
+                <h2>Políticas</h2>
+                <label class="field"><span>Entrega e frete</span><textarea name="politica_entrega" maxlength="600" rows="3" placeholder="Prazos, regiões atendidas, frete grátis acima de…"></textarea></label>
+                <label class="field"><span>Trocas e devoluções</span><textarea name="politica_troca" maxlength="600" rows="3" placeholder="Prazo para troca, como devolver…"></textarea></label>
+                <label class="check-line"><input type="checkbox" name="mostrar_avaliacoes" value="1"> <span>Mostrar as avaliações dos clientes na página da loja</span></label>
+              </div>
+
+              <div class="form-msg" hidden></div>
+              <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar loja</button></div>
+            </form>
+
+            <div class="panel-card le-secao">
+              <div class="row-between"><h2>Catálogos</h2><button class="btn btn-sm btn-primary" type="button" id="le-cat-novo">+ Novo catálogo</button></div>
+              <p class="muted" style="margin:0">Agrupe seus produtos em coleções (ex.: "Promoções da semana", "Smartphones", "Presentes"). Cada catálogo vira uma aba na página da loja.</p>
+              <div id="le-cat-editor"></div>
+              <div class="le-cats" id="le-cats"></div>
+            </div>
+
+            <div class="panel-card le-secao">
+              <h2>Avaliações dos clientes</h2>
+              <div id="le-aval-resumo" class="muted"></div>
+              <div class="le-aval" id="le-aval"></div>
             </div>
           </div>
 
@@ -552,7 +607,7 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261065" defer></script>
-<script src="/js/chat-topo.js?v=20261065" defer></script>
+<script src="/js/conta.js?v=20261067" defer></script>
+<script src="/js/chat-topo.js?v=20261067" defer></script>
 </body>
 </html>

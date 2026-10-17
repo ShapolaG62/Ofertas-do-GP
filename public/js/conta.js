@@ -409,10 +409,10 @@
   });
 
   // ── Área do usuário ────────────────────────────────────────────────────────
-  const TABS_CONSUMIDOR = [['inicio', 'Início'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
-  const TABS_EMPRESA = [['inicio', 'Início'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
+  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['inicio', 'Início'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  const TABS_EMPRESA = [['meuperfil', 'Meu perfil'], ['inicio', 'Início'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
     ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
-  let currentTab = 'inicio';
+  let currentTab = 'meuperfil';
 
   function renderAccount() {
     show('conta');
@@ -425,7 +425,7 @@
     if (!tabs.some(([k]) => k === currentTab)) currentTab = 'inicio';
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>
       `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}</button>`).join('')
-      + '<a class="pf-nav-link" href="/mensagens">💬 Mensagens</a><a class="pf-nav-link" href="/perfil">🏅 Meu perfil e conquistas</a>';
+      + '<a class="pf-nav-link" href="/mensagens">Mensagens</a>';
     $$('#view-conta [data-empresa]').forEach(el => { el.hidden = !empresa; });
 
     $('#hello-name').textContent = (ME.nome || '').split(' ')[0];
@@ -465,7 +465,9 @@
     $$('.tab-pane').forEach(p => { p.hidden = p.dataset.pane !== tab; });
     $$('#account-nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab));
     if (tab === 'anuncios') { closeEditor(); loadProducts(); }
+    if (tab === 'meuperfil') embutirPerfil().catch(() => { $('#pf-embed').innerHTML = '<p class="muted">Não foi possível carregar o perfil.</p>'; });
     if (tab === 'vendas') loadVendas().catch(err => toast(err.message));
+    if (tab === 'loja' && LOJA) loadEditorLoja().catch(err => toast(err.message));
     if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
   }
   $('#account-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) openTab(b.dataset.tab); });
@@ -575,6 +577,24 @@
     } catch (err) { toast(err.message); b.disabled = false; }
   });
 
+  // Perfil dentro da conta: usa a mesma página do perfil (perfil.js), sem sair daqui
+  let perfilEmbutido = false;
+  async function embutirPerfil() {
+    if (perfilEmbutido) return;
+    perfilEmbutido = true;
+    const html = await fetch('/perfil/minha-conta', { cache: 'no-store' }).then(r => r.text());
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const pagina = doc.querySelector('main.pf-page');
+    const editor = doc.querySelector('#pf-editor');
+    if (!pagina || !editor) throw new Error('perfil');
+    $('#pf-embed').replaceChildren(document.importNode(pagina, true));
+    document.body.appendChild(document.importNode(editor, true));
+    window.OFERTOU_PERFIL_EMBED = true;
+    const sc = document.createElement('script');
+    sc.src = doc.querySelector('script[src*="/js/perfil.js"]')?.getAttribute('src') || '/js/perfil.js';
+    document.body.appendChild(sc);
+  }
+
   function fillStore() {
     const f = $('#form-loja');
     f.nome.value = LOJA?.nome || ME.empresa_nome || '';
@@ -594,10 +614,132 @@
   bind('#form-loja', async (form, d) => {
     const r = await api('/api/conta/loja', { method: 'PUT', body: d });
     LOJA = r.loja;
+    await api('/api/conta/loja/aparencia', { method: 'PUT', body: { ...d, mostrar_avaliacoes: form.mostrar_avaliacoes.checked } });
     renderAccount();
     openTab('loja');
-    msg($('#form-loja'), 'Loja salva!', true);
+    msg($('#form-loja'), 'Loja salva! Veja como ficou em "Ver minha loja".', true);
   });
+  // ── Editor da loja: aparência, catálogos e avaliações ─────────────────────
+  const CORES_LOJA = { verde: ['#0c8f4f', '#2bd37f'], azul: ['#1d5fd6', '#5b9bff'], roxo: ['#6b3fd4', '#a27bff'], laranja: ['#d9661a', '#ffa24d'],
+    vermelho: ['#c62f2f', '#ff6464'], grafite: ['#3b4047', '#7d858f'], rosa: ['#cf3a85', '#ff7bbd'], dourado: ['#a77a0c', '#f2c94c'],
+    ciano: ['#0b8f9c', '#41d9e6'], vinho: ['#6e1c38', '#b8456c'] };
+  let ED = null; // dados do editor
+  const okImgLoja = s => /^(https:\/\/|\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$)/i.test(s || '');
+  function previewImg(campo) {
+    const f = $('#form-loja'), v = f[campo].value;
+    const el = $(campo === 'logo_url' ? '#le-logo-prev' : '#le-capa-prev');
+    el.style.backgroundImage = okImgLoja(v) ? `url("${v}")` : '';
+    el.textContent = okImgLoja(v) ? '' : campo === 'logo_url' ? 'Sem logo' : 'Sem banner: usa a cor da loja';
+  }
+  function marcarCor(cor) {
+    $('#form-loja').cor.value = cor;
+    $$('#le-cores [data-cor]').forEach(b => b.setAttribute('aria-pressed', b.dataset.cor === cor));
+  }
+  async function loadEditorLoja() {
+    ED = await api('/api/conta/loja/editor');
+    if (!ED.loja) { $('#le-cats').innerHTML = '<p class="muted">Salve a loja primeiro.</p>'; return; }
+    const f = $('#form-loja'), a = ED.aparencia;
+    for (const k of ['slogan', 'whatsapp', 'instagram', 'telefone', 'email_contato', 'horario', 'endereco', 'politica_entrega', 'politica_troca', 'logo_url', 'capa_url']) f[k].value = a[k] || '';
+    f.mostrar_avaliacoes.checked = a.mostrar_avaliacoes;
+    $('#le-cores').innerHTML = ED.cores.map(c => `<button type="button" class="le-cor" data-cor="${c}" title="${c}" style="background:linear-gradient(120deg, ${(CORES_LOJA[c] || CORES_LOJA.verde).join(', ')})"></button>`).join('');
+    marcarCor(a.cor || 'verde');
+    previewImg('logo_url'); previewImg('capa_url');
+    renderCatalogos();
+    renderAvaliacoesLoja();
+  }
+  $('#le-cores').addEventListener('click', e => { const b = e.target.closest('[data-cor]'); if (b) marcarCor(b.dataset.cor); });
+  $('#form-loja').addEventListener('change', async e => {
+    const campo = e.target.dataset?.leUpload;
+    if (!campo || !e.target.files?.[0]) return;
+    try {
+      const r = await api('/api/conta/upload', { method: 'POST', raw: e.target.files[0] });
+      $('#form-loja')[campo].value = r.url;
+      previewImg(campo);
+      toast('Imagem enviada. Clique em "Salvar loja" para publicar.');
+    } catch (err) { toast(err.message); }
+    e.target.value = '';
+  });
+  $('#form-loja').addEventListener('click', e => {
+    const b = e.target.closest('[data-le-limpar]');
+    if (!b) return;
+    $('#form-loja')[b.dataset.leLimpar].value = '';
+    previewImg(b.dataset.leLimpar);
+  });
+
+  // Catálogos
+  function renderCatalogos() {
+    $('#le-cats').innerHTML = ED.catalogos.length ? ED.catalogos.map(c => `<div class="le-cat"><div><b>${esc(c.nome)}</b>
+        <small>${c.itens.length} produto(s)${c.descricao ? ` · ${esc(c.descricao)}` : ''}</small></div>
+        <div class="row-actions"><button class="btn btn-sm" type="button" data-cat-editar="${c.id}">Editar</button>
+        <button class="btn btn-sm danger-txt" type="button" data-cat-excluir="${c.id}">Excluir</button></div></div>`).join('')
+      : '<p class="muted">Nenhum catálogo ainda.</p>';
+  }
+  function editorCatalogo(c) {
+    const marcados = new Set(c ? c.itens : []);
+    $('#le-cat-editor').innerHTML = `<div class="le-cat-editor" data-cat-id="${c ? c.id : ''}">
+      <label class="field"><span>Nome do catálogo</span><input id="le-cat-nome" maxlength="50" value="${esc(c?.nome || '')}" placeholder="Ex.: Promoções da semana"></label>
+      <label class="field"><span>Descrição <small>(opcional)</small></span><input id="le-cat-desc" maxlength="200" value="${esc(c?.descricao || '')}"></label>
+      <div class="field"><span>Produtos <small id="le-cat-n">${marcados.size} escolhido(s)</small></span>
+        <input id="le-cat-busca" type="search" placeholder="Filtrar produtos…">
+        <div class="le-prods" id="le-prods">${ED.produtos.length ? ED.produtos.map(p => `<label data-nome="${esc(p.produto.toLowerCase())}"><input type="checkbox" value="${p.id}" ${marcados.has(p.id) ? 'checked' : ''}>
+          <span>${esc(p.produto)}</span><small>R$ ${Number(p.preco_atual).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}${p.no_ar ? '' : ' · fora do ar'}</small></label>`).join('')
+          : '<p class="muted" style="padding:8px">Cadastre produtos na aba Anúncios primeiro.</p>'}</div></div>
+      <div class="row-actions"><button class="btn btn-primary" type="button" id="le-cat-salvar">Salvar catálogo</button><button class="btn" type="button" id="le-cat-cancelar">Cancelar</button></div>
+    </div>`;
+    $('#le-cat-nome').focus();
+  }
+  $('#le-cat-novo').addEventListener('click', () => editorCatalogo(null));
+  $('[data-pane="loja"]').addEventListener('input', e => {
+    if (e.target.id === 'le-cat-busca') {
+      const t = e.target.value.trim().toLowerCase();
+      $$('#le-prods label').forEach(l => { l.hidden = t && !l.dataset.nome.includes(t); });
+    }
+  });
+  $('[data-pane="loja"]').addEventListener('change', e => {
+    if (e.target.closest('#le-prods')) $('#le-cat-n').textContent = `${$$('#le-prods input:checked').length} escolhido(s)`;
+  });
+  $('[data-pane="loja"]').addEventListener('click', async e => {
+    const ed = e.target.closest('[data-cat-editar]');
+    if (ed) return editorCatalogo(ED.catalogos.find(c => c.id === Number(ed.dataset.catEditar)));
+    const ex = e.target.closest('[data-cat-excluir]');
+    if (ex) {
+      if (!confirm('Excluir este catálogo? Os produtos continuam na loja.')) return;
+      try { ED.catalogos = (await api(`/api/conta/loja/catalogos/${ex.dataset.catExcluir}`, { method: 'DELETE' })).catalogos; renderCatalogos(); } catch (err) { toast(err.message); }
+      return;
+    }
+    if (e.target.closest('#le-cat-cancelar')) { $('#le-cat-editor').innerHTML = ''; return; }
+    if (e.target.closest('#le-cat-salvar')) {
+      const box = $('#le-cat-editor .le-cat-editor');
+      const id = box.dataset.catId;
+      const body = { nome: $('#le-cat-nome').value, descricao: $('#le-cat-desc').value, itens: $$('#le-prods input:checked').map(i => Number(i.value)) };
+      try {
+        ED.catalogos = (await api(id ? `/api/conta/loja/catalogos/${id}` : '/api/conta/loja/catalogos', { method: id ? 'PUT' : 'POST', body })).catalogos;
+        $('#le-cat-editor').innerHTML = '';
+        renderCatalogos();
+        toast('Catálogo salvo.');
+      } catch (err) { toast(err.message); }
+      return;
+    }
+    const rp = e.target.closest('[data-responder]');
+    if (rp) {
+      const t = $(`#le-resp-${rp.dataset.responder}`).value;
+      try { ED.avaliacoes = await api(`/api/conta/loja/avaliacoes/${rp.dataset.responder}/responder`, { method: 'POST', body: { resposta: t } }); renderAvaliacoesLoja(); toast('Resposta salva.'); } catch (err) { toast(err.message); }
+    }
+  });
+
+  // Avaliações recebidas (com resposta da loja)
+  function renderAvaliacoesLoja() {
+    const av = ED.avaliacoes, r = av.resumo;
+    $('#le-aval-resumo').innerHTML = r.total ? `Nota média <b>${String(r.media).replace('.', ',')} ★</b> em ${r.total} avaliação(ões).` : 'Sua loja ainda não recebeu avaliações. Clientes avaliam pela aba "Avaliações" da página da loja.';
+    $('#le-aval').innerHTML = av.itens.map(x => `<div class="le-aval-item">
+      <div><b>${esc(x.autor.nome)}</b> · <span style="color:#f5b301">${'★'.repeat(x.nota)}${'☆'.repeat(5 - x.nota)}</span> <small class="muted">${fmtDate(x.updated_at || x.created_at)}${x.verificada ? ' · ✓ Compra verificada' : ''}</small></div>
+      ${x.texto ? `<p style="margin:0">${esc(x.texto)}</p>` : ''}
+      <textarea id="le-resp-${x.id}" maxlength="600" placeholder="Responder publicamente (opcional)">${esc(x.resposta || '')}</textarea>
+      <div class="row-actions"><button class="btn btn-sm" type="button" data-responder="${x.id}">${x.resposta ? 'Atualizar resposta' : 'Responder'}</button></div>
+    </div>`).join('');
+  }
+
+
 
   // ── Lista de anúncios ──────────────────────────────────────────────────────
   async function loadProducts() {

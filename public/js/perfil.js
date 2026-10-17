@@ -19,7 +19,9 @@
   const ICONE_LINK = { site: '🌐', instagram: '📸', whatsapp: '💬', telegram: '✈️', youtube: '▶️', tiktok: '🎵' };
   const TIER = { inicio: 'Início', bronze: 'Bronze', prata: 'Prata', ouro: 'Ouro', diamante: 'Diamante', especial: 'Especial' };
 
-  const slugUrl = location.pathname.replace(/^\/perfil\/?/, '').replace(/\/+$/, '');
+  // Dentro de Minha conta (aba "Meu perfil"): mostra o próprio perfil, sem mudar o endereço da página
+  const EMBUTIDO = Boolean(window.OFERTOU_PERFIL_EMBED);
+  const slugUrl = EMBUTIDO ? '' : location.pathname.replace(/^\/perfil\/?/, '').replace(/\/+$/, '');
   let P = null; // perfil carregado
 
   let toastTimer;
@@ -60,6 +62,12 @@
       </span>
     </div>`;
 
+  const vitrineEmoji = c => `<button class="vit-emoji pf-tier-${esc(c.tier)}" type="button" aria-label="${esc(c.nome)}">
+      <span class="vit-emoji-ico" aria-hidden="true">${c.icone}</span>
+      <span class="vit-pop" role="tooltip"><span class="vit-pop-ico">${c.icone}</span><b>${esc(c.nome)}</b><small>${esc(c.descricao)}</small>
+        <em>${TIER[c.tier] || ''}${c.xp ? ` · ${c.xp} XP` : ''}${c.obtida_em ? ` · ${dia(c.obtida_em)}` : ''}</em></span>
+    </button>`;
+
   // ── Página ─────────────────────────────────────────────────────────────────
   function render() {
     tema(P.cor);
@@ -94,8 +102,9 @@
       ? `<p class="pf-bio">${esc(P.bio)}</p>`
       : `<p class="pf-vazio">${P.proprio ? 'Conte um pouco sobre você: toque em <b>Editar perfil</b>.' : 'Nenhum resumo ainda.'}</p>`}`;
 
+    // Vitrine: só o emoji de cada conquista; a prévia aparece ao passar o mouse (ou tocar, no celular)
     $('#pf-vitrine').innerHTML = P.vitrine.length
-      ? P.vitrine.map(c => conquistaHtml(c, true)).join('')
+      ? P.vitrine.map(vitrineEmoji).join('')
       : '<p class="pf-vazio">Nenhuma conquista ainda. Use o site e elas vão aparecendo aqui!</p>';
 
     $('#pf-contagem').textContent = P.conquistas.total ? `${P.conquistas.obtidas} de ${P.conquistas.total}` : `${P.conquistas.obtidas} conquistada${P.conquistas.obtidas === 1 ? '' : 's'}`;
@@ -147,7 +156,7 @@
         if (window.OfertouChat) window.OfertouChat.abrir(r.id); else location.href = `/mensagens?c=${r.id}`;
       } catch (err) { toast(err.message); b.disabled = false; }
     });
-    if (P.loja) renderCatalogo();
+    if (P.loja && !EMBUTIDO) renderCatalogo();
     $('#pf-copiar').addEventListener('click', () => {
       navigator.clipboard.writeText(`${location.origin}/perfil/${P.slug}`).then(() => toast('Link do perfil copiado!'));
     });
@@ -382,8 +391,10 @@
   async function carregar() {
     try {
       P = await api(slugUrl ? `/api/perfis/${encodeURIComponent(slugUrl)}` : '/api/perfil');
-      if (!slugUrl) history.replaceState(null, '', `/perfil/${P.slug}`);
-      $('#pf-meu').hidden = P.proprio;
+      // Perfil de empresa: o perfil público é a página da loja (o admin continua vendo o perfil para moderar)
+      if (!EMBUTIDO && P.loja && !P.proprio && !P.admin_vendo) { location.replace(`/loja/${P.loja.slug}`); return; }
+      if (!slugUrl && !EMBUTIDO) history.replaceState(null, '', `/perfil/${P.slug}`);
+      if ($('#pf-meu')) $('#pf-meu').hidden = P.proprio;
       render();
     } catch (err) {
       if (err.status === 401) { location.href = '/conta'; return; }
@@ -391,6 +402,6 @@
     }
   }
   // Visitante logado: mostra o atalho para o próprio perfil
-  if (slugUrl) fetch('/api/perfil', { cache: 'no-store' }).then(r => r.json()).then(d => { if (d.slug && d.slug !== slugUrl) $('#pf-meu').hidden = false; }).catch(() => {});
+  if (slugUrl && $('#pf-meu')) fetch('/api/perfil', { cache: 'no-store' }).then(r => r.json()).then(d => { if (d.slug && d.slug !== slugUrl) $('#pf-meu').hidden = false; }).catch(() => {});
   carregar();
 })();

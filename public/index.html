@@ -23,8 +23,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261065">
-<script src="/js/app-nativo.js?v=20261065"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261067">
+<script src="/js/app-nativo.js?v=20261067"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"Ofertou!","potentialAction":{"@type":"SearchAction","target":"/?q={search_term_string}","query-input":"required name=search_term_string"}}
 </script>
@@ -216,8 +216,8 @@
 </dialog>
 <div class="comu-pop" id="comu-pop" hidden></div>
 <div class="conta-pop" id="conta-pop" role="menu" hidden>
-  <a role="menuitem" href="/perfil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span><b>Meu perfil</b><small>Conquistas, vitrine e seguidores</small></span></a>
-  <a role="menuitem" href="/conta" id="conta-link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span><b id="conta-link-txt">Minha conta</b><small id="conta-link-sub">Dados, pedidos, plano e senha</small></span></a>
+  <a role="menuitem" href="/perfil" id="conta-perfil-link" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span><b>Meu perfil</b><small>Conquistas, vitrine e seguidores</small></span></a>
+  <a role="menuitem" href="/conta" id="conta-link"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span><b id="conta-link-txt">Minha conta e perfil</b><small id="conta-link-sub">Perfil, conquistas, dados, pedidos e senha</small></span></a>
   <button role="menuitem" type="button" id="logout-site"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg><span><b>Sair</b></span></button>
 </div>
 
@@ -242,9 +242,9 @@
 
 <div class="toast" id="toast" role="status"></div>
 
-<script src="/js/publicidade.js?v=20261065" data-espacos="topo,meio,lateral" defer></script>
-<script src="/js/site.js?v=20261065" defer></script>
-<script src="/js/comunidade.js?v=20261065" defer></script>
-<script src="/js/chat-topo.js?v=20261065" defer></script>
+<script src="/js/publicidade.js?v=20261067" data-espacos="topo,meio,lateral" defer></script>
+<script src="/js/site.js?v=20261067" defer></script>
+<script src="/js/comunidade.js?v=20261067" defer></script>
+<script src="/js/chat-topo.js?v=20261067" defer></script>
 </body>
 </html>

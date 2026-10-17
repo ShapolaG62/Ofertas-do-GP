@@ -511,7 +511,7 @@ function listar({ q = '', filtro = 'todos', pagina = 1, visitante = null, grupo 
     // Parceiros: dados da loja para o cartão (logo, produtos vendidos, entrega, atendimento e reputação)
     if (papel(ctx) === 'empresa' && ctx.user) {
       const l = db.get('SELECT id, nome, slug, logo_url, oculta FROM lojas WHERE user_id = ?', ctx.user.id);
-      if (l && !l.oculta) card.loja = { id: l.id, nome: l.nome, slug: l.slug, logo: /^https:\/\//i.test(l.logo_url || '') ? l.logo_url : null, ...require('./pedidos-loja').reputacao(l.id) };
+      if (l && !l.oculta) card.loja = { id: l.id, nome: l.nome, slug: l.slug, logo: /^https:\/\//i.test(l.logo_url || '') ? l.logo_url : null, ...require('./pedidos-loja').reputacao(l.id), avaliacoes: require('./loja-perfil').resumoAvaliacoes(l.id) };
     }
     cards.push(card);
   }
@@ -547,7 +547,16 @@ function seguir(visitante, slug, ligar) {
   };
 }
 
+// Cria o perfil de uma conta, se ainda não existir (ex.: empresa que abriu a loja e ainda não apareceu na comunidade)
+function garantirPerfil(dono) {
+  const ctx = contexto(dono);
+  if (!ctx) return null;
+  const p = garantir(ctx);
+  if (!db.get('SELECT 1 FROM conquistas_obtidas WHERE dono = ?', dono)) avaliar(ctx, p);
+  return p;
+}
+
 module.exports = {
-  donoDe, contexto, meu, porSlug, salvar, salvarImagem, removerImagem, incrementar,
+  garantirPerfil, donoDe, contexto, meu, porSlug, salvar, salvarImagem, removerImagem, incrementar,
   registrarVenda, resumoAdmin, moderar, excluir, limitesDe, listar, mini, seguir,
 };

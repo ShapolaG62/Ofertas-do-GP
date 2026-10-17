@@ -10,8 +10,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261065">
-<script src="/js/app-nativo.js?v=20261065"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261067">
+<script src="/js/app-nativo.js?v=20261067"></script>
 </head>
 <body>
 <header class="site-header">
@@ -27,19 +27,21 @@
   </div>
 </header>
 
-<main class="container">
-  <section class="store-hero" id="store-hero"></section>
-  <p class="partner-note">Loja parceira: os produtos e preços abaixo são publicados pela própria loja.</p>
-  <div class="results-head" style="margin-top:20px">
-    <div><h2 id="results-title">Ofertas da loja</h2><div class="results-count" id="results-count"></div></div>
+<main class="lj-page" id="lj-page">
+  <div class="lj-banner" id="lj-banner"></div>
+  <div class="container lj-wrap">
+    <section class="lj-topo" id="lj-topo"><p class="muted">Carregando loja…</p></section>
+    <nav class="lj-abas" id="lj-abas" role="tablist" hidden></nav>
+    <section class="lj-conteudo" id="lj-conteudo"></section>
+    <p class="partner-note">Loja parceira: os produtos, preços e condições são publicados pela própria loja.</p>
+    <div class="ad-slot ad-wide ad-page" data-espaco="paginas" hidden></div>
   </div>
-  <div class="grid" id="grid"></div>
-  <div class="ad-slot ad-wide ad-page" data-espaco="paginas" hidden></div>
 </main>
+<div class="toast" id="toast" role="status"></div>
 
-<script src="/js/publicidade.js?v=20261065" data-espacos="paginas" defer></script>
-<script src="/js/loja-produto.js?v=20261065" defer></script>
-<script src="/js/loja.js?v=20261065" defer></script>
-<script src="/js/chat-topo.js?v=20261065" defer></script>
+<script src="/js/publicidade.js?v=20261067" data-espacos="paginas" defer></script>
+<script src="/js/loja-produto.js?v=20261067" defer></script>
+<script src="/js/loja.js?v=20261067" defer></script>
+<script src="/js/chat-topo.js?v=20261067" defer></script>
 </body>
 </html>

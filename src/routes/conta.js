@@ -217,8 +217,23 @@ router.get('/api/lojas/:slug', (req, res) => {
   if (!data) return res.status(404).json({ error: 'Loja não encontrada.' });
   // Pedidos pelo site (formas de pagamento da loja) e o perfil do dono (para conversa pessoal)
   const l = db.get('SELECT * FROM lojas WHERE id = ?', data.loja.id);
+  try { require('../perfis').garantirPerfil(`u:${l.user_id}`); } catch { /* sem perfil */ }
   const perfil = db.get('SELECT slug FROM perfis WHERE dono = ? AND oculto = 0', `u:${l.user_id}`);
-  res.json({ ...data, pedidos: require('../pedidos-loja').publicoLoja(l), perfil_slug: perfil?.slug || null });
+  const lojaPerfil = require('../loja-perfil');
+  const visitante = require('../perfis').donoDe(req);
+  let perfil_info = null;
+  if (perfil) {
+    try {
+      const p = require('../perfis').porSlug(perfil.slug, visitante);
+      perfil_info = { slug: p.slug, seguidores: p.seguidores, eu_sigo: p.eu_sigo, pode_seguir: p.pode_seguir, proprio: p.proprio,
+        nivel: p.nivel?.nivel, vitrine: (p.vitrine || []).map(c => ({ id: c.id, nome: c.nome, icone: c.icone, descricao: c.descricao, tier: c.tier, xp: c.xp, obtida_em: c.obtida_em })),
+        membro_desde: p.membro_desde };
+    } catch { /* perfil indisponível */ }
+  }
+  res.json({ ...data, pedidos: require('../pedidos-loja').publicoLoja(l), perfil_slug: perfil?.slug || null, perfil: perfil_info,
+    aparencia: lojaPerfil.aparencia(l), catalogos: lojaPerfil.catalogos(l.id, { publico: true }),
+    avaliacoes: l.mostrar_avaliacoes === 0 ? null : lojaPerfil.avaliacoes(l.id, visitante, { admin: visitante === 'admin' }),
+    reputacao: require('../pedidos-loja').reputacao(l.id), minha_loja: visitante === `u:${l.user_id}`, admin: visitante === 'admin' });
 });
 
 router.get('/api/anuncios/:id', (req, res) => {

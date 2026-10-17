@@ -47,9 +47,11 @@ function saveLoja(user, body) {
   const nome = String(body.nome || '').trim().replace(/\s+/g, ' ');
   if (nome.length < 2 || nome.length > 60) throw fail('Informe o nome da loja (2 a 60 caracteres).');
   const descricao = String(body.descricao || '').trim().slice(0, 500) || null;
-  const logo = httpsUrlOrNull(body.logo_url, 'Logo');
+  const existente = getByUser(user.id);
+  const logoBruto = String(body.logo_url ?? existente?.logo_url ?? '').trim();
+  const logo = /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(logoBruto) ? logoBruto : httpsUrlOrNull(logoBruto, 'Logo');
   const site = httpsUrlOrNull(body.site_url, 'Site');
-  const existing = getByUser(user.id);
+  const existing = existente;
   if (existing) {
     db.run('UPDATE lojas SET nome = ?, descricao = ?, logo_url = ?, site_url = ? WHERE id = ?',
       nome, descricao, logo, site, existing.id);

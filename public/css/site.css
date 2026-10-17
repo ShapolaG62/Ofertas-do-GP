@@ -1595,3 +1595,10 @@ body.pf-body {
 @media (max-width: 1100px) { .pf-embed .pf-grid { grid-template-columns: minmax(0, 1fr); } }
 .parc-estrelas { font-size: 12.5px; color: var(--ink-2); }
 .parc-estrelas b { color: #f5b301; }
+
+/* Mensagens dentro de Minha conta */
+.msg-embed .msg-page { height: min(720px, calc(100vh - 140px)); height: min(720px, calc(100dvh - 140px)); padding: 0; grid-template-columns: 300px minmax(0, 1fr); }
+@media (max-width: 1100px) { .msg-embed .msg-page { grid-template-columns: 1fr; } .msg-embed .msg-conversa { display: none; } .msg-aberta .msg-embed .msg-lista { display: none; } .msg-aberta .msg-embed .msg-conversa { display: flex; } .msg-embed .msg-voltar { display: inline-flex; } }
+.nav-n { margin-left: 8px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 11px; font-weight: 800; display: inline-grid; place-items: center; }
+.nav-n[hidden] { display: none; }
+.aba-mensagens .chatf { display: none !important; }

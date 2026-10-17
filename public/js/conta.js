@@ -409,8 +409,8 @@
   });
 
   // ── Área do usuário ────────────────────────────────────────────────────────
-  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['inicio', 'Início'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
-  const TABS_EMPRESA = [['meuperfil', 'Meu perfil'], ['inicio', 'Início'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
+  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['inicio', 'Início'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  const TABS_EMPRESA = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['inicio', 'Início'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
     ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   let currentTab = 'meuperfil';
 
@@ -424,8 +424,12 @@
     const tabs = empresa ? TABS_EMPRESA : TABS_CONSUMIDOR;
     if (!tabs.some(([k]) => k === currentTab)) currentTab = 'inicio';
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>
-      `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}</button>`).join('')
-      + '<a class="pf-nav-link" href="/mensagens">Mensagens</a>';
+      `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}${k === 'mensagens' ? '<b class="nav-n" id="nav-msg-n" hidden></b>' : ''}</button>`).join('');
+    fetch('/api/chat/resumo', { cache: 'no-store' }).then(r => r.json()).then(r => {
+      const n = (r.nao_lidas || 0) + (r.pedidos || 0);
+      const el = $('#nav-msg-n');
+      if (el) { el.hidden = !n; el.textContent = n > 99 ? '99+' : n; }
+    }).catch(() => {});
     $$('#view-conta [data-empresa]').forEach(el => { el.hidden = !empresa; });
 
     $('#hello-name').textContent = (ME.nome || '').split(' ')[0];
@@ -455,7 +459,7 @@
       currentTab = qs.get('aba');
       if (qs.get('mp') === 'ok') toast('Mercado Pago conectado!');
       if (qs.get('mp_erro')) toast(qs.get('mp_erro'));
-      history.replaceState(null, '', '/conta');
+      if (currentTab !== 'mensagens') history.replaceState(null, '', '/conta'); // (mensagens: mantém a conversa pedida no endereço)
     }
     openTab(currentTab);
   }
@@ -465,6 +469,10 @@
     $$('.tab-pane').forEach(p => { p.hidden = p.dataset.pane !== tab; });
     $$('#account-nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab));
     if (tab === 'anuncios') { closeEditor(); loadProducts(); }
+    // Na aba Mensagens o botão flutuante some (a conversa já está na tela)
+    document.body.classList.toggle('aba-mensagens', tab === 'mensagens');
+    if (tab !== 'mensagens' && location.search.includes('aba=mensagens')) history.replaceState(null, '', '/conta');
+    if (tab === 'mensagens') embutirMensagens().catch(() => { $('#msg-embed').innerHTML = '<p class="muted">Não foi possível carregar as mensagens.</p>'; });
     if (tab === 'meuperfil') embutirPerfil().catch(() => { $('#pf-embed').innerHTML = '<p class="muted">Não foi possível carregar o perfil.</p>'; });
     if (tab === 'vendas') loadVendas().catch(err => toast(err.message));
     if (tab === 'loja' && LOJA) loadEditorLoja().catch(err => toast(err.message));
@@ -592,6 +600,23 @@
     window.OFERTOU_PERFIL_EMBED = true;
     const sc = document.createElement('script');
     sc.src = doc.querySelector('script[src*="/js/perfil.js"]')?.getAttribute('src') || '/js/perfil.js';
+    document.body.appendChild(sc);
+  }
+
+  // Mensagens dentro da conta: usa a mesma tela de mensagens (mensagens.js), sem sair daqui
+  let mensagensEmbutidas = false;
+  async function embutirMensagens() {
+    if (mensagensEmbutidas) return;
+    mensagensEmbutidas = true;
+    const html = await fetch('/mensagens', { cache: 'no-store' }).then(r => r.text());
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const pagina = doc.querySelector('main.msg-page');
+    if (!pagina) throw new Error('mensagens');
+    pagina.classList.remove('container');
+    $('#msg-embed').replaceChildren(document.importNode(pagina, true));
+    window.OFERTOU_MSG_EMBED = true;
+    const sc = document.createElement('script');
+    sc.src = doc.querySelector('script[src*="/js/mensagens.js"]')?.getAttribute('src') || '/js/mensagens.js';
     document.body.appendChild(sc);
   }
 

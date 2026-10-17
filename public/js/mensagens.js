@@ -13,6 +13,9 @@
   };
   const hora = s => new Date(String(s).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const params = new URLSearchParams(location.search);
+  // Dentro de Minha conta (aba "Mensagens"): o endereço continua em /conta
+  const EMBUTIDO = Boolean(window.OFERTOU_MSG_EMBED);
+  const endereco = (q = '') => (EMBUTIDO ? `/conta?aba=mensagens${q ? `&${q}` : ''}` : `/mensagens${q ? `?${q}` : ''}`);
 
   let toastTimer;
   function toast(t) {
@@ -74,7 +77,7 @@
   async function abrir(id, pedidoFoco = null) {
     const d = await api(`/api/chat/conversas/${id}`);
     ATUAL = d.conversa; MSGS = d.mensagens;
-    history.replaceState(null, '', `/mensagens?c=${id}${pedidoFoco ? `&pedido=${pedidoFoco}` : ''}`);
+    history.replaceState(null, '', endereco(`c=${id}${pedidoFoco ? `&pedido=${pedidoFoco}` : ''}`));
     document.body.classList.add('msg-aberta');
     $('#msg-placeholder').hidden = true;
     $('#msg-ativa').hidden = false;
@@ -250,7 +253,7 @@
     ATUAL = null;
     document.body.classList.remove('msg-aberta');
     $('#msg-ativa').hidden = true; $('#msg-placeholder').hidden = false;
-    history.replaceState(null, '', '/mensagens');
+    history.replaceState(null, '', endereco());
     renderLista();
   }
   $('#msg-voltar').addEventListener('click', voltarLista);

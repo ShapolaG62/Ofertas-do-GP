@@ -1185,3 +1185,130 @@ body.pf-body {
 .pf-aviso small { color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
 .pf-aviso-acoes { display: flex; gap: 12px; font-size: 13px; font-weight: 700; margin-top: 4px; }
 .pf-aviso-acoes a, .pf-aviso-link { color: var(--pf-b); font-weight: 700; font-size: 13px; }
+
+/* ── Mensagens no topo ─────────────────────────────────────────────── */
+.chat-topo { position: relative; gap: 6px; }
+.chat-topo[hidden] { display: none; }
+.chat-topo-n { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+.chat-topo-n[hidden] { display: none; }
+@media (max-width: 720px) { .chat-topo-txt { display: none; } }
+.danger-txt { color: var(--deal); }
+
+/* ── Catálogo da loja e prévia do produto ─────────────────────────────── */
+.card-btn { text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+.store-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.store-pag { margin: 8px 0 0; font-size: 13px; }
+.prod-dlg { width: min(920px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); }
+.prod-dlg::backdrop { background: rgba(0, 0, 0, .6); }
+.prod-fechar { position: sticky; top: 10px; float: right; margin: 10px 10px 0 0; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; z-index: 2; font-size: 16px; }
+.prod-corpo { padding: 22px; }
+.prod-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+.prod-foto { position: relative; aspect-ratio: 1; background: #fff; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.prod-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 16px; }
+.prod-miniaturas { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; }
+.prod-miniaturas button { flex: none; width: 64px; height: 64px; border-radius: 10px; border: 2px solid var(--line); background: #fff; padding: 4px; cursor: pointer; }
+.prod-miniaturas button[aria-current="true"] { border-color: var(--brand); }
+.prod-miniaturas img { width: 100%; height: 100%; object-fit: contain; }
+.prod-info h2 { font-size: 21px; line-height: 1.3; margin: 8px 0 10px; }
+.prod-info .ad-price-now { font-size: 30px; }
+.prod-fatos { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13.5px; margin: 14px 0; }
+.prod-fatos dt { color: var(--ink-3); font-weight: 600; }
+.prod-fatos dd { margin: 0; }
+.prod-cupom { font-size: 13.5px; }
+.prod-acoes { display: grid; gap: 8px; margin-top: 16px; }
+.prod-acoes .link-btn { justify-self: center; font-size: 13px; }
+.prod-nota { font-size: 12.5px; margin: 10px 0 0; line-height: 1.5; }
+.prod-desc { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+.prod-desc h3 { margin: 0 0 6px; font-size: 16px; }
+.prod-desc p { margin: 0; color: var(--ink-2); line-height: 1.6; font-size: 14px; }
+.prod-pedido { display: grid; gap: 14px; max-width: 520px; margin: 0 auto; }
+.prod-pedido h2 { margin: 0; }
+.prod-resumo { display: flex; gap: 12px; align-items: center; }
+.prod-resumo img { width: 64px; height: 64px; object-fit: contain; background: #fff; border-radius: 10px; border: 1px solid var(--line); padding: 4px; }
+.prod-resumo div { display: grid; gap: 2px; font-size: 14px; }
+.prod-metodos { border: 0; padding: 0; margin: 0; }
+.prod-metodos legend { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.prod-total { margin: 0; font-size: 15px; }
+@media (max-width: 720px) { .prod-grid { grid-template-columns: 1fr; } .prod-corpo { padding: 16px; } }
+
+/* ── Página de mensagens ─────────────────────────────────────────────── */
+.msg-page { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; padding-top: 20px; padding-bottom: 20px; height: calc(100vh - var(--header-h, 68px)); height: calc(100dvh - var(--header-h, 68px)); }
+.msg-lista, .msg-conversa { padding: 0; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.msg-lista-topo { padding: 16px 16px 10px; border-bottom: 1px solid var(--line); }
+.msg-lista-topo h1 { font-size: 22px; margin: 0 0 10px; }
+.msg-filtros { display: flex; gap: 6px; flex-wrap: wrap; }
+.msg-filtros button { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); border-radius: 999px; padding: 5px 11px; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.msg-filtros button[aria-current="true"] { border-color: var(--brand); color: var(--brand); }
+.msg-filtros b { background: var(--deal); color: #fff; border-radius: 999px; padding: 0 6px; margin-left: 4px; font-size: 11px; }
+.msg-filtros b[hidden] { display: none; }
+.msg-itens { overflow-y: auto; flex: 1; }
+.msg-vazio { padding: 18px; font-size: 14px; text-align: center; }
+.msg-item { display: flex; gap: 10px; align-items: center; width: 100%; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.msg-item:hover, .msg-item.is-ativa { background: var(--surface-2); }
+.msg-item-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.msg-item-txt b { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-item-txt small { color: var(--ink-3); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-item.tem-novas .msg-item-txt small { color: var(--ink); font-weight: 600; }
+.msg-item-txt em { color: var(--brand); font-style: normal; font-weight: 700; }
+.msg-tag { font-size: 11px; font-weight: 700; color: var(--brand); background: var(--brand-soft); padding: 1px 6px; border-radius: 999px; margin-left: 4px; }
+.msg-item-lado { display: grid; justify-items: end; gap: 4px; }
+.msg-item-lado small { color: var(--ink-3); font-size: 11.5px; }
+.msg-n { background: var(--deal); color: #fff; border-radius: 999px; min-width: 20px; height: 20px; display: grid; place-items: center; font-size: 11px; padding: 0 6px; }
+.msg-av { width: 42px; height: 42px; border-radius: 12px; object-fit: cover; flex: none; background: var(--surface-2); }
+.msg-av-letra { display: grid; place-items: center; font-weight: 800; color: var(--brand); border: 1px solid var(--line); }
+.msg-placeholder { margin: auto; text-align: center; padding: 30px; max-width: 420px; }
+.msg-placeholder h2 { margin: 10px 0 6px; }
+.msg-ativa { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.msg-ativa[hidden], .msg-placeholder[hidden] { display: none; }
+.msg-cabeca { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.msg-voltar { display: none; }
+.msg-quem { display: flex; gap: 10px; align-items: center; flex: 1; min-width: 0; color: inherit; text-decoration: none; }
+.msg-quem span { display: grid; min-width: 0; }
+.msg-quem small { color: var(--ink-3); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-ticket { font-size: 12px; font-weight: 700; color: var(--ink-3); background: var(--surface-2); padding: 3px 8px; border-radius: 8px; }
+.msg-pedido-banner { margin: 12px 14px 0; padding: 12px 14px; border-radius: 12px; background: var(--brand-soft); border: 1px solid var(--brand); }
+.msg-pedido-banner[hidden] { display: none; }
+.msg-pedido-banner p { margin: 0 0 8px; }
+.msg-historico { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.msg-dia { align-self: center; font-size: 11.5px; font-weight: 700; color: var(--ink-3); text-transform: capitalize; margin: 6px 0; }
+.msg-bolha { max-width: min(76%, 560px); padding: 9px 12px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line); }
+.msg-bolha p { margin: 0; line-height: 1.45; font-size: 14.5px; overflow-wrap: anywhere; }
+.msg-bolha small { display: block; text-align: right; font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+.msg-bolha.minha { align-self: flex-end; background: var(--brand-soft); border-color: transparent; border-bottom-right-radius: 4px; }
+.msg-bolha.dele { align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg-sis { align-self: center; max-width: 90%; text-align: center; font-size: 12.5px; color: var(--ink-3); background: var(--surface-2); padding: 4px 10px; border-radius: 999px; }
+.msg-pedido { align-self: center; width: min(100%, 520px); border: 1px solid var(--line-strong); border-radius: 14px; padding: 12px 14px; background: var(--surface); display: grid; gap: 10px; }
+.msg-pedido.is-foco { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.msg-pedido-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.msg-pedido-prod { display: flex; gap: 10px; }
+.msg-pedido-prod img { width: 56px; height: 56px; object-fit: contain; background: #fff; border-radius: 8px; border: 1px solid var(--line); padding: 3px; flex: none; }
+.msg-pedido-prod div { display: grid; gap: 2px; font-size: 13.5px; }
+.msg-pix { display: grid; gap: 6px; font-size: 13px; }
+.st-pago, .st-enviado, .st-concluido { background: var(--brand-soft) !important; color: var(--brand) !important; }
+.st-cancelado { background: var(--deal-soft) !important; color: var(--deal) !important; }
+.st-pagamento_informado { background: #fff4d6 !important; color: #8a5a00 !important; }
+.msg-escrever { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); align-items: flex-end; }
+.msg-escrever[hidden] { display: none; }
+.msg-escrever textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; padding: 11px 14px; border-radius: 14px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 14.5px; outline: none; }
+.msg-escrever textarea:focus { border-color: var(--brand); }
+.msg-escrever .btn { height: 44px; }
+.msg-aviso { margin: 0; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13px; }
+.msg-aviso[hidden] { display: none; }
+@media (max-width: 820px) {
+  .msg-page { grid-template-columns: 1fr; padding-top: 12px; }
+  .msg-conversa { display: none; }
+  .msg-aberta .msg-lista { display: none; }
+  .msg-aberta .msg-conversa { display: flex; }
+  .msg-voltar { display: inline-flex; }
+}
+
+/* ── Conta da empresa: vendas e números ──────────────────────────────── */
+.vendas-numeros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
+.vendas-numero { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--surface-2); }
+.vendas-numero b { display: block; font-size: 24px; letter-spacing: -.02em; }
+.vendas-numero span { font-size: 12.5px; color: var(--ink-3); }
+.vendas-pedido { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.vendas-pedido > div { flex: 1; min-width: 200px; display: grid; gap: 2px; font-size: 13.5px; }
+.pf-catalogo .grid { margin-top: 10px; }
+.vendas-bloco { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; display: grid; gap: 10px; }
+.vendas-bloco legend { padding: 0 6px; }

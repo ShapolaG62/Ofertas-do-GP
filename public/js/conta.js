@@ -409,9 +409,9 @@
   });
 
   // ── Área do usuário ────────────────────────────────────────────────────────
-  const TABS_CONSUMIDOR = [['inicio', 'Início'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
-  const TABS_EMPRESA = [['inicio', 'Início'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['importar', 'Importação automática'],
-    ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  const TABS_CONSUMIDOR = [['inicio', 'Início'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  const TABS_EMPRESA = [['inicio', 'Início'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
+    ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   let currentTab = 'inicio';
 
   function renderAccount() {
@@ -425,7 +425,7 @@
     if (!tabs.some(([k]) => k === currentTab)) currentTab = 'inicio';
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>
       `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}</button>`).join('')
-      + '<a class="pf-nav-link" href="/perfil">🏅 Meu perfil e conquistas</a>';
+      + '<a class="pf-nav-link" href="/mensagens">💬 Mensagens</a><a class="pf-nav-link" href="/perfil">🏅 Meu perfil e conquistas</a>';
     $$('#view-conta [data-empresa]').forEach(el => { el.hidden = !empresa; });
 
     $('#hello-name').textContent = (ME.nome || '').split(' ')[0];
@@ -458,9 +458,79 @@
     $$('.tab-pane').forEach(p => { p.hidden = p.dataset.pane !== tab; });
     $$('#account-nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab));
     if (tab === 'anuncios') { closeEditor(); loadProducts(); }
+    if (tab === 'vendas') loadVendas().catch(err => toast(err.message));
+    if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
   }
   $('#account-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) openTab(b.dataset.tab); });
   $('#hello-new-ad').addEventListener('click', () => { openTab('anuncios'); openEditor(); });
+
+  // ── Vendas e pagamentos da loja / Meus pedidos ───────────────────────────
+  const ROTULO_ACAO = {
+    informar_pagamento: 'Já paguei', confirmar_pagamento: 'Confirmar pagamento', enviado: 'Marcar como enviado',
+    concluido: 'Concluir', recebido: 'Recebi o pedido', cancelar: 'Cancelar',
+  };
+  const linhaPedido = p => `<div class="vendas-pedido">
+      <div><b>${esc(p.codigo)} · ${esc(p.produto)}</b>
+        <span class="muted">${p.quantidade}x · ${brlFmt(p.total)} · ${esc(p.metodo_nome)} · ${fmtDate(p.created_at)}</span>
+        <span class="muted">${p.eu === 'loja' ? `Cliente: ${esc(p.comprador.nome)}` : `Loja: ${esc(p.loja.nome)}`}${p.observacao ? ` · Obs.: ${esc(p.observacao)}` : ''}</span></div>
+      <span class="status-pill st-${esc(p.status)}">${esc(p.status_nome)}</span>
+      <div class="row-actions">
+        ${p.acoes.map(a => `<button class="btn btn-sm${a === 'cancelar' ? ' danger-txt' : a === 'confirmar_pagamento' || a === 'recebido' ? ' btn-primary' : ''}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO_ACAO[a]}</button>`).join('')}
+        ${p.conversa_id ? `<a class="btn btn-sm" href="/mensagens?c=${p.conversa_id}&pedido=${p.id}">Conversa</a>` : ''}
+      </div></div>`;
+
+  async function loadVendas() {
+    const d = await api('/api/conta/loja/vendas');
+    if (!d.loja) {
+      $('#vendas-numeros').innerHTML = '<p class="muted">Crie sua loja na aba "Minha loja" para receber pedidos.</p>';
+      $('#vendas-pedidos').innerHTML = '';
+      return;
+    }
+    const m = d.metricas, a = m.acessos;
+    const num = (v, rot, sub) => `<div class="vendas-numero"><b>${v}</b><span>${rot}${sub ? `<br>${sub}` : ''}</span></div>`;
+    $('#vendas-numeros').innerHTML = [
+      num(m.finalizacoes.total, 'Compras finalizadas pelo site', `${m.finalizacoes.d30} nos últimos 30 dias`),
+      num(brlFmt(m.finalizacoes.valor), 'Valor vendido pelo site', `${brlFmt(m.finalizacoes.valor_d30)} em 30 dias`),
+      num(m.pedidos.total, 'Pedidos recebidos', `${(m.pedidos.por_status.aguardando_pagamento || 0) + (m.pedidos.por_status.pagamento_informado || 0)} aguardando pagamento`),
+      num(a.pagina.total, 'Acessos à página da loja', `${a.pagina.d30} em 30 dias · ${a.pagina.d7} em 7`),
+      num(a.produto.total, 'Produtos abertos no catálogo', `${a.produto.d30} em 30 dias`),
+      num(a.site.total, 'Cliques no seu site oficial', `${a.site.d30} em 30 dias`),
+      num(a.link.total, 'Cliques para comprar no seu site', `${a.link.d30} em 30 dias`),
+      num(m.conversas, 'Conversas de atendimento'),
+    ].join('');
+    $('#vendas-top').innerHTML = m.mais_vistos.length ? `<h3 style="margin:16px 0 6px;font-size:15px">Mais vistos no catálogo (30 dias)</h3>
+      <ol class="muted" style="margin:0;padding-left:20px">${m.mais_vistos.map(t => `<li>${esc(t.produto)} — <b>${t.n}</b></li>`).join('')}</ol>` : '';
+    $('#vendas-pedidos').innerHTML = d.pedidos.length ? d.pedidos.map(linhaPedido).join('') : '<p class="muted">Nenhum pedido ainda.</p>';
+    const f = $('#form-pagloja'), pg = d.pagamento;
+    for (const k of ['aceita_pedidos', 'pag_pix_ativo', 'pag_cartao_ativo', 'pag_combinar']) f[k].checked = pg[k];
+    for (const k of ['pag_pix_tipo', 'pag_pix_chave', 'pag_pix_nome', 'pag_pix_cidade', 'pag_cartao_link', 'pedido_instrucoes']) f[k].value = pg[k] || '';
+    if (!pg.pag_pix_nome) f.pag_pix_nome.value = LOJA?.nome || '';
+  }
+  bind('#form-pagloja', async (form, d) => {
+    await api('/api/conta/loja/pagamento', { method: 'PUT', body: d });
+    msg(form, 'Formas de pagamento salvas!', true);
+  });
+
+  async function loadMeusPedidos() {
+    const lista = await api('/api/pedidos');
+    $('#meus-pedidos').innerHTML = lista.length ? lista.map(linhaPedido).join('')
+      : '<p class="muted">Você ainda não fez pedidos. Abra a página de uma loja parceira e toque em um produto.</p>';
+  }
+
+  $('#view-conta').addEventListener('click', async e => {
+    const b = e.target.closest('[data-pacao]');
+    if (!b) return;
+    const acao = b.dataset.pacao;
+    let motivo = '';
+    if (acao === 'cancelar') { motivo = prompt('Motivo do cancelamento (opcional):'); if (motivo === null) return; }
+    else if (acao === 'confirmar_pagamento' && !confirm('Confirma que o valor do pedido já caiu na sua conta?')) return;
+    b.disabled = true;
+    try {
+      await api(`/api/pedidos/${b.dataset.pid}/acao`, { method: 'POST', body: { acao, motivo } });
+      toast('Pedido atualizado.');
+      if (currentTab === 'vendas') loadVendas(); else loadMeusPedidos();
+    } catch (err) { toast(err.message); b.disabled = false; }
+  });
 
   function fillStore() {
     const f = $('#form-loja');

@@ -123,6 +123,7 @@ app.use(assinaturaRoutes);
 app.use(appRoutes);
 app.use(perfilRoutes);
 app.use(ganhosRoutes);
+app.use(require('./src/routes/chat')); // mensagens, pedidos às lojas e contadores de acesso
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));
 app.get('/conta', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'conta.html')));

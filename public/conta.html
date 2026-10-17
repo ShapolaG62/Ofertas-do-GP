@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261056">
-<script src="/js/app-nativo.js?v=20261056"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261057">
+<script src="/js/app-nativo.js?v=20261057"></script>
 </head>
 <body>
 <header class="site-header">
@@ -445,6 +445,58 @@
           </div>
 
           <!-- Segurança -->
+          <!-- Vendas e pagamentos (empresa) -->
+          <div class="tab-pane" data-pane="vendas" hidden>
+            <div class="panel-card">
+              <div class="row-between"><h2>Números da sua loja</h2><a class="btn btn-sm" href="/mensagens">💬 Mensagens</a></div>
+              <p class="muted">Compras finalizadas pelo site (pagamento confirmado por você), acessos à página da loja e ao catálogo, e cliques no seu site oficial.</p>
+              <div class="vendas-numeros" id="vendas-numeros"><p class="muted">Carregando…</p></div>
+              <div id="vendas-top"></div>
+            </div>
+
+            <div class="panel-card">
+              <h2>Pedidos recebidos</h2>
+              <p class="muted">Cada pedido tem um número (ticket) e uma conversa com o cliente. Confirme o pagamento quando o valor cair na sua conta.</p>
+              <div id="vendas-pedidos"><p class="muted">Carregando…</p></div>
+            </div>
+
+            <div class="panel-card">
+              <h2>Como seus clientes pagam</h2>
+              <p class="muted">O pagamento vai direto para você. O Ofertou! gera o Pix "copia e cola" com o valor de cada pedido e registra tudo; você confirma o recebimento.</p>
+              <form class="form" id="form-pagloja">
+                <label class="check-line"><input type="checkbox" name="aceita_pedidos"> <span><b>Receber pedidos pelo site</b> (botão "Fazer pedido" nos seus produtos)</span></label>
+                <fieldset class="vendas-bloco">
+                  <legend><label class="check-line"><input type="checkbox" name="pag_pix_ativo"> <span><b>Pix</b></span></label></legend>
+                  <div class="form-row">
+                    <label class="field"><span>Tipo de chave</span><select name="pag_pix_tipo"><option value="">—</option><option value="cpf">CPF</option><option value="cnpj">CNPJ</option><option value="email">E-mail</option><option value="telefone">Telefone</option><option value="aleatoria">Chave aleatória</option></select></label>
+                    <label class="field"><span>Chave Pix</span><input name="pag_pix_chave" maxlength="80" autocomplete="off"></label>
+                  </div>
+                  <div class="form-row">
+                    <label class="field"><span>Nome do recebedor</span><input name="pag_pix_nome" maxlength="60"></label>
+                    <label class="field"><span>Cidade</span><input name="pag_pix_cidade" maxlength="40"></label>
+                  </div>
+                </fieldset>
+                <fieldset class="vendas-bloco">
+                  <legend><label class="check-line"><input type="checkbox" name="pag_cartao_ativo"> <span><b>Cartão</b> (link de pagamento seu)</span></label></legend>
+                  <label class="field"><span>Link de pagamento <small>(crie no Mercado Pago, PagBank, InfinitePay, PicPay… e cole aqui)</small></span><input type="url" name="pag_cartao_link" maxlength="400" placeholder="https://"></label>
+                </fieldset>
+                <label class="check-line"><input type="checkbox" name="pag_combinar"> <span><b>Combinar pelo chat</b> (você passa as opções de pagamento na conversa)</span></label>
+                <label class="field"><span>Recado no pedido <small>(prazo de envio, retirada, frete…)</small></span><textarea name="pedido_instrucoes" maxlength="400" rows="2"></textarea></label>
+                <div class="form-msg" hidden></div>
+                <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar formas de pagamento</button></div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Meus pedidos (todos) -->
+          <div class="tab-pane" data-pane="pedidos" hidden>
+            <div class="panel-card">
+              <div class="row-between"><h2>Meus pedidos</h2><a class="btn btn-sm" href="/mensagens">💬 Mensagens</a></div>
+              <p class="muted">Pedidos que você fez às lojas parceiras pelo site. Cada um tem a conversa com a loja e o histórico completo.</p>
+              <div id="meus-pedidos"><p class="muted">Carregando…</p></div>
+            </div>
+          </div>
+
           <div class="tab-pane" data-pane="seguranca" hidden>
             <div class="panel-card">
               <h2 id="senha-title">Trocar senha</h2>
@@ -487,6 +539,7 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261056" defer></script>
+<script src="/js/conta.js?v=20261057" defer></script>
+<script src="/js/chat-topo.js?v=20261057" defer></script>
 </body>
 </html>

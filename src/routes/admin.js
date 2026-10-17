@@ -187,6 +187,15 @@ router.get('/api/admin/users', (req, res) => {
 router.get('/api/admin/users/:id', (req, res) => {
   const data = users.detailForAdmin(Number(req.params.id));
   if (!data) return res.status(404).json({ error: 'Usuário não encontrado.' });
+  // Registro de atividades: conversas, pedidos feitos e (empresa) pedidos recebidos e números da loja
+  const chat = require('../chat'), pedidosLoja = require('../pedidos-loja');
+  const dono = `u:${data.user.id}`;
+  data.atividade = {
+    conversas: chat.listarAdmin({ dono, limite: 100 }),
+    pedidos_feitos: pedidosLoja.listarAdmin({ dono, limite: 100 }),
+    pedidos_recebidos: data.loja ? pedidosLoja.listarAdmin({ lojaId: data.loja.id, limite: 200 }) : [],
+    metricas: data.loja ? pedidosLoja.metricas(data.loja.id) : null,
+  };
   res.json(data);
 });
 
@@ -231,6 +240,24 @@ router.delete('/api/admin/emails-bloqueados', (req, res) => {
 
 router.get('/api/admin/store-list', (req, res) => {
   res.json(STORES.map(s => ({ id: s.id, name: s.name, automatic: s.automatic })));
+});
+
+// ── Atendimento: conversas, pedidos às lojas e números de cada loja ──────────
+router.get('/api/admin/atendimento', (req, res) => {
+  const chat = require('../chat'), pedidosLoja = require('../pedidos-loja');
+  const q = String(req.query.q || '');
+  const lojasLista = db.all(`SELECT l.id, l.nome, l.slug, l.user_id, l.oculta, l.aceita_pedidos FROM lojas l ORDER BY l.nome`).map(l => {
+    const m = pedidosLoja.metricas(l.id);
+    return { ...l, finalizacoes: m.finalizacoes, pedidos: m.pedidos.total, conversas: m.conversas,
+      acessos30: m.acessos.pagina.d30, produtos30: m.acessos.produto.d30, site30: m.acessos.site.d30, acessos: m.acessos.pagina.total };
+  });
+  res.json({ conversas: chat.listarAdmin({ q }), pedidos: pedidosLoja.listarAdmin({ q }), lojas: lojasLista });
+});
+router.get('/api/admin/conversas/:id', (req, res) => {
+  try { res.json(require('../chat').transcricao(req.params.id)); } catch (err) { sendError(res, err); }
+});
+router.get('/api/admin/pedidos-loja/:id', (req, res) => {
+  try { res.json(require('../pedidos-loja').detalheAdmin(req.params.id)); } catch (err) { sendError(res, err); }
 });
 
 // ── Planos e pagamentos ──────────────────────────────────────────────────────

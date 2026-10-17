@@ -142,6 +142,13 @@
   .pl-checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 10px; }
   .pl-checks .check { font-weight: 600; font-size: 14px; }
   #pl-form textarea { font-family: inherit; }
+  .tk-msgs { display: grid; gap: 6px; max-height: 60vh; overflow: auto; font-size: 13.5px; }
+  .tk-msg { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+  .tk-msg.sis { background: transparent; border: 1px dashed var(--border-strong); color: var(--muted); }
+  .tk-msg b { margin-right: 6px; }
+  .tk-msg small { color: var(--muted); margin-left: 6px; }
+  tr[data-tk] { cursor: pointer; }
+  tr[data-tk]:hover td { background: var(--surface-2); }
   .pager { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 12px; color: var(--muted); }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
@@ -194,6 +201,7 @@
       <button class="tab" data-tab="aff">Afiliados</button>
       <button class="tab" data-tab="mining">Mineração</button>
       <button class="tab" data-tab="users">Usuários<span class="count-badge hidden" id="pending-badge">0</span></button>
+      <button class="tab" data-tab="atendimento">Atendimento</button>
       <button class="tab" data-tab="ads">Publicidade<span class="count-badge hidden" id="leads-badge">0</span></button>
       <button class="tab" data-tab="planos">Planos<span class="count-badge hidden" id="pedidos-badge">0</span></button>
       <button class="tab" data-tab="ganhos">Ganhos<span class="count-badge hidden" id="ganhos-badge">0</span></button>
@@ -641,6 +649,34 @@
       </form>
     </dialog>
 
+    <!-- ATENDIMENTO: conversas, pedidos às lojas e números das empresas -->
+    <div class="tab-body hidden" data-body="atendimento">
+      <div class="panel">
+        <h2>Atendimento</h2>
+        <p class="hint">Registro de todas as conversas (tickets CV-…) e dos pedidos feitos às lojas parceiras pelo site (tickets PD-…), com o histórico completo. A ficha de cada usuário (aba Usuários) também mostra as conversas e pedidos dele e, nas empresas, os números da loja.</p>
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <input type="search" id="at-busca" placeholder="Buscar por nome, produto ou número (CV-12, PD-7)…" style="flex:1;min-width:240px">
+          <button class="btn" type="button" id="at-buscar">Buscar</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Empresas</h2>
+        <p class="hint">Compras finalizadas = pedidos com pagamento confirmado pela loja. Acessos: página da loja e perfil; produtos: aberturas no catálogo; site: cliques no site oficial (30 dias).</p>
+        <div class="table-wrap"><table><thead><tr><th>Loja</th><th>Compras finalizadas</th><th>Valor</th><th>Pedidos</th><th>Conversas</th><th>Acessos (30d / total)</th><th>Produtos vistos (30d)</th><th>Cliques no site (30d)</th></tr></thead>
+          <tbody id="at-lojas"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>Pedidos às lojas</h2>
+        <div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Data</th><th>Loja</th><th>Cliente</th><th>Produto</th><th>Total</th><th>Pagamento</th><th>Situação</th></tr></thead>
+          <tbody id="at-pedidos"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>Conversas</h2>
+        <div class="table-wrap"><table><thead><tr><th>Ticket</th><th>Tipo</th><th>De</th><th>Para</th><th>Mensagens</th><th>Situação</th><th>Última</th></tr></thead>
+          <tbody id="at-conversas"></tbody></table></div>
+      </div>
+    </div>
+
     <!-- CLIENTES DA FERRAMENTA -->
     <div class="tab-body hidden" data-body="clientes">
       <div class="panel">
@@ -910,6 +946,11 @@
   </section>
 </div>
 
+<dialog id="tk-dlg">
+  <div class="dlg-head"><h3 id="tk-title">Ticket</h3><button class="btn small" type="button" data-close>Fechar</button></div>
+  <div class="dlg-body" id="tk-body"></div>
+</dialog>
+
 <dialog id="user-dlg">
   <div class="dlg-head"><h3 id="ud-title">Usuário</h3><button class="btn small" type="button" data-close>Fechar</button></div>
   <div class="dlg-body" id="ud-body"></div>
@@ -1101,6 +1142,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'social') loadSocialLog();
   if (t.dataset.tab === 'clientes') loadClientes();
   if (t.dataset.tab === 'ganhos') loadGanhos();
+  if (t.dataset.tab === 'atendimento') loadAtendimento().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'planos') { loadPlanos().then(loadPedidos).catch(e => globalMsg(e.message, false)); $('#rc-webhook-url').textContent = `${location.origin}/api/app/webhook/revenuecat`; }
 }));
 
@@ -1447,6 +1489,19 @@ async function openUser(id) {
           </tr>`).join('')}</tbody>
         </table></div>
       </div>` : ''}
+    ${(() => {
+      const a = d.atividade || {};
+      const m = a.metricas;
+      return `${m ? `<div class="store-card"><h4>Números da loja</h4><dl class="kv">
+          <dt>Compras finalizadas pelo site</dt><dd><b>${m.finalizacoes.total}</b> (${brl(m.finalizacoes.valor)}) · ${m.finalizacoes.d30} em 30 dias</dd>
+          <dt>Pedidos recebidos</dt><dd>${m.pedidos.total}</dd><dt>Conversas de atendimento</dt><dd>${m.conversas}</dd>
+          <dt>Acessos à página</dt><dd>${m.acessos.pagina.total} (${m.acessos.pagina.d30} em 30 dias)</dd>
+          <dt>Produtos abertos no catálogo</dt><dd>${m.acessos.produto.total} (${m.acessos.produto.d30} em 30 dias)</dd>
+          <dt>Cliques no site oficial</dt><dd>${m.acessos.site.total} · links dos produtos: ${m.acessos.link.total}</dd></dl></div>` : ''}
+        ${a.pedidos_recebidos?.length ? `<div><h4 style="margin:0 0 8px">Pedidos recebidos pela loja (${a.pedidos_recebidos.length})</h4><div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Data</th><th>Loja</th><th>Cliente</th><th>Produto</th><th>Total</th><th>Pagamento</th><th>Situação</th></tr></thead><tbody>${linhasPedidos(a.pedidos_recebidos)}</tbody></table></div></div>` : ''}
+        <div><h4 style="margin:0 0 8px">Pedidos feitos (${(a.pedidos_feitos || []).length})</h4><div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Data</th><th>Loja</th><th>Cliente</th><th>Produto</th><th>Total</th><th>Pagamento</th><th>Situação</th></tr></thead><tbody>${linhasPedidos(a.pedidos_feitos || [])}</tbody></table></div></div>
+        <div><h4 style="margin:0 0 8px">Conversas (${(a.conversas || []).length})</h4><div class="table-wrap"><table><thead><tr><th>Ticket</th><th>Tipo</th><th>De</th><th>Para</th><th>Mensagens</th><th>Situação</th><th>Última</th></tr></thead><tbody>${linhasConversas(a.conversas || [])}</tbody></table></div></div>`;
+    })()}
     <div>
       <h4 style="margin:0 0 8px">Histórico</h4>
       <div class="log-list">${d.historico.length ? d.historico.map(h => `<div><b>${fmtDate(h.created_at)}</b> · ${esc(h.acao.replace(/_/g, ' '))}${h.detalhe ? ` — ${esc(h.detalhe)}` : ''}</div>`).join('') : '<span class="hint">Sem registros.</span>'}</div>
@@ -1483,6 +1538,64 @@ $('#user-dlg').addEventListener('click', async e => {
     loadUsers(); loadModLog();
   } catch (err) { globalMsg(err.message, false); }
 });
+
+// ── Atendimento: conversas, pedidos às lojas e números das empresas ────────
+const ST_PED = { aguardando_pagamento: 'b-pending', pagamento_informado: 'b-pending', pago: 'b-active', enviado: 'b-active', concluido: 'b-active', cancelado: 'b-banned' };
+const ST_CONV = { pendente: ['b-pending', 'Pedido de mensagem'], aceita: ['b-active', 'Ativa'], recusada: ['b-none', 'Recusada'], bloqueada: ['b-banned', 'Bloqueada'] };
+const linhasPedidos = lista => lista.length ? lista.map(p => `<tr data-tk="pedido" data-id="${p.id}">
+    <td><b>${esc(p.codigo)}</b></td><td class="num">${fmtDate(p.created_at)}</td><td>${esc(p.loja.nome || '—')}</td><td>${esc(p.comprador.nome)}</td>
+    <td><div class="offer-title">${p.quantidade}x ${esc(p.produto)}</div></td><td class="num">${brl(p.total)}</td><td>${esc(p.metodo_nome)}</td>
+    <td><span class="badge ${ST_PED[p.status] || ''}">${esc(p.status_nome)}</span></td></tr>`).join('') : '<tr><td colspan="8" class="hint">Nenhum pedido.</td></tr>';
+const linhasConversas = lista => lista.length ? lista.map(c => `<tr data-tk="conversa" data-id="${c.id}">
+    <td><b>${esc(c.ticket)}</b></td><td>${c.tipo === 'loja' ? 'Atendimento de loja' : 'Pessoal'}</td><td>${esc(c.a.nome)}</td><td>${esc(c.b.nome)}</td>
+    <td class="num">${c.mensagens}</td><td><span class="badge ${(ST_CONV[c.status] || [])[0] || ''}">${esc((ST_CONV[c.status] || [])[1] || c.status)}</span></td>
+    <td class="num">${fmtDate(c.ultima_msg_at || c.created_at)}</td></tr>`).join('') : '<tr><td colspan="7" class="hint">Nenhuma conversa.</td></tr>';
+async function loadAtendimento() {
+  const d = await api(`/api/admin/atendimento?q=${encodeURIComponent($('#at-busca').value.trim())}`);
+  $('#at-lojas').innerHTML = d.lojas.length ? d.lojas.map(l => `<tr>
+    <td><a href="/loja/${esc(l.slug)}" target="_blank">${esc(l.nome)}</a>${l.oculta ? ' <span class="tag">oculta</span>' : ''}${l.aceita_pedidos ? '' : ' <span class="tag">sem pedidos</span>'}</td>
+    <td class="num"><b>${l.finalizacoes.total}</b> <span class="hint" style="margin:0">(${l.finalizacoes.d30} em 30d)</span></td>
+    <td class="num">${brl(l.finalizacoes.valor)}</td><td class="num">${l.pedidos}</td><td class="num">${l.conversas}</td>
+    <td class="num">${l.acessos30} / ${l.acessos}</td><td class="num">${l.produtos30}</td><td class="num">${l.site30}</td></tr>`).join('')
+    : '<tr><td colspan="8" class="hint">Nenhuma loja cadastrada.</td></tr>';
+  $('#at-pedidos').innerHTML = linhasPedidos(d.pedidos);
+  $('#at-conversas').innerHTML = linhasConversas(d.conversas);
+}
+$('#at-buscar').addEventListener('click', () => loadAtendimento().catch(e => globalMsg(e.message, false)));
+$('#at-busca').addEventListener('keydown', e => { if (e.key === 'Enter') $('#at-buscar').click(); });
+
+async function abrirTicket(tipo, id) {
+  const body = $('#tk-body');
+  if (tipo === 'conversa') {
+    const c = await api(`/api/admin/conversas/${id}`);
+    $('#tk-title').textContent = `${c.ticket} — ${c.tipo === 'loja' ? 'Atendimento de loja' : 'Conversa pessoal'}`;
+    body.innerHTML = `<dl class="kv"><dt>Iniciada por</dt><dd>${esc(c.a.nome)}${c.a.slug ? ` (<a href="/perfil/${esc(c.a.slug)}" target="_blank">perfil</a>)` : ''}</dd>
+      <dt>Para</dt><dd>${esc(c.b.nome)}</dd><dt>Situação</dt><dd>${esc((ST_CONV[c.status] || [])[1] || c.status)}${c.bloqueada_por ? ` por ${esc(c.bloqueada_por)}` : ''}</dd>
+      <dt>Criada em</dt><dd>${fmtDate(c.created_at)}</dd>${c.respondida_em ? `<dt>Respondida em</dt><dd>${fmtDate(c.respondida_em)}</dd>` : ''}</dl>
+      <div class="tk-msgs">${c.mensagens.length ? c.mensagens.map(m => `<div class="tk-msg${m.autor ? '' : ' sis'}"><b>${esc(m.autor_nome)}</b>${esc(m.texto)}<small>${fmtDate(m.created_at)}${m.pedido_id ? ` · <a href="#" data-tk-pedido="${m.pedido_id}">pedido</a>` : ''}</small></div>`).join('') : '<span class="hint">Sem mensagens.</span>'}</div>`;
+  } else {
+    const p = await api(`/api/admin/pedidos-loja/${id}`);
+    $('#tk-title').textContent = `Pedido ${p.codigo} — ${p.status_nome}`;
+    body.innerHTML = `<dl class="kv"><dt>Loja</dt><dd><a href="/loja/${esc(p.loja.slug)}" target="_blank">${esc(p.loja.nome)}</a></dd>
+      <dt>Cliente</dt><dd>${esc(p.comprador.nome)}</dd><dt>Produto</dt><dd>${p.quantidade}x ${esc(p.produto)} (${brl(p.preco_unit)} cada)</dd>
+      <dt>Total</dt><dd><b>${brl(p.total)}</b></dd><dt>Pagamento</dt><dd>${esc(p.metodo_nome)}</dd>
+      <dt>Observação</dt><dd>${esc(p.observacao || '—')}</dd><dt>Criado em</dt><dd>${fmtDate(p.created_at)}</dd>
+      <dt>Pago em</dt><dd>${fmtDate(p.pago_em)}</dd><dt>Concluído em</dt><dd>${fmtDate(p.concluido_em)}</dd></dl>
+      <h4 style="margin:0">Histórico do pedido</h4>
+      <div class="tk-msgs">${p.eventos.map(e => `<div class="tk-msg"><b>${esc(e.evento.replace(/_/g, ' '))}</b>${esc(e.quem_nome)}${e.detalhe ? ` — ${esc(e.detalhe)}` : ''}<small>${fmtDate(e.created_at)}</small></div>`).join('')}</div>
+      ${p.conversa_id ? `<div><button class="btn small" type="button" data-tk-conversa="${p.conversa_id}">Ver a conversa do pedido</button></div>` : ''}`;
+  }
+  if (!$('#tk-dlg').open) $('#tk-dlg').showModal();
+}
+document.addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-tk]');
+  if (tr) return abrirTicket(tr.dataset.tk, tr.dataset.id).catch(err => globalMsg(err.message, false));
+  const lp = e.target.closest('[data-tk-pedido]');
+  if (lp) { e.preventDefault(); return abrirTicket('pedido', lp.dataset.tkPedido).catch(err => globalMsg(err.message, false)); }
+  const lc = e.target.closest('[data-tk-conversa]');
+  if (lc) return abrirTicket('conversa', lc.dataset.tkConversa).catch(err => globalMsg(err.message, false));
+});
+$('#tk-dlg').addEventListener('click', e => { if (e.target === $('#tk-dlg') || e.target.closest('[data-close]')) $('#tk-dlg').close(); });
 
 // ── Planos à venda (criar, editar, excluir) ──────────────────────────────────
 let PL = null;

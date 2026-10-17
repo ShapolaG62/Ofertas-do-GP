@@ -291,3 +291,20 @@ Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram 
 - **Aviso de saque:** quando o saldo disponível passa do mínimo, aparece um aviso na aba Ganhos, no **sininho 🔔** do topo do painel, no seu **perfil** e por e-mail (se o SMTP estiver configurado). O site confere a cada hora.
 - **Depois de sacar** (ou de cair o pagamento automático), clique em **Registrar saque** para zerar o saldo e preparar o próximo aviso.
 - **Saque automático:** nenhum programa permite pedir saque por integração. Para o dinheiro cair direto no **Mercado Pago**, cadastre os dados bancários da sua conta Mercado Pago (app do Mercado Pago → Seu perfil → Seus dados → Dados da conta: banco 323, agência e conta) como conta de recebimento no portal de cada programa.
+
+## 16. Mensagens, catálogo das empresas e pedidos
+
+**Mensagens (/mensagens):** o ícone 💬 no topo mostra quantas mensagens não lidas e pedidos de mensagem há.
+- **Conversa pessoal:** no perfil de qualquer pessoa ou empresa, toque em **💬 Mensagem**. A primeira mensagem chega como **pedido de mensagem** (aviso no site e, com o e-mail configurado, por e-mail). Quem recebe escolhe **Aceitar**, **Recusar** ou **Bloquear**; responder também aceita. Até aceitar, quem pediu manda no máximo 3 mensagens; se for recusado, só pode pedir de novo depois de 30 dias.
+- **Atendimento da loja:** pela página da loja, pelo perfil da empresa ou pela prévia de um produto (**Conversar com a loja**). Entra direto, sem aceite, e a empresa pode bloquear.
+- Toda conversa é um ticket (**CV-000123**) com o histórico completo.
+
+**Catálogo e prévia do produto:** na página da loja (**/loja/nome**) e no perfil da empresa, cada produto abre uma prévia com fotos, preço, descrição e os botões **Fazer pedido**, **Conversar com a loja** e (nos importados) **Ver no site da loja**.
+
+**Pedidos:** o cliente escolhe a quantidade, a forma de pagamento e escreve observações (endereço, cor…). O pedido vira um ticket (**PD-000123**) dentro da conversa com a loja. Situações: aguardando pagamento → pagamento informado (cliente toca em "Já paguei") → **pago** (a loja confirma) → enviado → concluído (ou cancelado). O cliente só cancela antes de a loja confirmar o pagamento. Cada mudança fica registrada com data, hora e quem fez.
+
+**Formas de pagamento da empresa** (Minha conta → **Vendas e pagamentos**): **Pix** (chave da empresa; o site gera o "copia e cola" já com o valor do pedido), **cartão** (link de pagamento da própria empresa: Mercado Pago, PagBank, InfinitePay…) e **combinar pelo chat**. O dinheiro vai direto para a empresa — o site não cobra nem recebe. Na mesma aba ficam os **números da loja**: compras finalizadas pelo site (pedidos com pagamento confirmado) e valor vendido, pedidos recebidos, acessos à página da loja e ao perfil, produtos abertos no catálogo, cliques no site oficial e nos links dos produtos, e os produtos mais vistos.
+
+**Meus pedidos:** todos (consumidores, empresas e afiliados) veem os pedidos que fizeram em Minha conta → **Meus pedidos**.
+
+**No painel:** aba **Atendimento** com os números de cada empresa, todos os pedidos e todas as conversas (busca por nome, produto ou número do ticket; clique para ver o histórico completo). Na ficha de cada usuário (aba **Usuários**) aparecem as conversas, os pedidos feitos e, nas empresas, os pedidos recebidos e os números da loja. A política de privacidade avisa que conversas e pedidos ficam registrados e podem ser consultados pela administração para resolver disputas e abusos.

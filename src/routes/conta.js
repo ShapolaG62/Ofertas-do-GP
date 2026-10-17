@@ -1,5 +1,6 @@
 // API das contas de usuários do site (consumidor e empresa), login com Google, anúncios e lojas públicas.
 const express = require('express');
+const db = require('../db');
 const users = require('../users');
 const auth = require('../auth');
 const lojas = require('../lojas');
@@ -214,13 +215,17 @@ router.post('/api/conta/feed/sincronizar', async (req, res) => {
 router.get('/api/lojas/:slug', (req, res) => {
   const data = lojas.publicStore(String(req.params.slug));
   if (!data) return res.status(404).json({ error: 'Loja não encontrada.' });
-  res.json(data);
+  // Pedidos pelo site (formas de pagamento da loja) e o perfil do dono (para conversa pessoal)
+  const l = db.get('SELECT * FROM lojas WHERE id = ?', data.loja.id);
+  const perfil = db.get('SELECT slug FROM perfis WHERE dono = ? AND oculto = 0', `u:${l.user_id}`);
+  res.json({ ...data, pedidos: require('../pedidos-loja').publicoLoja(l), perfil_slug: perfil?.slug || null });
 });
 
 router.get('/api/anuncios/:id', (req, res) => {
   const ad = anuncios.publicAd(Number(req.params.id));
   if (!ad) return res.status(404).json({ error: 'Anúncio não encontrado ou encerrado.' });
-  res.json(ad);
+  const l = db.get('SELECT * FROM lojas WHERE slug = ?', ad.loja_slug);
+  res.json({ ...ad, loja_id: l?.id, pedidos: l ? require('../pedidos-loja').publicoLoja(l) : null });
 });
 
 module.exports = router;

@@ -85,6 +85,7 @@
         <div class="pf-topo-acoes">
           ${P.proprio ? '<button class="btn btn-primary" type="button" id="pf-editar">Editar perfil</button>' : ''}
           ${P.pode_seguir ? `<button class="btn ${P.eu_sigo ? '' : 'btn-primary'}" type="button" id="pf-seguir">${P.eu_sigo ? 'Seguindo ✓' : '+ Seguir'}</button>` : ''}
+          ${P.pode_seguir ? '<button class="btn" type="button" id="pf-msg">💬 Mensagem</button>' : ''}
           <button class="btn" type="button" id="pf-copiar">Copiar link</button>
         </div>
       </div>`;
@@ -136,11 +137,49 @@
         $('#pf-n-seguidores').textContent = num(r.seguidores);
       } catch (err) { toast(err.message); } finally { b.disabled = false; }
     });
+    // Conversa pessoal: a primeira mensagem chega como pedido de mensagem para a outra pessoa
+    $('#pf-msg')?.addEventListener('click', async e => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      try {
+        const r = await api('/api/chat/iniciar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perfil: P.slug }) });
+        location.href = `/mensagens?c=${r.id}`;
+      } catch (err) { toast(err.message); b.disabled = false; }
+    });
+    if (P.loja) renderCatalogo();
     $('#pf-copiar').addEventListener('click', () => {
       navigator.clipboard.writeText(`${location.origin}/perfil/${P.slug}`).then(() => toast('Link do perfil copiado!'));
     });
     if (P.admin_vendo) renderAdmin();
     if (P.proprio && P.plano === 'admin') renderAvisosAdmin();
+  }
+
+  // Catálogo da empresa no perfil: produtos da loja com prévia, conversa e pedido
+  async function renderCatalogo() {
+    const box = $('#pf-catalogo');
+    try {
+      const d = await fetch(`/api/lojas/${encodeURIComponent(P.loja.slug)}`).then(r => (r.ok ? r.json() : null));
+      if (!d) return;
+      const loja = { ...d.loja, pedidos: d.pedidos };
+      window.OfertouLoja?.visita(loja.id, 'pagina');
+      const brl = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const itens = d.ofertas.slice(0, 12);
+      box.innerHTML = `<div class="pf-card-head"><h2>🏪 Catálogo — ${esc(loja.nome)}</h2><span class="pf-contagem">${d.ofertas.length} produto(s)</span></div>
+        <div class="row-actions" style="margin-top:6px">${P.proprio ? '' : '<button class="btn btn-sm btn-primary" type="button" id="pf-falar-loja">💬 Conversar com a loja</button>'}
+          <a class="btn btn-sm" href="/loja/${esc(loja.slug)}">Ver loja completa</a></div>
+        ${itens.length ? `<div class="grid">${itens.map(o => `<button class="card card-btn" type="button" data-oferta="${o.id}">
+          <div class="card-media"><img src="/api/img/${o.id}" alt="" loading="lazy"><span class="card-off">-${Math.round(o.desconto_pct)}%</span></div>
+          <div class="card-body"><h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
+          <div class="card-prices"><div class="card-old num">R$ ${brl(o.preco_anterior)}</div><div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div></div></div>
+        </button>`).join('')}</div>` : '<p class="pf-vazio">Nenhum produto publicado ainda.</p>'}`;
+      box.hidden = false;
+      box.onclick = e => {
+        if (e.target.closest('#pf-falar-loja')) return window.OfertouLoja.conversar(loja.id, null, e.target.closest('#pf-falar-loja'));
+        const c = e.target.closest('[data-oferta]');
+        const o = c && d.ofertas.find(x => x.id === Number(c.dataset.oferta));
+        if (o) window.OfertouLoja.abrir(o, loja);
+      };
+    } catch { /* sem catálogo */ }
   }
 
   // ── Editor ─────────────────────────────────────────────────────────────────

@@ -24,6 +24,7 @@
 
   function render(a) {
     document.title = `${a.produto} — Ofertou!`;
+    if (a.loja_id) window.OfertouLoja.visita(a.loja_id, 'produto', a.id);
     const imgs = (a.imagens || []).filter(okImg);
     const buy = `/oferta/${slugOf(a)}`;
     const specs = [
@@ -63,7 +64,9 @@
             <li><b>Oferta válida até:</b> ${fmtDay(a.expires_at)}</li>
           </ul>
           <div class="ad-cta">
-            <a class="btn btn-primary btn-block" href="${buy}" target="_blank" rel="noopener sponsored">Comprar na loja</a>
+            ${a.pedidos?.aceita_pedidos ? '<button class="btn btn-primary btn-block" type="button" id="ad-pedir">Fazer pedido pelo site</button>' : ''}
+            <button class="btn btn-block" type="button" id="ad-conversar">💬 Conversar com a loja</button>
+            <a class="btn btn-block" href="${buy}" target="_blank" rel="noopener sponsored" id="ad-externo">Comprar no site da loja ↗</a>
             ${wa ? `<a class="btn btn-block btn-wa" href="${esc(wa)}" target="_blank" rel="noopener">Tirar dúvida no WhatsApp</a>` : ''}
           </div>
           <p class="partner-note">Anúncio publicado pela própria loja. Confira preço, frete e condições finais no site da loja antes de comprar.</p>
@@ -84,6 +87,10 @@
         document.querySelectorAll('[data-img]').forEach(b => b.removeAttribute('aria-current'));
         t.setAttribute('aria-current', 'true');
       }
+      const loja = { id: a.loja_id, nome: a.loja_nome, slug: a.loja_slug, pedidos: a.pedidos };
+      if (e.target.closest('#ad-pedir')) window.OfertouLoja.pedir(a, loja);
+      if (e.target.closest('#ad-conversar')) window.OfertouLoja.conversar(a.loja_id, a.id, e.target.closest('#ad-conversar'));
+      if (e.target.closest('#ad-externo')) window.OfertouLoja.visita(a.loja_id, 'link', a.id);
       if (e.target.closest('#copy-coupon')) {
         navigator.clipboard.writeText(a.cupom_codigo).then(() => toast('Cupom copiado!'));
       }

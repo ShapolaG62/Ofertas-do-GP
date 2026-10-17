@@ -1,15 +1,15 @@
-/* Ofertou! — página pública de uma loja parceira */
+/* Ofertou! — página pública de uma loja parceira: catálogo com prévia dos produtos, conversa com a loja e pedidos */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const brl = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const slugOf = o => `${String(o.produto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)}-${o.id}`;
+  let LOJA = null;
+  let OFERTAS = [];
 
+  // Cada produto abre a prévia (fotos, preço, conversa com a loja e pedido)
   function card(o) {
-    const link = o.fonte === 'empresa' ? `href="/anuncio/${o.id}"` : `href="/oferta/${slugOf(o)}" target="_blank" rel="noopener"`;
-    return `<a class="card" ${link}>
+    return `<button class="card card-btn" type="button" data-oferta="${o.id}">
       <div class="card-media">
         <img src="/api/img/${o.id}" alt="" loading="lazy" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
         <span class="card-off">-${Math.round(o.desconto_pct)}%</span>
@@ -21,7 +21,7 @@
           <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div>
         </div>
       </div>
-    </a>`;
+    </button>`;
   }
 
   async function load() {
@@ -33,7 +33,11 @@
       document.querySelector('.results-head').hidden = true;
       return;
     }
-    const { loja, ofertas } = await res.json();
+    const d = await res.json();
+    const { loja, ofertas } = d;
+    LOJA = { ...loja, pedidos: d.pedidos };
+    OFERTAS = ofertas;
+    window.OfertouLoja.visita(loja.id, 'pagina');
     document.title = `${loja.nome} — Ofertou!`;
     const site = /^https:\/\//i.test(loja.site_url || '') ? loja.site_url : '';
     const logo = /^https:\/\//i.test(loja.logo_url || '')
@@ -42,12 +46,30 @@
     $('#store-hero').innerHTML = `${logo}<div>
       <h1>${esc(loja.nome)}</h1>
       ${loja.descricao ? `<p>${esc(loja.descricao)}</p>` : ''}
-      ${site ? `<p style="margin-top:6px"><a class="link-btn" href="${esc(site)}" target="_blank" rel="noopener nofollow">Visitar site da loja</a></p>` : ''}
+      <div class="store-acoes">
+        <button class="btn btn-primary btn-sm" type="button" id="falar-loja">💬 Conversar com a loja</button>
+        ${d.perfil_slug ? `<a class="btn btn-sm" href="/perfil/${esc(d.perfil_slug)}">Perfil da empresa</a>` : ''}
+        ${site ? `<a class="btn btn-sm" href="${esc(site)}" target="_blank" rel="noopener nofollow" id="site-loja">Site oficial ↗</a>` : ''}
+      </div>
+      ${d.pedidos?.aceita_pedidos ? `<p class="muted store-pag">Pedidos pelo site · pagamento direto à loja: ${d.pedidos.metodos.map(m => esc(m.nome)).join(', ')}</p>` : ''}
     </div>`;
-    $('#results-count').textContent = `${ofertas.length} oferta${ofertas.length === 1 ? '' : 's'} no ar`;
+    $('#falar-loja').addEventListener('click', e => window.OfertouLoja.conversar(loja.id, null, e.currentTarget));
+    $('#site-loja')?.addEventListener('click', () => window.OfertouLoja.visita(loja.id, 'site'));
+    $('#results-count').textContent = `${ofertas.length} produto${ofertas.length === 1 ? '' : 's'} no catálogo`;
     $('#grid').innerHTML = ofertas.length ? ofertas.map(card).join('')
-      : '<div class="empty"><img src="/images/pet-capi.png" alt="" width="120"><h3>Nenhuma oferta no ar</h3><p>Esta loja ainda não tem produtos com desconto publicados.</p></div>';
+      : '<div class="empty"><img src="/images/pet-capi.png" alt="" width="120"><h3>Nenhum produto no ar</h3><p>Esta loja ainda não tem produtos publicados.</p></div>';
+    // Link direto para um produto: /loja/slug?produto=123
+    const pedido = Number(new URLSearchParams(location.search).get('produto'));
+    const o = pedido && OFERTAS.find(x => x.id === pedido);
+    if (o) window.OfertouLoja.abrir(o, LOJA);
   }
+
+  $('#grid').addEventListener('click', e => {
+    const b = e.target.closest('[data-oferta]');
+    if (!b || !LOJA) return;
+    const o = OFERTAS.find(x => x.id === Number(b.dataset.oferta));
+    if (o) window.OfertouLoja.abrir(o, LOJA);
+  });
 
   fetch('/api/conta/me').then(r => r.json()).then(d => {
     if (d.user) $('#account-link').textContent = 'Minha conta';

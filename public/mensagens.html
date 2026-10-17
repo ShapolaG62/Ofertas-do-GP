@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mensagens — Ofertou!</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0e1210">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261057">
+<script src="/js/app-nativo.js?v=20261057"></script>
+</head>
+<body class="msg-body">
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertou! — ofertas">
+      <img src="/images/capi-76.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertou<b>!</b></span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-sm" href="/">Ver ofertas</a>
+      <a class="btn btn-sm" href="/conta">Minha conta</a>
+    </div>
+  </div>
+</header>
+
+<main class="container msg-page">
+  <aside class="msg-lista panel-card" id="msg-lista">
+    <div class="msg-lista-topo">
+      <h1>Mensagens</h1>
+      <div class="msg-filtros" role="tablist">
+        <button type="button" data-filtro="todas" aria-current="true">Todas</button>
+        <button type="button" data-filtro="pedidos">Pedidos de mensagem <b id="n-pedidos" hidden></b></button>
+        <button type="button" data-filtro="loja">Atendimento</button>
+      </div>
+    </div>
+    <div class="msg-itens" id="msg-itens"><p class="muted msg-vazio">Carregando…</p></div>
+  </aside>
+
+  <section class="msg-conversa panel-card" id="msg-conversa">
+    <div class="msg-placeholder" id="msg-placeholder">
+      <img src="/images/pet-capi.png" alt="" width="110">
+      <h2>Suas conversas</h2>
+      <p class="muted">Converse com outros usuários pelo perfil deles e com as lojas pela página da loja ou de um produto.
+        A primeira mensagem de alguém chega como <b>pedido de mensagem</b>: você escolhe se aceita.</p>
+    </div>
+    <div class="msg-ativa" id="msg-ativa" hidden>
+      <div class="msg-cabeca">
+        <button class="btn btn-sm msg-voltar" type="button" id="msg-voltar" aria-label="Voltar para a lista">‹</button>
+        <a class="msg-quem" id="msg-quem" href="#"></a>
+        <span class="msg-ticket" id="msg-ticket"></span>
+        <button class="btn btn-sm" type="button" id="msg-menu" title="Bloquear ou desbloquear">⋯</button>
+      </div>
+      <div class="msg-pedido-banner" id="msg-pedido-banner" hidden></div>
+      <div class="msg-historico" id="msg-historico"></div>
+      <form class="msg-escrever" id="msg-form">
+        <textarea name="texto" rows="1" maxlength="2000" placeholder="Escreva uma mensagem…" required></textarea>
+        <button class="btn btn-primary" type="submit">Enviar</button>
+      </form>
+      <p class="msg-aviso muted" id="msg-aviso" hidden></p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/js/mensagens.js?v=20261057" defer></script>
+</body>
+</html>

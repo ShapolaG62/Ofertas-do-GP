@@ -256,6 +256,7 @@
 
     $('#pf-msg').hidden = true;
     $('#pf-editor').showModal();
+    $('#pf-editor').scrollTop = 0; // abre no topo (o navegador rola até o primeiro campo)
   }
 
   function addLink(l = { tipo: 'instagram', url: '' }) {

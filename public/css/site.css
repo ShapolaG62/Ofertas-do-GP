@@ -1046,7 +1046,9 @@ body.pf-body {
 .pf-form .field input, .pf-form .field textarea, .pf-form select { background: var(--surface-2); color: var(--ink); border-color: var(--line-strong); }
 .pf-dialog-head, .pf-dialog-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .pf-dialog-head h2 { margin: 0; }
-.pf-dialog-foot { justify-content: flex-end; position: sticky; bottom: -20px; background: var(--surface); padding: 12px 0 4px; }
+.pf-dialog-foot { justify-content: flex-end; position: sticky; bottom: 0; z-index: 2; margin: 0 -22px -20px; padding: 12px 22px 16px; background: var(--surface); border-top: 1px solid var(--line); border-radius: 0 0 16px 16px; }
+.pf-dialog { overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.pf-dialog::-webkit-scrollbar { display: none; }
 .pf-plano-aviso { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
 .pf-imgs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; }
 .pf-img-box { display: grid; gap: 8px; align-content: start; }

@@ -1392,3 +1392,8 @@ body.pf-body {
   .header-actions::-webkit-scrollbar { display: none; }
   .header-actions > * { flex-shrink: 0; }
 }
+
+/* Mensagens: rolagem continua funcionando, mas sem a barra aparente */
+.chatf-escrever textarea, .chatf-corpo, .msg-escrever textarea, .msg-historico, .msg-itens { scrollbar-width: none; -ms-overflow-style: none; }
+.chatf-escrever textarea::-webkit-scrollbar, .chatf-corpo::-webkit-scrollbar, .msg-escrever textarea::-webkit-scrollbar,
+.msg-historico::-webkit-scrollbar, .msg-itens::-webkit-scrollbar { display: none; width: 0; height: 0; }

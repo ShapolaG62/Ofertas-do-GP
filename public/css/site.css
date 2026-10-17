@@ -1685,3 +1685,16 @@ body.pf-body {
 .pedido-pix[open] { display: grid; gap: 8px; justify-items: start; }
 .pedido-pix input { width: 100%; font-family: ui-monospace, monospace; font-size: 12px; }
 .pedido-pix .prod-pix-qr { margin: 0; }
+
+/* Cartão de parceiro em espaço estreito (painel da Comunidade): botões um embaixo do outro e números em lista */
+.parc { container-type: inline-size; min-width: 0; }
+.parc-btn { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@container (max-width: 300px) {
+  .parc-acoes { grid-template-columns: 1fr; gap: 6px; }
+  .parc-btn { height: 36px; }
+  .parc-nums { grid-template-columns: 1fr; gap: 8px; text-align: left; }
+  .parc-nums div { grid-template-columns: 22px auto 1fr; align-items: center; justify-items: start; gap: 8px; }
+  .parc-nums svg { width: 20px; height: 20px; }
+  .parc-nums small { justify-self: end; text-align: right; }
+  .parc-nums br { display: none; }
+}

@@ -1446,3 +1446,9 @@ body.pf-body {
 .parc-mais { text-align: center; font-size: 13.5px; font-weight: 700; color: var(--brand); text-decoration: none; border-top: 1px solid var(--line); padding-top: 10px; }
 .parc-mais:hover { text-decoration: underline; }
 .comu-dialog .comu-parceiros { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+/* Ícones de linha (mesmo estilo do menu da conta): Comunidade e Mensagens */
+.ico-linha { width: 20px !important; height: 20px !important; flex: none; fill: none; stroke: var(--brand); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ico-titulo { display: flex; align-items: center; gap: 8px; }
+.chatf-botao .ico-linha { width: 22px !important; height: 22px !important; }
+@media (max-width: 720px) { .chatf-botao .ico-linha { width: 24px !important; height: 24px !important; } }

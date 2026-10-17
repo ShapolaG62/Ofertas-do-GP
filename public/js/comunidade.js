@@ -47,7 +47,7 @@
       $('#comu-card').hidden = false;
       $('#comu-abrir').hidden = false;
       $('#comu-lista-card').innerHTML = d.itens.slice(0, 6).map(item).join('')
-        || `<li class="comu-vazio">${q ? 'Nenhum perfil com esse nome.' : grupoCard === 'empresas' ? 'Ainda não há empresas.' : 'Ainda não há perfis.'}</li>`;
+        || `<li class="comu-vazio">${q ? 'Nenhum perfil com esse nome.' : grupoCard === 'empresas' ? 'Ainda não há parceiros.' : 'Ainda não há perfis.'}</li>`;
     } catch { /* sem login: a comunidade não aparece */ }
   }
   $('#comu-busca-card').addEventListener('input', e => {

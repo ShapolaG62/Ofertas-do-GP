@@ -144,4 +144,114 @@ async function recortarIA(foto) {
     .resize(560, 560, { fit: 'inside' }).webp({ quality: 86, alphaQuality: 92, effort: 5 }).toBuffer();
 }
 
-module.exports = { disponivel, recortarIA, garantirModelo, ARQUIVO };
+// Fotos de estúdio (fundo branco ou quase branco, o caso da maioria das lojas): recorte "à prova de cortes".
+// A IA sozinha às vezes apaga partes do produto (ex.: a pulseira escura atrás de um relógio). Aqui, o que tem cor
+// claramente diferente do fundo NUNCA é removido; a IA só decide os pixels parecidos com o fundo (vãos fechados,
+// sombras, contorno suave). O fundo ligado às bordas sai sempre. Lança erro se a foto não for de estúdio.
+const PERTO = 10;   // até 10 tons do fundo: é fundo (se ligado à borda) ou vão (se a IA disser que é fundo)
+const LONGE = 60;   // mais de 60 tons de diferença em algum canal: é produto, fica sempre
+async function recortarEstudio(foto) {
+  const { data: rgb, info } = await sharp(foto, { failOn: 'none' }).rotate().flatten({ background: '#ffffff' })
+    .resize(900, 900, { fit: 'inside' }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info;
+  const n = w * h;
+  // Cor do fundo medida na borda: precisa ser quase toda clara e uniforme
+  const borda = [];
+  for (let x = 0; x < w; x++) borda.push(x, (h - 1) * w + x);
+  for (let y = 1; y < h - 1; y++) borda.push(y * w, y * w + w - 1);
+  const claros = borda.filter(i => Math.min(rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]) > 228);
+  if (claros.length / borda.length < 0.9) throw new Error('foto com fundo');
+  const fundoCor = [0, 1, 2].map(c => claros.reduce((a, i) => a + rgb[i * 3 + c], 0) / claros.length);
+  const dist = new Uint8Array(n);
+  for (let i = 0; i < n; i++) {
+    dist[i] = Math.min(255, Math.max(Math.abs(rgb[i * 3] - fundoCor[0]), Math.abs(rgb[i * 3 + 1] - fundoCor[1]), Math.abs(rgb[i * 3 + 2] - fundoCor[2])));
+  }
+  // Fundo ligado às bordas (preenchimento a partir das bordas)
+  const fora = new Uint8Array(n);
+  const fila = new Int32Array(n);
+  let ini = 0, fim = 0;
+  const marcar = i => { if (!fora[i] && dist[i] <= PERTO) { fora[i] = 1; fila[fim++] = i; } };
+  for (const i of borda) marcar(i);
+  while (ini < fim) {
+    const i = fila[ini++], x = i % w;
+    if (x > 0) marcar(i - 1);
+    if (x < w - 1) marcar(i + 1);
+    if (i >= w) marcar(i - w);
+    if (i < n - w) marcar(i + w);
+  }
+  if (borda.filter(i => fora[i]).length / borda.length < 0.97) throw new Error('foto com cenário');
+  const m = await mascara(rgb, w, h);
+  if (!m) throw new Error('IA indisponível');
+  // O que a IA pode remover além do fundo de fora:
+  //  • sombra/contorno: pixels claros (até LONGE) ligados ao fundo de fora por pixels que a IA diz serem fundo;
+  //    áreas claras DENTRO do produto (tela, carcaça branca) não se ligam ao fundo assim e ficam.
+  //  • vão de verdade: região fechada com exatamente a cor do fundo (média até 3 tons) e que a IA diz ser fundo;
+  //    partes brancas do produto quase nunca têm a cor idêntica à do fundo.
+  const removivel = new Uint8Array(n);
+  ini = 0; fim = 0;
+  for (let i = 0; i < n; i++) if (fora[i]) fila[fim++] = i;
+  while (ini < fim) {
+    const i = fila[ini++], x = i % w;
+    for (const v of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i >= w ? i - w : -1, i < n - w ? i + w : -1]) {
+      if (v >= 0 && !fora[v] && !removivel[v] && dist[v] > PERTO && dist[v] <= LONGE && m[v] < 128) { removivel[v] = 1; fila[fim++] = v; }
+    }
+  }
+  const visto = new Uint8Array(n);
+  for (let s = 0; s < n; s++) {
+    if (fora[s] || visto[s] || dist[s] > PERTO) continue;
+    const membros = [];
+    let somaIA = 0, somaD = 0;
+    visto[s] = 1; fila[0] = s; ini = 0; fim = 1;
+    while (ini < fim) {
+      const k = fila[ini++];
+      membros.push(k); somaIA += m[k]; somaD += dist[k];
+      const x = k % w;
+      for (const v of [x > 0 ? k - 1 : -1, x < w - 1 ? k + 1 : -1, k >= w ? k - w : -1, k < n - w ? k + w : -1]) {
+        if (v >= 0 && !visto[v] && !fora[v] && dist[v] <= PERTO) { visto[v] = 1; fila[fim++] = v; }
+      }
+    }
+    if (somaIA / membros.length < 40 && somaD / membros.length <= 3) for (const k of membros) removivel[k] = 1;
+  }
+  const rgba = Buffer.alloc(n * 4);
+  let produto = 0;
+  for (let i = 0; i < n; i++) {
+    const ia = Math.max(0, Math.min(255, Math.round((m[i] - 25) * 255 / 205)));
+    const a = fora[i] ? 0 : removivel[i] ? ia : 255; // o resto é produto: fica sempre, inteiro
+    // Contorno sem "auréola" branca: tira a cor do fundo misturada nos pixels semitransparentes
+    for (let c = 0; c < 3; c++) {
+      const v = rgb[i * 3 + c];
+      rgba[i * 4 + c] = a > 0 && a < 255 ? Math.max(0, Math.min(255, Math.round((v - fundoCor[c] * (1 - a / 255)) / (a / 255)))) : v;
+    }
+    rgba[i * 4 + 3] = a;
+  }
+  // Peças soltas que a IA considera fundo (acessório no canto, etiqueta, película) saem; o que está ligado
+  // ao produto fica, mesmo que a IA tenha apagado aquela parte.
+  const peca = new Int32Array(n).fill(-1);
+  const pilha = [];
+  for (let s = 0; s < n; s++) {
+    if (peca[s] !== -1 || rgba[s * 4 + 3] <= 128) continue;
+    const membros = [];
+    let comIA = 0;
+    peca[s] = s; pilha.push(s);
+    while (pilha.length) {
+      const k = pilha.pop();
+      membros.push(k);
+      if (m[k] > 153) comIA++;
+      const x = k % w;
+      for (const v of [x > 0 ? k - 1 : -1, x < w - 1 ? k + 1 : -1, k >= w ? k - w : -1, k < n - w ? k + w : -1]) {
+        if (v >= 0 && peca[v] === -1 && rgba[v * 4 + 3] > 128) { peca[v] = s; pilha.push(v); }
+      }
+    }
+    if (comIA / membros.length < 0.3) for (const k of membros) rgba[k * 4 + 3] = 0;
+    else produto += membros.length;
+  }
+  // Restos fracos em volta das peças removidas
+  for (let i = 0; i < n; i++) if (rgba[i * 4 + 3] <= 128 && m[i] < 40) rgba[i * 4 + 3] = 0;
+  const area = produto / n;
+  if (area < 0.05 || area > 0.95) throw new Error('recorte ruim');
+  if (temTextoSolto(rgba, w, h)) throw new Error('foto com textos ou selos');
+  return sharp(rgba, { raw: { width: w, height: h, channels: 4 } }).trim({ threshold: 8 })
+    .resize(560, 560, { fit: 'inside' }).webp({ quality: 86, alphaQuality: 92, effort: 5 }).toBuffer();
+}
+
+module.exports = { disponivel, recortarIA, recortarEstudio, garantirModelo, ARQUIVO };

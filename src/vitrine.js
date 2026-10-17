@@ -55,12 +55,17 @@ const POR_TIPO = 3;          // produtos de cada tipo no carrossel
 const CANDIDATOS = 10;       // ofertas testadas por tipo (a foto precisa dar um bom recorte)
 const VALIDADE_MS = 10 * 60 * 1000; // a vitrine é refeita a cada 10 min
 
-// Recorte do produto: com a IA instalada (npm run ia), o modelo IS-Net separa o produto de qualquer fundo
-// (inclusive vãos, sombras e fotos com cenário). Sem ela, usa o método simples abaixo (só fundo branco).
+// Recorte do produto, com a IA instalada (npm run ia):
+//  1. Foto de estúdio (fundo branco, a maioria das lojas): método "à prova de cortes" — o que tem cor de produto
+//     nunca é apagado; a IA só decide os vãos e as sombras (ia-recorte.js → recortarEstudio).
+//  2. Foto com cenário: só a IA (IS-Net), e só se o recorte for bem nítido.
+// Sem a IA, usa o método simples abaixo (só fundo branco).
 async function recortar(foto) {
   if (ia.disponivel()) {
-    // Se a IA não tiver certeza do recorte, tenta o método simples (bom em fotos de estúdio com fundo branco).
-    try { return await ia.recortarIA(foto); } catch (err) { if (/textos/.test(err.message)) throw err; /* senão, tenta o simples */ }
+    try { return await ia.recortarEstudio(foto); } catch (err) {
+      if (/textos|recorte ruim/.test(err.message)) throw err; // foto de estúdio que não serve
+    }
+    return ia.recortarIA(foto);
   }
   return recortarSimples(foto);
 }
@@ -120,7 +125,7 @@ async function recortarSimples(foto) {
 }
 
 async function recorteDaOferta(o) {
-  const chave = crypto.createHash('sha1').update(`${ia.disponivel() ? 'ia3' : 'v2'}|${o.imagem}`).digest('hex').slice(0, 12);
+  const chave = crypto.createHash('sha1').update(`${ia.disponivel() ? 'ia4' : 'v2'}|${o.imagem}`).digest('hex').slice(0, 12);
   const ok = path.join(CACHE_DIR, `${o.id}-${chave}.webp`);
   const ruim = path.join(CACHE_DIR, `${o.id}-${chave}.ruim`);
   if (fs.existsSync(ok)) return ok;

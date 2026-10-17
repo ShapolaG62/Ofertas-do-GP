@@ -181,6 +181,7 @@
       ${pg && pg.link ? `<div class="msg-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.link)}" target="_blank" rel="noopener nofollow">Pagar com cartão (link da loja) ↗</a>
         <small class="muted">Pague ${brl(p.total)} no link e depois toque em "Já paguei".</small></div>` : ''}
       ${p.instrucoes ? `<p class="muted" style="margin:6px 0 0;font-size:12.5px">${esc(p.instrucoes)}</p>` : ''}
+      <small class="aviso-resp-mini">O Ofertou! não se responsabiliza pela venda, entrega, troca ou garantia: é com a loja parceira.</small>
       ${p.acoes.length ? `<div class="row-actions">${p.acoes.map(a => `<button class="btn btn-sm ${ROTULO[a][1]}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO[a][0]}</button>`).join('')}</div>` : ''}
     </div>`;
   }

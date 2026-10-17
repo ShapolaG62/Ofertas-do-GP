@@ -1619,3 +1619,10 @@ body.pf-body {
 .chatf-pix { display: grid; gap: 6px; }
 .chatf-pix .ass-copia input { height: 36px; font-size: 12px; }
 .chatf-pedido .btn { justify-self: start; }
+
+/* Aviso de responsabilidade das vendas (lojas parceiras) */
+.aviso-resp { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink-2); font-size: 13px; line-height: 1.55; }
+.aviso-resp b { color: var(--ink); }
+.aviso-resp-ico { width: 18px; height: 18px; flex: none; margin-top: 1px; fill: none; stroke: #f5b301; stroke-width: 2; stroke-linecap: round; }
+.aviso-resp-p { margin: 0; font-size: 12.5px; padding: 10px 12px; }
+.aviso-resp-mini { display: block; font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }

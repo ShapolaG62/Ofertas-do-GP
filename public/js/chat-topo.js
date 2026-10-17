@@ -131,6 +131,7 @@
       ${pg && pg.mercadopago ? `<a class="btn btn-primary btn-sm" href="${esc(pg.mercadopago)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} no Mercado Pago ↗</a>` : ''}
       ${pg && pg.link ? `<a class="btn btn-primary btn-sm" href="${esc(pg.link)}" target="_blank" rel="noopener nofollow">Pagar com cartão (link da loja) ↗</a>` : ''}
       ${p.instrucoes ? `<small class="muted">${esc(p.instrucoes)}</small>` : ''}
+      <small class="aviso-resp-mini">O Ofertou! não se responsabiliza pela venda, entrega, troca ou garantia: é com a loja parceira.</small>
       ${p.acoes.length ? `<div class="chatf-acoes">${p.acoes.map(a => `<button class="btn btn-sm ${ROTULO[a][1]}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO[a][0]}</button>`).join('')}</div>` : ''}
     </div>`;
   }

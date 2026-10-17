@@ -69,7 +69,7 @@
             <a class="btn btn-block" href="${buy}" target="_blank" rel="noopener sponsored" id="ad-externo">Comprar no site da loja ↗</a>
             ${wa ? `<a class="btn btn-block btn-wa" href="${esc(wa)}" target="_blank" rel="noopener">Tirar dúvida no WhatsApp</a>` : ''}
           </div>
-          <p class="partner-note">Anúncio publicado pela própria loja. Confira preço, frete e condições finais no site da loja antes de comprar.</p>
+          <p class="aviso-resp"><svg class="aviso-resp-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span><b>Aviso:</b> o Ofertou! é uma vitrine de ofertas e não vende os produtos anunciados. As vendas, os pagamentos, as entregas, as trocas, as garantias e o atendimento são de responsabilidade exclusiva das lojas e empresas parceiras. O Ofertou! não se responsabiliza por essas transações. Confira preço, frete e condições com a loja antes de comprar.</span></p>
         </div>
       </div>
 

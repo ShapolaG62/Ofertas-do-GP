@@ -98,6 +98,7 @@
             ${o.fonte === 'empresa' ? `<a class="link-btn" href="/anuncio/${o.id}">Abrir a página completa do anúncio</a>` : ''}
           </div>
           ${ped.aceita_pedidos ? `<p class="muted prod-nota">${ped.metodos.length ? `Pagamento direto à loja: ${ped.metodos.map(m => esc(m.nome)).join(', ')}.` : 'A loja envia a forma de pagamento pela conversa, logo depois do pedido.'} O pedido e a conversa ficam registrados no site.</p>` : ''}
+          <p class="aviso-resp aviso-resp-p"><svg class="aviso-resp-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span>O Ofertou! não se responsabiliza pela venda, entrega, troca ou garantia: é com a loja parceira.</span></p>
         </div>
       </div>
       ${a.descricao ? `<div class="prod-desc"><h3>Descrição</h3><p>${esc(a.descricao).replace(/\n/g, '<br>')}</p></div>` : ''}`;
@@ -135,10 +136,10 @@
         ${ped.instrucoes ? `<p class="muted prod-nota">${esc(ped.instrucoes)}</p>` : ''}
         <dl class="prod-conta" id="prod-conta"></dl>
         <p class="muted prod-nota" style="margin:0">Frete e prazo: combine com a loja pelo chat, se houver.</p>
+        <p class="aviso-resp aviso-resp-p"><svg class="aviso-resp-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span><b>Aviso:</b> o Ofertou! não vende nem entrega este produto e não se responsabiliza pela venda, pagamento, entrega, troca ou garantia: tudo isso é com a loja parceira. O site só registra o pedido e a conversa.</span></p>
         <div class="form-msg err" id="prod-msg" hidden></div>
         <button class="btn btn-primary btn-block" type="submit">Confirmar pedido</button>
         <button class="btn btn-block" type="button" data-voltar>Voltar ao produto</button>
-        <p class="muted prod-nota">O pagamento vai direto para a loja. O Ofertou! registra o pedido e a conversa, mas não cobra nem entrega o produto.</p>
       </form>`;
     const f = corpo().querySelector('#prod-pedido');
     // Produtos + taxa de uso do site (somada na finalização) = total

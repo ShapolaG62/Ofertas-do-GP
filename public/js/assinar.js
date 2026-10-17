@@ -19,9 +19,14 @@
   const show = v => ['form', 'status', 'erro'].forEach(x => { $(`#view-${x}`).hidden = x !== v; });
 
   // ── Formulário ─────────────────────────────────────────────────────────────
+  // Tipo da conta do site que a compra vai usar (planos com consumidor e empresa: a pessoa escolhe)
+  const perfilAtual = () => {
+    if (LOGADO && PLANO.perfis.includes(LOGADO.tipo)) return LOGADO.tipo;
+    return $('#ass-perfis [name=perfil_conta]:checked')?.value || PLANO.perfil;
+  };
   function aplicarPlano() {
     const conta = PLANO.conta === 'usuario';
-    const empresa = PLANO.perfil === 'empresa';
+    const empresa = perfilAtual() === 'empresa';
     const renovar = !LOGADO && $('#renovar').checked;
     // Logado: e-mail e senha já são os da conta; os dados pessoais só são pedidos se o perfil ainda não foi preenchido.
     const temDados = Boolean(LOGADO?.tipo);
@@ -32,18 +37,23 @@
       const c = el.classList;
       el.hidden = (c.contains('so-novo') && (renovar || temDados)) || (c.contains('so-conta') && !conta) || (c.contains('so-empresa') && !empresa);
     });
+    $('#ass-perfil').hidden = !(PLANO.perfis.length > 1 && !(LOGADO && PLANO.perfis.includes(LOGADO.tipo)) && !renovar);
+    $('#ass-pagamento').hidden = PLANO.gratis;
+    $('#ass-enviar').textContent = PLANO.gratis ? 'Ativar plano grátis' : 'Finalizar compra';
     $('#ass-google').hidden = Boolean(LOGADO) || renovar;
     $('#ass-google-div').hidden = $('#ass-google').hidden;
     $('#ass-form [name=senha]').autocomplete = renovar ? 'current-password' : 'new-password';
   }
 
   function resumo() {
+    const periodo = !PLANO.dias ? ' · sem vencimento' : PLANO.dias === 30 ? '/mês' : `/${PLANO.dias} dias`;
+    const prazo = PLANO.dias ? `por ${PLANO.dias} dias` : 'sem data de vencimento';
     $('#resumo').innerHTML = `
       <p class="plano-chamada">${esc(PLANO.chamada)}</p>
       <h2>${esc(PLANO.nome)}</h2>
-      <p class="plano-preco"><b>${brl(PLANO.preco)}</b><span>/${PLANO.dias === 30 ? 'mês' : `${PLANO.dias} dias`}</span></p>
+      <p class="plano-preco"><b>${PLANO.gratis ? 'Grátis' : brl(PLANO.preco)}</b><span>${periodo}</span></p>
       <ul class="ass-beneficios">${PLANO.beneficios.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
-      <p class="cli-hint">Acesso por ${PLANO.dias} dias, liberado assim que o pagamento é confirmado. Você recebe um e-mail com a data de validade.</p>
+      <p class="cli-hint">${PLANO.gratis ? `Acesso ${prazo}, liberado na hora, sem pagamento.` : `Acesso ${prazo}, liberado assim que o pagamento é confirmado. Você recebe um e-mail com a validade.`}</p>
       <a class="link-btn" href="/conta#planos">Trocar de plano</a>`;
   }
 
@@ -86,7 +96,12 @@
       <label class="ass-metodo"><input type="radio" name="metodo" value="${esc(m.id)}" ${i === 0 ? 'checked' : ''}>
         <span><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small></span>${m.automatico ? '<em class="ass-auto">liberação automática</em>' : ''}</label>`).join('')
       : `<p class="form-msg err">Os pagamentos online ainda não foram configurados.${d.whatsapp ? ` <a class="link-btn" target="_blank" rel="noopener" href="https://wa.me/${esc(d.whatsapp)}?text=${encodeURIComponent(`Olá! Quero assinar o plano ${PLANO.nome}.`)}">Fale com a gente no WhatsApp</a>.` : ' Tente mais tarde.'}</p>`;
-    $('#ass-enviar').disabled = !opcoes.length;
+    $('#ass-enviar').disabled = !opcoes.length && !PLANO.gratis;
+    const NOME_PERFIL = { consumidor: ['Consumidor', 'Para comprar com desconto'], empresa: ['Empresa', 'Para divulgar a sua loja e os seus produtos'] };
+    $('#ass-perfis').innerHTML = PLANO.perfis.map((t, i) => `
+      <label class="ass-metodo"><input type="radio" name="perfil_conta" value="${t}" ${i === 0 ? 'checked' : ''}>
+        <span><b>${NOME_PERFIL[t][0]}</b><small>${NOME_PERFIL[t][1]}</small></span></label>`).join('');
+    $('#ass-perfis').addEventListener('change', aplicarPlano);
     resumo();
     aplicarPlano();
     show('form');
@@ -150,7 +165,7 @@
       msg.textContent = err.message; msg.hidden = false;
       msg.scrollIntoView({ block: 'center', behavior: 'smooth' });
     } finally {
-      btn.disabled = false; btn.textContent = 'Finalizar compra';
+      btn.disabled = false; btn.textContent = PLANO.gratis ? 'Ativar plano grátis' : 'Finalizar compra';
     }
   });
 
@@ -161,8 +176,8 @@
       clearInterval(pollTimer);
       box.innerHTML = `
         <div class="ass-ok">✓</div>
-        <h1>Pagamento confirmado!</h1>
-        <p class="cli-sub">Seu plano <b>${esc(p.plano)}</b> está ativo até <b>${fmtDia(p.validade_ate)}</b>.</p>
+        <h1>${p.gratis ? 'Plano ativado!' : 'Pagamento confirmado!'}</h1>
+        <p class="cli-sub">Seu plano <b>${esc(p.plano)}</b> está ativo ${p.sem_vencimento ? '<b>sem data de vencimento</b>' : `até <b>${fmtDia(p.validade_ate)}</b>`}.</p>
         <p class="cli-hint">${p.email_configurado ? `Enviamos a confirmação para <b>${esc(p.email)}</b>.` : `Guarde esta data. Entre com o e-mail <b>${esc(p.email)}</b> e a senha que você cadastrou.`}</p>
         <p class="cli-hint">Levando você para as ofertas…</p>
         <a class="btn btn-primary" href="${esc(p.redirect || '/')}">Ver ofertas agora</a>`;
@@ -261,7 +276,12 @@
 
   // ── Início ─────────────────────────────────────────────────────────────────
   // Dentro do app, a assinatura é feita pela Google Play / App Store (regra das lojas).
-  if (window.OfertouApp?.nativo && !params.get('pedido')) window.OfertouApp.telaAssinatura(params.get('plano') || '');
-  else if (params.get('pedido')) acompanhar(params.get('pedido'));
+  if (window.OfertouApp?.nativo && !params.get('pedido')) {
+    fetch('/api/planos').then(r => r.json()).then(d => {
+      const p = (d.planos || []).find(x => x.id === params.get('plano'));
+      if (p && p.gratis) iniciarForm(p.id).catch(() => show('erro'));
+      else window.OfertouApp.telaAssinatura(params.get('plano') || '');
+    }).catch(() => window.OfertouApp.telaAssinatura(params.get('plano') || ''));
+  } else if (params.get('pedido')) acompanhar(params.get('pedido'));
   else iniciarForm(params.get('plano') || '').catch(() => show('erro'));
 })();

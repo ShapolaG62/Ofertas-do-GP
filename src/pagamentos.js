@@ -49,6 +49,21 @@ function metodosDisponiveis(s = settings.getAll(), planoId = null) {
 }
 
 // ── Pedido ───────────────────────────────────────────────────────────────────
+const NOME_CONTA = { consumidor: 'consumidor', empresa: 'empresa', afiliado: 'usuário da ferramenta' };
+// Tipo de conta do site que a compra vai usar: o da conta que já existe ou o escolhido (planos com consumidor e empresa).
+function perfilDaConta(p, b, u) {
+  if (!p.perfis.length) return null;
+  if (u && p.perfis.includes(u.tipo)) return u.tipo;
+  if (u && u.tipo && u.tipo !== 'afiliado') {
+    throw fail(`Sua conta é de ${NOME_CONTA[u.tipo]} e este plano é para ${p.perfis.map(t => NOME_CONTA[t]).join(' ou ')}. Para trocar de perfil, fale com o administrador.`, 409);
+  }
+  const escolhido = String(b.perfil_conta || '');
+  const perfil = p.perfis.includes(escolhido) ? escolhido : p.perfis.length === 1 ? p.perfis[0] : null;
+  if (!perfil) throw fail('Escolha o tipo da sua conta: consumidor ou empresa.');
+  if (u && u.tipo === 'afiliado' && perfil === 'empresa') throw fail('Para transformar sua conta de afiliado em conta de empresa, fale com o administrador.', 409);
+  return perfil;
+}
+
 // Quem já está logado no site (e-mail/senha ou Google) compra para a própria conta, sem digitar e-mail e senha.
 function validarLogado(p, b, u) {
   if (!['onboarding', 'pending', 'active', 'suspended'].includes(u.status)) throw fail('Esta conta não pode assinar. Fale com o administrador.', 403);
@@ -56,8 +71,8 @@ function validarLogado(p, b, u) {
     throw fail('É preciso aceitar os Termos de uso e a Política de privacidade.');
   }
   // Conta sem perfil ainda: os dados pessoais (e da empresa) vêm do formulário.
-  const novosDados = () => {
-    const dados = { ...cadastro.dadosPessoa(b), ...(p.perfil === 'empresa' ? cadastro.dadosEmpresa(b) : {}) };
+  const novosDados = perfil => {
+    const dados = { ...cadastro.dadosPessoa(b), ...(perfil === 'empresa' ? cadastro.dadosEmpresa(b) : {}) };
     if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) throw fail('Não é possível concluir com estes dados. Fale com o administrador.');
     if (db.get('SELECT 1 FROM users WHERE cpf = ? AND id <> ?', dados.cpf, u.id)) throw fail('Já existe uma conta com este CPF.', 409);
     if (dados.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ? AND id <> ?', dados.cnpj, u.id)) throw fail('Já existe uma conta com este CNPJ.', 409);
@@ -84,11 +99,8 @@ function validarLogado(p, b, u) {
       senha_hash: u.senha_hash || auth.hashPassword(crypto.randomBytes(24).toString('hex')),
       ...(u.tipo ? {} : { perfil_dados: dados }) };
   }
-  if (u.tipo && u.tipo !== p.perfil) {
-    const nomes = { consumidor: 'consumidor', empresa: 'empresa', afiliado: 'usuário da ferramenta' };
-    throw fail(`Sua conta é de ${nomes[u.tipo]}. Para trocar de perfil, fale com o administrador.`, 409);
-  }
-  return { email: u.email, nome: u.nome, renovar_user_id: u.id, ...(u.tipo ? {} : { perfil_dados: novosDados() }) };
+  const perfil = perfilDaConta(p, b, u);
+  return { email: u.email, nome: u.nome, renovar_user_id: u.id, perfil_conta: perfil, ...(u.tipo ? {} : { perfil_dados: novosDados(perfil) }) };
 }
 
 // Valida os dados do formulário conforme o plano. Se o e-mail já tem conta e a senha confere, é renovação.
@@ -127,19 +139,18 @@ function validarDados(p, b, logado = null) {
     if (!existente.senha_hash || !auth.verifyPassword(senha, existente.senha_hash)) {
       throw fail('Este e-mail já tem conta no site. Para assinar, use a mesma senha da conta (ou entre e escolha o plano).', 409);
     }
-    if (existente.tipo && existente.tipo !== p.perfil) {
-      throw fail(`Sua conta é de ${existente.tipo === 'empresa' ? 'empresa' : 'consumidor'}. Para trocar de perfil, fale com o administrador.`, 409);
-    }
     if (['banned', 'rejected'].includes(existente.status)) throw fail('Esta conta não pode assinar. Fale com o administrador.', 403);
-    return { email: emailN, nome: existente.nome, renovar_user_id: existente.id };
+    const perfil = perfilDaConta(p, b, existente);
+    return { email: emailN, nome: existente.nome, renovar_user_id: existente.id, perfil_conta: perfil };
   }
   if (renovar) throw fail('Não encontramos uma conta com este e-mail. Desmarque "renovar" para criar uma nova.', 404);
   if (b.senha_confirmacao !== undefined && b.senha_confirmacao !== senha) throw fail('As senhas não conferem.');
-  const dados = { ...cadastro.dadosPessoa(b), ...(p.perfil === 'empresa' ? cadastro.dadosEmpresa(b) : {}) };
+  const perfil = perfilDaConta(p, b, null);
+  const dados = { ...cadastro.dadosPessoa(b), ...(perfil === 'empresa' ? cadastro.dadosEmpresa(b) : {}) };
   if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) throw fail('Não é possível concluir com estes dados. Fale com o administrador.');
   if (db.get('SELECT 1 FROM users WHERE cpf = ?', dados.cpf)) throw fail('Já existe uma conta com este CPF. Entre com ela para assinar.', 409);
   if (dados.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ?', dados.cnpj)) throw fail('Já existe uma conta com este CNPJ.', 409);
-  return { email: emailN, nome: dados.nome, ...dados, senha_hash: auth.hashPassword(senha) };
+  return { email: emailN, nome: dados.nome, ...dados, perfil_conta: perfil, senha_hash: auth.hashPassword(senha) };
 }
 
 function baseUrl(req) {
@@ -160,7 +171,16 @@ async function mp(method, path, data, s, extraHeaders = {}) {
 async function criarPedido(b, req) {
   const s = settings.getAll();
   const p = planos.plano(String(b.plano || ''), s);
-  if (!p || !p.ativo || !(p.preco > 0)) throw fail('Plano indisponível.');
+  if (!p || !p.ativo) throw fail('Plano indisponível.');
+  // Plano grátis: sem pagamento, a conta é liberada na hora.
+  if (p.gratis) {
+    const dados = validarDados(p, b, users.currentUser(req));
+    const token = crypto.randomBytes(24).toString('hex');
+    const ins = db.run(`INSERT INTO pagamentos (token, plano, valor, dias, metodo, email, nome, dados) VALUES (?, ?, 0, ?, 'gratis', ?, ?, ?)`,
+      token, p.id, p.dias, dados.email, dados.nome || null, JSON.stringify(dados));
+    aprovar(Number(ins.lastInsertRowid), 'plano grátis');
+    return { token };
+  }
   const metodo = String(b.metodo || '');
   const disp = metodosDisponiveis(s, p.id);
   if (!disp.lista.some(m => m.id === metodo)) throw fail('Forma de pagamento indisponível no momento.');
@@ -172,7 +192,7 @@ async function criarPedido(b, req) {
   const id = Number(ins.lastInsertRowid);
   const base = baseUrl(req);
   const publico = /^https:\/\//i.test(base); // o Mercado Pago só avisa / volta para endereços https
-  const descricao = `${p.nome} — ${p.dias} dias de acesso (Ofertou!)`;
+  const descricao = `${p.nome} — ${p.dias ? `${p.dias} dias de acesso` : 'acesso sem vencimento'} (Ofertou!)`;
 
   try {
     if (metodo === 'pix' && disp.pix_automatico) {
@@ -236,7 +256,7 @@ async function verificar(pedido) {
   return db.get('SELECT * FROM pagamentos WHERE id = ?', pedido.id);
 }
 
-const somaDias = (ate, dias) => sqlDe(new Date(Math.max(Date.now(), new Date(String(ate || '').replace(' ', 'T') + 'Z').getTime() || 0) + dias * 86400000));
+const somaDias = planos.somaDias; // 0 dias = sem vencimento
 
 // Cria ou renova a conta do pedido (uma única vez) e manda o e-mail de confirmação.
 function aprovar(pedidoId, origem) {
@@ -277,12 +297,13 @@ function aprovar(pedidoId, origem) {
       }
     } else {
       contaTipo = 'usuario';
+      const perfil = p.perfis.includes(d.perfil_conta) ? d.perfil_conta : p.perfil;
       if (d.renovar_user_id && users.getById(d.renovar_user_id)) {
         contaId = d.renovar_user_id;
         const u = users.getById(contaId);
         validade = somaDias(u.assinatura_ate, pedido.dias);
-        db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = COALESCE(tipo, ?),
-                status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, p.perfil, contaId);
+        db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = CASE WHEN tipo IS NULL OR tipo = 'afiliado' THEN ? ELSE tipo END,
+                status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, perfil, contaId);
         // Conta que ainda não tinha perfil: grava os dados preenchidos na compra.
         if (d.perfil_dados && !u.tipo) {
           const cols = { ...d.perfil_dados, aceite_termos_em: nowSql() };
@@ -291,12 +312,14 @@ function aprovar(pedidoId, origem) {
       } else {
         validade = somaDias(null, pedido.dias);
         const { email: em, nome, senha_hash, ...resto } = d;
-        const cols = { email: em, nome, senha_hash, tipo: p.perfil, status: 'active', plano: p.id, assinatura_ate: validade, aceite_termos_em: nowSql(), ...resto };
-        delete cols.renovar_user_id;
+        const cols = { email: em, nome, senha_hash, status: 'active', plano: p.id, assinatura_ate: validade, aceite_termos_em: nowSql(), ...resto, tipo: perfil };
+        delete cols.renovar_user_id; delete cols.perfil_conta;
         contaId = Number(db.run(`INSERT INTO users (${Object.keys(cols).join(', ')}) VALUES (${Object.keys(cols).map(() => '?').join(', ')})`,
           ...Object.values(cols)).lastInsertRowid);
       }
-      users.logAction(users.getById(contaId), 'assinatura_aprovada', `${p.nome} até ${validade.slice(0, 10)} (${origem})`);
+      // Plano com a ferramenta junto: a mesma conta ganha o painel de afiliado (mesmo login, mesma validade)
+      if (p.ferramenta) clientes.liberarPlano(users.getById(contaId), p.id, atual => somaDias(atual, pedido.dias));
+      users.logAction(users.getById(contaId), 'assinatura_aprovada', `${p.nome} ${validade === planos.SEM_VENCIMENTO ? 'sem vencimento' : `até ${validade.slice(0, 10)}`} (${origem})`);
     }
     // Não guarda a senha (hash) além do necessário.
     const semSenha = { ...d }; delete semSenha.senha_hash;
@@ -315,27 +338,29 @@ async function enviarConfirmacao(pedido) {
   const p = planos.plano(pedido.plano);
   const site = String(settings.get('site_url') || '').replace(/\/+$/, '') || 'o site Ofertou!';
   const onde = p.conta === 'cliente' ? `${site}/cliente` : `${site}/conta`;
-  const validade = fmtDia(pedido.validade_ate);
+  const semVenc = pedido.validade_ate === planos.SEM_VENCIMENTO;
+  const gratis = !(pedido.valor > 0);
+  const validade = semVenc ? 'sem vencimento' : fmtDia(pedido.validade_ate);
   const texto = [
     `Olá${pedido.nome ? `, ${pedido.nome.split(' ')[0]}` : ''}!`, '',
-    `Seu pagamento foi confirmado e o plano ${p.nome} está ativo.`, '',
-    `Valor: R$ ${pedido.valor.toFixed(2).replace('.', ',')}`,
-    `Válido até: ${validade}`,
+    gratis ? `Seu plano ${p.nome} (grátis) está ativo.` : `Seu pagamento foi confirmado e o plano ${p.nome} está ativo.`, '',
+    `Valor: ${gratis ? 'grátis' : `R$ ${pedido.valor.toFixed(2).replace('.', ',')}`}`,
+    `Validade: ${validade}`,
     `Acesso: ${onde} (entre com o e-mail ${pedido.email} e a senha que você cadastrou)`, '',
     'Para renovar, é só assinar o mesmo plano de novo com o mesmo e-mail e senha: os dias são somados.', '',
     'Obrigado!', 'Ofertou!',
   ].join('\n');
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#161b18;line-height:1.55">
-    <h2 style="color:#0c8f4f;margin:0 0 12px">Pagamento confirmado! 🎉</h2>
+    <h2 style="color:#0c8f4f;margin:0 0 12px">${gratis ? 'Plano ativado! 🎉' : 'Pagamento confirmado! 🎉'}</h2>
     <p>Olá${pedido.nome ? `, ${escHtml(pedido.nome.split(' ')[0])}` : ''}! Seu plano <b>${escHtml(p.nome)}</b> está ativo.</p>
     <table style="border-collapse:collapse;margin:12px 0">
-      <tr><td style="padding:4px 12px 4px 0;color:#48514c">Valor</td><td><b>R$ ${pedido.valor.toFixed(2).replace('.', ',')}</b></td></tr>
-      <tr><td style="padding:4px 12px 4px 0;color:#48514c">Válido até</td><td><b>${validade}</b></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#48514c">Valor</td><td><b>${gratis ? 'grátis' : `R$ ${pedido.valor.toFixed(2).replace('.', ',')}`}</b></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#48514c">Validade</td><td><b>${validade}</b></td></tr>
       <tr><td style="padding:4px 12px 4px 0;color:#48514c">Acesso</td><td><a href="${escHtml(onde)}">${escHtml(onde)}</a></td></tr>
     </table>
     <p style="color:#48514c">Entre com o e-mail <b>${escHtml(pedido.email)}</b> e a senha que você cadastrou. Para renovar, assine o mesmo plano com o mesmo e-mail e senha: os dias são somados.</p>
     <p>Obrigado!<br>Ofertou!</p></div>`;
-  await email.enviar({ para: pedido.email, assunto: `Pagamento confirmado — ${p.nome} válido até ${validade}`, texto, html });
+  await email.enviar({ para: pedido.email, assunto: `${gratis ? 'Plano ativado' : 'Pagamento confirmado'} — ${p.nome} (${semVenc ? 'sem vencimento' : `válido até ${validade}`})`, texto, html });
   db.run('UPDATE pagamentos SET email_enviado = 1 WHERE id = ?', pedido.id);
   return true;
 }
@@ -376,7 +401,7 @@ function publico(pedido) {
   const s = settings.getAll();
   return {
     status: pedido.status, plano: p.nome, valor: pedido.valor, dias: pedido.dias, metodo: pedido.metodo, email: pedido.email,
-    validade_ate: pedido.validade_ate,
+    validade_ate: pedido.validade_ate, gratis: pedido.metodo === 'gratis', sem_vencimento: pedido.validade_ate === planos.SEM_VENCIMENTO,
     pix: pedido.metodo === 'pix' ? { copia_cola: pedido.pix_qr, qr_base64: pedido.pix_qr_base64, expira: pedido.pix_expira } : null,
     manual: MANUAIS.includes(pedido.metodo) ? instrucoesManuais(pedido, s) : null,
     email_configurado: email.configurado(s),

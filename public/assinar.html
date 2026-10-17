@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261051">
-<script src="/js/app-nativo.js?v=20261051"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261052">
+<script src="/js/app-nativo.js?v=20261052"></script>
 </head>
 <body>
 <header class="site-header">
@@ -45,6 +45,11 @@
         <div class="divider" id="ass-google-div" hidden><span>ou cadastre com e-mail e senha</span></div>
 
         <label class="check-line ass-renovar"><input type="checkbox" name="renovar" id="renovar"> <span>Já tenho conta e quero <b>renovar</b> (só e-mail e senha)</span></label>
+
+        <fieldset class="ass-bloco" id="ass-perfil" hidden>
+          <legend>Tipo da sua conta</legend>
+          <div class="ass-metodos" id="ass-perfis"></div>
+        </fieldset>
 
         <fieldset class="ass-bloco" id="ass-acesso">
           <legend>Acesso</legend>
@@ -101,7 +106,7 @@
           </div>
         </fieldset>
 
-        <fieldset class="ass-bloco">
+        <fieldset class="ass-bloco" id="ass-pagamento">
           <legend>Como você quer pagar?</legend>
           <div class="ass-metodos" id="metodos"></div>
         </fieldset>
@@ -128,6 +133,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261051" defer></script>
+<script src="/js/assinar.js?v=20261052" defer></script>
 </body>
 </html>

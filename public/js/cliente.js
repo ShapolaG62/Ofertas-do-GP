@@ -5,7 +5,7 @@
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const fmtDate = s => (s ? new Date(String(s).replace(' ', 'T') + (String(s).includes('T') ? '' : 'Z')).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—');
-  const fmtDay = s => (s ? new Date(String(s).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');
+  const fmtDay = s => (String(s).startsWith('9999') ? 'sem vencimento' : s ? new Date(String(s).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');
   const REDE = { telegram: 'Telegram', facebook: 'Facebook', instagram: 'Instagram', x: 'X (Twitter)', whatsapp: 'WhatsApp' };
   const FILA = { pendente: 'Na fila', postado: 'Postado', erro: 'Erro', expirado: 'Saiu do ar' };
   let CFG = {};
@@ -71,7 +71,7 @@
     $('#view-login').hidden = true; $('#view-app').hidden = false;
     ['#go-offers', '#go-posts', '#logout'].forEach(s => { $(s).hidden = false; });
     $('#cli-nome').textContent = `Olá, ${me.cliente.nome.split(' ')[0]}`;
-    $('#cli-validade').textContent = `Acesso válido até ${fmtDay(me.cliente.validade)}.`;
+    $('#cli-validade').textContent = String(me.cliente.validade).startsWith('9999') ? 'Acesso sem vencimento.' : `Acesso válido até ${fmtDay(me.cliente.validade)}.`;
     await carregarConfig();
   }
 

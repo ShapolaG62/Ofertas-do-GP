@@ -136,6 +136,7 @@
   .pl-tipo:has(input:disabled) { opacity: .5; cursor: not-allowed; }
   .pl-tipo input { margin-top: 3px; accent-color: var(--green); }
   .pl-tipo ul { margin: 6px 0 0; padding-left: 16px; color: var(--muted); }
+  .pl-sub { font-weight: 600 !important; font-size: 13px; margin-top: 6px; }
   .pl-checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 10px; }
   .pl-checks .check { font-weight: 600; font-size: 14px; }
   #pl-form textarea { font-family: inherit; }
@@ -919,15 +920,18 @@
       <h4 class="pl-sec">1. O básico</h4>
       <div class="grid">
         <label class="field">Nome do plano <input type="text" name="nome" maxlength="40" required placeholder="Ex.: Caçador Anual"></label>
-        <label class="field">Preço (R$) <input type="text" name="preco" inputmode="decimal" required placeholder="29,90"></label>
-        <label class="field">Dias de acesso por compra <input type="number" name="dias" min="1" max="3650" value="30" required></label>
+        <div class="field">Preço (R$) <input type="text" name="preco" inputmode="decimal" placeholder="29,90">
+          <label class="check pl-sub"><input type="checkbox" name="gratis"> Plano grátis (sem pagamento, liberado na hora)</label></div>
+        <div class="field">Dias de acesso por compra <input type="number" name="dias" min="1" max="3650" value="30">
+          <label class="check pl-sub"><input type="checkbox" name="sem_vencimento"> Sem vencimento</label></div>
         <label class="field">Ordem na página <input type="number" name="ordem" min="0" max="999" value="10"></label>
       </div>
       <label class="check" style="margin-top:10px"><input type="checkbox" name="ativo" checked> À venda (aparece na página inicial, na compra e no app)</label>
     </div>
 
     <div>
-      <h4 class="pl-sec">2. Tipo de acesso</h4>
+      <h4 class="pl-sec">2. Tipos de acesso <span class="hint" style="margin:0;font-weight:500">· marque um ou mais</span></h4>
+      <p class="hint" style="margin-top:0">Com <b>Consumidor</b> e <b>Empresa</b> juntos, quem assina escolhe o tipo da conta na compra. Com <b>Ferramenta</b> junto, a conta do site ganha também o painel de afiliado (mesmo login e mesma validade).</p>
       <div class="pl-tipos" id="pl-tipos"></div>
       <p class="hint" id="pl-tipo-aviso" style="margin-top:6px"></p>
       <label class="field pl-so-empresa" style="margin-top:8px">Limite de produtos na loja <input type="number" name="max_produtos" min="0" max="100000" value="0">
@@ -1493,9 +1497,9 @@ async function loadPlanos() {
     const pf = p.recursos.perfil;
     return `<div class="store-card pl-card${p.ativo ? '' : ' pl-off'}">
       <h4>${esc(p.nome)} ${p.destaque ? `<span class="badge b-active">${esc(p.destaque)}</span>` : ''} ${p.ativo ? '' : '<span class="badge b-none">fora da venda</span>'}</h4>
-      <div class="pl-preco">${brl(p.preco)} <span class="hint" style="margin:0">/ ${p.dias} dias</span></div>
+      <div class="pl-preco">${p.gratis ? 'Grátis' : brl(p.preco)} <span class="hint" style="margin:0">/ ${p.dias ? `${p.dias} dias` : 'sem vencimento'}</span></div>
       <div class="hint" style="margin:4px 0">${esc(p.tipo_nome)} · código <code>${esc(p.id)}</code> · <b>${p.assinantes}</b> assinante${p.assinantes === 1 ? '' : 's'}</div>
-      <div class="pl-mini">Vitrine ${pf.vitrine} · resumo ${pf.bio} · links ${pf.links} · capa ${sim(pf.capa)} · degradê ${sim(pf.gradiente)} · endereço ${sim(pf.slug_livre)} · moldura ${sim(pf.moldura)}${p.tipo === 'empresa' ? ` · produtos ${p.recursos.max_produtos || 'padrão'}` : ''}</div>
+      <div class="pl-mini">Vitrine ${pf.vitrine} · resumo ${pf.bio} · links ${pf.links} · capa ${sim(pf.capa)} · degradê ${sim(pf.gradiente)} · endereço ${sim(pf.slug_livre)} · moldura ${sim(pf.moldura)}${p.tipos.includes('empresa') ? ` · produtos ${p.recursos.max_produtos || 'padrão'}` : ''}</div>
       <div class="actions" style="justify-content:flex-start;margin-top:10px">
         <button class="btn small" type="button" data-pl-editar="${esc(p.id)}">Editar</button>
         <button class="btn small danger" type="button" data-pl-excluir="${esc(p.id)}">Excluir</button>
@@ -1510,35 +1514,41 @@ function plAbrir(p) {
   $('#pl-title').textContent = p ? `Editar plano — ${p.nome}` : 'Novo plano';
   $('#pl-msg').innerHTML = '';
   const pf = p ? p.recursos.perfil : PL.padrao;
-  const tipoAtual = p ? p.tipo : 'consumidor';
+  const tiposAtuais = p ? p.tipos : ['consumidor'];
+  const travado = Boolean(p && p.assinantes);
   $('#pl-tipos').innerHTML = Object.entries(PL.tipos).map(([id, t]) => `<label class="pl-tipo">
-    <input type="radio" name="tipo" value="${id}"${id === tipoAtual ? ' checked' : ''}${p && p.assinantes && id !== p.tipo ? ' disabled' : ''}>
+    <input type="checkbox" name="tipos" value="${id}"${tiposAtuais.includes(id) ? ' checked' : ''}${travado ? ' disabled' : ''}>
     <span><b>${esc(t.nome)}</b><br><span class="hint" style="margin:0">${esc(PL_TIPO_TXT[id] || '')}</span>
     <ul>${(PL.funcoes[id] || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></span></label>`).join('');
-  $('#pl-tipo-aviso').textContent = p && p.assinantes ? 'Este plano tem assinantes: o tipo de acesso não pode mudar (crie um plano novo para isso).' : '';
+  $('#pl-tipo-aviso').textContent = travado ? 'Este plano tem assinantes: os tipos de acesso não podem mudar (crie um plano novo para isso).' : '';
   const v = {
-    nome: p?.nome || '', preco: p ? String(p.preco).replace('.', ',') : '', dias: p?.dias || 30, ordem: p?.ordem ?? (PL.planos.length + 1) * 10,
+    nome: p?.nome || '', preco: p && !p.gratis ? String(p.preco).replace('.', ',') : '', dias: p?.dias || 30, ordem: p?.ordem ?? (PL.planos.length + 1) * 10,
     max_produtos: p?.recursos.max_produtos || 0, chamada: p?.chamada || '', ideal: p?.ideal || '', destaque: p?.destaque || '',
-    icone: p?.icone || PL.tipos[tipoAtual].icone, beneficios: (p?.beneficios || []).join('\n'),
+    icone: p?.icone || 'consumidor', beneficios: (p?.beneficios || []).join('\n'),
     link_pagamento: p?.link_pagamento || '', produto_app: p?.produto_app || '',
     p_vitrine: pf.vitrine, p_bio: pf.bio, p_links: pf.links, p_selo: pf.selo || '',
   };
   for (const [k, val] of Object.entries(v)) if (f.elements[k]) f.elements[k].value = val;
   f.elements.ativo.checked = p ? p.ativo : true;
+  f.elements.gratis.checked = Boolean(p?.gratis);
+  f.elements.sem_vencimento.checked = Boolean(p?.sem_vencimento);
   for (const k of ['capa', 'cores_extras', 'gradiente', 'slug_livre', 'moldura']) f.elements[`p_${k}`].checked = Boolean(pf[k]);
   plTipoMudou();
   $('#pl-dlg').showModal();
 }
+const plTipos = () => $$('#pl-tipos [name="tipos"]:checked').map(i => i.value);
 function plTipoMudou() {
-  const tipo = $('#pl-form').querySelector('[name="tipo"]:checked')?.value;
-  $$('.pl-so-empresa').forEach(el => el.classList.toggle('hidden', tipo !== 'empresa'));
+  const f = $('#pl-form');
+  $$('.pl-so-empresa').forEach(el => el.classList.toggle('hidden', !plTipos().includes('empresa')));
+  f.elements.preco.disabled = f.elements.gratis.checked;
+  f.elements.dias.disabled = f.elements.sem_vencimento.checked;
 }
 function plDados() {
   const f = $('#pl-form');
   const e = f.elements;
   return {
-    nome: e.nome.value, preco: e.preco.value, dias: e.dias.value, ordem: e.ordem.value, ativo: e.ativo.checked,
-    tipo: f.querySelector('[name="tipo"]:checked')?.value, max_produtos: e.max_produtos.value,
+    nome: e.nome.value, preco: e.preco.value, gratis: e.gratis.checked, dias: e.dias.value, sem_vencimento: e.sem_vencimento.checked,
+    ordem: e.ordem.value, ativo: e.ativo.checked, tipos: plTipos(), max_produtos: e.max_produtos.value,
     chamada: e.chamada.value, ideal: e.ideal.value, destaque: e.destaque.value, icone: e.icone.value, beneficios: e.beneficios.value,
     link_pagamento: e.link_pagamento.value, produto_app: e.produto_app.value,
     perfil: { vitrine: e.p_vitrine.value, bio: e.p_bio.value, links: e.p_links.value, selo: e.p_selo.value,
@@ -1563,11 +1573,13 @@ $('#pl-lista').addEventListener('click', async e => {
   } catch (err) { globalMsg(err.message, false); }
 });
 $('#pl-tipos').addEventListener('change', e => {
-  if (e.target.name !== 'tipo') return;
+  if (e.target.name !== 'tipos') return;
   const f = $('#pl-form');
-  if (!f.dataset.id) f.elements.icone.value = PL.tipos[e.target.value].icone;
+  const t = plTipos();
+  if (!f.dataset.id && t.length) f.elements.icone.value = PL.tipos[t.includes('empresa') ? 'empresa' : t.includes('consumidor') ? 'consumidor' : 'ferramenta'].icone;
   plTipoMudou();
 });
+$('#pl-form').addEventListener('change', e => { if (['gratis', 'sem_vencimento'].includes(e.target.name)) plTipoMudou(); });
 $('#pl-sugerir').addEventListener('click', async () => {
   const f = $('#pl-form');
   if (f.elements.beneficios.value.trim() && !confirm('Trocar os benefícios escritos pelos gerados a partir das funções?')) return;
@@ -1590,7 +1602,7 @@ $('#pl-dlg').addEventListener('click', e => { if (e.target.closest('[data-close]
 // ── Planos e pagamentos ───────────────────────────────────────────────────────
 const PED_STATUS = { pendente: ['b-pending', 'Aguardando'], aprovado: ['b-active', 'Aprovado'], recusado: ['b-banned', 'Recusado'],
   cancelado: ['b-none', 'Cancelado'], expirado: ['b-none', 'Expirado'] };
-const PED_METODO = { pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento', combinar: 'A combinar', app_store: 'App Store (app)', play_store: 'Google Play (app)' };
+const PED_METODO = { gratis: 'Plano grátis', pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento', combinar: 'A combinar', app_store: 'App Store (app)', play_store: 'Google Play (app)' };
 const PED_MANUAL = ['pix_manual', 'transferencia', 'link', 'combinar'];
 async function loadPedidos() {
   const d = await api('/api/admin/pagamentos');
@@ -1605,7 +1617,7 @@ async function loadPedidos() {
     return `<tr>
       <td class="num">${fmtDate(p.created_at)}</td>
       <td><b>${esc(p.nome || '—')}</b><br><span class="hint" style="margin:0">${esc(p.email)}</span></td>
-      <td>${esc(PLANO_NOME[p.plano] || p.plano)}<br><span class="hint" style="margin:0">${p.dias} dias</span></td>
+      <td>${esc(PLANO_NOME[p.plano] || p.plano)}<br><span class="hint" style="margin:0">${p.dias ? `${p.dias} dias` : 'sem vencimento'}</span></td>
       <td class="num">${brl(p.valor)}</td>
       <td>${esc(PED_METODO[p.metodo] || p.metodo)}${p.mp_payment_id ? `<br><span class="hint" style="margin:0">MP ${esc(p.mp_payment_id)}</span>` : ''}</td>
       <td><span class="badge ${cls}">${txt}</span>${p.status === 'aprovado' ? `<br><span class="hint" style="margin:0">até ${fmtDia(p.validade_ate)}${p.email_enviado ? ' · e-mail enviado' : ''}</span>` : ''}</td>
@@ -1818,7 +1830,7 @@ conferirSino();
 setInterval(conferirSino, 5 * 60 * 1000);
 
 // ── Clientes da ferramenta ────────────────────────────────────────────────────
-const fmtDia = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');
+const fmtDia = s => (String(s).startsWith('9999') ? 'sem vencimento' : s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');
 async function loadClientes() {
   const rows = await api('/api/admin/clientes');
   $('#cli-body').innerHTML = rows.length ? rows.map(c => {

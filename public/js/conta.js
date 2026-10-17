@@ -217,17 +217,18 @@
   let planosPromise = null;
   const dadosPlanos = () => (planosPromise ||= fetch('/api/planos').then(r => r.json()).catch(() => ({ planos: [] })));
   const planosHtml = planos => planos.map(p => {
-    const mensal = p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
+    const mensal = p.gratis || !p.dias || p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
+    const periodo = !p.dias ? ' · sem vencimento' : p.dias === 30 ? '/mês' : `/${p.dias} dias`;
       return `
       <article class="plano-card${p.destaque ? ' is-destaque' : ''}" data-plano="${esc(p.id)}">
         ${p.destaque ? `<span class="plano-selo">${esc(p.destaque)}</span>` : ''}
         <div class="plano-topo"><span class="plano-ico">${ICONES[p.icone] || ''}</span><p class="plano-chamada">${esc(p.chamada)}</p></div>
         <h3>${esc(p.nome)}</h3>
-        <p class="plano-preco"><b>${brlFmt(p.preco)}</b><span>/${p.dias === 30 ? 'mês' : `${p.dias} dias`}</span></p>
+        <p class="plano-preco"><b>${p.gratis ? 'Grátis' : brlFmt(p.preco)}</b><span>${periodo}</span></p>
         ${mensal}
         <p class="plano-ideal">${esc(p.ideal || '')}</p>
         <ul>${p.beneficios.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
-        <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">Assinar ${esc(p.nome)}</a>
+        <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">${p.gratis ? `Começar grátis` : `Assinar ${esc(p.nome)}`}</a>
       </article>`;
   }).join('');
 
@@ -256,7 +257,7 @@
     const celula = v => (v === true ? '<span class="lp-sim" aria-label="Incluído">✓</span>'
       : v ? `<b>${esc(v)}</b>` : '<span class="lp-nao" aria-label="Não incluído">—</span>');
     $('#lp-tabela').innerHTML = `
-      <thead><tr><th>Recurso</th>${cols.map(p => `<th class="${p.destaque ? 'is-destaque' : ''}">${esc(p.nome)}<small>${brlFmt(p.preco)}</small></th>`).join('')}</tr></thead>
+      <thead><tr><th>Recurso</th>${cols.map(p => `<th class="${p.destaque ? 'is-destaque' : ''}">${esc(p.nome)}<small>${p.gratis ? 'Grátis' : brlFmt(p.preco)}</small></th>`).join('')}</tr></thead>
       <tbody>${linhasComparativo(cols, d.funcoes_base || []).map(([nome, v]) => `<tr><td>${esc(nome)}</td>${cols.map(p => `<td class="${p.destaque ? 'is-destaque' : ''}">${celula(v(p))}</td>`).join('')}</tr>`).join('')}</tbody>`;
     $('#comparar').hidden = !cols.length;
   }

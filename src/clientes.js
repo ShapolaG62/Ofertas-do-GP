@@ -174,6 +174,16 @@ function vincularUsuario(u, dias = null) {
   return c.id;
 }
 
+// Plano com a ferramenta comprado por uma conta do site: liga (ou cria) o acesso e define a validade.
+// calcValidade recebe a validade atual do acesso (ou null) e devolve a nova.
+function liberarPlano(u, planoId, calcValidade) {
+  const antes = (u.cliente_id && getById(u.cliente_id)) || db.get('SELECT * FROM clientes WHERE email = ?', u.email);
+  const cid = vincularUsuario(u);
+  const validade = calcValidade(antes ? antes.validade : null);
+  db.run(`UPDATE clientes SET validade = ?, status = 'ativo', plano = ? WHERE id = ?`, validade, planoId, cid);
+  return { id: cid, validade };
+}
+
 function exigir(req, res, next) {
   const c = atual(req);
   if (!c) return res.status(401).json({ error: 'Entre no painel do cliente.' });
@@ -270,6 +280,7 @@ function publico(c) {
 }
 
 module.exports = {
+  liberarPlano,
   linkParaPostar,
   renovarSessao,
   vincularUsuario,

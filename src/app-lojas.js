@@ -24,8 +24,9 @@ function config(s = settings.getAll()) {
   return {
     ativo,
     chaves: ativo ? { android: s.rc_chave_android || '', ios: s.rc_chave_ios || '' } : {},
-    produtos: Object.fromEntries(planos.listar().map(p => [p.id, p.produto_app || ''])),
-    planos: planos.listar(s).map(p => ({ id: p.id, nome: p.nome, chamada: p.chamada, beneficios: p.beneficios, dias: p.dias })),
+    produtos: Object.fromEntries(planos.listar().filter(p => !p.gratis).map(p => [p.id, p.produto_app || ''])),
+    // Só os planos pagos são vendidos pela loja; os grátis são ativados pelo site (/assinar)
+    planos: planos.listar().filter(p => !p.gratis).map(p => ({ id: p.id, nome: p.nome, chamada: p.chamada, beneficios: p.beneficios, dias: p.dias })),
   };
 }
 
@@ -56,14 +57,16 @@ function liberar(u, plano, expiraSql, origem) {
     users.logAction(atual, 'assinatura_app', `${p.nome} até ${validade.slice(0, 10)} (${origem})`);
     return { plano, validade, conta: 'cliente' };
   }
-  if (u.tipo && u.tipo !== p.perfil) {
+  const perfil = p.perfis.includes(u.tipo) ? u.tipo : p.perfil;
+  if (u.tipo && u.tipo !== 'afiliado' && !p.perfis.includes(u.tipo)) {
     users.logAction(u, 'assinatura_app_conflito', `${p.nome} comprado numa conta de ${u.tipo} (${origem})`);
     return null;
   }
   const validade = maior(u.assinatura_ate, expiraSql);
-  db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = COALESCE(tipo, ?),
+  db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = CASE WHEN tipo IS NULL OR tipo = 'afiliado' THEN ? ELSE tipo END,
           status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`,
-  p.id, validade, p.perfil, u.id);
+  p.id, validade, perfil, u.id);
+  if (p.ferramenta) clientes.liberarPlano(users.getById(u.id), p.id, atual => maior(atual, expiraSql));
   users.logAction(users.getById(u.id), 'assinatura_app', `${p.nome} até ${validade.slice(0, 10)} (${origem})`);
   return { plano, validade, conta: 'usuario' };
 }

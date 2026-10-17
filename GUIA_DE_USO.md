@@ -212,18 +212,20 @@ Planos que vêm prontos (dá para editar, excluir e criar outros):
 
 | Plano | Para quem | Preço sugerido (30 dias) |
 |---|---|---|
-| **Caçador de Ofertas** | consumidor | R$ 9,90 |
+| **Caçador de Ofertas** | consumidor | **grátis, sem vencimento** |
 | **Loja Parceira** | empresas | R$ 49,90 |
 | **Afiliado Pro** | quem quer vender com os próprios links (vira *cliente da ferramenta*) | R$ 79,90 |
 
 **Criar, editar e excluir planos:** **Painel → Planos → Planos à venda**. Use **+ Criar plano** ou **Editar** em um cartão. Cada plano tem:
-1. **O básico:** nome, preço, dias de acesso por compra, ordem na página e se está **à venda**.
-2. **Tipo de acesso:** *Consumidor* (conta no site liberada na hora), *Empresa* (página da loja, anúncios e importação de catálogo, com **limite de produtos** próprio; 0 = limite geral) ou *Ferramenta de afiliado* (painel /cliente com links próprios e postagem automática).
+1. **O básico:** nome, preço (ou **Plano grátis**: sem pagamento, liberado na hora), dias de acesso por compra (ou **Sem vencimento**), ordem na página e se está **à venda**.
+2. **Tipos de acesso** (marque um ou mais): *Consumidor* (conta no site liberada na hora), *Empresa* (página da loja, anúncios e importação de catálogo, com **limite de produtos** próprio; 0 = limite geral) e/ou *Ferramenta de afiliado* (painel /cliente com links próprios e postagem automática). Com *Consumidor* e *Empresa* juntos, quem assina escolhe o tipo da conta na compra. Com *Ferramenta* junto de um deles, a conta do site também ganha o painel de afiliado, com o mesmo login e a mesma validade.
 3. **Funções do perfil:** quantas conquistas na vitrine, tamanho do resumo, quantos links, imagem de capa, cores extras, cores em degradê, endereço personalizado (/perfil/nome), moldura exclusiva e o texto do selo.
 4. **Página inicial:** frase de chamada, "ideal para", etiqueta de destaque (ex.: *Mais vendido*), ícone e a lista de benefícios — o botão **Gerar a partir das funções** escreve a lista sozinho.
 5. **Pagamento:** link de pagamento do plano (se usar a forma *Link de pagamento*) e o ID do produto no app (Google Play / App Store).
 
-**Excluir:** um plano sem assinantes é apagado de vez. Com assinantes, ele sai da venda e da lista, mas continua valendo (com as mesmas funções) para quem já pagou até o fim do prazo; para renovar, a pessoa escolhe outro plano. O tipo de acesso de um plano com assinantes não pode ser trocado — crie um plano novo.
+**Planos grátis** aparecem na página inicial com o botão **Começar grátis**: a pessoa preenche o cadastro e a conta é liberada na hora (sem pagamento e sem aprovação). Eles não são vendidos pela Google Play / App Store; dentro do app, também são ativados pelo site.
+
+**Excluir:** um plano sem assinantes é apagado de vez. Com assinantes, ele sai da venda e da lista, mas continua valendo (com as mesmas funções) para quem já pagou até o fim do prazo; para renovar, a pessoa escolhe outro plano. Os tipos de acesso de um plano com assinantes não podem ser trocados — crie um plano novo.
 
 **Formas de recebimento** (Painel → Planos → Formas de recebimento). Cada uma tem *Ativo/Desligado*; para trocar uma chave, conta ou link, é só editar e salvar:
 - **Mercado Pago (recomendado):** cole o *Access Token* de produção (mercadopago.com.br/developers → Suas integrações → Credenciais de produção). Liga **Pix com QR code** e **cartão de crédito/débito** (com parcelas, se quiser). Confirmação automática.

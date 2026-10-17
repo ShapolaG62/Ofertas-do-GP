@@ -1,9 +1,12 @@
-// Planos pagos (vendidos na página inicial, em /assinar e no app). Ficam na tabela `planos` e são criados,
-// editados e excluídos em Painel → Planos. Cada plano tem um TIPO DE ACESSO, que define o que a pessoa ganha:
+// Planos (pagos ou grátis), na página inicial, em /assinar e no app. Ficam na tabela `planos` e são criados,
+// editados e excluídos em Painel → Planos. Cada plano tem um ou mais TIPOS DE ACESSO, que definem o que a pessoa ganha:
 //   consumidor  → vê todas as ofertas na hora, sem esperar aprovação;
 //   empresa     → + loja própria no site, anúncios e importação do catálogo (com limite de produtos opcional);
 //   ferramenta  → painel de afiliado: os próprios links de afiliado, redes sociais, agendamento e marca d'água.
+// Com Consumidor e Empresa no mesmo plano, quem assina escolhe o tipo da conta. Com Ferramenta junto de um deles,
+// a conta do site ganha também o painel de afiliado (mesmo login).
 // E funções extras do perfil (vitrine, capa, links, cores, endereço próprio, moldura e selo).
+// Preço 0 = plano grátis (liberado na hora, sem pagamento). Dias 0 = sem vencimento.
 const crypto = require('crypto');
 const db = require('./db');
 const settings = require('./settings');
@@ -49,6 +52,9 @@ db.db.exec(`
   );
 `);
 
+// Vários tipos de acesso por plano (a coluna "tipo" guarda o principal, usado no ícone e no selo)
+try { db.db.exec('ALTER TABLE planos ADD COLUMN tipos TEXT'); } catch { /* já existe */ }
+
 // Primeira vez: cria os 3 planos de antes, com os preços e links que já estavam no painel.
 if (!db.get('SELECT 1 FROM planos LIMIT 1')) {
   const s = settings.getAll();
@@ -81,19 +87,29 @@ if (!db.get('SELECT 1 FROM planos LIMIT 1')) {
 }
 
 const json = (t, padrao) => { try { return JSON.parse(t) ?? padrao; } catch { return padrao; } };
+const ORDEM_TIPOS = ['consumidor', 'empresa', 'ferramenta'];
+const tiposDe = r => { const t = json(r.tipos, null); const v = (Array.isArray(t) ? t : [r.tipo]).filter(x => TIPOS[x]); return ORDEM_TIPOS.filter(x => v.includes(x)); };
+const principal = tipos => (tipos.includes('empresa') ? 'empresa' : tipos.includes('consumidor') ? 'consumidor' : 'ferramenta');
+// Validade "sem vencimento" (plano com 0 dias)
+const SEM_VENCIMENTO = '9999-12-31 23:59:59';
 
 // Formato usado pelo resto do site (o mesmo de antes: conta, perfil, beneficios…)
 function montar(r) {
   if (!r) return null;
-  const tipo = TIPOS[r.tipo] || TIPOS.consumidor;
+  const tipos = tiposDe(r);
+  const tipoP = principal(tipos);
+  const tipo = TIPOS[tipoP];
   const recursos = json(r.recursos, {});
+  const perfis = tipos.filter(t => TIPOS[t].perfil); // tipos de conta do site que o plano aceita
   return {
-    id: r.id, nome: r.nome, tipo: r.tipo, tipo_nome: tipo.nome, conta: tipo.conta, perfil: tipo.perfil,
-    preco: r.preco, dias: r.dias, ativo: Boolean(r.ativo) && !r.arquivado, arquivado: Boolean(r.arquivado), ordem: r.ordem,
+    id: r.id, nome: r.nome, tipo: tipoP, tipos, tipo_nome: tipos.map(t => TIPOS[t].nome).join(' + '),
+    // conta: 'usuario' (conta do site, com ou sem a ferramenta junto) ou 'cliente' (só a ferramenta)
+    conta: perfis.length ? 'usuario' : 'cliente', perfis, perfil: perfis[0] || null, ferramenta: tipos.includes('ferramenta'),
+    preco: r.preco, gratis: !(r.preco > 0), dias: r.dias, sem_vencimento: r.dias === 0, ativo: Boolean(r.ativo) && !r.arquivado, arquivado: Boolean(r.arquivado), ordem: r.ordem,
     chamada: r.chamada || '', ideal: r.ideal || '', beneficios: json(r.beneficios, []),
     destaque: r.destaque || '', icone: r.icone || tipo.icone,
     recursos: { perfil: { ...PERFIL_PADRAO, ...(recursos.perfil || {}) }, max_produtos: recursos.max_produtos || 0 },
-    funcoes: FUNCOES_TIPO[r.tipo] || [],
+    funcoes: [...new Set(tipos.flatMap(t => FUNCOES_TIPO[t]))],
     link_pagamento: r.link_pagamento || '', produto_app: r.produto_app || '',
   };
 }
@@ -101,13 +117,15 @@ function montar(r) {
 // Plano por id (inclusive arquivado, para quem ainda tem assinatura dele). O 2º argumento é ignorado (compatibilidade).
 const plano = id => montar(db.get('SELECT * FROM planos WHERE id = ?', String(id || '')));
 // Planos à venda, na ordem do painel.
-const listar = () => db.all('SELECT * FROM planos WHERE ativo = 1 AND arquivado = 0 AND preco > 0 ORDER BY ordem, preco').map(montar);
+const listar = () => db.all('SELECT * FROM planos WHERE ativo = 1 AND arquivado = 0 ORDER BY ordem, preco').map(montar);
 const todos = () => db.all('SELECT * FROM planos WHERE arquivado = 0 ORDER BY ordem, preco').map(montar);
 
 // Quantas pessoas ainda têm este plano em vigor (contas do site e clientes da ferramenta)
 function assinantes(id) {
   const u = db.get(`SELECT COUNT(*) n FROM users WHERE plano = ? AND assinatura_ate > datetime('now')`, id).n;
-  const c = db.get(`SELECT COUNT(*) n FROM clientes WHERE plano = ? AND validade > datetime('now') AND status = 'ativo'`, id).n;
+  // (o acesso à ferramenta de quem já conta pela conta do site não entra duas vezes)
+  const c = db.get(`SELECT COUNT(*) n FROM clientes c WHERE c.plano = ? AND c.validade > datetime('now') AND c.status = 'ativo'
+    AND NOT EXISTS (SELECT 1 FROM users u WHERE u.cliente_id = c.id AND u.plano = c.plano AND u.assinatura_ate > datetime('now'))`, id).n;
   return u + c;
 }
 
@@ -120,13 +138,16 @@ const sim = v => v === true || v === 1 || v === '1' || v === 'on' || v === 'true
 function validar(b, atual = null) {
   const nome = texto(b.nome, 40);
   if (nome.length < 2) throw fail('Dê um nome ao plano.');
-  const tipo = String(b.tipo || atual?.tipo || '');
-  if (!TIPOS[tipo]) throw fail('Escolha o tipo de acesso do plano.');
-  if (atual && atual.tipo !== tipo && assinantes(atual.id)) throw fail('Este plano tem assinantes: não dá para trocar o tipo de acesso. Crie um plano novo.');
-  const preco = Math.round(numero(b.preco) * 100) / 100;
-  if (!(preco > 0) || preco > 100000) throw fail('Informe o preço (ex.: 29,90).');
-  const dias = entre(b.dias, [1, 3650], NaN);
-  if (!Number.isFinite(dias)) throw fail('Informe por quantos dias o plano vale.');
+  const pedidos = Array.isArray(b.tipos) ? b.tipos : b.tipos ? [b.tipos] : b.tipo ? [b.tipo] : atual ? tiposDe(atual) : [];
+  const tipos = ORDEM_TIPOS.filter(t => pedidos.includes(t));
+  if (!tipos.length) throw fail('Marque pelo menos um tipo de acesso.');
+  if (atual && tiposDe(atual).join() !== tipos.join() && assinantes(atual.id)) throw fail('Este plano tem assinantes: não dá para trocar os tipos de acesso. Crie um plano novo.');
+  const gratis = sim(b.gratis);
+  const preco = gratis ? 0 : Math.round(numero(b.preco) * 100) / 100;
+  if (!gratis && (!(preco > 0) || preco > 100000)) throw fail('Informe o preço (ex.: 29,90) ou marque "Plano grátis".');
+  const dias = sim(b.sem_vencimento) ? 0 : entre(b.dias, [1, 3650], NaN);
+  if (!Number.isFinite(dias)) throw fail('Informe por quantos dias o plano vale (ou marque "Sem vencimento").');
+  const tipo = principal(tipos);
   const p = b.perfil || {};
   const perfil = {
     vitrine: entre(p.vitrine, PERFIL_LIMITES.vitrine, PERFIL_PADRAO.vitrine),
@@ -143,10 +164,10 @@ function validar(b, atual = null) {
   const produto = texto(b.produto_app, 100);
   if (produto && !/^[a-z0-9._:-]+$/i.test(produto)) throw fail('O ID do produto no app aceita só letras, números, ponto, hífen e sublinhado.');
   return {
-    nome, tipo, preco, dias, ativo: sim(b.ativo) ? 1 : 0, ordem: entre(b.ordem, [0, 999], 10),
+    nome, tipo, tipos: JSON.stringify(tipos), preco, dias, ativo: sim(b.ativo) ? 1 : 0, ordem: entre(b.ordem, [0, 999], 10),
     chamada: texto(b.chamada, 80) || null, ideal: texto(b.ideal, 200) || null, beneficios: JSON.stringify(beneficios),
     destaque: texto(b.destaque, 24) || null, icone: ['consumidor', 'empresa', 'pro'].includes(b.icone) ? b.icone : TIPOS[tipo].icone,
-    recursos: JSON.stringify({ perfil, max_produtos: tipo === 'empresa' ? entre(b.max_produtos, [0, 100000], 0) : 0 }),
+    recursos: JSON.stringify({ perfil, max_produtos: tipos.includes('empresa') ? entre(b.max_produtos, [0, 100000], 0) : 0 }),
     link_pagamento: link || null, produto_app: produto || null,
   };
 }
@@ -186,14 +207,17 @@ function excluir(id) {
 
 // Benefícios sugeridos a partir das funções escolhidas (o admin pode editar depois)
 function sugerirBeneficios(b) {
-  const tipo = TIPOS[b.tipo] ? b.tipo : 'consumidor';
+  const tipos = (Array.isArray(b.tipos) ? b.tipos : [b.tipo]).filter(t => TIPOS[t]);
   const p = b.perfil || {};
   const lista = [...FUNCOES_TIPO.consumidor];
-  if (tipo === 'empresa') {
+  if (sim(b.gratis)) lista.unshift('Grátis: sem pagamento, liberado na hora');
+  if (sim(b.sem_vencimento)) lista.push('Acesso sem data de vencimento');
+  if (tipos.includes('consumidor') && tipos.includes('empresa')) lista.push('Você escolhe: conta de consumidor ou de empresa');
+  if (tipos.includes('empresa')) {
     lista.push(...FUNCOES_TIPO.empresa);
     if (parseInt(b.max_produtos, 10) > 0) lista.push(`Até ${parseInt(b.max_produtos, 10)} produtos na sua loja`);
   }
-  if (tipo === 'ferramenta') lista.push(...FUNCOES_TIPO.ferramenta);
+  if (tipos.includes('ferramenta')) lista.push(...FUNCOES_TIPO.ferramenta);
   const perfil = [];
   if (sim(p.capa)) perfil.push('capa');
   if (sim(p.gradiente)) perfil.push('cores em degradê');
@@ -211,7 +235,18 @@ function maxProdutos(userId) {
   return p && p.recursos.max_produtos > 0 ? p.recursos.max_produtos : settings.getNumber('loja_max_produtos', 300);
 }
 
-// Primeiro plano de ferramenta à venda (usado quando o admin libera um afiliado gratuito)
-const planoFerramenta = () => listar().find(p => p.tipo === 'ferramenta') || todos().find(p => p.tipo === 'ferramenta') || null;
+// Nova validade somando os dias do plano ao prazo que ainda resta (0 dias = sem vencimento)
+function somaDias(ate, dias) {
+  if (!(dias > 0) || ate === SEM_VENCIMENTO) return SEM_VENCIMENTO;
+  const base = Math.max(Date.now(), new Date(String(ate || '').replace(' ', 'T') + 'Z').getTime() || 0);
+  return new Date(base + dias * 86400000).toISOString().replace('T', ' ').slice(0, 19);
+}
 
-module.exports = { TIPOS, FUNCOES_TIPO, PERFIL_PADRAO, PERFIL_LIMITES, plano, listar, todos, assinantes, criar, editar, excluir, sugerirBeneficios, maxProdutos, planoFerramenta };
+// Primeiro plano de ferramenta à venda (usado quando o admin libera um afiliado gratuito)
+// (de preferência um plano só de ferramenta)
+const planoFerramenta = () => {
+  const lista = [...listar(), ...todos()].filter(p => p.ferramenta);
+  return lista.find(p => p.conta === 'cliente') || lista[0] || null;
+};
+
+module.exports = { SEM_VENCIMENTO, somaDias, TIPOS, FUNCOES_TIPO, PERFIL_PADRAO, PERFIL_LIMITES, plano, listar, todos, assinantes, criar, editar, excluir, sugerirBeneficios, maxProdutos, planoFerramenta };

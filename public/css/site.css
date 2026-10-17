@@ -1397,3 +1397,52 @@ body.pf-body {
 .chatf-escrever textarea, .chatf-corpo, .msg-escrever textarea, .msg-historico, .msg-itens { scrollbar-width: none; -ms-overflow-style: none; }
 .chatf-escrever textarea::-webkit-scrollbar, .chatf-corpo::-webkit-scrollbar, .msg-escrever textarea::-webkit-scrollbar,
 .msg-historico::-webkit-scrollbar, .msg-itens::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+/* ── Topo: menu da conta (Perfil + Minha conta + Sair) ─────────────── */
+.conta-btn { gap: 8px; }
+.conta-btn[hidden] { display: none; }
+.conta-seta { width: 14px !important; height: 14px !important; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+.conta-btn[aria-expanded="true"] .conta-seta { transform: rotate(180deg); }
+.conta-pop { position: fixed; z-index: 120; width: 280px; max-width: calc(100vw - 16px); padding: 6px; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 16px 40px rgba(0, 0, 0, .4); }
+.conta-pop[hidden] { display: none; }
+.conta-pop a, .conta-pop button { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; text-decoration: none; cursor: pointer; width: 100%; }
+.conta-pop a:hover, .conta-pop button:hover { background: var(--surface-2); }
+.conta-pop svg { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--brand); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.conta-pop span { display: grid; gap: 1px; }
+.conta-pop b { font-size: 14px; }
+.conta-pop small { font-size: 12px; color: var(--ink-3); }
+.conta-pop #logout-site { border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; margin-top: 4px; }
+.conta-pop #logout-site svg { stroke: var(--deal); }
+
+/* ── Comunidade: cartões de parceiros (lojas) ──────────────────────── */
+.comu-parceiros { display: grid; gap: 10px; }
+.parc { list-style: none; border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface-2); display: grid; gap: 10px; }
+.parc-topo { display: flex; gap: 10px; align-items: center; color: inherit; text-decoration: none; min-width: 0; }
+.parc-logo { width: 52px; height: 52px; flex: none; border-radius: 10px; overflow: hidden; background: #fff; display: grid; place-items: center; border: 1px solid var(--line); }
+.parc-logo img { width: 100%; height: 100%; object-fit: contain; }
+.parc-logo .pf-avatar { --tam: 52px; }
+.parc-nome { display: grid; min-width: 0; gap: 2px; }
+.parc-nome b { font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.parc-nome small { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+.parc-ok svg { width: 16px; height: 16px; fill: #2f80ed; stroke: #2f80ed; }
+.parc-ok svg path:last-child { stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.parc-acoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+.parc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 10px; border-radius: 10px; border: 1.5px solid var(--brand); background: transparent; color: var(--brand); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.parc-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.parc-btn:hover { background: var(--brand-soft); }
+.parc-btn.comu-seguir.is-on { background: var(--brand); color: #fff; }
+.parc-rep { display: grid; gap: 4px; }
+.parc-barra { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.parc-barra span { height: 8px; border-radius: 999px; background: var(--line-strong); }
+.parc-barra span.on { background: #12a150; }
+.parc-rep-rot { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--ink-3); }
+.parc-rep-rot b { font-size: 12px; color: var(--ink); }
+.parc-nova { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.parc-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; text-align: center; border-top: 1px solid var(--line); padding-top: 10px; }
+.parc-nums div { display: grid; justify-items: center; gap: 2px; min-width: 0; }
+.parc-nums svg { width: 24px; height: 24px; fill: none; stroke: var(--ink-2); stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.parc-nums b { font-size: 13px; }
+.parc-nums small { font-size: 11px; color: var(--ink-3); line-height: 1.25; }
+.parc-mais { text-align: center; font-size: 13.5px; font-weight: 700; color: var(--brand); text-decoration: none; border-top: 1px solid var(--line); padding-top: 10px; }
+.parc-mais:hover { text-decoration: underline; }
+.comu-dialog .comu-parceiros { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }

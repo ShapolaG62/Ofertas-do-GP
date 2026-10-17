@@ -38,6 +38,55 @@
       ${botaoSeguir(p)}
     </li>`;
 
+  // Cartão de parceiro (empresa): loja, conversa com o lojista, seguir, reputação e números
+  const ICONE = {
+    sacola: '<svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
+    entrega: '<svg viewBox="0 0 24 24"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
+    chat: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
+    verificado: '<svg viewBox="0 0 24 24"><path d="m12 2 2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22l-2.4-1.8-3 .2-.9-2.9L3.2 15.8l1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"/><path d="m8.5 12 2.4 2.4 4.6-4.8" fill="none"/></svg>',
+  };
+  const ROTULOS_NOTA = ['Ruim', 'Regular', 'Bom', 'Muito bom', 'Ótimo'];
+  const vendidosTxt = n => (n >= 1000 ? `+${num(Math.floor(n / 1000))}mil` : n > 0 ? `+${num(n)}` : '0');
+  const parceiro = p => {
+    const l = p.loja;
+    const logo = l?.logo ? `<img src="${esc(l.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : avatar(p, 52);
+    const seguir = p.eu ? '<span class="comu-eu">Sua loja</span>'
+      : `<button class="parc-btn comu-seguir${p.eu_sigo ? ' is-on' : ''}" type="button" data-seguir="${esc(p.slug)}">${p.eu_sigo ? 'Seguindo' : '+ Seguir'}</button>`;
+    return `<li class="parc">
+      <a class="parc-topo" href="${l ? `/loja/${esc(l.slug)}` : `/perfil/${esc(p.slug)}`}">
+        <span class="parc-logo">${logo}</span>
+        <span class="parc-nome"><b>${esc(l?.nome || p.nome)}</b><small>Loja parceira no Ofertou! <span class="parc-ok" title="Empresa com cadastro aprovado">${ICONE.verificado}</span></small></span>
+      </a>
+      <div class="parc-acoes">
+        ${l && !p.eu ? `<button class="parc-btn parc-falar" type="button" data-falar-loja="${l.id}">${ICONE.chat}Fale com lojista</button>` : ''}
+        ${seguir}
+      </div>
+      ${l ? (l.nova ? '<p class="parc-nova">Loja nova no site: ainda sem avaliação de vendas.</p>' : `
+      <div class="parc-rep" aria-label="Reputação: ${ROTULOS_NOTA[l.nota]}">
+        <div class="parc-barra">${[0, 1, 2, 3, 4].map(i => `<span class="${i <= l.nota ? 'on' : ''}"></span>`).join('')}</div>
+        <div class="parc-rep-rot"><small>Ruim</small><b>${ROTULOS_NOTA[l.nota]}</b><small>Ótimo</small></div>
+      </div>`) : ''}
+      ${l ? `<div class="parc-nums">
+        <div>${ICONE.sacola}<b>${vendidosTxt(l.vendidos)}</b><small>Produtos vendidos</small></div>
+        <div>${ICONE.entrega}<b>Entrega</b><small>${esc(l.entrega || 'Sem dados ainda')}</small></div>
+        <div>${ICONE.chat}<b>Atendimento</b><small>${esc(l.atendimento || 'Sem dados ainda')}</small></div>
+      </div>
+      <a class="parc-mais" href="/loja/${esc(l.slug)}">Ver mais sobre a loja</a>` : '<p class="parc-nova">Esta empresa ainda não abriu a loja no site.</p>'}
+    </li>`;
+  };
+  // "Fale com lojista": abre a conversa de atendimento no painel de mensagens
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-falar-loja]');
+    if (!b) return;
+    b.disabled = true;
+    try {
+      const r = await api('/api/chat/iniciar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loja_id: Number(b.dataset.falarLoja) }) });
+      if ($('#comu-dialog').open) $('#comu-dialog').close();
+      if (window.OfertouChat) window.OfertouChat.abrir(r.id); else location.href = `/mensagens?c=${r.id}`;
+    } catch (err) { alert(err.message); }
+    b.disabled = false;
+  });
+
   // ── Cartão na lateral ──────────────────────────────────────────────────────
   let buscaCardTimer;
   let grupoCard = 'consumidores'; // categoria do quadro: consumidores ou empresas
@@ -46,7 +95,8 @@
       const d = await api(`/api/perfis?grupo=${grupoCard}&q=${encodeURIComponent(q)}`);
       $('#comu-card').hidden = false;
       $('#comu-abrir').hidden = false;
-      $('#comu-lista-card').innerHTML = d.itens.slice(0, 6).map(item).join('')
+      $('#comu-lista-card').classList.toggle('comu-parceiros', grupoCard === 'empresas');
+      $('#comu-lista-card').innerHTML = d.itens.slice(0, grupoCard === 'empresas' ? 3 : 6).map(grupoCard === 'empresas' ? parceiro : item).join('')
         || `<li class="comu-vazio">${q ? 'Nenhum perfil com esse nome.' : grupoCard === 'empresas' ? 'Ainda não há parceiros.' : 'Ainda não há perfis.'}</li>`;
     } catch { /* sem login: a comunidade não aparece */ }
   }
@@ -69,7 +119,8 @@
   async function listar(acrescentar = false) {
     const d = await api(`/api/perfis?filtro=${estado.filtro}&grupo=${estado.grupo}&q=${encodeURIComponent(estado.q)}&pagina=${estado.pagina}`).catch(() => null);
     if (!d) return;
-    const html = d.itens.map(item).join('');
+    $('#comu-lista').classList.toggle('comu-parceiros', estado.grupo === 'empresas');
+    const html = d.itens.map(estado.grupo === 'empresas' ? parceiro : item).join('');
     $('#comu-lista').innerHTML = acrescentar ? $('#comu-lista').innerHTML + html
       : html || `<li class="comu-vazio">${{ seguindo: 'Você ainda não segue ninguém.', seguidores: 'Ninguém te segue ainda.' }[estado.filtro] || 'Nenhum perfil encontrado.'}</li>`;
     $('#comu-total').textContent = `${num(d.total)} perfil${d.total === 1 ? '' : 's'}${estado.q ? ` para "#${estado.q.replace(/^#+/, '')}"` : ''}`;

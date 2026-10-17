@@ -507,7 +507,13 @@ function listar({ q = '', filtro = 'todos', pagina = 1, visitante = null, grupo 
       recalculado.set(p.dono, Date.now());
       avaliar(ctx, p);
     }
-    cards.push(cartao(p, ctx, visitante));
+    const card = cartao(p, ctx, visitante);
+    // Parceiros: dados da loja para o cartão (logo, produtos vendidos, entrega, atendimento e reputação)
+    if (papel(ctx) === 'empresa' && ctx.user) {
+      const l = db.get('SELECT id, nome, slug, logo_url, oculta FROM lojas WHERE user_id = ?', ctx.user.id);
+      if (l && !l.oculta) card.loja = { id: l.id, nome: l.nome, slug: l.slug, logo: /^https:\/\//i.test(l.logo_url || '') ? l.logo_url : null, ...require('./pedidos-loja').reputacao(l.id) };
+    }
+    cards.push(card);
   }
   // Quem eu sigo primeiro, depois os de nível mais alto.
   cards.sort((a, b) => (b.eu_sigo - a.eu_sigo) || (b._xp - a._xp) || a.nome.localeCompare(b.nome, 'pt-BR'));

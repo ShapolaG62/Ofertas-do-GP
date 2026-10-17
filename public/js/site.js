@@ -705,18 +705,32 @@
   $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join('');
 
   fetch('/api/settings/public').then(r => r.json()).then(applySettings).catch(() => {});
-  // Atalho para o perfil (com a foto), para qualquer pessoa logada: conta, cliente da ferramenta ou admin.
+  // Perfil + Minha conta + Sair num botão só (com a foto e o nome do perfil), para qualquer pessoa logada:
+  // conta do site, cliente da ferramenta ou admin. Sem login, fica o "Entrar".
+  const mostrarConta = () => { $('#account-link').hidden = true; $('#conta-btn').hidden = false; };
   fetch('/api/perfil', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(p => {
     if (!p) return;
-    $('#perfil-link').hidden = false;
+    mostrarConta();
+    if (p.nome) $('#conta-nome').textContent = p.nome.split(' ')[0].slice(0, 16);
     if (p.avatar) { $('#perfil-link-img').src = p.avatar; $('#perfil-link-img').hidden = false; }
   }).catch(() => {});
-  fetch('/api/conta/me').then(r => r.json()).then(d => {
-    if (d.user) {
-      $('#account-link').textContent = 'Minha conta';
-      $('#logout-site').hidden = false;
-    }
-  }).catch(() => {});
+  fetch('/api/conta/me').then(r => r.json()).then(d => { if (d.user) mostrarConta(); }).catch(() => {});
+  // Menu da conta (fica fora da barra do topo para não ser cortado no celular)
+  const contaPop = $('#conta-pop');
+  function fecharConta() { contaPop.hidden = true; $('#conta-btn').setAttribute('aria-expanded', 'false'); }
+  $('#conta-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    if (!contaPop.hidden) return fecharConta();
+    const r = e.currentTarget.getBoundingClientRect();
+    contaPop.style.top = `${Math.round(r.bottom + 8)}px`;
+    contaPop.style.right = `${Math.max(8, Math.round(document.documentElement.clientWidth - r.right))}px`;
+    contaPop.hidden = false;
+    $('#conta-btn').setAttribute('aria-expanded', 'true');
+  });
+  document.addEventListener('click', e => { if (!contaPop.hidden && !e.target.closest('#conta-pop')) fecharConta(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharConta(); });
+  window.addEventListener('scroll', fecharConta, { passive: true });
+  window.addEventListener('resize', fecharConta);
   $('#logout-site').addEventListener('click', async () => {
     await fetch('/api/conta/sair', { method: 'POST' });
     await fetch('/api/admin/logout', { method: 'POST' });
@@ -726,16 +740,22 @@
   fetch('/api/admin/session').then(r => r.json()).then(s => {
     isAdmin = Boolean(s.loggedIn);
     document.body.classList.toggle('is-admin', isAdmin);
-    if (isAdmin) $('#logout-site').hidden = false;
+    if (isAdmin) {
+      mostrarConta();
+      $('#conta-link').href = '/admin';
+      $('#conta-link-txt').textContent = 'Painel do administrador';
+      $('#conta-link-sub').textContent = 'Ofertas, usuários, planos e configurações';
+    }
   }).catch(() => {});
   // Ferramentas de postagem: admin ou usuário liberado pelo admin.
   fetch('/api/postagens/permissao').then(r => r.json()).then(p => {
     document.body.classList.toggle('can-post', Boolean(p.pode));
     if (p.pode) updateSelection();
     if (p.cliente) { // cliente da ferramenta: atalho para o painel dele
-      $('#account-link').textContent = 'Meu painel';
-      $('#account-link').href = '/cliente';
-      $('#logout-site').hidden = false;
+      mostrarConta();
+      $('#conta-link').href = '/cliente';
+      $('#conta-link-txt').textContent = 'Meu painel de afiliado';
+      $('#conta-link-sub').textContent = 'Links, redes e postagens';
     }
   }).catch(() => {});
 

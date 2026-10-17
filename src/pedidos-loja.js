@@ -535,6 +535,52 @@ function metricas(lojaId) {
   };
 }
 
+// ── Reputação da loja (cartão de parceiro na comunidade) ─────────────────────
+// Calculada só com o que aconteceu no site: pedidos pagos, entregues e cancelados, e o tempo que a loja leva para
+// responder os clientes no atendimento. Com menos de 3 pedidos pagos a loja aparece como "nova" (sem nota).
+const cacheReputacao = new Map();
+function reputacao(lojaId) {
+  const c = cacheReputacao.get(lojaId);
+  if (c && Date.now() - c.at < 10 * 60000) return c.dados;
+  const vendidos = db.get(`SELECT COALESCE(SUM(quantidade), 0) n FROM pedidos_loja WHERE loja_id = ? AND ${FIN_SQL}`, lojaId).n;
+  const pagos = db.get(`SELECT COUNT(*) n FROM pedidos_loja WHERE loja_id = ? AND (pago_em IS NOT NULL)`, lojaId).n;
+  // Entrega: pedidos pagos há mais de 3 dias que já foram enviados ou concluídos
+  const vencidos = db.get(`SELECT COUNT(*) n, SUM(status IN ('enviado', 'concluido')) ok FROM pedidos_loja WHERE loja_id = ? AND pago_em IS NOT NULL AND pago_em < datetime('now', '-3 days')`, lojaId);
+  const entregaPct = vencidos.n ? Math.round((vencidos.ok || 0) * 100 / vencidos.n) : null;
+  // Cancelamentos feitos pela loja (sobre todos os pedidos)
+  const totalPed = db.get('SELECT COUNT(*) n FROM pedidos_loja WHERE loja_id = ?', lojaId).n;
+  const cancLoja = db.get(`SELECT COUNT(*) n FROM pedidos_loja WHERE loja_id = ? AND status = 'cancelado' AND cancelado_por = 'loja'`, lojaId).n;
+  // Atendimento: tempo até a loja responder a primeira mensagem do cliente (mediana, últimos 90 dias)
+  const tempos = [];
+  for (const conv of db.all(`SELECT id, a, b FROM conversas WHERE tipo = 'loja' AND loja_id = ? AND created_at > datetime('now', '-90 days')`, lojaId)) {
+    const msgs = db.all('SELECT autor, created_at FROM mensagens WHERE conversa_id = ? AND autor IS NOT NULL ORDER BY id LIMIT 200', conv.id);
+    let espera = null;
+    for (const m of msgs) {
+      const t = new Date(String(m.created_at).replace(' ', 'T') + 'Z').getTime();
+      if (m.autor === conv.a && espera === null) espera = t;
+      else if (m.autor === conv.b && espera !== null) { tempos.push((t - espera) / 60000); espera = null; }
+    }
+  }
+  tempos.sort((x, y) => x - y);
+  const mediana = tempos.length ? tempos[Math.floor(tempos.length / 2)] : null;
+  const atendimento = mediana === null ? null : mediana <= 120 ? 'rapido' : mediana <= 1440 ? 'dia' : 'devagar';
+  let nota = null; // 0 a 4 (Ruim → Ótimo)
+  if (pagos >= 3) {
+    const partes = [100 - (totalPed ? cancLoja * 100 / totalPed : 0)];
+    if (entregaPct !== null) partes.push(entregaPct);
+    if (atendimento) partes.push({ rapido: 100, dia: 70, devagar: 35 }[atendimento]);
+    const media = partes.reduce((a, b) => a + b, 0) / partes.length;
+    nota = media >= 90 ? 4 : media >= 75 ? 3 : media >= 60 ? 2 : media >= 40 ? 1 : 0;
+  }
+  const dados = {
+    vendidos, nota, nova: nota === null,
+    entrega: entregaPct === null ? null : entregaPct >= 80 ? 'No prazo' : entregaPct >= 50 ? 'Às vezes atrasa' : 'Costuma atrasar',
+    atendimento: { rapido: 'Responde rápido', dia: 'Responde em até 1 dia', devagar: 'Demora a responder' }[atendimento] || null,
+  };
+  cacheReputacao.set(lojaId, { at: Date.now(), dados });
+  return dados;
+}
+
 // ── Painel do administrador ─────────────────────────────────────────────────
 function listarAdmin({ q = '', lojaId = null, dono = null, limite = 300 } = {}) {
   let sql = 'SELECT * FROM pedidos_loja WHERE 1 = 1';
@@ -557,5 +603,5 @@ function detalheAdmin(id) {
 module.exports = {
   codigo, STATUS, METODOS, FINALIZADOS, taxaPct, salvarPagamento, configPagamento, publicoLoja, pixCopiaECola, criar, acao, detalhe,
   verificarMP, linkConectarMP, retornoMP, desconectarMP, mpAppPronto, mpRedirect,
-  meusPedidos, pedidosDaLoja, registrarVisita, metricas, taxas, painelTaxas, avisarTaxaPaga, quitarTaxas, listarAdmin, detalheAdmin,
+  reputacao, meusPedidos, pedidosDaLoja, registrarVisita, metricas, taxas, painelTaxas, avisarTaxaPaga, quitarTaxas, listarAdmin, detalheAdmin,
 };

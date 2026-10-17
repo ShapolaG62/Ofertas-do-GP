@@ -102,6 +102,7 @@ const DEFAULTS = {
   //  • Mercado Pago: Pix com QR code e cartão pelo checkout, confirmação automática.
   //  • Pix pela chave, transferência bancária e link de pagamento: o admin confirma cada pedido.
   mp_access_token: '',
+  mp_public_key: '',            // Public Key do Mercado Pago (formulário de cartão dentro do site; não é secreta)
   pag_mp_pix: '1',
   pag_mp_cartao: '1',
   pag_mp_parcelas: '1',         // parcelas máximas no cartão

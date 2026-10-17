@@ -496,6 +496,7 @@
               <h4>Mercado Pago <span class="hint" style="margin:0;font-weight:500">· confirmação automática</span></h4>
               <p class="hint" style="margin-top:4px">Em <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener">mercadopago.com.br/developers</a> → Suas integrações → crie uma aplicação → <b>Credenciais de produção</b> → copie o <b>Access Token</b>.</p>
               <label class="field">Access Token <input type="password" name="mp_access_token" autocomplete="off" data-secret></label>
+              <label class="field" style="margin-top:8px">Public Key <small style="font-weight:400">(APP_USR-…; mesma tela das credenciais — usada no formulário de cartão dos pedidos das lojas)</small> <input type="text" name="mp_public_key" autocomplete="off" placeholder="APP_USR-..."></label>
               <label class="field" style="margin-top:8px">Pix com QR code <select name="pag_mp_pix"><option value="1">Ativo</option><option value="0">Desligado</option></select></label>
               <label class="field" style="margin-top:8px">Cartão de crédito / débito <select name="pag_mp_cartao"><option value="1">Ativo</option><option value="0">Desligado</option></select></label>
               <label class="field" style="margin-top:8px">Parcelas no cartão (máx.) <select name="pag_mp_parcelas">

@@ -1665,3 +1665,23 @@ body.pf-body {
 .sino-item span { color: var(--ink-2); font-size: 12.5px; line-height: 1.4; }
 .sino-item small { color: var(--ink-3); font-size: 11.5px; }
 .sino-vazio { padding: 18px; text-align: center; color: var(--ink-3); margin: 0; font-size: 13.5px; }
+
+/* Pedido: Pix com QR code e cartão do Mercado Pago na própria janela */
+.prod-cartao[hidden] { display: none; }
+.prod-cartao { min-height: 60px; }
+.prod-pix { text-align: center; }
+.prod-pix .field { text-align: left; }
+.prod-pix textarea { font-family: ui-monospace, monospace; font-size: 12px; resize: none; word-break: break-all; }
+.prod-pix-qr { width: 220px; height: 220px; margin: 0 auto; padding: 10px; background: #fff; border-radius: 14px; image-rendering: pixelated; }
+.prod-espera { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0; color: var(--ink-2); font-size: 14px; }
+.prod-spin { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid var(--line-strong); border-top-color: var(--brand); animation: prod-gira .9s linear infinite; }
+@keyframes prod-gira { to { transform: rotate(360deg); } }
+.prod-ok { text-align: center; }
+.prod-ok-ico { margin: 0 auto; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); }
+.prod-ok-ico svg { width: 36px; height: 36px; }
+.pedido-pix { grid-column: 1 / -1; }
+.pedido-pix summary { list-style: none; display: inline-flex; cursor: pointer; }
+.pedido-pix summary::-webkit-details-marker { display: none; }
+.pedido-pix[open] { display: grid; gap: 8px; justify-items: start; }
+.pedido-pix input { width: 100%; font-family: ui-monospace, monospace; font-size: 12px; }
+.pedido-pix .prod-pix-qr { margin: 0; }

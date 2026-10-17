@@ -139,7 +139,7 @@ function iniciarPessoal(de, slugPerfil, msg) {
 }
 
 // Atendimento: conversa do cliente com a loja (uma por cliente e loja; o produto fica como contexto)
-function conversaLoja(de, lojaId, ofertaId = null) {
+function conversaLoja(de, lojaId, ofertaId = null, { semEmail = false } = {}) {
   if (!de) throw fail('Entre na sua conta para falar com a loja.', 401);
   const loja = db.get('SELECT id, user_id, nome, oculta FROM lojas WHERE id = ?', Number(lojaId));
   if (!loja || loja.oculta) throw fail('Loja não encontrada.', 404);
@@ -151,7 +151,7 @@ function conversaLoja(de, lojaId, ofertaId = null) {
     const id = Number(db.run(`INSERT INTO conversas (tipo, a, b, loja_id, oferta_id, status) VALUES ('loja', ?, ?, ?, ?, 'aceita')`,
       de, dona, loja.id, ofertaId ? Number(ofertaId) : null).lastInsertRowid);
     c = db.get('SELECT * FROM conversas WHERE id = ?', id);
-    avisarPorEmail(dona, `Novo atendimento na sua loja ${loja.nome} — Ofertou!`, `${pessoa(de).nome} começou uma conversa com a sua loja ${loja.nome}.`);
+    if (!semEmail) avisarPorEmail(dona, `Novo atendimento na sua loja ${loja.nome} — Ofertou!`, `${pessoa(de).nome} começou uma conversa com a sua loja ${loja.nome}.`);
   }
   if (ofertaId) {
     const o = db.get('SELECT produto, loja_id FROM offers WHERE id = ?', Number(ofertaId));

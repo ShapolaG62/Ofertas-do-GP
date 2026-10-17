@@ -497,6 +497,10 @@
         <span class="muted">${p.quantidade}x · ${brlFmt(p.total)} · ${esc(p.metodo_nome)} · ${fmtDate(p.created_at)}</span>
         <span class="muted">${p.eu === 'loja' ? `Cliente: ${esc(p.comprador.nome)}` : `Loja: ${esc(p.loja.nome)}`}${p.observacao ? ` · Obs.: ${esc(p.observacao)}` : ''}</span></div>
       <span class="status-pill st-${esc(p.status)}">${esc(p.status_nome)}</span>
+      ${p.pagamento && p.pagamento.pix ? `<details class="pedido-pix"><summary class="btn btn-sm btn-primary">Pagar com Pix</summary>
+        ${p.pagamento.qr ? `<img class="prod-pix-qr" src="data:image/png;base64,${esc(p.pagamento.qr)}" alt="QR code do Pix">` : ''}
+        <input readonly value="${esc(p.pagamento.pix)}" aria-label="Pix copia e cola" onclick="this.select()">
+        <small class="muted">Leia o QR code ou copie o código no app do banco. A confirmação é automática.</small></details>` : ''}
       <div class="row-actions">
         ${p.acoes.map(a => `<button class="btn btn-sm${a === 'cancelar' ? ' danger-txt' : a === 'confirmar_pagamento' || a === 'recebido' ? ' btn-primary' : ''}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO_ACAO[a]}</button>`).join('')}
         ${p.conversa_id ? `<button class="btn btn-sm" type="button" data-abrir-chat="${p.conversa_id}" data-pedido="${p.id}">Conversa</button>` : ''}

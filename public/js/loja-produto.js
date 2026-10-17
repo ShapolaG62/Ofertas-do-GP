@@ -119,6 +119,7 @@
   // Formulário do pedido
   function pedir(o, loja) {
     janela();
+    clearTimeout(timerPedido);
     if (!dlg.open) dlg.showModal();
     const ped = loja.pedidos || { metodos: [] };
     corpo().innerHTML = `
@@ -135,6 +136,7 @@
           <textarea name="observacao" maxlength="600" rows="3"></textarea></label>
         ${ped.instrucoes ? `<p class="muted prod-nota">${esc(ped.instrucoes)}</p>` : ''}
         <dl class="prod-conta" id="prod-conta"></dl>
+        <div class="prod-cartao" id="prod-cartao" hidden></div>
         <p class="muted prod-nota" style="margin:0">Frete e prazo: combine com a loja pelo chat, se houver.</p>
         <p class="aviso-resp aviso-resp-p"><svg class="aviso-resp-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg><span><b>Aviso:</b> o Ofertou! não vende nem entrega este produto e não se responsabiliza pela venda, pagamento, entrega, troca ou garantia: tudo isso é com a loja parceira. O site só registra o pedido e a conversa.</span></p>
         <div class="form-msg err" id="prod-msg" hidden></div>
@@ -144,29 +146,156 @@
     const f = corpo().querySelector('#prod-pedido');
     // Produtos + taxa de uso do site (somada na finalização) = total
     const pct = Number(ped.taxa_pct) || 0;
-    const conta = () => {
+    const valores = () => {
       const q = Math.min(Math.max(parseInt(f.quantidade.value, 10) || 1, 1), 99);
       const sub = Math.round(o.preco_atual * q * 100) / 100;
-      const taxa = Math.round(sub * pct) / 100;
+      return { q, sub, taxa: Math.round(sub * pct) / 100 };
+    };
+    const total = () => { const v = valores(); return Math.round((v.sub + v.taxa) * 100) / 100; };
+    const conta = () => {
+      const { q, sub, taxa } = valores();
       corpo().querySelector('#prod-conta').innerHTML = `<dt>Produtos (${q}x)</dt><dd>R$ ${brl(sub)}</dd>
         ${taxa ? `<dt>Taxa de uso do site (${String(pct).replace('.', ',')}%)</dt><dd>R$ ${brl(taxa)}</dd>` : ''}
         <dt class="prod-conta-total">Total</dt><dd class="prod-conta-total">R$ ${brl(sub + taxa)}</dd>`;
     };
-    f.quantidade.addEventListener('input', () => { f.quantidade.value = f.quantidade.value.replace(/\D/g, '').slice(0, 2); conta(); });
+    // Cartão: formulário do Mercado Pago dentro da janela (os dados do cartão vão direto ao Mercado Pago)
+    const areaCartao = corpo().querySelector('#prod-cartao');
+    const btnConfirmar = f.querySelector('[type=submit]');
+    const msgErro = t => { const m = corpo().querySelector('#prod-msg'); if (!m) return; m.textContent = t || ''; m.hidden = !t; };
+    let brick = null, recriar = null;
+    const metodoAtual = () => f.querySelector('[name=metodo]:checked')?.value || '';
+    async function montarCartao() {
+      if (brick) { try { await brick.unmount(); } catch { /* já removido */ } brick = null; }
+      if (metodoAtual() !== 'cartao' || !dlg.open || !areaCartao.isConnected) return;
+      areaCartao.innerHTML = '<div id="prod-brick"></div><p class="muted prod-nota" data-carregando>Carregando o formulário do cartão…</p>';
+      try {
+        await sdkMP();
+        // O formulário do Mercado Pago às vezes falha sem avisar (chave inválida, rede): sem resposta em 15 s, mostra o aviso
+        const vigia = setTimeout(() => {
+          if (areaCartao.querySelector('[data-carregando]')) areaCartao.innerHTML = '<p class="form-msg err">O pagamento com cartão está indisponível agora. Pague com Pix ou tente mais tarde.</p>';
+        }, 15000);
+        const mp = new window.MercadoPago(ped.mp_public_key, { locale: 'pt-BR' });
+        const fundo = getComputedStyle(document.body).backgroundColor.match(/\d+/g) || [255, 255, 255];
+        const escuro = (Number(fundo[0]) + Number(fundo[1]) + Number(fundo[2])) / 3 < 128;
+        brick = await mp.bricks().create('cardPayment', 'prod-brick', {
+          initialization: { amount: total() },
+          customization: { paymentMethods: { maxInstallments: Number(ped.parcelas) || 1 }, visual: { style: { theme: escuro ? 'dark' : 'default' } } },
+          callbacks: {
+            onReady: () => { clearTimeout(vigia); areaCartao.querySelector('[data-carregando]')?.remove(); },
+            onError: err => {
+              console.warn('[cartão]', err);
+              if (err?.type === 'critical' || !areaCartao.querySelector('#prod-brick')?.children.length) {
+                areaCartao.innerHTML = '<p class="form-msg err">O pagamento com cartão está indisponível agora. Pague com Pix ou tente mais tarde.</p>';
+              }
+            },
+            onSubmit: dados => new Promise((resolve, reject) => {
+              msgErro('');
+              api('/api/pedidos', { oferta_id: o.id, quantidade: f.quantidade.value, metodo: 'cartao', observacao: f.observacao.value, cartao: dados })
+                .then(p => { resolve(); acompanhar(p); })
+                .catch(err => { msgErro(err.message); reject(); });
+            }),
+          },
+        });
+      } catch {
+        areaCartao.innerHTML = '<p class="form-msg err">Não foi possível carregar o formulário do cartão. Recarregue a página ou pague com Pix.</p>';
+      }
+    }
+    const trocarMetodo = () => {
+      const cartao = metodoAtual() === 'cartao';
+      areaCartao.hidden = !cartao;
+      btnConfirmar.hidden = cartao;
+      msgErro('');
+      montarCartao();
+    };
+    f.querySelectorAll('[name=metodo]').forEach(r => r.addEventListener('change', trocarMetodo));
+    f.quantidade.addEventListener('input', () => {
+      f.quantidade.value = f.quantidade.value.replace(/\D/g, '').slice(0, 2); conta();
+      if (metodoAtual() === 'cartao') { clearTimeout(recriar); recriar = setTimeout(montarCartao, 700); } // valor novo no formulário do cartão
+    });
     conta();
+    trocarMetodo();
+    dlg.addEventListener('close', () => { clearTimeout(timerPedido); if (brick) { try { brick.unmount(); } catch { /* ok */ } brick = null; } }, { once: true });
     corpo().querySelector('[data-voltar]').onclick = () => abrir(o, loja);
+    // Pix: gera o QR code aqui mesmo
     f.addEventListener('submit', async e => {
       e.preventDefault();
-      const btn = f.querySelector('[type=submit]');
-      btn.disabled = true; btn.textContent = 'Enviando…';
+      if (metodoAtual() === 'cartao') return;
+      btnConfirmar.disabled = true; btnConfirmar.textContent = 'Gerando o Pix…';
       try {
-        const p = await api('/api/pedidos', { oferta_id: o.id, quantidade: f.quantidade.value, metodo: f.metodo ? f.metodo.value : '', observacao: f.observacao.value });
-        if (window.OfertouChat) { dlg.close(); window.OfertouChat.abrir(p.conversa_id, p.id); } else location.href = `/mensagens?c=${p.conversa_id}&pedido=${p.id}`;
+        const p = await api('/api/pedidos', { oferta_id: o.id, quantidade: f.quantidade.value, metodo: metodoAtual(), observacao: f.observacao.value });
+        acompanhar(p);
       } catch (err) {
-        const m = corpo().querySelector('#prod-msg'); m.textContent = err.message; m.hidden = false;
-        btn.disabled = false; btn.textContent = 'Confirmar pedido';
+        msgErro(err.message);
+        btnConfirmar.disabled = false; btnConfirmar.textContent = 'Confirmar pedido';
       }
     });
+  }
+
+  // Carrega o SDK do Mercado Pago só quando o cliente escolhe cartão
+  let sdkPromessa = null;
+  function sdkMP() {
+    if (window.MercadoPago) return Promise.resolve();
+    if (!sdkPromessa) sdkPromessa = new Promise((ok, erro) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://sdk.mercadopago.com/js/v2';
+      sc.onload = ok; sc.onerror = () => { sdkPromessa = null; erro(new Error('SDK')); };
+      document.head.appendChild(sc);
+    });
+    return sdkPromessa;
+  }
+
+  // Depois de criado: QR do Pix (ou cartão em análise) até o pagamento ser confirmado; então a conversa com a loja
+  let timerPedido = null;
+  function acompanhar(p) {
+    clearTimeout(timerPedido);
+    if (!dlg.open) return;
+    const cod = esc(p.codigo || `PD-${p.id}`);
+    const fechar = () => { const b = corpo().querySelector('[data-fechar]'); if (b) b.onclick = () => dlg.close(); };
+    if (p.status === 'pago' || p.pago_em) {
+      corpo().innerHTML = `<div class="prod-pedido prod-ok">
+        <div class="prod-ok-ico"><svg class="ico-linha" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/></svg></div>
+        <h2>Pagamento confirmado!</h2>
+        <p>Pedido <b>${cod}</b> — R$ ${brl(p.total)}. A loja ${esc(p.loja?.nome || '')} já foi avisada e o pedido está na conversa com ela: combine a entrega por lá.</p>
+        ${p.conversa_id ? '<button class="btn btn-primary btn-block" type="button" data-conversa>Abrir conversa com a loja</button>' : ''}
+        <button class="btn btn-block" type="button" data-fechar>Fechar</button></div>`;
+      const bc = corpo().querySelector('[data-conversa]');
+      if (bc) bc.onclick = () => { if (window.OfertouChat) { dlg.close(); window.OfertouChat.abrir(p.conversa_id, p.id); } else location.href = `/mensagens?c=${p.conversa_id}&pedido=${p.id}`; };
+      fechar();
+      return;
+    }
+    if (p.status === 'cancelado') {
+      corpo().innerHTML = `<div class="prod-pedido"><h2>Pedido ${cod} cancelado</h2>
+        <p class="muted">${p.metodo === 'pix' ? 'O Pix venceu sem pagamento.' : 'O pagamento não foi aprovado.'} Nada foi cobrado. Você pode fazer um novo pedido.</p>
+        <button class="btn btn-block" type="button" data-fechar>Fechar</button></div>`;
+      fechar();
+      return;
+    }
+    const pix = p.pagamento?.pix;
+    if (!corpo().querySelector(`[data-acompanha="${p.id}"]`)) {
+      const ate = p.pagamento?.expira ? new Date(String(p.pagamento.expira).replace(' ', 'T') + 'Z').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+      corpo().innerHTML = pix ? `<div class="prod-pedido prod-pix" data-acompanha="${p.id}">
+          <h2>Pague com Pix</h2>
+          <p class="muted" style="margin:0">Pedido <b>${cod}</b> · total <b>R$ ${brl(p.total)}</b></p>
+          ${p.pagamento.qr ? `<img class="prod-pix-qr" src="data:image/png;base64,${esc(p.pagamento.qr)}" alt="QR code do Pix">` : ''}
+          <label class="field"><span>Pix copia e cola</span><textarea readonly rows="3">${esc(pix)}</textarea></label>
+          <button class="btn btn-primary btn-block" type="button" data-copiar>Copiar código Pix</button>
+          <p class="prod-espera"><span class="prod-spin" aria-hidden="true"></span> Aguardando o pagamento… a confirmação aparece aqui sozinha.</p>
+          ${ate ? `<p class="muted prod-nota" style="margin:0">Válido até ${ate}. Você também encontra este Pix em Minha conta → Meus pedidos.</p>` : ''}
+        </div>`
+        : `<div class="prod-pedido" data-acompanha="${p.id}"><h2>Pagamento em análise</h2>
+          <p class="prod-espera"><span class="prod-spin" aria-hidden="true"></span> O Mercado Pago está analisando o pagamento do pedido <b>${cod}</b>. Pode fechar esta janela: avisamos você quando for aprovado.</p>
+          <button class="btn btn-block" type="button" data-fechar>Fechar</button></div>`;
+      const cp = corpo().querySelector('[data-copiar]');
+      if (cp) cp.onclick = async () => {
+        const ta = corpo().querySelector('.prod-pix textarea');
+        try { await navigator.clipboard.writeText(pix); } catch { ta.select(); document.execCommand('copy'); }
+        cp.textContent = 'Código copiado!'; setTimeout(() => { cp.textContent = 'Copiar código Pix'; }, 2000);
+      };
+      fechar();
+    }
+    timerPedido = setTimeout(async () => {
+      try { acompanhar(await api(`/api/pedidos/${p.id}`)); } catch { acompanhar(p); }
+    }, 5000);
   }
 
   window.OfertouLoja = { abrir, pedir, conversar, visita };

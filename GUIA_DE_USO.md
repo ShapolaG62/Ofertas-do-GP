@@ -331,7 +331,15 @@ Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram 
 
 *(Substitui o que as seções 16 e 17 diziam sobre formas de pagamento das lojas, Mercado Pago da empresa e taxa como débito.)*
 
-**Como o cliente paga:** escolhe **Pix** ou **cartão** (o que a loja aceitar) e paga no **seu Mercado Pago**, o Access Token de Painel → Planos → Formas de recebimento (as parcelas máximas do cartão também vêm de lá). O total já inclui a **taxa de uso do site** (padrão 1%), que fica com você. Pix: QR code e copia e cola aparecem no pedido (vale 60 minutos; vencido, o pedido é cancelado). Cartão: abre o checkout do Mercado Pago. Sem o Access Token configurado, o botão "Fazer pedido" não aparece.
+**Como o cliente paga:** escolhe **Pix** ou **cartão** (o que a loja aceitar) e paga no **seu Mercado Pago**, o Access Token de Painel → Planos → Formas de recebimento (as parcelas máximas do cartão também vêm de lá). O total já inclui a **taxa de uso do site** (padrão 1%), que fica com você. Tudo acontece na própria janela do pedido:
+- **Pix:** ao clicar em "Confirmar pedido" aparecem o QR code e o copia e cola. A janela confere sozinha e mostra "Pagamento confirmado!". O Pix vale 60 minutos; vencido, o pedido é cancelado. O cliente também encontra o Pix em Minha conta → Meus pedidos.
+- **Cartão:** aparece o formulário do Mercado Pago, onde o cliente digita o cartão e escolhe as **parcelas**. Os dados do cartão vão direto para o Mercado Pago, e o site só recebe um código. Aprovado na hora, já confirma; recusado, mostra o motivo e nada é cobrado.
+
+Configuração:
+- Para o cartão aparecer, cole também a **Public Key** (APP_USR-…, na mesma tela de credenciais do Mercado Pago) em Painel → Planos → Formas de recebimento.
+- Sem o Access Token, o botão "Fazer pedido" não aparece.
+
+**O pedido só vai para a loja depois de pago:** antes do pagamento a loja não vê o pedido e nada aparece na conversa. Com o pagamento confirmado, o pedido entra na conversa entre a loja e o cliente, com produto, total, forma de pagamento/parcelas e observações.
 
 **Confirmação automática:** o site consulta o Mercado Pago na tela do pedido, pelo aviso do Mercado Pago (com o site em https) e a cada 2 minutos no servidor. Pago: a empresa recebe aviso no **sino 🔔** (topo das páginas), na **conversa** e no **e-mail**; o cliente também é avisado. Não existe mais o botão "Já paguei".
 

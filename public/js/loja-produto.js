@@ -77,7 +77,6 @@
       a.garantia && ['Garantia', a.garantia], a.frete && ['Entrega', `${a.frete}${a.frete_valor != null ? `: R$ ${brl(a.frete_valor)}` : ''}${a.prazo_entrega ? ` — ${a.prazo_entrega}` : ''}`],
       a.estoque != null && ['Estoque', `${a.estoque} unidade(s)`], a.parcelamento && ['Parcelamento', a.parcelamento],
     ].filter(Boolean);
-    const linkExterno = o.fonte !== 'empresa' ? `/oferta/${slugOf(o)}` : null;
     corpo().innerHTML = `
       <div class="prod-grid">
         <div class="prod-galeria">
@@ -97,7 +96,6 @@
           <div class="prod-acoes">
             ${ped.aceita_pedidos ? '<button class="btn btn-primary btn-block" type="button" data-prod="pedir">Fazer pedido</button>' : ''}
             <button class="btn btn-block" type="button" data-prod="conversar">💬 Conversar com a loja</button>
-            ${linkExterno ? `<a class="btn btn-block" href="${linkExterno}" target="_blank" rel="noopener sponsored" data-prod="externo">Ver no site da loja ↗</a>` : ''}
             ${o.fonte === 'empresa' ? `<a class="link-btn" href="/anuncio/${o.id}">Abrir a página completa do anúncio</a>` : ''}
           </div>
           ${ped.aceita_pedidos && ped.metodos.length ? `<p class="muted prod-nota">Pagamento direto à loja: ${ped.metodos.map(m => esc(m.nome)).join(', ')}. O pedido e a conversa ficam registrados no site.</p>` : ''}
@@ -115,7 +113,6 @@
       if (!b) return;
       if (b.dataset.prod === 'conversar') conversar(loja.id, o.id, b);
       if (b.dataset.prod === 'pedir') pedir(a, loja);
-      if (b.dataset.prod === 'externo') visita(loja.id, 'link', o.id);
     };
   }
 

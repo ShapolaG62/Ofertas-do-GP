@@ -47,7 +47,12 @@
     if (botao) { botao.disabled = true; botao.textContent = 'Abrindo conversa…'; }
     try {
       const r = await api('/api/chat/iniciar', { loja_id: lojaId, oferta_id: ofertaId || null });
-      location.href = `/mensagens?c=${r.id}`;
+      // Abre a conversa no painel flutuante de mensagens (sem sair da página); sem ele, na tela de mensagens
+      if (window.OfertouChat) {
+        if (dlg && dlg.open) dlg.close();
+        if (botao) { botao.disabled = false; botao.textContent = '💬 Conversar com a loja'; }
+        window.OfertouChat.abrir(r.id);
+      } else location.href = `/mensagens?c=${r.id}`;
     } catch (err) {
       if (botao) { botao.disabled = false; botao.textContent = 'Conversar com a loja'; }
       alert(err.message);

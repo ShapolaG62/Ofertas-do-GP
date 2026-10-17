@@ -217,7 +217,8 @@
     const mudouStatus = d.conversa.status !== ATUAL.status;
     ATUAL = d.conversa;
     if (d.mensagens.length || forcar) {
-      MSGS = MSGS.concat(d.mensagens);
+      const vistas = new Set(MSGS.map(m => m.id)); // (atualizações simultâneas não repetem mensagens)
+      MSGS = MSGS.concat(d.mensagens.filter(m => !vistas.has(m.id)));
       await renderMensagens(d.mensagens.some(m => m.minha));
     }
     if (mudouStatus) renderCabeca();

@@ -143,7 +143,8 @@
       b.disabled = true;
       try {
         const r = await api('/api/chat/iniciar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perfil: P.slug }) });
-        location.href = `/mensagens?c=${r.id}`;
+        b.disabled = false;
+        if (window.OfertouChat) window.OfertouChat.abrir(r.id); else location.href = `/mensagens?c=${r.id}`;
       } catch (err) { toast(err.message); b.disabled = false; }
     });
     if (P.loja) renderCatalogo();

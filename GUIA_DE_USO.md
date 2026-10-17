@@ -294,7 +294,7 @@ Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram 
 
 ## 16. Mensagens, catálogo das empresas e pedidos
 
-**Mensagens (/mensagens):** o ícone 💬 no topo mostra quantas mensagens não lidas e pedidos de mensagem há.
+**Mensagens:** o botão **💬 Mensagens** fica no canto inferior direito de todas as páginas, com o número de mensagens não lidas e pedidos de mensagem. Ele abre um painel por cima da página com as conversas: dá para ler, responder e aceitar/recusar/bloquear pedidos sem sair de onde está. O ícone ⤢ do painel abre a tela cheia (**/mensagens**), que mostra também os cartões dos pedidos com Pix e ações.
 - **Conversa pessoal:** no perfil de qualquer pessoa ou empresa, toque em **💬 Mensagem**. A primeira mensagem chega como **pedido de mensagem** (aviso no site e, com o e-mail configurado, por e-mail). Quem recebe escolhe **Aceitar**, **Recusar** ou **Bloquear**; responder também aceita. Até aceitar, quem pediu manda no máximo 3 mensagens; se for recusado, só pode pedir de novo depois de 30 dias.
 - **Atendimento da loja:** pela página da loja, pelo perfil da empresa ou pela prévia de um produto (**Conversar com a loja**). Entra direto, sem aceite, e a empresa pode bloquear.
 - Toda conversa é um ticket (**CV-000123**) com o histórico completo.

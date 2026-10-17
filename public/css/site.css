@@ -1323,3 +1323,72 @@ body.pf-body {
 .comu-grupos button { border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 8px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
 .comu-grupos button[aria-selected="true"] { background: var(--brand); color: #fff; }
 .comu-dialog .comu-grupos { margin: 0 0 4px; }
+
+/* ── Mensagens flutuante (canto inferior direito) ──────────────────── */
+.chatf { position: fixed; right: 20px; bottom: 20px; z-index: 95; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; pointer-events: none; }
+.chatf[hidden] { display: none; }
+.chatf > * { pointer-events: auto; }
+.chatf-botao { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+.chatf-botao:hover { border-color: var(--brand); }
+.chatf.is-aberto .chatf-botao { border-color: var(--brand); color: var(--brand); }
+.chatf-n { position: absolute; top: -6px; right: -4px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+.chatf-n[hidden] { display: none; }
+.chatf-painel { width: min(380px, calc(100vw - 24px)); height: min(560px, calc(100vh - 110px)); height: min(560px, calc(100dvh - 110px)); display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: 18px; box-shadow: 0 20px 50px rgba(0, 0, 0, .45); overflow: hidden; }
+.chatf-painel[hidden] { display: none; }
+.chatf-topo { display: flex; align-items: center; gap: 6px; padding: 10px 10px 10px 14px; border-bottom: 1px solid var(--line); }
+.chatf-titulo { flex: 1; min-width: 0; }
+.chatf-titulo > b { font-size: 16px; }
+.chatf-titulo a { display: flex; gap: 8px; align-items: center; color: inherit; text-decoration: none; min-width: 0; }
+.chatf-titulo span { display: grid; min-width: 0; }
+.chatf-titulo small { color: var(--ink-3); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chatf-titulo span b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+.chatf-icone { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: 15px; cursor: pointer; text-decoration: none; }
+.chatf-icone[hidden] { display: none; }
+.chatf-corpo { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.chatf-vazio { padding: 22px 16px; text-align: center; color: var(--ink-3); font-size: 14px; margin: 0; }
+.chatf-item { display: flex; gap: 10px; align-items: center; width: 100%; padding: 11px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.chatf-item:hover { background: var(--surface-2); }
+.chatf-item-txt { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.chatf-item-txt b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chatf-item-txt small { color: var(--ink-3); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chatf-item.tem-novas .chatf-item-txt small { color: var(--ink); font-weight: 600; }
+.chatf-item-txt em { color: var(--brand); font-style: normal; font-weight: 700; }
+.chatf-item-lado { display: grid; justify-items: end; gap: 3px; }
+.chatf-item-lado small { color: var(--ink-3); font-size: 11px; }
+.chatf-n-item { background: var(--deal); color: #fff; border-radius: 999px; min-width: 18px; height: 18px; display: grid; place-items: center; font-size: 10.5px; padding: 0 5px; }
+.chatf-av { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex: none; background: var(--surface-2); }
+.chatf-av-letra { display: grid; place-items: center; font-weight: 800; color: var(--brand); border: 1px solid var(--line); }
+.chatf.is-aberto .chatf-corpo:has(.chatf-bolha, .chatf-sis) { padding: 12px; gap: 6px; }
+.chatf-bolha { max-width: 82%; padding: 7px 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.chatf-bolha p { margin: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.chatf-bolha small { display: block; text-align: right; font-size: 10.5px; color: var(--ink-3); margin-top: 2px; }
+.chatf-bolha.minha { align-self: flex-end; background: var(--brand-soft); border-color: transparent; border-bottom-right-radius: 4px; }
+.chatf-bolha.dele { align-self: flex-start; border-bottom-left-radius: 4px; }
+.chatf-sis { align-self: center; text-align: center; font-size: 12px; color: var(--ink-3); background: var(--surface-2); padding: 4px 10px; border-radius: 12px; max-width: 92%; }
+.chatf-sis a { color: var(--brand); font-weight: 700; }
+.chatf-banner { padding: 10px 14px; border-top: 1px solid var(--line); background: var(--brand-soft); font-size: 13px; }
+.chatf-banner[hidden] { display: none; }
+.chatf-banner p { margin: 0 0 6px; }
+.chatf-banner p:last-child { margin: 0; }
+.chatf-acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+.chatf-escrever { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); align-items: flex-end; }
+.chatf-escrever[hidden] { display: none; }
+.chatf-escrever textarea { flex: 1; resize: none; min-height: 40px; max-height: 110px; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 14px; outline: none; }
+.chatf-escrever textarea:focus { border-color: var(--brand); }
+.chatf-escrever .btn { height: 40px; }
+@media (max-width: 720px) {
+  .chatf { right: 12px; bottom: 12px; }
+  .chatf-botao { width: 54px; height: 54px; padding: 0; justify-content: center; font-size: 20px; }
+  .chatf-botao-txt { display: none; }
+  .chatf-painel { width: calc(100vw - 24px); height: calc(100dvh - 96px); }
+}
+
+/* Celular: os botões do topo rolam para o lado dentro da barra (a página não fica mais larga que a tela) */
+@media (max-width: 720px) {
+  .header-row { min-width: 0; }
+  .header-actions { min-width: 0; overflow-x: auto; scrollbar-width: none; flex-shrink: 1; }
+  .header-actions::-webkit-scrollbar { display: none; }
+  .header-actions > * { flex-shrink: 0; }
+}

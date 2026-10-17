@@ -13,7 +13,8 @@ const RC = 'https://api.revenuecat.com/v1';
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 const nowSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 const sqlDe = d => new Date(d).toISOString().replace('T', ' ').slice(0, 19);
-const maior = (a, b) => (!a ? b : !b ? a : a > b ? a : b);
+// (uma validade "sem vencimento" vinda do plano grátis não conta: o plano pago passa a valer até a data da loja)
+const maior = (a, b) => { if (a === planos.SEM_VENCIMENTO) a = null; if (b === planos.SEM_VENCIMENTO) b = null; return !a ? b : !b ? a : a > b ? a : b; };
 
 const appUserId = userId => `ofertou-u-${userId}`;
 const userIdDe = appUser => { const m = /^ofertou-u-(\d+)$/.exec(String(appUser || '')); return m ? Number(m[1]) : null; };

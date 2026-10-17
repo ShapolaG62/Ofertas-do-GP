@@ -6,7 +6,8 @@
 // Com Consumidor e Empresa no mesmo plano, quem assina escolhe o tipo da conta. Com Ferramenta junto de um deles,
 // a conta do site ganha também o painel de afiliado (mesmo login).
 // E funções extras do perfil (vitrine, capa, links, cores, endereço próprio, moldura e selo).
-// Preço 0 = plano grátis (liberado na hora, sem pagamento). Dias 0 = sem vencimento.
+// Preço 0 = plano grátis: liberado na hora, sem pagamento e permanente até a pessoa assinar um plano pago
+// (quando o pago vence, a conta volta para o grátis). Dias 0 = sem vencimento.
 const crypto = require('crypto');
 const db = require('./db');
 const settings = require('./settings');
@@ -145,7 +146,7 @@ function validar(b, atual = null) {
   const gratis = sim(b.gratis);
   const preco = gratis ? 0 : Math.round(numero(b.preco) * 100) / 100;
   if (!gratis && (!(preco > 0) || preco > 100000)) throw fail('Informe o preço (ex.: 29,90) ou marque "Plano grátis".');
-  const dias = sim(b.sem_vencimento) ? 0 : entre(b.dias, [1, 3650], NaN);
+  const dias = gratis || sim(b.sem_vencimento) ? 0 : entre(b.dias, [1, 3650], NaN); // grátis é sempre permanente
   if (!Number.isFinite(dias)) throw fail('Informe por quantos dias o plano vale (ou marque "Sem vencimento").');
   const tipo = principal(tipos);
   const p = b.perfil || {};
@@ -236,10 +237,19 @@ function maxProdutos(userId) {
 }
 
 // Nova validade somando os dias do plano ao prazo que ainda resta (0 dias = sem vencimento)
+// (saindo de um plano sem vencimento — ex.: o grátis — para um com prazo, os dias contam a partir de agora)
 function somaDias(ate, dias) {
-  if (!(dias > 0) || ate === SEM_VENCIMENTO) return SEM_VENCIMENTO;
-  const base = Math.max(Date.now(), new Date(String(ate || '').replace(' ', 'T') + 'Z').getTime() || 0);
+  if (!(dias > 0)) return SEM_VENCIMENTO;
+  const base = Math.max(Date.now(), ate === SEM_VENCIMENTO ? 0 : new Date(String(ate || '').replace(' ', 'T') + 'Z').getTime() || 0);
   return new Date(base + dias * 86400000).toISOString().replace('T', ' ').slice(0, 19);
+}
+
+// Plano grátis para onde volta uma conta do site cujo plano pago venceu
+// (o que aceita o tipo da conta; afiliado: de preferência um com a ferramenta, senão um de consumidor)
+function planoGratisPara(tipo) {
+  const gratis = listar().filter(p => p.gratis);
+  if (tipo === 'afiliado') return gratis.find(p => p.ferramenta) || gratis.find(p => p.perfis.includes('consumidor')) || null;
+  return gratis.find(p => p.perfis.includes(tipo)) || null;
 }
 
 // Primeiro plano de ferramenta à venda (usado quando o admin libera um afiliado gratuito)
@@ -249,4 +259,4 @@ const planoFerramenta = () => {
   return lista.find(p => p.conta === 'cliente') || lista[0] || null;
 };
 
-module.exports = { SEM_VENCIMENTO, somaDias, TIPOS, FUNCOES_TIPO, PERFIL_PADRAO, PERFIL_LIMITES, plano, listar, todos, assinantes, criar, editar, excluir, sugerirBeneficios, maxProdutos, planoFerramenta };
+module.exports = { SEM_VENCIMENTO, somaDias, planoGratisPara, TIPOS, FUNCOES_TIPO, PERFIL_PADRAO, PERFIL_LIMITES, plano, listar, todos, assinantes, criar, editar, excluir, sugerirBeneficios, maxProdutos, planoFerramenta };

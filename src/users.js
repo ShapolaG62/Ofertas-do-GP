@@ -151,7 +151,26 @@ function login(email, senha) {
 // ── Plano pago: o login dura o prazo contratado ──────────────────────────────
 const msSql = s => new Date(String(s).replace(' ', 'T') + 'Z').getTime();
 const sqlMs = ms => new Date(ms).toISOString().replace('T', ' ').slice(0, 19);
-const planoVencido = u => Boolean(u && u.assinatura_ate && u.assinatura_ate < nowSql());
+const vencidoNoBanco = u => Boolean(u && u.assinatura_ate && u.assinatura_ate < nowSql());
+// Plano pago vencido: se existe um plano grátis para este tipo de conta, a conta volta para ele (permanente,
+// até assinar de novo). Atualiza o objeto recebido. Retorna true se voltou para o grátis.
+function voltarParaGratis(u) {
+  if (!vencidoNoBanco(u)) return false;
+  const planos = require('./planos');
+  const g = planos.planoGratisPara(u.tipo);
+  if (!g) return false;
+  const tipo = g.perfis.includes(u.tipo) ? u.tipo : g.perfis[0] || u.tipo;
+  const r = db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = ? WHERE id = ? AND assinatura_ate < datetime('now')`,
+    g.id, planos.SEM_VENCIMENTO, tipo, u.id);
+  if (g.ferramenta && u.cliente_id) {
+    db.run(`UPDATE clientes SET plano = ?, validade = ?, status = 'ativo' WHERE id = ? AND validade < datetime('now') AND status <> 'bloqueado'`,
+      g.id, planos.SEM_VENCIMENTO, u.cliente_id);
+  }
+  if (r.changes) logAction(getById(u.id), 'plano_gratis', `Plano ${planos.plano(u.plano)?.nome || u.plano || ''} venceu: voltou para ${g.nome}`);
+  Object.assign(u, { plano: g.id, assinatura_ate: planos.SEM_VENCIMENTO, tipo });
+  return true;
+}
+const planoVencido = u => vencidoNoBanco(u) && !voltarParaGratis(u);
 const RENOVACAO_MS = 2 * 3600000; // plano vencido: sessão curta, só para reativar (ex.: conta do Google)
 
 // Até quando a sessão vale: conta com plano pago → até o fim do plano; sem plano → 180 dias sem uso.
@@ -208,6 +227,7 @@ function currentUser(req) {
      WHERE s.token_hash = ? AND s.expires_at > datetime('now')`, tokenHash(token)
   );
   if (!u || blockedReason(u)) return null;
+  planoVencido(u); // pago vencido com plano grátis disponível: volta para o grátis
   return u;
 }
 

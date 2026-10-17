@@ -175,6 +175,10 @@ async function criarPedido(b, req) {
   // Plano grátis: sem pagamento, a conta é liberada na hora.
   if (p.gratis) {
     const dados = validarDados(p, b, users.currentUser(req));
+    const conta = dados.renovar_user_id && users.getById(dados.renovar_user_id);
+    const pagoAtual = conta && conta.assinatura_ate > nowSql() && planos.plano(conta.plano);
+    if (pagoAtual && !pagoAtual.gratis) throw fail(`Você já tem o plano ${pagoAtual.nome} ativo. Quando ele vencer, sua conta volta para o plano grátis automaticamente.`, 409);
+    if (pagoAtual && pagoAtual.id === p.id) throw fail('Você já tem este plano grátis. É só entrar com seu e-mail e senha.', 409);
     const token = crypto.randomBytes(24).toString('hex');
     const ins = db.run(`INSERT INTO pagamentos (token, plano, valor, dias, metodo, email, nome, dados) VALUES (?, ?, 0, ?, 'gratis', ?, ?, ?)`,
       token, p.id, p.dias, dados.email, dados.nome || null, JSON.stringify(dados));

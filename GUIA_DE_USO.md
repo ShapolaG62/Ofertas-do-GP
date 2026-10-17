@@ -223,7 +223,7 @@ Planos que vêm prontos (dá para editar, excluir e criar outros):
 4. **Página inicial:** frase de chamada, "ideal para", etiqueta de destaque (ex.: *Mais vendido*), ícone e a lista de benefícios — o botão **Gerar a partir das funções** escreve a lista sozinho.
 5. **Pagamento:** link de pagamento do plano (se usar a forma *Link de pagamento*) e o ID do produto no app (Google Play / App Store).
 
-**Planos grátis** aparecem na página inicial com o botão **Começar grátis**: a pessoa preenche o cadastro e a conta é liberada na hora (sem pagamento e sem aprovação). Eles não são vendidos pela Google Play / App Store; dentro do app, também são ativados pelo site.
+**Planos grátis** aparecem na página inicial com o botão **Começar grátis**: a pessoa preenche o cadastro e a conta é liberada na hora (sem pagamento e sem aprovação). O plano grátis é **permanente até um upgrade**: não vence; quando a pessoa assina um plano pago, os dias do pago contam a partir da compra, e quando o pago vence a conta volta sozinha para o grátis (sem bloquear o login). Contas de empresa só voltam para um grátis se existir um plano grátis com o tipo Empresa; sem ele, continuam pedindo para renovar. Eles não são vendidos pela Google Play / App Store; dentro do app, também são ativados pelo site.
 
 **Excluir:** um plano sem assinantes é apagado de vez. Com assinantes, ele sai da venda e da lista, mas continua valendo (com as mesmas funções) para quem já pagou até o fim do prazo; para renovar, a pessoa escolhe outro plano. Os tipos de acesso de um plano com assinantes não podem ser trocados — crie um plano novo.
 

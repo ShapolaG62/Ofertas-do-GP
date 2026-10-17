@@ -26,7 +26,13 @@ router.get('/api/apresentacao', async (req, res) => {
   if (!apresentacaoCache.dados || Date.now() - apresentacaoCache.at > 10 * 60 * 1000) {
     const st = offers.stats();
     let fotos = [];
-    try { fotos = (await vitrine.itens()).map(o => ({ id: o.id, tipo: o.tipo, desconto: Math.round(o.desconto_pct) })); } catch { /* sem fotos */ }
+    // No máximo 6 (uma linha), de tipos diferentes sempre que possível
+    try {
+      const itens = await vitrine.itens();
+      const vistos = new Set();
+      const escolhidos = [...itens.filter(o => !vistos.has(o.tipo) && vistos.add(o.tipo)), ...itens].filter((o, i, a) => a.indexOf(o) === i).slice(0, 6);
+      fotos = escolhidos.map(o => ({ id: o.id, tipo: o.tipo, desconto: Math.round(o.desconto_pct) }));
+    } catch { /* sem fotos */ }
     apresentacaoCache = { at: Date.now(), dados: { ofertas: st.offer_count, hoje: st.offers_today, lojas: st.stores, diamantes: st.diamonds, fotos } };
   }
   res.setHeader('Cache-Control', 'public, max-age=300');

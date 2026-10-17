@@ -23,7 +23,7 @@
     sacola: '<svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
     entrega: '<svg viewBox="0 0 24 24"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
     pessoas: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.4c2.2.7 3.5 2.8 3.5 5.6"/></svg>',
-    verificado: '<span class="selo-ok" title="Loja parceira verificada">✓</span>',
+    verificado: '<span class="selo-wrap" title="Loja parceira verificada"><svg class="selo-ok" viewBox="0 0 24 24" role="img" aria-label="Verificado"><path d="M12 1.8L12.8 2.3L13.5 3.3L14.2 3.8L15 3.7L16.1 3.2L17.1 3.2L17.6 4L17.7 5.2L18 6L18.8 6.3L20 6.4L20.8 6.9L20.8 7.9L20.3 9L20.2 9.8L20.7 10.5L21.7 11.2L22.1 12L21.7 12.8L20.7 13.5L20.2 14.2L20.3 15L20.8 16.1L20.8 17.1L20 17.6L18.8 17.7L18 18L17.7 18.8L17.6 20L17.1 20.8L16.1 20.8L15 20.3L14.2 20.2L13.5 20.7L12.8 21.7L12 22.1L11.2 21.7L10.5 20.7L9.8 20.2L9 20.3L7.9 20.8L6.9 20.8L6.4 20L6.3 18.8L6 18L5.2 17.7L4 17.6L3.2 17.1L3.2 16.1L3.7 15L3.8 14.2L3.3 13.5L2.3 12.8L1.8 12L2.3 11.2L3.3 10.5L3.8 9.8L3.7 9L3.2 7.9L3.2 6.9L4 6.4L5.2 6.3L6 6L6.3 5.2L6.4 4L6.9 3.2L7.9 3.2L9 3.7L9.8 3.8L10.5 3.3L11.2 2.3Z"/><path d="M8 12.4l2.7 2.7L16.2 9.4"/></svg></span>',
     editar: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>',
   };
   const estrelas = (n, cls = '') => `<span class="lj-estrelas ${cls}" aria-label="${n} de 5 estrelas">${[1, 2, 3, 4, 5].map(i => `<span class="${n >= i ? 'on' : n >= i - 0.5 ? 'meia' : ''}">★</span>`).join('')}</span>`;

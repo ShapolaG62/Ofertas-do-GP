@@ -43,7 +43,7 @@
     sacola: '<svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
     entrega: '<svg viewBox="0 0 24 24"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
     chat: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>',
-    verificado: '✓',
+    verificado: '<svg class="selo-ok" viewBox="0 0 24 24" role="img" aria-label="Verificado"><path d="M12 1.8L12.8 2.3L13.5 3.3L14.2 3.8L15 3.7L16.1 3.2L17.1 3.2L17.6 4L17.7 5.2L18 6L18.8 6.3L20 6.4L20.8 6.9L20.8 7.9L20.3 9L20.2 9.8L20.7 10.5L21.7 11.2L22.1 12L21.7 12.8L20.7 13.5L20.2 14.2L20.3 15L20.8 16.1L20.8 17.1L20 17.6L18.8 17.7L18 18L17.7 18.8L17.6 20L17.1 20.8L16.1 20.8L15 20.3L14.2 20.2L13.5 20.7L12.8 21.7L12 22.1L11.2 21.7L10.5 20.7L9.8 20.2L9 20.3L7.9 20.8L6.9 20.8L6.4 20L6.3 18.8L6 18L5.2 17.7L4 17.6L3.2 17.1L3.2 16.1L3.7 15L3.8 14.2L3.3 13.5L2.3 12.8L1.8 12L2.3 11.2L3.3 10.5L3.8 9.8L3.7 9L3.2 7.9L3.2 6.9L4 6.4L5.2 6.3L6 6L6.3 5.2L6.4 4L6.9 3.2L7.9 3.2L9 3.7L9.8 3.8L10.5 3.3L11.2 2.3Z"/><path d="M8 12.4l2.7 2.7L16.2 9.4"/></svg>',
   };
   const ROTULOS_NOTA = ['Ruim', 'Regular', 'Bom', 'Muito bom', 'Ótimo'];
   const vendidosTxt = n => (n >= 1000 ? `+${num(Math.floor(n / 1000))}mil` : n > 0 ? `+${num(n)}` : '0');
@@ -55,7 +55,7 @@
     return `<li class="parc">
       <a class="parc-topo" href="${l ? `/loja/${esc(l.slug)}` : `/perfil/${esc(p.slug)}`}">
         <span class="parc-logo">${logo}</span>
-        <span class="parc-nome"><b>${esc(l?.nome || p.nome)}</b><small>Loja parceira no Ofertou! <span class="selo-ok" title="Empresa com cadastro aprovado">${ICONE.verificado}</span></small>
+        <span class="parc-nome"><b>${esc(l?.nome || p.nome)}</b><small>Loja parceira no Ofertou! <span class="selo-wrap" title="Empresa com cadastro aprovado">${ICONE.verificado}</span></small>
           ${l?.avaliacoes?.total ? `<small class="parc-estrelas"><b>★ ${String(l.avaliacoes.media).replace('.', ',')}</b> · ${num(l.avaliacoes.total)} avaliaç${l.avaliacoes.total === 1 ? 'ão' : 'ões'}</small>` : ''}</span>
       </a>
       <div class="parc-acoes">

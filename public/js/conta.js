@@ -410,9 +410,9 @@
 
   // ── Área do usuário ────────────────────────────────────────────────────────
   const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
-  const TABS_EMPRESA = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
+  const TABS_EMPRESA = [['painel', 'Painel da loja'], ['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
     ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
-  let currentTab = 'meuperfil';
+  let currentTab = null; // empresa abre no Painel da loja; consumidor, em Meu perfil
 
   function renderAccount() {
     show('conta');
@@ -422,7 +422,7 @@
     $('#who-avatar').hidden = !ME.avatar_url;
     if (ME.avatar_url) $('#who-avatar').src = ME.avatar_url;
     const tabs = empresa ? TABS_EMPRESA : TABS_CONSUMIDOR;
-    if (!tabs.some(([k]) => k === currentTab)) currentTab = 'meuperfil';
+    if (!tabs.some(([k]) => k === currentTab)) currentTab = empresa ? 'painel' : 'meuperfil';
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>
       `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}${k === 'mensagens' ? '<b class="nav-n" id="nav-msg-n" hidden></b>' : ''}</button>`).join('');
     fetch('/api/chat/resumo', { cache: 'no-store' }).then(r => r.json()).then(r => {
@@ -475,6 +475,12 @@
     if (tab === 'mensagens') embutirMensagens().catch(() => { $('#msg-embed').innerHTML = '<p class="muted">Não foi possível carregar as mensagens.</p>'; });
     if (tab === 'meuperfil') embutirPerfil().catch(() => { $('#pf-embed').innerHTML = '<p class="muted">Não foi possível carregar o perfil.</p>'; });
     if (tab === 'vendas') loadVendas().catch(err => toast(err.message));
+    if (tab === 'painel' && window.OfertouPainelLoja) {
+      window.OfertouPainelLoja.carregar($('#painel-loja'), aba => {
+        if (aba === 'novo-anuncio') { openTab('anuncios'); if (!ME.bloqueio_publicacao && LOJA) openEditor(); } else openTab(aba);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }).catch(err => toast(err.message));
+    }
     if (tab === 'loja' && LOJA) loadEditorLoja().catch(err => toast(err.message));
     if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
   }

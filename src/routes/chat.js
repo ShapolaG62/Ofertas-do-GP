@@ -87,6 +87,10 @@ router.get('/api/conta/loja/vendas', exigirEmpresa, (req, res) => {
   res.json({ loja: { id: req.loja.id, nome: req.loja.nome, slug: req.loja.slug }, pagamento: pedidos.configPagamento(req.loja),
     pedidos: pedidos.pedidosDaLoja(req.user), metricas: pedidos.metricas(req.loja.id), carteira: require('../carteira').painel(req.user) });
 });
+// Painel da loja (dashboard)
+router.get('/api/conta/loja/painel', exigirEmpresa, (req, res) => {
+  try { res.json(require('../loja-painel').painel(req.user)); } catch (err) { sendError(res, err); }
+});
 router.put('/api/conta/loja/pagamento', exigirEmpresa, (req, res) => {
   try { res.json({ ok: true, pagamento: pedidos.salvarPagamento(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
 });

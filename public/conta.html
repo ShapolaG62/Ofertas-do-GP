@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261079">
-<script src="/js/app-nativo.js?v=20261079"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261080">
+<script src="/js/app-nativo.js?v=20261080"></script>
 </head>
 <body>
 <header class="site-header">
@@ -301,6 +301,9 @@
             <div id="msg-embed" class="msg-embed"><p class="muted">Carregando mensagens…</p></div>
           </div>
 
+          <!-- Painel da loja (dashboard) -->
+          <div class="tab-pane dash" data-pane="painel" hidden><div id="painel-loja"></div></div>
+
           <div class="tab-pane" data-pane="inicio" hidden>
             <div class="panel-card">
               <h2>Olá, <span id="hello-name"></span></h2>
@@ -506,7 +509,7 @@
           <!-- Segurança -->
           <!-- Vendas e pagamentos (empresa) -->
           <div class="tab-pane" data-pane="vendas" hidden>
-            <div class="panel-card">
+            <div class="panel-card" hidden>
               <div class="row-between"><h2>Números da sua loja</h2><button class="btn btn-sm" type="button" data-tab="mensagens"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Mensagens</button></div>
               <p class="muted">Compras finalizadas pelo site (pagamento confirmado por você), acessos à página da loja e ao catálogo, e cliques no seu site oficial.</p>
               <div class="vendas-numeros" id="vendas-numeros"><p class="muted">Carregando…</p></div>
@@ -605,7 +608,8 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261079" defer></script>
-<script src="/js/chat-topo.js?v=20261079" defer></script>
+<script src="/js/loja-painel.js?v=20261080" defer></script>
+<script src="/js/conta.js?v=20261080" defer></script>
+<script src="/js/chat-topo.js?v=20261080" defer></script>
 </body>
 </html>

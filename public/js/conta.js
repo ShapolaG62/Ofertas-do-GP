@@ -409,8 +409,8 @@
   });
 
   // ── Área do usuário ────────────────────────────────────────────────────────
-  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['inicio', 'Início'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
-  const TABS_EMPRESA = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['inicio', 'Início'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
+  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  const TABS_EMPRESA = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
     ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   let currentTab = 'meuperfil';
 
@@ -422,7 +422,7 @@
     $('#who-avatar').hidden = !ME.avatar_url;
     if (ME.avatar_url) $('#who-avatar').src = ME.avatar_url;
     const tabs = empresa ? TABS_EMPRESA : TABS_CONSUMIDOR;
-    if (!tabs.some(([k]) => k === currentTab)) currentTab = 'inicio';
+    if (!tabs.some(([k]) => k === currentTab)) currentTab = 'meuperfil';
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>
       `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}${k === 'mensagens' ? '<b class="nav-n" id="nav-msg-n" hidden></b>' : ''}</button>`).join('');
     fetch('/api/chat/resumo', { cache: 'no-store' }).then(r => r.json()).then(r => {

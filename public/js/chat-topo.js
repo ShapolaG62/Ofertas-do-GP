@@ -55,8 +55,49 @@
       const b = $('.chatf-n');
       b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
       $('#chatf-botao').title = r.pedidos ? `${r.pedidos} pedido(s) de mensagem esperando sua resposta` : n ? `${n} mensagem(ns) não lida(s)` : 'Mensagens';
+      sino.hidden = !r.logado;
+      const sn = sino.querySelector('.sino-n');
+      sn.hidden = !r.notificacoes; sn.textContent = r.notificacoes > 99 ? '99+' : r.notificacoes;
     } catch { /* sem conexão */ }
   }
+
+  // ── Sino de notificações (no topo, ao lado dos botões): pedido pago, saque pago… ──
+  const sino = document.createElement('button');
+  sino.type = 'button';
+  sino.className = 'btn btn-sm sino-btn';
+  sino.hidden = true;
+  sino.setAttribute('aria-label', 'Notificações');
+  sino.innerHTML = '<svg class="ico-linha" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><b class="sino-n" hidden></b>';
+  const acoesTopo = document.querySelector('.header-actions');
+  if (acoesTopo) acoesTopo.insertBefore(sino, acoesTopo.firstChild);
+  const sinoPop = document.createElement('div');
+  sinoPop.className = 'sino-pop';
+  sinoPop.hidden = true;
+  document.body.appendChild(sinoPop);
+  const quando = t => new Date(String(t).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  async function abrirSino() {
+    const r = sino.getBoundingClientRect();
+    sinoPop.style.top = `${Math.round(r.bottom + 8)}px`;
+    sinoPop.style.right = `${Math.max(8, Math.round(document.documentElement.clientWidth - r.right))}px`;
+    sinoPop.hidden = false;
+    sinoPop.innerHTML = '<p class="sino-vazio">Carregando…</p>';
+    try {
+      const d = await api('/api/notificacoes');
+      sinoPop.innerHTML = `<div class="sino-topo"><b>Notificações</b></div>${d.itens.length ? d.itens.map(n => `
+        <a class="sino-item${n.lida ? '' : ' nova'}" href="${esc(n.link || '#')}" data-sino-link="${esc(n.link || '')}"><b>${esc(n.titulo)}</b>${n.texto ? `<span>${esc(n.texto)}</span>` : ''}<small>${quando(n.created_at)}</small></a>`).join('')
+        : '<p class="sino-vazio">Nenhuma notificação ainda.</p>'}`;
+      if (d.nao_lidas) { await api('/api/notificacoes/lidas', {}); atualizarContador(); }
+    } catch { sinoPop.innerHTML = '<p class="sino-vazio">Não foi possível carregar.</p>'; }
+  }
+  sino.addEventListener('click', e => { e.stopPropagation(); if (sinoPop.hidden) abrirSino(); else sinoPop.hidden = true; });
+  document.addEventListener('click', e => { if (!sinoPop.hidden && !e.target.closest('.sino-pop')) sinoPop.hidden = true; });
+  sinoPop.addEventListener('click', e => {
+    const a = e.target.closest('[data-sino-link]');
+    if (!a) return;
+    // Links de conversa/pedido abrem no painel de mensagens, sem sair da página
+    const m = /^\/mensagens\?c=(\d+)(?:&pedido=(\d+))?/.exec(a.dataset.sinoLink);
+    if (m) { e.preventDefault(); sinoPop.hidden = true; window.OfertouChat.abrir(Number(m[1]), m[2] ? Number(m[2]) : null); }
+  });
 
   // ── Lista ────────────────────────────────────────────────────────────────
   async function mostrarLista() {
@@ -125,11 +166,14 @@
       <div class="chatf-pedido-prod"><img src="/api/img/${p.oferta_id}" alt="" referrerpolicy="no-referrer">
         <div><b>${esc(p.produto)}</b><span>${p.quantidade}x ${brl(p.preco_unit)}${p.taxa_valor ? ` + taxa do site ${brl(p.taxa_valor)}` : ''}</span>
         <span><b>Total ${brl(p.total)}</b> · ${esc(p.metodo_nome)}</span>${p.observacao ? `<span class="muted">Obs.: ${esc(p.observacao)}</span>` : ''}</div></div>
-      ${pg && pg.pix ? `<div class="chatf-pix"><span>Pix copia e cola para <b>${esc(pg.recebedor)}</b>:</span>
+      ${pg && pg.pix ? `<div class="chatf-pix pix-pagar">
+        ${pg.qr ? `<img class="pix-qr" src="data:image/png;base64,${esc(pg.qr)}" alt="QR code do Pix" width="180" height="180">` : ''}
+        <span>Pague <b>${brl(p.total)}</b> com Pix: abra o app do banco e leia o QR code ou use o copia e cola.</span>
         <div class="ass-copia"><input readonly value="${esc(pg.pix)}" aria-label="Código Pix"><button class="btn btn-sm" type="button" data-copiar="${esc(pg.pix)}">Copiar</button></div>
-        <small class="muted">No app do banco: Pix → Pix copia e cola. Depois toque em "Já paguei".</small></div>` : ''}
-      ${pg && pg.mercadopago ? `<a class="btn btn-primary btn-sm" href="${esc(pg.mercadopago)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} no Mercado Pago ↗</a>` : ''}
-      ${pg && pg.link ? `<a class="btn btn-primary btn-sm" href="${esc(pg.link)}" target="_blank" rel="noopener nofollow">Pagar com cartão (link da loja) ↗</a>` : ''}
+        <small class="pix-aguarde"><span class="live-dot"></span> Aguardando o pagamento — a confirmação é automática${pg.expira ? `. O Pix vale até ${new Date(String(pg.expira).replace(' ', 'T') + 'Z').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}.</small></div>` : ''}
+      ${pg && pg.cartao ? `<div class="chatf-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.cartao)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} com cartão ↗</a>
+        <small class="pix-aguarde"><span class="live-dot"></span> Pagamento seguro pelo Mercado Pago. A confirmação é automática.</small></div>` : ''}
+      ${p.eu === 'loja' && p.gateway === 'mp' && p.valor_loja !== undefined && p.status !== 'cancelado' ? `<small class="muted">Na sua carteira: <b>${brl(p.valor_loja)}</b>${p.tarifa_mp ? ` (produtos menos a tarifa do Mercado Pago de ${brl(p.tarifa_mp)})` : ''}${p.libera_em ? ` · disponível a partir de ${new Date(String(p.libera_em).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}` : p.status === 'aguardando_pagamento' ? ' depois do pagamento' : ''}.</small>` : ''}
       ${p.instrucoes ? `<small class="muted">${esc(p.instrucoes)}</small>` : ''}
       <small class="aviso-resp-mini">O Ofertou! não se responsabiliza pela venda, entrega, troca ou garantia: é com a loja parceira.</small>
       ${p.acoes.length ? `<div class="chatf-acoes">${p.acoes.map(a => `<button class="btn btn-sm ${ROTULO[a][1]}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO[a][0]}</button>`).join('')}</div>` : ''}
@@ -152,9 +196,9 @@
   // Mercado Pago esperando pagamento: confere de tempos em tempos (a confirmação vira mensagem)
   let ultimaConferencia = 0;
   function conferirMP() {
-    if (Date.now() - ultimaConferencia < 15000) return;
+    if (Date.now() - ultimaConferencia < 10000) return;
     ultimaConferencia = Date.now();
-    Object.values(PEDIDOS).filter(p => p.metodo === 'mercadopago' && ['aguardando_pagamento', 'pagamento_informado'].includes(p.status))
+    Object.values(PEDIDOS).filter(p => p.gateway === 'mp' && p.status === 'aguardando_pagamento')
       .forEach(p => api(`/api/pedidos/${p.id}`).catch(() => {}));
   }
   async function novas(forcar = false) {

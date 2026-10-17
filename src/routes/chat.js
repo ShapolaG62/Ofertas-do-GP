@@ -25,7 +25,7 @@ function exigirDono(req, res, next) {
 router.get('/api/chat/resumo', (req, res) => {
   const dono = perfis.donoDe(req);
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ logado: Boolean(dono), ...chat.resumo(dono) });
+  res.json({ logado: Boolean(dono), ...chat.resumo(dono), notificacoes: require('../notificacoes').naoLidas(dono) });
 });
 
 router.get('/api/chat/conversas', exigirDono, (req, res) => {
@@ -85,29 +85,26 @@ function exigirEmpresa(req, res, next) {
 router.get('/api/conta/loja/vendas', exigirEmpresa, (req, res) => {
   if (!req.loja) return res.json({ loja: null });
   res.json({ loja: { id: req.loja.id, nome: req.loja.nome, slug: req.loja.slug }, pagamento: pedidos.configPagamento(req.loja),
-    pedidos: pedidos.pedidosDaLoja(req.user), metricas: pedidos.metricas(req.loja.id), taxa: pedidos.painelTaxas(req.user) });
+    pedidos: pedidos.pedidosDaLoja(req.user), metricas: pedidos.metricas(req.loja.id), carteira: require('../carteira').painel(req.user) });
 });
 router.put('/api/conta/loja/pagamento', exigirEmpresa, (req, res) => {
   try { res.json({ ok: true, pagamento: pedidos.salvarPagamento(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
 });
-
-// Taxa do site: a empresa avisa que pagou (o admin confere e dá baixa)
-router.post('/api/conta/loja/taxa/paguei', exigirEmpresa, (req, res) => {
-  try { res.json(pedidos.avisarTaxaPaga(req.user)); } catch (err) { sendError(res, err); }
+// Carteira: pedido de saque (a partir do mínimo, para a chave Pix cadastrada)
+const saqueLimiter = createLimiter(10, 60);
+router.post('/api/conta/loja/saque', exigirEmpresa, (req, res) => {
+  if (saqueLimiter.hit(`u:${req.user.id}`)) return res.status(429).json({ error: 'Muitas tentativas. Aguarde um pouco.' });
+  try { res.json(require('../carteira').solicitarSaque(req.user, req.body || {})); } catch (err) { sendError(res, err); }
 });
 
-// Mercado Pago da empresa: conectar (OAuth), retorno e desconectar
-router.get('/api/conta/loja/mp/conectar', exigirEmpresa, (req, res) => {
-  try { res.redirect(pedidos.linkConectarMP(req.user)); } catch (err) { res.redirect(`/conta?aba=vendas&mp_erro=${encodeURIComponent(err.message)}`); }
+// ── Notificações (sino 🔔) ────────────────────────────────────────────────────
+router.get('/api/notificacoes', exigirDono, (req, res) => {
+  const n = require('../notificacoes');
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ itens: n.listar(req.dono), nao_lidas: n.naoLidas(req.dono) });
 });
-router.get('/api/mp/oauth/retorno', async (req, res) => {
-  try {
-    await pedidos.retornoMP(req.query.code, req.query.state);
-    res.redirect('/conta?aba=vendas&mp=ok');
-  } catch (err) { res.redirect(`/conta?aba=vendas&mp_erro=${encodeURIComponent(err.message)}`); }
-});
-router.post('/api/conta/loja/mp/desconectar', exigirEmpresa, (req, res) => {
-  pedidos.desconectarMP(req.user);
+router.post('/api/notificacoes/lidas', exigirDono, (req, res) => {
+  require('../notificacoes').marcarLidas(req.dono, req.body?.id || null);
   res.json({ ok: true });
 });
 

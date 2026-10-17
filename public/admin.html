@@ -662,18 +662,26 @@
       </div>
       <form class="settings-form">
         <div class="panel">
-          <h2>Taxa de uso do site</h2>
-          <p class="hint">Somada ao valor dos produtos em cada pedido feito às lojas parceiras pelo site (o cliente vê a linha "Taxa de uso do site" na finalização). <b>Lojas com Mercado Pago conectado:</b> o Mercado Pago divide o pagamento e a taxa cai direto no saldo da <b>sua</b> conta Mercado Pago (a dona do app abaixo). <b>Outras formas</b> (Pix da loja ou link de cartão): a taxa fica como débito da loja, que paga por Pix para a sua chave (Planos → Formas de recebimento → Pix pela sua chave) e você dá baixa na tabela abaixo.</p>
+          <h2>Pedidos às lojas parceiras: pagamentos, taxa e carteiras</h2>
+          <p class="hint">O cliente paga o pedido por <b>Pix</b> ou <b>cartão</b> no <b>seu Mercado Pago</b> (o Access Token de Planos → Formas de recebimento; parcelas máximas no cartão também vêm de lá). A confirmação é automática. A <b>taxa de uso do site</b> é somada ao valor dos produtos e fica com você. O valor dos produtos, menos a tarifa do Mercado Pago de cada venda, entra na <b>carteira da empresa</b>; depois do prazo de liberação, a empresa pede o saque e você paga pelo app do Mercado Pago (Pix para a chave dela) e marca como pago abaixo.</p>
           <div class="grid">
-            <label class="field">Taxa (%) <input type="text" name="taxa_site_pct" inputmode="decimal" placeholder="1"></label>
-            <label class="field">Mercado Pago — Client ID do app <input type="text" name="mp_mkt_client_id" autocomplete="off"></label>
-            <label class="field">Mercado Pago — Client Secret <input type="password" name="mp_mkt_client_secret" autocomplete="off" data-secret></label>
+            <label class="field">Taxa de uso do site (%) <input type="text" name="taxa_site_pct" inputmode="decimal" placeholder="1"></label>
+            <label class="field">Saque mínimo (R$) <input type="text" name="saque_minimo" inputmode="decimal" placeholder="50"></label>
+            <label class="field">Liberar após concluir o pedido (dias) <input type="number" name="liberar_dias_concluido" min="0" max="60" placeholder="7"></label>
+            <label class="field">Liberar após o pagamento, se não concluir (dias) <input type="number" name="liberar_dias_pago" min="1" max="90" placeholder="14"></label>
           </div>
-          <p class="hint" style="margin-top:10px">Para a divisão automática: em <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener">mercadopago.com.br/developers</a> → Suas integrações → <b>Criar aplicação</b> (com a sua conta, a que vai receber as taxas) → modelo de integração <b>Marketplace / pagamentos online</b> → em <b>URLs de redirecionamento</b> cole <code id="taxa-redirect">https://SEU-DOMINIO/api/mp/oauth/retorno</code> → copie o <b>Client ID</b> e o <b>Client Secret</b> (Credenciais de produção) para cá. Funciona com o site online em https (VPS): cada empresa clica em "Conectar minha conta Mercado Pago" na conta dela.</p>
           <p class="hint" id="taxa-situacao"></p>
-          <div class="actions"><button class="btn primary" type="submit">Salvar taxa</button></div>
+          <div class="actions"><button class="btn primary" type="submit">Salvar</button></div>
         </div>
       </form>
+
+      <div class="panel">
+        <h2>Carteiras e saques</h2>
+        <p class="hint">Saques pedidos pelas empresas: pague pelo app do Mercado Pago (Pix para a chave mostrada) e clique em <b>Marcar como pago</b>. Se recusar, o valor volta ao saldo da empresa. A empresa é avisada no site e por e-mail.</p>
+        <div class="table-wrap"><table><thead><tr><th>Pedido em</th><th>Loja</th><th>Valor</th><th>Chave Pix</th><th>Situação</th><th></th></tr></thead><tbody id="at-saques"></tbody></table></div>
+        <h3 style="margin:18px 0 8px">Saldo das empresas</h3>
+        <div class="table-wrap"><table><thead><tr><th>Loja</th><th>Disponível</th><th>A liberar</th><th>Vendido</th><th>Tarifas MP</th><th>Sacado</th><th></th></tr></thead><tbody id="at-carteiras"></tbody></table></div>
+      </div>
 
       <div class="panel">
         <h2>Empresas</h2>
@@ -1577,13 +1585,52 @@ async function loadAtendimento() {
       ${l.taxas.a_pagar.valor > 0 ? `<br><b style="color:var(--yellow)">a receber ${brl(l.taxas.a_pagar.valor)}</b>${l.taxas.aviso_pagamento_em ? ' <span class="tag">loja avisou que pagou</span>' : ''}
         <br><button class="btn small primary" type="button" data-quitar="${l.id}" data-valor="${l.taxas.a_pagar.valor}">Recebi</button>` : ''}</td></tr>`).join('')
     : '<tr><td colspan="9" class="hint">Nenhuma loja cadastrada.</td></tr>';
-  $('#taxa-redirect').textContent = d.taxa.redirect.startsWith('http') ? d.taxa.redirect : `${location.origin}/api/mp/oauth/retorno`;
-  $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(d.taxa.pct).replace('.', ',')}%</b> · divisão pelo Mercado Pago: ${d.taxa.mp_pronto ? '<b>app configurado</b>' : '<b style="color:var(--yellow)">app não configurado</b>'}
-    · Pix para receber as taxas: ${d.taxa.pix_dono ? '<b>configurado</b>' : '<b style="color:var(--yellow)">configure em Planos → Pix pela sua chave</b>'}`;
+  $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(d.taxa.pct).replace('.', ',')}%</b> · Mercado Pago do site: ${d.taxa.gateway_ok ? '<b>configurado</b> (pedidos liberados)' : '<b style="color:var(--yellow)">não configurado — cole o Access Token em Planos → Formas de recebimento; até lá o botão Fazer pedido não aparece</b>'}`;
+  const cw = d.carteiras;
+  const ST_SQ = { solicitado: ['b-pending', 'Aguardando pagamento'], pago: ['b-active', 'Pago'], recusado: ['b-banned', 'Recusado'] };
+  $('#at-saques').innerHTML = cw.saques.length ? cw.saques.map(q => `<tr>
+    <td class="num">${fmtDate(q.solicitado_em)}</td><td>${esc(q.loja_nome)}</td><td class="num"><b>${brl(q.valor)}</b></td>
+    <td>${esc(q.pix_chave || '—')}<br><span class="hint" style="margin:0">${esc(q.pix_tipo || '')} · ${esc(q.pix_nome || '')}</span></td>
+    <td><span class="badge ${ST_SQ[q.status][0]}">${ST_SQ[q.status][1]}</span>${q.observacao ? `<br><span class="hint" style="margin:0">${esc(q.observacao)}</span>` : ''}</td>
+    <td class="num">${q.status === 'solicitado' ? `<button class="btn small primary" type="button" data-saque-pagar="${q.id}" data-valor="${q.valor}">Marcar como pago</button>
+      <button class="btn small danger" type="button" data-saque-recusar="${q.id}">Recusar</button>` : ''}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="hint">Nenhum saque pedido ainda.</td></tr>';
+  $('#at-carteiras').innerHTML = cw.lojas.length ? cw.lojas.map(l => `<tr>
+    <td>${esc(l.nome)}</td><td class="num"><b>${brl(l.saldo.disponivel)}</b></td><td class="num">${brl(l.saldo.a_liberar)}</td>
+    <td class="num">${brl(l.saldo.vendido)}</td><td class="num">${brl(l.saldo.tarifas)}</td><td class="num">${brl(l.saldo.sacado)}</td>
+    <td class="num"><button class="btn small" type="button" data-extrato="${l.id}" data-nome="${esc(l.nome)}">Extrato</button></td></tr>`).join('')
+    : '<tr><td colspan="7" class="hint">Nenhuma venda pelo site ainda.</td></tr>';
   $('#at-pedidos').innerHTML = linhasPedidos(d.pedidos);
   $('#at-conversas').innerHTML = linhasConversas(d.conversas);
 }
 $('#at-buscar').addEventListener('click', () => loadAtendimento().catch(e => globalMsg(e.message, false)));
+// Saques: pagar / recusar; extrato da carteira
+document.addEventListener('click', async e => {
+  const pg = e.target.closest('[data-saque-pagar]'), rc = e.target.closest('[data-saque-recusar]'), ex = e.target.closest('[data-extrato]');
+  if (!pg && !rc && !ex) return;
+  try {
+    if (pg) {
+      if (!confirm(`Você já enviou ${brl(Number(pg.dataset.valor))} pelo Pix para a chave da empresa?`)) return;
+      const obs = prompt('Observação para a empresa (opcional, ex.: ID da transferência):') ?? '';
+      await api(`/api/admin/saques/${pg.dataset.saquePagar}/pagar`, { method: 'POST', body: { observacao: obs } });
+      globalMsg('Saque marcado como pago. A empresa foi avisada.');
+    } else if (rc) {
+      const motivo = prompt('Motivo da recusa (a empresa verá):');
+      if (motivo === null) return;
+      await api(`/api/admin/saques/${rc.dataset.saqueRecusar}/recusar`, { method: 'POST', body: { observacao: motivo } });
+      globalMsg('Saque recusado. O valor voltou ao saldo da empresa.');
+    } else {
+      const c = await api(`/api/admin/carteiras/${ex.dataset.extrato}`);
+      $('#tk-title').textContent = `Carteira — ${ex.dataset.nome}`;
+      $('#tk-body').innerHTML = `<dl class="kv"><dt>Disponível</dt><dd><b>${brl(c.saldo.disponivel)}</b></dd><dt>A liberar</dt><dd>${brl(c.saldo.a_liberar)}</dd>
+        <dt>Vendido</dt><dd>${brl(c.saldo.vendido)}</dd><dt>Tarifas do Mercado Pago</dt><dd>${brl(c.saldo.tarifas)}</dd><dt>Sacado</dt><dd>${brl(c.saldo.sacado)}</dd></dl>
+        <div class="tk-msgs">${c.extrato.map(m => `<div class="tk-msg"><b>${m.valor < 0 ? '−' : '+'}${brl(Math.abs(m.valor))}</b>${esc(m.descricao || m.tipo)}<small>${fmtDate(m.created_at)} · ${m.liberado ? 'disponível' : 'a liberar'}</small></div>`).join('') || '<span class="hint">Sem lançamentos.</span>'}</div>`;
+      if (!$('#tk-dlg').open) $('#tk-dlg').showModal();
+      return;
+    }
+    loadAtendimento();
+  } catch (err) { globalMsg(err.message, false); }
+});
 $('#at-lojas').addEventListener('click', async e => {
   const b = e.target.closest('[data-quitar]');
   if (!b) return;

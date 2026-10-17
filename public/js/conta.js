@@ -521,54 +521,63 @@
       num(a.link.total, 'Cliques para comprar no seu site', `${a.link.d30} em 30 dias`),
       num(m.conversas, 'Conversas de atendimento'),
     ].join('');
-    // Taxa de uso do site
-    const tx = d.taxa;
-    const pctTxt = String(tx.pct).replace('.', ',');
-    $('#taxa-explica').innerHTML = `O cliente paga <b>${pctTxt}%</b> a mais sobre o valor dos produtos em cada pedido feito pelo site (aparece separado na finalização). Pedidos pagos pelo <b>Mercado Pago conectado</b>: a taxa é separada automaticamente. Pedidos pagos por Pix na sua chave, link de cartão ou combinados: você recebe o valor total e repassa a taxa ao Ofertou!.`;
-    $('#taxa-numeros').innerHTML = [
-      num(brlFmt(tx.a_pagar.valor), 'Taxa a repassar', `${tx.a_pagar.n} pedido(s) confirmados`),
-      num(brlFmt(tx.automaticas.valor), 'Separada pelo Mercado Pago', `${tx.automaticas.n} pedido(s)`),
-      num(brlFmt(tx.quitadas.valor), 'Já repassada', `${tx.quitadas.n} pedido(s)`),
-    ].join('');
-    $('#taxa-pagar').innerHTML = tx.pagar ? `<div class="msg-pix" style="margin-top:12px">
-        <span>Pix "copia e cola" de <b>${brlFmt(tx.pagar.valor)}</b> para <b>${esc(tx.pagar.recebedor)}</b>:</span>
-        <div class="ass-copia"><input readonly value="${esc(tx.pagar.pix)}" aria-label="Pix da taxa"><button class="btn btn-sm" type="button" data-copiar-taxa="${esc(tx.pagar.pix)}">Copiar</button></div>
-        <div class="row-actions"><button class="btn btn-primary btn-sm" type="button" id="taxa-paguei">Já paguei a taxa</button>
-        ${tx.aviso_pagamento_em ? `<span class="muted">Você avisou o pagamento em ${fmtDate(tx.aviso_pagamento_em)}: aguardando a confirmação.</span>` : ''}</div></div>`
-      : tx.a_pagar.valor > 0 ? '<p class="muted">O Ofertou! vai enviar os dados para o pagamento da taxa.</p>' : '';
-    // Mercado Pago
-    const mp = d.pagamento.mp;
-    $('#mp-status').innerHTML = mp.conectado
-      ? `<p><span class="status-pill ok">Conectado</span> desde ${fmtDate(mp.desde)}. Seus clientes já veem a opção "Pix ou cartão pelo Mercado Pago".</p>
-         <button class="btn btn-sm" type="button" id="mp-desconectar">Desconectar</button>`
-      : mp.disponivel ? '<a class="btn btn-primary" href="/api/conta/loja/mp/conectar">Conectar minha conta Mercado Pago</a>'
-        : `<p class="muted">${esc(mp.motivo)}</p>`;
+    renderCarteira(d.carteira);
     $('#vendas-top').innerHTML = m.mais_vistos.length ? `<h3 style="margin:16px 0 6px;font-size:15px">Mais vistos no catálogo (30 dias)</h3>
       <ol class="muted" style="margin:0;padding-left:20px">${m.mais_vistos.map(t => `<li>${esc(t.produto)} — <b>${t.n}</b></li>`).join('')}</ol>` : '';
     $('#vendas-pedidos').innerHTML = d.pedidos.length ? d.pedidos.map(linhaPedido).join('') : '<p class="muted">Nenhum pedido ainda.</p>';
     const f = $('#form-pagloja'), pg = d.pagamento;
-    for (const k of ['aceita_pedidos', 'pag_pix_ativo', 'pag_cartao_ativo']) f[k].checked = pg[k];
-    for (const k of ['pag_pix_tipo', 'pag_pix_chave', 'pag_pix_nome', 'pag_pix_cidade', 'pag_cartao_link', 'pedido_instrucoes']) f[k].value = pg[k] || '';
-    if (!pg.pag_pix_nome) f.pag_pix_nome.value = LOJA?.nome || '';
+    for (const k of ['aceita_pedidos', 'aceita_pix', 'aceita_cartao']) f[k].checked = pg[k];
+    for (const k of ['pag_pix_tipo', 'pag_pix_chave', 'pag_pix_nome', 'pedido_instrucoes']) f[k].value = pg[k] || '';
+    $('#pag-parcelas').textContent = `Pelo Mercado Pago${pg.parcelas > 1 ? `, em até ${pg.parcelas}x` : ''}`;
+    if (!pg.gateway_ok) $('#pag-explica').innerHTML = '<b>Os pagamentos pelo site ainda não foram ativados pelo administrador.</b> Enquanto isso, o botão "Fazer pedido" não aparece nos seus produtos.';
   }
   bind('#form-pagloja', async (form, d) => {
     await api('/api/conta/loja/pagamento', { method: 'PUT', body: d });
-    msg(form, 'Formas de pagamento salvas!', true);
+    msg(form, 'Salvo!', true);
+    loadVendas();
   });
 
+  // Carteira: saldo disponível e a liberar, saque (a partir do mínimo), extrato e saques
+  const TIPO_MOV = { venda: 'Venda', tarifa_mp: 'Tarifa do Mercado Pago', estorno: 'Devolução ao cliente', saque: 'Saque', saque_devolvido: 'Saque recusado (devolvido)', ajuste: 'Ajuste' };
+  const STATUS_SAQUE = { solicitado: ['Aguardando pagamento', ''], pago: ['Pago', 'st-pago'], recusado: ['Recusado', 'st-cancelado'] };
+  const dia = s2 => (s2 ? new Date(String(s2).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '');
+  let CART = null;
+  function renderCarteira(c) {
+    CART = c;
+    if (!c) return;
+    const sd = c.saldo;
+    const num = (v, rot, sub) => `<div class="vendas-numero"><b>${v}</b><span>${rot}${sub ? `<br>${sub}` : ''}</span></div>`;
+    $('#cart-regras').textContent = `Saque mínimo ${brlFmt(sd.minimo)} · libera ${sd.dias_concluido} dias após concluir (ou ${sd.dias_pago} dias após pago)`;
+    $('#cart-numeros').innerHTML = [
+      num(brlFmt(sd.disponivel), 'Disponível para saque'),
+      num(brlFmt(sd.a_liberar), 'A liberar', sd.proxima_liberacao ? `próxima em ${dia(sd.proxima_liberacao)}` : ''),
+      num(brlFmt(sd.vendido), 'Vendido pelo site', `tarifas do Mercado Pago: ${brlFmt(sd.tarifas)}`),
+      num(brlFmt(sd.sacado), 'Já sacado', sd.saque_pendente ? `${brlFmt(sd.saque_pendente)} aguardando` : ''),
+    ].join('');
+    const pode = sd.disponivel >= sd.minimo && !sd.saque_pendente;
+    $('#cart-saque').innerHTML = sd.saque_pendente
+      ? `<p class="muted">Você tem um saque de <b>${brlFmt(sd.saque_pendente)}</b> aguardando pagamento. Avisaremos quando for pago.</p>`
+      : `<div class="cart-saque-linha"><label class="field"><span>Valor do saque</span><input id="cart-valor" inputmode="decimal" value="${sd.disponivel > 0 ? sd.disponivel.toFixed(2).replace('.', ',') : ''}"></label>
+          <button class="btn btn-primary" type="button" id="cart-sacar" ${pode ? '' : 'disabled'}>Solicitar saque</button></div>
+        <small class="muted">${pode ? 'O valor é enviado para a sua chave Pix cadastrada abaixo.' : `Disponível a partir de ${brlFmt(sd.minimo)} de saldo.`}</small>`;
+    $('#cart-extrato').innerHTML = c.extrato.length ? `<table class="cart-tabela"><thead><tr><th>Data</th><th>Lançamento</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${c.extrato.map(m => `<tr>
+      <td>${dia(m.created_at)}</td><td>${esc(TIPO_MOV[m.tipo] || m.tipo)}<br><small class="muted">${esc(m.descricao || '')}</small></td>
+      <td class="${m.valor < 0 ? 'neg' : 'pos'}">${m.valor < 0 ? '−' : '+'}${brlFmt(Math.abs(m.valor))}</td>
+      <td><small>${m.cancelado ? 'Pedido cancelado' : m.liberado ? 'Disponível' : m.libera_em ? `Libera em ${dia(m.libera_em)}` : 'Aguardando conclusão'}</small></td></tr>`).join('')}</tbody></table>`
+      : '<p class="muted">Nenhum lançamento ainda. As vendas pagas pelo site aparecem aqui.</p>';
+    $('#cart-saques').innerHTML = c.saques.length ? `<table class="cart-tabela"><thead><tr><th>Pedido em</th><th>Valor</th><th>Chave Pix</th><th>Situação</th></tr></thead><tbody>${c.saques.map(q => `<tr>
+      <td>${dia(q.solicitado_em)}</td><td>${brlFmt(q.valor)}</td><td><small>${esc(q.pix_chave || '')}</small></td>
+      <td><span class="status-pill ${STATUS_SAQUE[q.status][1]}">${STATUS_SAQUE[q.status][0]}</span>${q.resolvido_em ? `<br><small class="muted">${dia(q.resolvido_em)}${q.observacao ? ` · ${esc(q.observacao)}` : ''}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
+      : '<p class="muted">Nenhum saque ainda.</p>';
+  }
   $('[data-pane="vendas"]').addEventListener('click', async e => {
-    const cp = e.target.closest('[data-copiar-taxa]');
-    if (cp) return navigator.clipboard.writeText(cp.dataset.copiarTaxa).then(() => toast('Pix copiado!'));
-    if (e.target.closest('#taxa-paguei')) {
-      try { await api('/api/conta/loja/taxa/paguei', { method: 'POST', body: {} }); toast('Aviso enviado. Assim que o pagamento for conferido, a taxa sai da lista.'); loadVendas(); }
-      catch (err) { toast(err.message); }
-    }
-    if (e.target.closest('#mp-desconectar')) {
-      if (!confirm('Desconectar o Mercado Pago? Seus clientes deixam de ver o pagamento automático.')) return;
-      await api('/api/conta/loja/mp/desconectar', { method: 'POST', body: {} }).catch(err => toast(err.message));
-      loadVendas();
-    }
+    if (!e.target.closest('#cart-sacar')) return;
+    const valor = $('#cart-valor').value;
+    if (!confirm(`Solicitar o saque de R$ ${valor} para a sua chave Pix?`)) return;
+    try { renderCarteira(await api('/api/conta/loja/saque', { method: 'POST', body: { valor } })); toast('Saque solicitado! Avisaremos quando for pago.'); }
+    catch (err) { toast(err.message); }
   });
+
 
   async function loadMeusPedidos() {
     const lista = await api('/api/pedidos');

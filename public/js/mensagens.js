@@ -173,13 +173,14 @@
       <div class="msg-pedido-prod">${p.imagem ? `<img src="/api/img/${p.oferta_id}" alt="" referrerpolicy="no-referrer">` : ''}
         <div><b>${esc(p.produto)}</b><span>${p.quantidade}x ${brl(p.preco_unit)}${p.taxa_valor ? ` + taxa do site ${brl(p.taxa_valor)}` : ''} · <b>Total ${brl(p.total)}</b></span><span>Pagamento: ${esc(p.metodo_nome)}</span>
         ${p.observacao ? `<span class="muted">Obs.: ${esc(p.observacao)}</span>` : ''}</div></div>
-      ${pg && pg.pix ? `<div class="msg-pix"><span>Pix copia e cola (valor ${brl(p.total)} para <b>${esc(pg.recebedor)}</b>):</span>
+      ${pg && pg.pix ? `<div class="msg-pix pix-pagar">
+        ${pg.qr ? `<img class="pix-qr" src="data:image/png;base64,${esc(pg.qr)}" alt="QR code do Pix" width="180" height="180">` : ''}
+        <span>Pague <b>${brl(p.total)}</b> com Pix: abra o app do banco e leia o QR code ou use o copia e cola.</span>
         <div class="ass-copia"><input readonly value="${esc(pg.pix)}" aria-label="Código Pix"><button class="btn btn-sm" type="button" data-copiar="${esc(pg.pix)}">Copiar</button></div>
-        <small class="muted">No app do banco: Pix → Pix copia e cola. Depois toque em "Já paguei".</small></div>` : ''}
-      ${pg && pg.mercadopago ? `<div class="msg-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.mercadopago)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} no Mercado Pago ↗</a>
-        <small class="muted">Pix ou cartão. A confirmação é automática: esta conversa atualiza sozinha.</small></div>` : ''}
-      ${pg && pg.link ? `<div class="msg-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.link)}" target="_blank" rel="noopener nofollow">Pagar com cartão (link da loja) ↗</a>
-        <small class="muted">Pague ${brl(p.total)} no link e depois toque em "Já paguei".</small></div>` : ''}
+        <small class="pix-aguarde"><span class="live-dot"></span> Aguardando o pagamento — a confirmação é automática${pg.expira ? `. O Pix vale até ${new Date(String(pg.expira).replace(' ', 'T') + 'Z').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}.</small></div>` : ''}
+      ${pg && pg.cartao ? `<div class="msg-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.cartao)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} com cartão ↗</a>
+        <small class="pix-aguarde"><span class="live-dot"></span> Pagamento seguro pelo Mercado Pago. A confirmação é automática.</small></div>` : ''}
+      ${p.eu === 'loja' && p.gateway === 'mp' && p.valor_loja !== undefined && p.status !== 'cancelado' ? `<small class="muted">Na sua carteira: <b>${brl(p.valor_loja)}</b>${p.tarifa_mp ? ` (produtos menos a tarifa do Mercado Pago de ${brl(p.tarifa_mp)})` : ''}${p.libera_em ? ` · disponível a partir de ${new Date(String(p.libera_em).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}` : p.status === 'aguardando_pagamento' ? ' depois do pagamento' : ''}.</small>` : ''}
       ${p.instrucoes ? `<p class="muted" style="margin:6px 0 0;font-size:12.5px">${esc(p.instrucoes)}</p>` : ''}
       <small class="aviso-resp-mini">O Ofertou! não se responsabiliza pela venda, entrega, troca ou garantia: é com a loja parceira.</small>
       ${p.acoes.length ? `<div class="row-actions">${p.acoes.map(a => `<button class="btn btn-sm ${ROTULO[a][1]}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO[a][0]}</button>`).join('')}</div>` : ''}
@@ -209,7 +210,7 @@
   async function conferirMP() {
     if (Date.now() - ultimaConferencia < 15000) return;
     ultimaConferencia = Date.now();
-    const abertos = Object.values(PEDIDOS).filter(p => p.metodo === 'mercadopago' && ['aguardando_pagamento', 'pagamento_informado'].includes(p.status));
+    const abertos = Object.values(PEDIDOS).filter(p => p.gateway === 'mp' && p.status === 'aguardando_pagamento');
     for (const p of abertos) { try { await api(`/api/pedidos/${p.id}`); } catch { /* tenta depois */ } }
   }
 

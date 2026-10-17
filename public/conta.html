@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261074">
-<script src="/js/app-nativo.js?v=20261074"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261075">
+<script src="/js/app-nativo.js?v=20261075"></script>
 </head>
 <body>
 <header class="site-header">
@@ -520,41 +520,36 @@
             </div>
 
             <div class="panel-card">
-              <h2>Taxa de uso do site</h2>
-              <p class="muted" id="taxa-explica"></p>
-              <div class="vendas-numeros" id="taxa-numeros"></div>
-              <div id="taxa-pagar"></div>
-            </div>
-
-            <div class="panel-card">
-              <h2>Mercado Pago <small class="muted" style="font-weight:500">· confirmação automática</small></h2>
-              <p class="muted">Conecte a sua conta Mercado Pago: o cliente paga por Pix ou cartão no Mercado Pago, o pedido é confirmado sozinho, o valor dos produtos cai na sua conta e a taxa do site é separada automaticamente (você não precisa repassar nada).</p>
-              <div id="mp-status"></div>
+              <div class="row-between"><h2>Minha carteira</h2><small class="muted" id="cart-regras"></small></div>
+              <p class="muted">Os pagamentos dos seus pedidos caem no Mercado Pago do Ofertou! e o valor dos produtos (menos a tarifa do Mercado Pago de cada venda) entra aqui. A taxa de uso do site é paga pelo cliente, à parte.</p>
+              <div class="vendas-numeros" id="cart-numeros"></div>
+              <div class="cart-saque" id="cart-saque"></div>
+              <h3 class="cart-sub">Extrato</h3>
+              <div class="cart-extrato" id="cart-extrato"></div>
+              <h3 class="cart-sub">Saques</h3>
+              <div class="cart-extrato" id="cart-saques"></div>
             </div>
 
             <div class="panel-card">
               <h2>Como seus clientes pagam</h2>
-              <p class="muted">O pagamento vai direto para você. O Ofertou! gera o Pix "copia e cola" com o valor de cada pedido e registra tudo; você confirma o recebimento. <b>Sem nenhuma forma ativa, os pedidos chegam do mesmo jeito e você envia o pagamento ao cliente pela conversa.</b></p>
+              <p class="muted" id="pag-explica">O cliente escolhe Pix ou cartão e paga pelo Mercado Pago na hora do pedido. A confirmação é automática: você recebe o aviso no site (🔔), na conversa e no seu e-mail, e o valor entra na sua carteira.</p>
               <form class="form" id="form-pagloja">
                 <label class="check-line"><input type="checkbox" name="aceita_pedidos"> <span><b>Receber pedidos pelo site</b> (botão "Fazer pedido" nos seus produtos)</span></label>
+                <div class="pag-opcoes">
+                  <label class="pag-opcao"><input type="checkbox" name="aceita_pix"><span><b>Pix</b><small>QR code e copia e cola, confirmação na hora</small></span></label>
+                  <label class="pag-opcao"><input type="checkbox" name="aceita_cartao"><span><b>Cartão de crédito ou débito</b><small id="pag-parcelas">Pelo Mercado Pago</small></span></label>
+                </div>
+                <label class="field"><span>Recado no pedido <small>(prazo de envio, retirada, frete…)</small></span><textarea name="pedido_instrucoes" maxlength="400" rows="2"></textarea></label>
                 <fieldset class="vendas-bloco">
-                  <legend><label class="check-line"><input type="checkbox" name="pag_pix_ativo"> <span><b>Pix</b></span></label></legend>
+                  <legend><b>Recebimento dos saques</b> <small class="muted">(sua chave Pix)</small></legend>
                   <div class="form-row">
                     <label class="field"><span>Tipo de chave</span><select name="pag_pix_tipo"><option value="">—</option><option value="cpf">CPF</option><option value="cnpj">CNPJ</option><option value="email">E-mail</option><option value="telefone">Telefone</option><option value="aleatoria">Chave aleatória</option></select></label>
                     <label class="field"><span>Chave Pix</span><input name="pag_pix_chave" maxlength="80" autocomplete="off"></label>
                   </div>
-                  <div class="form-row">
-                    <label class="field"><span>Nome do recebedor</span><input name="pag_pix_nome" maxlength="60"></label>
-                    <label class="field"><span>Cidade</span><input name="pag_pix_cidade" maxlength="40"></label>
-                  </div>
+                  <label class="field"><span>Nome do titular</span><input name="pag_pix_nome" maxlength="60"></label>
                 </fieldset>
-                <fieldset class="vendas-bloco">
-                  <legend><label class="check-line"><input type="checkbox" name="pag_cartao_ativo"> <span><b>Cartão</b> (link de pagamento seu)</span></label></legend>
-                  <label class="field"><span>Link de pagamento <small>(crie no Mercado Pago, PagBank, InfinitePay, PicPay… e cole aqui)</small></span><input type="url" name="pag_cartao_link" maxlength="400" placeholder="https://"></label>
-                </fieldset>
-                <label class="field"><span>Recado no pedido <small>(prazo de envio, retirada, frete…)</small></span><textarea name="pedido_instrucoes" maxlength="400" rows="2"></textarea></label>
                 <div class="form-msg" hidden></div>
-                <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar formas de pagamento</button></div>
+                <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar</button></div>
               </form>
             </div>
           </div>
@@ -610,7 +605,7 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/conta.js?v=20261074" defer></script>
-<script src="/js/chat-topo.js?v=20261074" defer></script>
+<script src="/js/conta.js?v=20261075" defer></script>
+<script src="/js/chat-topo.js?v=20261075" defer></script>
 </body>
 </html>

@@ -252,8 +252,18 @@ router.get('/api/admin/atendimento', (req, res) => {
       acessos30: m.acessos.pagina.d30, produtos30: m.acessos.produto.d30, site30: m.acessos.site.d30, acessos: m.acessos.pagina.total };
   });
   res.json({ conversas: chat.listarAdmin({ q }), pedidos: pedidosLoja.listarAdmin({ q }), lojas: lojasLista,
-    taxa: { pct: pedidosLoja.taxaPct(), mp_pronto: pedidosLoja.mpAppPronto(), redirect: pedidosLoja.mpRedirect(),
-      pix_dono: Boolean(settings.get('pix_chave')) } });
+    taxa: { pct: pedidosLoja.taxaPct(), gateway_ok: pedidosLoja.gatewayPronto() }, carteiras: require('../carteira').visaoAdmin() });
+});
+// Carteiras: pagar ou recusar um saque pedido pela empresa
+router.post('/api/admin/saques/:id/pagar', (req, res) => {
+  try { res.json({ ok: true, saque: require('../carteira').resolverSaque(req.params.id, true, req.body?.observacao) }); } catch (err) { sendError(res, err); }
+});
+router.post('/api/admin/saques/:id/recusar', (req, res) => {
+  try { res.json({ ok: true, saque: require('../carteira').resolverSaque(req.params.id, false, req.body?.observacao) }); } catch (err) { sendError(res, err); }
+});
+router.get('/api/admin/carteiras/:lojaId', (req, res) => {
+  const c = require('../carteira');
+  res.json({ saldo: c.saldo(Number(req.params.lojaId)), extrato: c.extrato(Number(req.params.lojaId)), saques: c.saques(Number(req.params.lojaId)) });
 });
 router.post('/api/admin/taxas/:lojaId/quitar', (req, res) => {
   try { res.json(require('../pedidos-loja').quitarTaxas(req.params.lojaId, req.body?.observacao)); } catch (err) { sendError(res, err); }

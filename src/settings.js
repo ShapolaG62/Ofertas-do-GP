@@ -113,6 +113,10 @@ const DEFAULTS = {
   pix_cidade: '',               // cidade do recebedor (vai no Pix "copia e cola" das taxas das lojas)
   // Taxa de uso do site nos pedidos às lojas parceiras (%) e app do Mercado Pago para dividir o pagamento
   taxa_site_pct: '1',
+  // Carteira das empresas: saque mínimo e prazos para o valor das vendas ficar disponível
+  saque_minimo: '50',
+  liberar_dias_concluido: '7',
+  liberar_dias_pago: '14',
   mp_mkt_client_id: '',
   mp_mkt_client_secret: '',
   pag_ted_ativo: '0',

@@ -1626,3 +1626,42 @@ body.pf-body {
 .aviso-resp-ico { width: 18px; height: 18px; flex: none; margin-top: 1px; fill: none; stroke: #f5b301; stroke-width: 2; stroke-linecap: round; }
 .aviso-resp-p { margin: 0; font-size: 12.5px; padding: 10px 12px; }
 .aviso-resp-mini { display: block; font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }
+
+/* Pagamento do pedido: QR do Pix e espera da confirmação automática */
+.pix-pagar { justify-items: center; text-align: center; }
+.pix-qr { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 8px; }
+.pix-aguarde { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-3); font-size: 12px; }
+
+/* Carteira da empresa */
+.cart-saque { margin-top: 14px; display: grid; gap: 6px; }
+.cart-saque-linha { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.cart-saque-linha .field { min-width: 180px; }
+.cart-sub { margin: 18px 0 8px; font-size: 15px; }
+.cart-extrato { max-height: 340px; overflow: auto; scrollbar-width: thin; }
+.cart-tabela { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.cart-tabela th { text-align: left; font-size: 12px; color: var(--ink-3); font-weight: 700; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.cart-tabela td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cart-tabela .pos { color: var(--brand); font-weight: 700; white-space: nowrap; }
+.cart-tabela .neg { color: var(--deal); font-weight: 700; white-space: nowrap; }
+.pag-opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.pag-opcao { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: 12px; cursor: pointer; }
+.pag-opcao:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+.pag-opcao input { width: 18px; height: 18px; accent-color: var(--brand); flex: none; }
+.pag-opcao span { display: grid; gap: 2px; }
+.pag-opcao small { color: var(--ink-3); }
+
+/* Sino de notificações */
+.sino-btn { position: relative; width: 44px; padding: 0 !important; }
+.sino-btn[hidden] { display: none; }
+.sino-n { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+.sino-n[hidden] { display: none; }
+.sino-pop { position: fixed; z-index: 120; width: 340px; max-width: calc(100vw - 16px); max-height: 70vh; overflow-y: auto; scrollbar-width: none; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 16px 40px rgba(0, 0, 0, .4); }
+.sino-pop::-webkit-scrollbar { display: none; }
+.sino-pop[hidden] { display: none; }
+.sino-topo { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.sino-item { display: grid; gap: 3px; padding: 11px 14px; border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; font-size: 13.5px; }
+.sino-item:hover { background: var(--surface-2); }
+.sino-item.nova { background: var(--brand-soft); }
+.sino-item span { color: var(--ink-2); font-size: 12.5px; line-height: 1.4; }
+.sino-item small { color: var(--ink-3); font-size: 11.5px; }
+.sino-vazio { padding: 18px; text-align: center; color: var(--ink-3); margin: 0; font-size: 13.5px; }

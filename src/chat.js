@@ -289,5 +289,5 @@ function transcricao(convId) {
 
 module.exports = {
   ticket, pessoa, iniciarPessoal, iniciarLoja, conversaLoja, enviar, responder, lista, mensagens, resumo, sistema,
-  listarAdmin, transcricao, avisarPorEmail,
+  listarAdmin, transcricao, avisarPorEmail, emailDe,
 };

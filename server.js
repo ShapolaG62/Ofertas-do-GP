@@ -176,7 +176,8 @@ if (process.env.VERCEL) {
     console.log(`🔐 Painel: http://localhost:${PORT}/admin`);
     console.log('==================================================\n');
     if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
-    if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar(); // postagens agendadas (manhã, tarde, noite)
+    if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar();
+    require('./src/pedidos-loja').iniciar(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)
     require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
     const limparMarcas = () => {
       try { require('./src/watermark').limparCache(); require('./src/vitrine').limparCache(); } catch (err) { console.error('[MARCA]', err.message); }

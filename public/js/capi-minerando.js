@@ -47,11 +47,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261108`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261109`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261108';
+      img.src = PASTA + m.arquivo + '?v=20261109';
       folhas[nome] = img.decode().then(() => img);
     }
     return { m, img: await folhas[nome] };

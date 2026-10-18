@@ -13,12 +13,13 @@ const SAIDA = path.join(DIR, '..', '..', 'public', 'images', 'capi-anim');
 const FPS = 15;
 const LADO = 200; // tamanho de cada quadro na folha (px)
 const COLS = 10;
-// "trechos": montagem com partes do vídeo, em segundos ([de, até]; de > até toca de trás para frente)
+// "trechos": montagem com partes do vídeo, em segundos: [de, até, velocidade (1 = normal), pausa no fim em quadros]
+// (de > até toca de trás para frente)
 const VIDEOS = [
   { n: 1, recorte: true, trechos: [
     [0, 1.3],                       // ergue a picareta
-    [1.367, 1.7], [1.367, 1.7],     // golpes 1 e 2 na pedra (batida + faísca)
-    [1.367, 2.033],                 // golpe 3: a picareta assenta na pedra
+    [1.367, 1.7, 0.6, 2], [1.367, 1.7, 0.6, 2], // golpes 1 e 2 na pedra (batida + faísca), mais lentos e com uma pausa
+    [1.367, 2.033, 0.6],            // golpe 3: a picareta assenta na pedra
     [2.1, 3.033], [2.967, 2.4], [2.433, 3.033], // comemoração (o braço vai e volta)
   ] },
   { n: 2, recorte: true, ini: 0, fim: 5.0 },
@@ -39,9 +40,10 @@ const VIDEOS = [
   for (const vd of VIDEOS) {
     const trechos = vd.trechos || [[vd.ini, vd.fim]];
     vd.tempos = [];
-    for (const [de, ate] of trechos) {
-      const passos = Math.round(Math.abs(ate - de) * FPS), dir = ate >= de ? 1 : -1;
-      for (let i = 0; i <= passos; i++) vd.tempos.push(Math.round((de + dir * i / FPS) * 1000) / 1000);
+    for (const [de, ate, vel = 1, pausa = 0] of trechos) {
+      const passos = Math.round(Math.abs(ate - de) * FPS / vel), dir = ate >= de ? 1 : -1;
+      for (let i = 0; i <= passos; i++) vd.tempos.push(Math.round((de + dir * i * vel / FPS) * 1000) / 1000);
+      for (let i = 0; i < pausa; i++) vd.tempos.push(vd.tempos[vd.tempos.length - 1]);
     }
     if (!vd.trechos) vd.tempos.pop(); // trecho único: sem repetir o último instante
   }

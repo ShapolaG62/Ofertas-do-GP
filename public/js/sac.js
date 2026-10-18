@@ -2,6 +2,9 @@
    conversam com o cliente e marcam como resolvido (ou devolvem à fila). */
 (() => {
   'use strict';
+  // Dentro do painel do administrador (/sac?embed=1): sem o cabeçalho do site
+  const EMBUTIDO = /[?&]embed=1\b/.test(location.search) && window.top !== window;
+  if (EMBUTIDO) document.documentElement.classList.add('sac-embed');
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   const data = s => new Date(String(s).replace(' ', 'T') + 'Z');
@@ -92,7 +95,7 @@
     }
     conv.querySelector('.sac-conv-quem').innerHTML = `${avatar(c.cliente)}<div><b>${esc(c.cliente.nome)}</b>
       <small>${esc(c.codigo)} · ${esc(c.assunto_nome)} · <span class="sac-st sac-st-${c.status}">${esc(c.status_nome)}${c.atendente ? ` com ${esc(c.atendente.nome)}` : ''}</span></small>
-      <small>Aberto em ${hora(c.created_at)}${c.cliente.slug ? ` · <a href="/perfil/${esc(c.cliente.slug)}" target="_blank">ver perfil</a>` : ''}</small></div>`;
+      <small>Aberto em ${hora(c.created_at)}${c.cliente.slug ? ` · <a href="/perfil/${esc(c.cliente.slug)}" target="_top">ver perfil</a>` : ''}</small></div>`;
     conv.querySelector('.sac-conv-acoes').innerHTML = acoes;
     const box = $('#sac-msgs');
     const noFim = box.scrollHeight - box.scrollTop - box.clientHeight < 60;

@@ -1933,3 +1933,10 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .le-perigo { border-color: var(--deal); }
 .le-perigo h2 { color: var(--deal); }
 .le-perigo[hidden] { display: none; }
+
+/* SAC dentro do painel do administrador */
+.sac-embed .site-header, .sac-embed .sac-topo h1, .sac-embed #sac-eu { display: none; }
+.sac-embed body, .sac-embed .sac-body { background: transparent; }
+.sac-embed .sac-page { padding: 0; max-width: none; }
+.sac-embed .sac-topo { margin-bottom: 12px; }
+.sac-embed .sac-grade { height: calc(100vh - 70px); }

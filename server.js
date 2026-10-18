@@ -31,7 +31,7 @@ app.set('trust proxy', 'loopback'); // atrás do Nginx na VPS
 
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // só o próprio site pode exibir as páginas num quadro (o SAC dentro do painel)
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });

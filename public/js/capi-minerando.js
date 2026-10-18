@@ -5,7 +5,7 @@
 //   capi.intervalo: segundos entre o fim de um clipe e o começo do próximo.
 // Para ver na hora, em qualquer página: acrescente ?capi=teste ao endereço.
 (() => {
-  if (window.CapiMinerando) return;
+  if (window.CapiMinerando || window.top !== window) return;
   const CONSULTA_MS = 30000;          // de quanto em quanto tempo confere a configuração e se está minerando
   const TESTE = /[?&]capi=teste\b/.test(location.search);
   const PASTA = '/images/capi-anim/';
@@ -44,11 +44,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261115`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261116`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261115';
+      img.src = PASTA + m.arquivo + '?v=20261116';
       // onload em vez de img.decode(): o decode() pode ficar pendurado em alguns navegadores
       folhas[nome] = new Promise((ok, erro) => {
         img.onload = () => ok(img);

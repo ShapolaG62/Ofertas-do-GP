@@ -444,7 +444,7 @@ Em **Minha conta → Meus cartões**, qualquer conta do site pode salvar até 5 
 - **Adicionar cartão:** número, validade e código de segurança são digitados nos campos seguros do Mercado Pago, e os dados vão direto para ele. Também se informa o nome impresso e o CPF do titular.
 - **Remover** um cartão a qualquer momento. A lista mostra bandeira, final, validade e titular; cartão vencido aparece marcado.
 
-**No pedido a uma loja parceira:** ao escolher cartão, aparecem os cartões salvos. A pessoa escolhe um, digita só o código de segurança, escolhe as parcelas e paga. Também dá para usar outro cartão (formulário completo).
+**No pedido a uma loja parceira:** ao escolher cartão, o cartão salvo já vem escolhido (o último usado). A pessoa digita só o código de segurança (exigido a cada compra pelo Mercado Pago e pelas bandeiras), escolhe as parcelas e paga. Botões: **Trocar cartão** (escolhe outro salvo) e **+ Cadastrar cartão novo** (salva em Meus cartões e já usa). Sem cartão salvo, o formulário de cadastrar aparece direto. Também há o link "Pagar com um cartão sem salvar".
 
 **Segurança:** o Ofertou! não guarda número, validade nem código de segurança. Os cartões ficam guardados no Mercado Pago do site (clientes e cartões), e o site guarda só o código do cliente no Mercado Pago. Uma conta não consegue usar o cartão de outra.
 

@@ -126,6 +126,7 @@ function validarDados(p, b, logado = null) {
     if (!cadastro.validCpf(cpf)) throw fail('CPF inválido.');
     const tel = cadastro.digits(b.telefone);
     if (tel.length < 10 || tel.length > 11) throw fail('Informe o celular com DDD.');
+    require('./senha').validar(senha, { email: emailN, nome }); // conta nova: senha forte
     return { email: emailN, nome, cpf, telefone: tel, senha_hash: auth.hashPassword(senha) };
   }
 
@@ -146,6 +147,7 @@ function validarDados(p, b, logado = null) {
   if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) throw fail('Não é possível concluir com estes dados. Fale com o administrador.');
   if (db.get('SELECT 1 FROM users WHERE cpf = ?', dados.cpf)) throw fail('Já existe uma conta com este CPF. Entre com ela para assinar.', 409);
   if (dados.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ?', dados.cnpj)) throw fail('Já existe uma conta com este CNPJ.', 409);
+  require('./senha').validar(senha, { email: emailN, nome: dados.nome }); // conta nova: senha forte
   return { email: emailN, nome: dados.nome, ...dados, perfil_conta: perfil, senha_hash: auth.hashPassword(senha) };
 }
 

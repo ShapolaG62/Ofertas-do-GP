@@ -9,9 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261101">
-<script src="/js/app-nativo.js?v=20261101"></script>
-<script src="/js/dialogo.js?v=20261101"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261102">
+<script src="/js/app-nativo.js?v=20261102"></script>
+<script src="/js/dialogo.js?v=20261102"></script>
+<script src="/js/cadastro-auto.js?v=20261102" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -56,7 +57,7 @@
           <legend>Acesso</legend>
           <div class="cli-grid2">
             <label class="field">E-mail <input name="email" type="email" autocomplete="email" maxlength="120" required></label>
-            <label class="field">Senha (mín. 8) <input name="senha" type="password" autocomplete="new-password" minlength="8" required></label>
+            <label class="field">Senha <input name="senha" type="password" autocomplete="new-password" minlength="8" required></label>
             <label class="field so-novo">Confirme a senha <input name="senha_confirmacao" type="password" autocomplete="new-password" minlength="8"></label>
           </div>
         </fieldset>
@@ -85,17 +86,22 @@
         </fieldset>
 
         <fieldset class="ass-bloco so-novo so-empresa">
-          <legend>Dados da empresa</legend>
+          <legend data-rotulo-pf="Dados da loja (pessoa física)">Dados da empresa</legend>
+          <div class="tipo-loja" role="radiogroup" aria-label="Tipo de loja">
+            <label class="ass-metodo"><input type="radio" name="empresa_tipo" value="pj" checked><span><b>Pessoa jurídica</b><small>Empresa com CNPJ</small></span></label>
+            <label class="ass-metodo"><input type="radio" name="empresa_tipo" value="pf"><span><b>Pessoa física</b><small>Vendo com o meu CPF</small></span></label>
+          </div>
+          <p class="cli-sub" data-so-pf hidden>A loja fica no seu nome e CPF (informados acima). Não é preciso ter CNPJ.</p>
           <div class="cli-grid2">
-            <label class="field">Razão social <input name="razao_social" maxlength="150"></label>
-            <label class="field">Nome fantasia <input name="empresa_nome" maxlength="80"></label>
-            <label class="field">CNPJ <input name="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
-            <label class="field">Inscrição estadual (opcional) <input name="inscricao_estadual" maxlength="20"></label>
-            <label class="field">Telefone da empresa <input name="telefone_empresa" inputmode="tel" maxlength="16"></label>
+            <label class="field" data-so-pj>CNPJ <input name="cnpj" inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
+            <label class="field" data-so-pj>Razão social <input name="razao_social" maxlength="150"></label>
+            <label class="field"><span data-rotulo-pf="Nome da loja">Nome fantasia</span> <input name="empresa_nome" maxlength="80"></label>
+            <label class="field" data-so-pj>Inscrição estadual (opcional) <input name="inscricao_estadual" maxlength="20"></label>
+            <label class="field"><span data-rotulo-pf="Telefone da loja (opcional)">Telefone da empresa</span> <input name="telefone_empresa" inputmode="tel" maxlength="16"></label>
             <label class="field">Ramo de atividade <select name="ramo" id="ramo"><option value="">—</option></select></label>
             <label class="field">Site (opcional) <input name="site_empresa" type="url" maxlength="200" placeholder="https://"></label>
           </div>
-          <label class="check-line" style="margin-top:10px"><input type="checkbox" name="mesmo_endereco" checked> O endereço da empresa é o mesmo informado acima</label>
+          <label class="check-line" style="margin-top:10px"><input type="checkbox" name="mesmo_endereco" checked> <span data-rotulo-pf="O endereço da loja é o mesmo informado acima">O endereço da empresa é o mesmo informado acima</span></label>
           <div class="cli-grid2" id="emp-endereco" hidden>
             <label class="field">CEP da empresa <input name="emp_cep" inputmode="numeric" maxlength="9"></label>
             <label class="field">Rua / avenida <input name="emp_logradouro" maxlength="120"></label>
@@ -140,6 +146,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261101" defer></script>
+<script src="/js/assinar.js?v=20261102" defer></script>
 </body>
 </html>

@@ -9,7 +9,6 @@ try { db.db.exec('ALTER TABLE users ADD COLUMN staff INTEGER NOT NULL DEFAULT 0'
 try { db.db.exec('ALTER TABLE users ADD COLUMN pode_sac INTEGER NOT NULL DEFAULT 0'); } catch { /* já existe */ }
 
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
-const MIN_SENHA = 8;
 const sim = v => v === true || v === 'on' || v === '1' || v === 1;
 
 function montar(u) {
@@ -41,7 +40,7 @@ function adicionar(b) {
   } else {
     if (!nome) throw fail('Informe o nome da pessoa.');
     const senha = String(b.senha || '');
-    if (senha.length < MIN_SENHA || senha.length > 200) throw fail(`Crie uma senha inicial com pelo menos ${MIN_SENHA} caracteres (a pessoa pode trocar depois em Minha conta → Senha e conta).`);
+    require('./senha').validar(senha, { email, nome }); // padrão de senha forte
     id = Number(db.run(`INSERT INTO users (email, nome, senha_hash, tipo, status, staff, pode_sac, pode_postar) VALUES (?, ?, ?, 'consumidor', 'active', 1, ?, ?)`,
       email, nome, hashPassword(senha), sac ? 1 : 0, postar ? 1 : 0).lastInsertRowid);
   }
@@ -63,9 +62,9 @@ function atualizar(id, b) {
 
 function definirSenha(id, senha, registrar = true) {
   senha = String(senha || '');
-  if (senha.length < MIN_SENHA || senha.length > 200) throw fail(`A senha precisa ter pelo menos ${MIN_SENHA} caracteres.`);
   const u = users.getById(Number(id));
   if (!u) throw fail('Pessoa não encontrada.', 404);
+  require('./senha').validar(senha, { email: u.email, nome: u.nome }); // padrão de senha forte
   db.run('UPDATE users SET senha_hash = ? WHERE id = ?', hashPassword(senha), u.id);
   db.run('DELETE FROM user_sessions WHERE user_id = ?', u.id); // sai de todos os aparelhos
   if (registrar) users.logAction(u, 'equipe_senha', 'senha redefinida pelo administrador');

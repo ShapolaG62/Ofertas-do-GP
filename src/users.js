@@ -8,7 +8,7 @@ const cadastro = require('./cadastro');
 
 // Campos cadastrais que o próprio usuário vê e (exceto documentos e e-mail) pode editar.
 const PESSOA_FIELDS = ['nome', 'data_nascimento', 'telefone', 'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf'];
-const EMPRESA_FIELDS = ['razao_social', 'empresa_nome', 'inscricao_estadual', 'telefone_empresa', 'ramo', 'site_empresa',
+const EMPRESA_FIELDS = ['empresa_tipo', 'razao_social', 'empresa_nome', 'inscricao_estadual', 'telefone_empresa', 'ramo', 'site_empresa',
   'emp_cep', 'emp_logradouro', 'emp_numero', 'emp_complemento', 'emp_bairro', 'emp_cidade', 'emp_uf'];
 
 const COOKIE = 'gp_user';
@@ -59,7 +59,7 @@ function register(body) {
   const email = normalizeEmail(body.email);
   const senha = String(body.senha || '');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) throw new Error('Informe um e-mail válido.');
-  if (senha.length < MIN_PASSWORD || senha.length > 200) throw new Error(`A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.`);
+  require('./senha').validar(senha, { email }); // padrão de senha forte
   if (body.senha_confirmacao !== undefined && body.senha_confirmacao !== senha) throw new Error('As senhas não conferem.');
   if (isBlocked(email)) throw new Error('Não é possível criar uma conta com este e-mail. Fale com o administrador.');
   const existing = db.get('SELECT google_id FROM users WHERE email = ?', email);
@@ -249,7 +249,7 @@ function requireActive(req, res, next) {
 function updateProfile(u, body) {
   const dados = {
     ...cadastro.dadosPessoa(body, { exigirDocumento: false }),
-    ...(u.tipo === 'empresa' ? cadastro.dadosEmpresa(body, { exigirDocumento: false }) : {}),
+    ...(u.tipo === 'empresa' ? cadastro.dadosEmpresa({ ...body, empresa_tipo: u.empresa_tipo || 'pj' }, { exigirDocumento: false }) : {}),
   };
   const cols = Object.keys(dados);
   db.run(`UPDATE users SET ${cols.map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(dados), u.id);
@@ -258,7 +258,7 @@ function updateProfile(u, body) {
 // Contas criadas pelo Google podem definir uma senha sem informar a atual.
 function changePassword(u, atual, nova) {
   if (u.senha_hash && !verifyPassword(String(atual || ''), u.senha_hash)) throw new Error('Senha atual incorreta.');
-  if (String(nova || '').length < MIN_PASSWORD) throw new Error(`A nova senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.`);
+  require('./senha').validar(nova, { email: u.email, nome: u.nome }); // padrão de senha forte
   db.run('UPDATE users SET senha_hash = ? WHERE id = ?', hashPassword(nova), u.id);
   db.run('DELETE FROM user_sessions WHERE user_id = ?', u.id);
 }

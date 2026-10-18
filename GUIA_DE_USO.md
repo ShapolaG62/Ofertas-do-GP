@@ -423,3 +423,17 @@ Se o e-mail já tem conta no site, a pessoa só ganha as funções e a senha con
 Tudo fica registrado no histórico da conta.
 
 **Para a pessoa da equipe:** ela entra em **/conta** com o e-mail e a senha. A conta abre na aba **Área da equipe**, com os atalhos para a **Fila do SAC** e para **Postar anúncios**. Ela pode trocar a senha em Minha conta → Senha e conta.
+
+## 23. Senha forte, CEP automático e loja parceira PF/PJ
+
+**Senha forte (todas as senhas novas do site):** precisa ter pelo menos 8 caracteres, uma letra maiúscula, uma minúscula, um número e um símbolo. Também não pode ser uma senha muito comum (ex.: `Senha@123`), repetir o mesmo caractere 4 vezes seguidas nem conter o e-mail ou o nome da pessoa. Enquanto a pessoa digita, aparece embaixo do campo uma lista com ✓ no que já foi cumprido. O servidor confere de novo ao salvar. Vale para cadastro, troca de senha, equipe, clientes da ferramenta e a senha do painel. Quem já tem senha continua entrando normalmente.
+
+**CEP:** ao digitar os 8 números do CEP, rua, bairro, cidade e estado são preenchidos sozinhos e o cursor vai para o Número. Se o CEP for trocado, o endereço é atualizado. Fonte: ViaCEP (reserva: BrasilAPI).
+
+**Loja parceira: pessoa física ou jurídica.** No cadastro da loja, a pessoa escolhe:
+- **Pessoa jurídica (CNPJ):** ao digitar o CNPJ, razão social, nome fantasia, telefone, ramo e endereço da empresa vêm sozinhos dos dados públicos da Receita Federal. Se a situação na Receita não for "ATIVA", aparece um aviso. Tudo continua editável.
+- **Pessoa física (CPF):** não pede CNPJ nem razão social. A loja fica no nome e CPF da pessoa, e ela só informa o nome da loja, o ramo e o endereço.
+
+Os dados de CPF **não são consultados**: a Receita não disponibiliza dados de pessoas físicas para consulta pública, e a LGPD protege esses dados. O CPF é apenas validado (dígitos verificadores).
+
+No Painel → Usuários, a ficha da empresa mostra o **Tipo de loja**.

@@ -26,6 +26,16 @@ router.get('/api/offers/mix', (req, res) => {
 });
 
 router.get('/api/settings/public', (req, res) => res.json(settings.getPublic()));
+// Preenchimento automático do cadastro da loja parceira pelo CNPJ (dados públicos da Receita Federal)
+const consultasCnpj = new Map(); // ip → { n, ate }
+router.get('/api/cadastro/cnpj/:cnpj', async (req, res) => {
+  const ip = req.ip, agora = Date.now(), c = consultasCnpj.get(ip);
+  if (c && c.ate > agora && c.n >= 20) return res.status(429).json({ error: 'Muitas consultas seguidas. Aguarde alguns minutos.' });
+  consultasCnpj.set(ip, c && c.ate > agora ? { n: c.n + 1, ate: c.ate } : { n: 1, ate: agora + 10 * 60000 });
+  try { res.json(await require('../consulta-cnpj').consultar(req.params.cnpj)); }
+  catch (err) { res.status(err.status || 500).json({ error: err.message }); }
+});
+router.get('/api/senha/regras', (req, res) => res.json({ regras: require('../senha').REGRAS }));
 
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.
 router.get('/api/img/:id', async (req, res) => {

@@ -124,21 +124,8 @@
   const fone = d => (d = d.slice(0, 11), d.length > 10 ? d.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3') : d.length > 2 ? d.replace(/(\d{2})(\d{0,4})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '') : d);
   mask($('[name=telefone]'), fone);
   mask($('[name=telefone_empresa]'), fone);
-  for (const prefix of ['', 'emp_']) {
-    const cep = $(`[name=${prefix}cep]`);
-    mask(cep, d => d.slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'));
-    cep.addEventListener('blur', async () => {
-      const d = cep.value.replace(/\D/g, '');
-      if (d.length !== 8) return;
-      try {
-        const r = await fetch(`https://viacep.com.br/ws/${d}/json/`).then(x => x.json());
-        if (r.erro) return;
-        const set = (k, v) => { const el = $(`[name=${prefix}${k}]`); if (el && v && !el.value) el.value = v; };
-        set('logradouro', r.logradouro); set('bairro', r.bairro); set('cidade', r.localidade);
-        if (r.uf) $(`[name=${prefix}uf]`).value = r.uf;
-      } catch { /* sem internet para o ViaCEP: a pessoa preenche */ }
-    });
-  }
+  // Endereço pelo CEP, dados da empresa pelo CNPJ e pessoa física/jurídica: /js/cadastro-auto.js
+  for (const prefix of ['', 'emp_']) mask($(`[name=${prefix}cep]`), d => d.slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'));
 
   $('#ass-form').addEventListener('submit', async e => {
     e.preventDefault();

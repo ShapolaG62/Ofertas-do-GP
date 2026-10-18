@@ -28,9 +28,8 @@ function verifyPassword(password, stored) {
 const hasPassword = () => Boolean(settings.get('admin_password_hash'));
 
 function setPassword(password) {
-  if (typeof password !== 'string' || password.length < MIN_PASSWORD) {
-    throw new Error(`A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.`);
-  }
+  if (typeof password !== 'string') throw new Error('Informe a senha.');
+  require('./senha').validar(password); // padrão de senha forte também no painel
   settings.set('admin_password_hash', hashPassword(password));
   db.run('DELETE FROM sessions'); // derruba sessões antigas
 }

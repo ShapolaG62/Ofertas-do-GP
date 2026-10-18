@@ -113,22 +113,31 @@
 
   function empresaFields(mode) {
     const cadastro = mode === 'cadastro';
+    // Loja parceira: pessoa jurídica (CNPJ, dados puxados da Receita) ou pessoa física (vende com o CPF)
+    const tipo = cadastro
+      ? `<div class="tipo-loja" role="radiogroup" aria-label="Tipo de loja">
+          <label class="ass-metodo"><input type="radio" name="empresa_tipo" value="pj" checked><span><b>Pessoa jurídica</b><small>Empresa com CNPJ</small></span></label>
+          <label class="ass-metodo"><input type="radio" name="empresa_tipo" value="pf"><span><b>Pessoa física</b><small>Vendo com o meu CPF</small></span></label>
+        </div>`
+      : '<input type="hidden" name="empresa_tipo">';
     return `<fieldset class="form-section">
-      <legend>Dados da empresa</legend>
-      ${field('Razão social', inp('razao_social', 'maxlength="150" autocomplete="organization"'))}
+      <legend data-rotulo-pf="Dados da loja (pessoa física)">Dados da empresa</legend>
+      ${tipo}
+      <p class="hint" data-so-pf hidden>A loja fica no seu nome e CPF (informados acima). Não é preciso ter CNPJ.</p>
+      <div data-so-pj>${field('CNPJ', inp('cnpj', `inputmode="numeric" data-mask="cnpj" maxlength="18" placeholder="00.000.000/0000-00" ${cadastro ? '' : 'disabled'}`), cadastro ? ' <span class="hint-inline">(os dados da empresa são preenchidos sozinhos)</span>' : '')}</div>
+      <div data-so-pj>${field('Razão social', inp('razao_social', 'maxlength="150" autocomplete="organization"'))}</div>
       <div class="form-row">
-        ${field('Nome fantasia', inp('empresa_nome', 'maxlength="80"'))}
-        ${field('CNPJ', inp('cnpj', `inputmode="numeric" data-mask="cnpj" maxlength="18" placeholder="00.000.000/0000-00" ${cadastro ? '' : 'disabled'}`))}
+        <label class="field"><span data-rotulo-pf="Nome da loja">Nome fantasia</span>${inp('empresa_nome', 'maxlength="80"')}</label>
+        <label class="field"><span data-rotulo-pf="Telefone da loja (opcional)">Telefone da empresa</span>${inp('telefone_empresa', 'inputmode="tel" data-mask="tel" maxlength="15" placeholder="(11) 3000-0000"')}</label>
       </div>
-      <div class="form-row">
+      <div class="form-row" data-so-pj>
         ${field('Inscrição estadual', inp('inscricao_estadual', 'maxlength="20" placeholder="Isento, se não tiver"'), opt)}
-        ${field('Telefone da empresa', inp('telefone_empresa', 'inputmode="tel" data-mask="tel" maxlength="15" placeholder="(11) 3000-0000"'))}
       </div>
       <div class="form-row">
         ${field('Ramo de atividade', `<select name="ramo"><option value="">Selecione</option>${INFO.ramos.map(r => `<option>${esc(r)}</option>`).join('')}</select>`)}
         ${field('Site da empresa', inp('site_empresa', 'type="url" maxlength="200" placeholder="https://"'), opt)}
       </div>
-      <label class="check-line"><input type="checkbox" name="mesmo_endereco" data-same-address> <span>O endereço da empresa é o mesmo informado acima</span></label>
+      <label class="check-line"><input type="checkbox" name="mesmo_endereco" data-same-address> <span data-rotulo-pf="O endereço da loja é o mesmo informado acima">O endereço da empresa é o mesmo informado acima</span></label>
     </fieldset>
     ${addressFields('emp_', 'Endereço da empresa')}`;
   }
@@ -136,6 +145,7 @@
   function renderFieldBlocks() {
     $$('[data-fields]').forEach(el => {
       el.innerHTML = el.dataset.fields === 'pessoa' ? pessoaFields(el.dataset.mode) : empresaFields(el.dataset.mode);
+      window.OfertouCadastro?.aplicarTipo(el.closest('form'));
     });
   }
 
@@ -152,25 +162,9 @@
   };
   const applyMask = el => { if (el?.dataset?.mask && el.value) el.value = MASKS[el.dataset.mask](el.value.replace(/\D/g, '')); };
 
-  async function lookupCep(input) {
-    const cep = input.value.replace(/\D/g, '');
-    if (cep.length !== 8) return;
-    const box = input.closest('[data-address]');
-    const prefix = box.dataset.address;
-    try {
-      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`).then(x => x.json());
-      if (r.erro) return toast('CEP não encontrado. Preencha o endereço manualmente.');
-      const set = (n, v) => { const el = box.querySelector(`[name="${prefix}${n}"]`); if (el && v && !el.value) el.value = v; };
-      set('logradouro', r.logradouro); set('bairro', r.bairro); set('cidade', r.localidade); set('uf', r.uf);
-      box.querySelector(`[name="${prefix}numero"]`)?.focus();
-    } catch { /* sem internet: preenchimento manual */ }
-  }
-
+  // O endereço pelo CEP e os dados pelo CNPJ são preenchidos por /js/cadastro-auto.js
   document.addEventListener('input', e => {
-    if (e.target.dataset?.mask) {
-      applyMask(e.target);
-      if (e.target.dataset.mask === 'cep') lookupCep(e.target);
-    }
+    if (e.target.dataset?.mask) applyMask(e.target);
   });
   document.addEventListener('change', e => {
     if (e.target.matches('[data-same-address]')) e.target.form.querySelector('[data-address="emp_"]').hidden = e.target.checked;
@@ -453,6 +447,7 @@
     $('#hello-new-ad').hidden = !empresa || !LOJA || ME.bloqueio_publicacao;
 
     fillFields($('#form-perfil'), ME);
+    window.OfertouCadastro?.aplicarTipo($('#form-perfil'));
     $('#form-perfil').email.value = ME.email;
 
     // Conta só com Google: pode definir senha sem a atual; exclusão confirma digitando EXCLUIR.

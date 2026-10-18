@@ -36,7 +36,7 @@ function validar(b, { novo }) {
   if (nome.length < 2 || nome.length > 80) throw fail('Informe o nome do cliente.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) throw fail('Informe um e-mail válido.');
   const senha = String(b.senha || '');
-  if ((novo || senha) && senha.length < 8) throw fail('A senha precisa ter pelo menos 8 caracteres.');
+  if (novo || senha) require('./senha').validar(senha, { email, nome }); // padrão de senha forte
   return { nome, email, senha };
 }
 

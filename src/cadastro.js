@@ -112,7 +112,9 @@ function dadosPessoa(body, { exigirDocumento = true } = {}) {
   return out;
 }
 
+// Loja parceira: pessoa jurídica (CNPJ, razão social) ou pessoa física (vende com o próprio CPF e nome).
 function dadosEmpresa(body, { exigirDocumento = true } = {}) {
+  const pf = String(body.empresa_tipo || 'pj') === 'pf';
   const ramo = String(body.ramo || '');
   if (!RAMOS.includes(ramo)) throw fail('Selecione o ramo de atividade da empresa.');
   const site = String(body.site_empresa || '').trim();
@@ -122,15 +124,18 @@ function dadosEmpresa(body, { exigirDocumento = true } = {}) {
     ? Object.fromEntries(['cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf'].map(k => [`emp_${k}`, body[k]]))
     : body;
   const out = {
-    razao_social: text(body.razao_social, 'a razão social', { min: 3, max: 150 }),
-    empresa_nome: text(body.empresa_nome, 'o nome fantasia', { min: 2, max: 80 }),
-    inscricao_estadual: text(body.inscricao_estadual, 'a inscrição estadual', { max: 20, required: false }),
-    telefone_empresa: telefone(body.telefone_empresa, 'o telefone da empresa'),
+    empresa_tipo: pf ? 'pf' : 'pj',
+    razao_social: pf ? text(body.nome, 'seu nome completo', { min: 5, max: 150 }) : text(body.razao_social, 'a razão social', { min: 3, max: 150 }),
+    empresa_nome: text(body.empresa_nome, pf ? 'o nome da loja' : 'o nome fantasia', { min: 2, max: 80 }),
+    inscricao_estadual: pf ? null : text(body.inscricao_estadual, 'a inscrição estadual', { max: 20, required: false }),
+    telefone_empresa: pf ? (telefone(body.telefone_empresa, 'o telefone da loja', false) || telefone(body.telefone, 'seu celular'))
+      : telefone(body.telefone_empresa, 'o telefone da empresa'),
     ramo,
     site_empresa: site || null,
     ...endereco(empEnd, 'emp_', ' da empresa'),
   };
-  if (exigirDocumento) out.cnpj = cnpj(body.cnpj);
+  if (pf) out.cnpj = null; // vende com o CPF da própria pessoa (já pedido nos dados pessoais)
+  else if (exigirDocumento) out.cnpj = cnpj(body.cnpj);
   return out;
 }
 

@@ -317,6 +317,8 @@ for (const t of ['social_posts', 'post_queue']) {
   const userCols = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
   if (!userCols.includes('plano')) db.exec('ALTER TABLE users ADD COLUMN plano TEXT');
   if (!userCols.includes('assinatura_ate')) db.exec('ALTER TABLE users ADD COLUMN assinatura_ate TEXT');
+  // Loja parceira: 'pj' (empresa com CNPJ) ou 'pf' (pessoa física vendendo com CPF)
+  if (!userCols.includes('empresa_tipo')) db.exec('ALTER TABLE users ADD COLUMN empresa_tipo TEXT');
 }
 db.exec(`
   CREATE TABLE IF NOT EXISTS pagamentos (

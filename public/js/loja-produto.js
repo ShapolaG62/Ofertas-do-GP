@@ -54,7 +54,7 @@
       } else location.href = `/mensagens?c=${r.id}`;
     } catch (err) {
       if (botao) { botao.disabled = false; botao.innerHTML = original; }
-      alert(err.message);
+      OfertouUI.avisar(err.message);
     }
   }
 

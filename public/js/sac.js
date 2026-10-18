@@ -138,8 +138,8 @@
     const ac = e.target.closest('[data-acao]');
     if (ac && ATUAL) {
       const acao = ac.dataset.acao;
-      if (acao === 'resolver' && !confirm('Marcar este chamado como resolvido? O cliente poderá avaliar o atendimento.')) return;
-      if (acao === 'devolver' && !confirm('Devolver o chamado à fila? Outro atendente poderá assumir.')) return;
+      if (acao === 'resolver' && !await OfertouUI.confirmar('Marcar este chamado como resolvido? O cliente poderá avaliar o atendimento.')) return;
+      if (acao === 'devolver' && !await OfertouUI.confirmar('Devolver o chamado à fila? Outro atendente poderá assumir.')) return;
       ac.disabled = true;
       try {
         const d = await api(`/api/sac/chamados/${ATUAL.id}/${acao}`, {});

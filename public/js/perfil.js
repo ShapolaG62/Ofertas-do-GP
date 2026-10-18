@@ -380,7 +380,7 @@
     });
     box.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', async () => {
       const body = b.dataset.mod === 'oculto' ? { oculto: !r.oculto } : { limpar: true };
-      if (body.limpar && !confirm('Remover a foto, a capa, o título, o resumo e os links deste perfil?')) return;
+      if (body.limpar && !await OfertouUI.confirmar('Remover a foto, a capa, o título, o resumo e os links deste perfil?')) return;
       try {
         await api(`/api/admin/perfis/${encodeURIComponent(P.dono)}/moderar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         carregar();

@@ -181,7 +181,7 @@
       return;
     }
     if (e.target.closest('#lj-aval-apagar')) {
-      if (!confirm('Apagar a sua avaliação?')) return;
+      if (!await OfertouUI.confirmar('Apagar a sua avaliação?')) return;
       try { D.avaliacoes = await api(`/api/lojas/${D.loja.id}/avaliacoes/minha`, null, 'DELETE'); renderAbas(); renderTopo(); renderAvaliacoes(); toast('Avaliação apagada.'); } catch (err) { toast(err.message); }
       return;
     }

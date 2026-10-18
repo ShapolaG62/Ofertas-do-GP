@@ -84,7 +84,7 @@
       const r = await api('/api/chat/iniciar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ loja_id: Number(b.dataset.falarLoja) }) });
       if ($('#comu-dialog').open) $('#comu-dialog').close();
       if (window.OfertouChat) window.OfertouChat.abrir(r.id); else location.href = `/mensagens?c=${r.id}`;
-    } catch (err) { alert(err.message); }
+    } catch (err) { OfertouUI.avisar(err.message); }
     b.disabled = false;
   });
 
@@ -177,7 +177,7 @@
       if (m) { m.eu_sigo = r.eu_sigo; m.seguidores = r.seguidores; }
       const seg = $('#comu-pop [data-pop-seguidores]');
       if (seg && $('#comu-pop').dataset.slug === b.dataset.seguir) seg.textContent = num(r.seguidores);
-    } catch (err) { alert(err.message); } finally { b.disabled = false; }
+    } catch (err) { OfertouUI.avisar(err.message); } finally { b.disabled = false; }
   });
 
   // ── Miniatura flutuante ao passar o mouse ─────────────────────────────────

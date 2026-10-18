@@ -592,7 +592,7 @@
   $('[data-pane="vendas"]').addEventListener('click', async e => {
     if (!e.target.closest('#cart-sacar')) return;
     const valor = $('#cart-valor').value;
-    if (!confirm(`Solicitar o saque de R$ ${valor} para a sua chave Pix?`)) return;
+    if (!await OfertouUI.confirmar(`Solicitar o saque de R$ ${valor} para a sua chave Pix?`)) return;
     try { renderCarteira(await api('/api/conta/loja/saque', { method: 'POST', body: { valor } })); toast('Saque solicitado! Avisaremos quando for pago.'); }
     catch (err) { toast(err.message); }
   });
@@ -609,8 +609,8 @@
     if (!b) return;
     const acao = b.dataset.pacao;
     let motivo = '';
-    if (acao === 'cancelar') { motivo = prompt('Motivo do cancelamento (opcional):'); if (motivo === null) return; }
-    else if (acao === 'confirmar_pagamento' && !confirm('Confirma que o valor do pedido já caiu na sua conta?')) return;
+    if (acao === 'cancelar') { motivo = await OfertouUI.perguntar('Motivo do cancelamento (opcional):'); if (motivo === null) return; }
+    else if (acao === 'confirmar_pagamento' && !await OfertouUI.confirmar('Confirma que o valor do pedido já caiu na sua conta?')) return;
     b.disabled = true;
     try {
       await api(`/api/pedidos/${b.dataset.pid}/acao`, { method: 'POST', body: { acao, motivo } });
@@ -771,7 +771,7 @@
     if (ed) return editorCatalogo(ED.catalogos.find(c => c.id === Number(ed.dataset.catEditar)));
     const ex = e.target.closest('[data-cat-excluir]');
     if (ex) {
-      if (!confirm('Excluir este catálogo? Os produtos continuam na loja.')) return;
+      if (!await OfertouUI.confirmar('Excluir este catálogo? Os produtos continuam na loja.')) return;
       try { ED.catalogos = (await api(`/api/conta/loja/catalogos/${ex.dataset.catExcluir}`, { method: 'DELETE' })).catalogos; renderCatalogos(); } catch (err) { toast(err.message); }
       return;
     }
@@ -840,7 +840,7 @@
     const del = e.target.closest('[data-del]');
     const edit = e.target.closest('[data-edit]');
     if (edit) return openEditor(Number(edit.dataset.edit));
-    if (!del || !confirm('Excluir este anúncio?')) return;
+    if (!del || !await OfertouUI.confirmar('Excluir este anúncio?')) return;
     try { await api(`/api/conta/produtos/${del.dataset.del}`, { method: 'DELETE' }); loadProducts(); toast('Anúncio excluído.'); }
     catch (err) { toast(err.message); }
   });
@@ -918,9 +918,9 @@
     }
   }
   $('#photo-input').addEventListener('change', e => { uploadFiles([...e.target.files]); e.target.value = ''; });
-  $('#photo-link').addEventListener('click', () => {
+  $('#photo-link').addEventListener('click', async () => {
     if (photos.length >= INFO.max_fotos) return toast(`Máximo de ${INFO.max_fotos} fotos.`);
-    const url = prompt('Link da foto (começando com https://):');
+    const url = await OfertouUI.perguntar('Link da foto (começando com https://):');
     if (!url) return;
     if (!/^https:\/\//i.test(url.trim())) return toast('Use um link começando com https://');
     photos.push(url.trim());
@@ -994,7 +994,7 @@
     toast(editingId ? 'Anúncio atualizado!' : 'Anúncio publicado!');
     closeEditor();
     loadProducts();
-    if (!editingId && confirm('Anúncio publicado! Quer ver como ficou?')) location.href = `/anuncio/${r.id}`;
+    if (!editingId && await OfertouUI.confirmar('Anúncio publicado! Quer ver como ficou?')) location.href = `/anuncio/${r.id}`;
   });
 
   // ── Importação, dados e segurança ──────────────────────────────────────────
@@ -1032,7 +1032,7 @@
   });
 
   bind('#form-excluir', async (form, d) => {
-    if (!confirm('Tem certeza? Sua conta, loja e anúncios serão apagados.')) return;
+    if (!await OfertouUI.confirmar('Tem certeza? Sua conta, loja e anúncios serão apagados.')) return;
     await api('/api/conta/excluir', { method: 'POST', body: d });
     location.href = '/';
   });

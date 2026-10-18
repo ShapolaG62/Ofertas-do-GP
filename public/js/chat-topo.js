@@ -297,7 +297,7 @@
     try {
       aplicarSac(await api(`/api/sac/${SAC.id}/mensagem`, { texto: t }));
       form.texto.value = ''; form.texto.style.height = '';
-    } catch (err) { alert(err.message); }
+    } catch (err) { OfertouUI.avisar(err.message); }
     btn.disabled = false;
     form.texto.focus();
   }
@@ -307,7 +307,7 @@
     const fn = e.target, btn = fn.querySelector('button');
     btn.disabled = true; btn.textContent = 'Enviando…';
     try { aplicarSac(await api('/api/sac', { assunto: fn.assunto.value, texto: fn.texto.value })); atualizarContador(); }
-    catch (err) { alert(err.message); btn.disabled = false; btn.textContent = 'Entrar na fila de atendimento'; }
+    catch (err) { OfertouUI.avisar(err.message); btn.disabled = false; btn.textContent = 'Entrar na fila de atendimento'; }
   });
 
 
@@ -335,41 +335,41 @@
     if (pa && ATUAL) {
       const acao = pa.dataset.pacao;
       let motivo = '';
-      if (acao === 'cancelar') { motivo = prompt('Motivo do cancelamento (opcional):'); if (motivo === null) return; }
-      else if (acao === 'confirmar_pagamento' && !confirm('Confirma que o valor do pedido já caiu na sua conta?')) return;
+      if (acao === 'cancelar') { motivo = await OfertouUI.perguntar('Motivo do cancelamento (opcional):'); if (motivo === null) return; }
+      else if (acao === 'confirmar_pagamento' && !await OfertouUI.confirmar('Confirma que o valor do pedido já caiu na sua conta?')) return;
       pa.disabled = true;
-      try { await api(`/api/pedidos/${pa.dataset.pid}/acao`, { acao, motivo }); await novas(true); } catch (err) { alert(err.message); pa.disabled = false; }
+      try { await api(`/api/pedidos/${pa.dataset.pid}/acao`, { acao, motivo }); await novas(true); } catch (err) { OfertouUI.avisar(err.message); pa.disabled = false; }
       return;
     }
     if (e.target.closest('[data-chatf="menu"]') && ATUAL) {
       const desbloquear = ATUAL.status === 'bloqueada' && ATUAL.bloqueada_por_mim;
-      if (ATUAL.status === 'bloqueada' && !desbloquear) return alert('Esta conversa foi bloqueada pela outra pessoa.');
-      if (!confirm(desbloquear ? 'Desbloquear esta conversa?' : `Bloquear ${ATUAL.outro.nome}? Ninguém poderá mandar mensagens nesta conversa.`)) return;
-      try { ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: desbloquear ? 'desbloquear' : 'bloquear' }); cabecalho(); await novas(true); } catch (err) { alert(err.message); }
+      if (ATUAL.status === 'bloqueada' && !desbloquear) return OfertouUI.avisar('Esta conversa foi bloqueada pela outra pessoa.');
+      if (!await OfertouUI.confirmar(desbloquear ? 'Desbloquear esta conversa?' : `Bloquear ${ATUAL.outro.nome}? Ninguém poderá mandar mensagens nesta conversa.`)) return;
+      try { ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: desbloquear ? 'desbloquear' : 'bloquear' }); cabecalho(); await novas(true); } catch (err) { OfertouUI.avisar(err.message); }
       return;
     }
     if (e.target.closest('[data-sac]')) return abrirSac().catch(err => { corpo.innerHTML = `<p class="chatf-vazio">${esc(err.message)}</p>`; });
     const sacAcao = e.target.closest('[data-sac-acao]');
     if (sacAcao && SAC) {
-      if (sacAcao.dataset.sacAcao === 'encerrar' && !confirm('Encerrar o chamado? Se precisar depois, é só escrever de novo.')) return;
-      try { aplicarSac(await api(`/api/sac/${SAC.id}/encerrar`, {})); } catch (err) { alert(err.message); }
+      if (sacAcao.dataset.sacAcao === 'encerrar' && !await OfertouUI.confirmar('Encerrar o chamado? Se precisar depois, é só escrever de novo.')) return;
+      try { aplicarSac(await api(`/api/sac/${SAC.id}/encerrar`, {})); } catch (err) { OfertouUI.avisar(err.message); }
       return;
     }
     const sacNota = e.target.closest('[data-sac-nota]');
     if (sacNota && SAC) {
-      try { aplicarSac(await api(`/api/sac/${SAC.id}/avaliar`, { nota: Number(sacNota.dataset.sacNota) })); } catch (err) { alert(err.message); }
+      try { aplicarSac(await api(`/api/sac/${SAC.id}/avaliar`, { nota: Number(sacNota.dataset.sacNota) })); } catch (err) { OfertouUI.avisar(err.message); }
       return;
     }
     const c = e.target.closest('[data-conv]');
     if (c) return abrirConversa(Number(c.dataset.conv)).catch(err => { corpo.innerHTML = `<p class="chatf-vazio">${esc(err.message)}</p>`; });
     const r = e.target.closest('[data-resp]');
     if (r && ATUAL) {
-      if (r.dataset.resp === 'bloquear' && !confirm('Bloquear esta pessoa? Ela não poderá mais mandar mensagens para você.')) return;
+      if (r.dataset.resp === 'bloquear' && !await OfertouUI.confirmar('Bloquear esta pessoa? Ela não poderá mais mandar mensagens para você.')) return;
       try {
         ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: r.dataset.resp });
         if (r.dataset.resp === 'recusar') return mostrarLista();
         cabecalho(); await novas(); atualizarContador();
-      } catch (err) { alert(err.message); }
+      } catch (err) { OfertouUI.avisar(err.message); }
     }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !painel.hidden) fecharPainel(); });
@@ -385,7 +385,7 @@
       const antes = ATUAL.status;
       await novas();
       if (antes !== ATUAL.status) cabecalho();
-    } catch (err) { alert(err.message); }
+    } catch (err) { OfertouUI.avisar(err.message); }
     form.querySelector('button').disabled = false;
     form.texto.focus();
   });

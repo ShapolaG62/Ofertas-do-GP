@@ -119,7 +119,7 @@
   $('#msg-pedido-banner').addEventListener('click', async e => {
     const b = e.target.closest('[data-resp]');
     if (!b) return;
-    if (b.dataset.resp === 'bloquear' && !confirm('Bloquear esta pessoa? Ela não poderá mais mandar mensagens para você.')) return;
+    if (b.dataset.resp === 'bloquear' && !await OfertouUI.confirmar('Bloquear esta pessoa? Ela não poderá mais mandar mensagens para você.')) return;
     try {
       ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: b.dataset.resp });
       toast(b.dataset.resp === 'aceitar' ? 'Conversa aceita.' : b.dataset.resp === 'recusar' ? 'Pedido recusado.' : 'Bloqueado.');
@@ -132,7 +132,7 @@
     if (!ATUAL) return;
     const desbloquear = ATUAL.status === 'bloqueada' && ATUAL.bloqueada_por_mim;
     if (ATUAL.status === 'bloqueada' && !desbloquear) return toast('Esta conversa foi bloqueada pela outra pessoa.');
-    if (!confirm(desbloquear ? 'Desbloquear esta conversa?' : `Bloquear ${ATUAL.outro.nome}? Ninguém poderá mandar mensagens nesta conversa.`)) return;
+    if (!await OfertouUI.confirmar(desbloquear ? 'Desbloquear esta conversa?' : `Bloquear ${ATUAL.outro.nome}? Ninguém poderá mandar mensagens nesta conversa.`)) return;
     try {
       ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: desbloquear ? 'desbloquear' : 'bloquear' });
       await atualizar(); renderCabeca(); carregarLista();
@@ -194,9 +194,9 @@
     const acao = b.dataset.pacao;
     let motivo = '';
     if (acao === 'cancelar') {
-      motivo = prompt('Motivo do cancelamento (opcional):');
+      motivo = await OfertouUI.perguntar('Motivo do cancelamento (opcional):');
       if (motivo === null) return;
-    } else if (acao === 'confirmar_pagamento' && !confirm('Confirma que o valor do pedido já caiu na sua conta?')) return;
+    } else if (acao === 'confirmar_pagamento' && !await OfertouUI.confirmar('Confirma que o valor do pedido já caiu na sua conta?')) return;
     b.disabled = true;
     try {
       await api(`/api/pedidos/${b.dataset.pid}/acao`, { acao, motivo });

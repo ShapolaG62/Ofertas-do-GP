@@ -234,6 +234,7 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
+<script src="/js/dialogo.js?v=20261101"></script>
 </head>
 <body>
 <div class="wrap">
@@ -1619,7 +1620,7 @@ $('#offers-body').addEventListener('click', async e => {
     if (btn.dataset.act === 'toggle') {
       await api(`/api/admin/offers/${id}`, { method: 'PATCH', body: { oculto: btn.dataset.hidden !== '1' } });
     } else if (btn.dataset.act === 'del') {
-      if (!confirm('Excluir esta oferta do banco? Se ela aparecer de novo na loja, será minerada novamente.')) return;
+      if (!await OfertouUI.confirmar('Excluir esta oferta do banco? Se ela aparecer de novo na loja, será minerada novamente.')) return;
       await api(`/api/admin/offers/${id}`, { method: 'DELETE' });
     }
     loadOffers();
@@ -1706,18 +1707,18 @@ async function userAction(id, acao) {
   const body = { acao };
   const needsReason = ['recusar', 'suspender', 'banir', 'bloquear_publicacao', 'excluir_publicacoes', 'excluir'];
   if (acao === 'suspender') {
-    const dias = prompt('Suspender por quantos dias?', '7');
+    const dias = await OfertouUI.perguntar('Suspender por quantos dias?', '7');
     if (!dias) return false;
     body.dias = Number(dias);
   }
   if (acao === 'excluir') {
-    if (!confirm('Excluir este perfil? A conta, a loja e todos os produtos serão apagados. Não dá para desfazer.')) return false;
-    body.bloquear_email = confirm('Bloquear também este e-mail para que não possa se cadastrar de novo?');
+    if (!await OfertouUI.confirmar('Excluir este perfil? A conta, a loja e todos os produtos serão apagados. Não dá para desfazer.')) return false;
+    body.bloquear_email = await OfertouUI.confirmar('Bloquear também este e-mail para que não possa se cadastrar de novo?');
   }
-  if (acao === 'excluir_publicacoes' && !confirm('Excluir TODOS os produtos publicados por este usuário?')) return false;
-  if (acao === 'banir' && !confirm('Banir este usuário? Ele perde o acesso e a loja sai do ar.')) return false;
+  if (acao === 'excluir_publicacoes' && !await OfertouUI.confirmar('Excluir TODOS os produtos publicados por este usuário?')) return false;
+  if (acao === 'banir' && !await OfertouUI.confirmar('Banir este usuário? Ele perde o acesso e a loja sai do ar.')) return false;
   if (needsReason.includes(acao)) {
-    const motivo = prompt('Motivo (aparece para o usuário quando aplicável):', '');
+    const motivo = await OfertouUI.perguntar('Motivo (aparece para o usuário quando aplicável):', '');
     if (motivo === null) return false;
     body.motivo = motivo;
   }
@@ -1790,7 +1791,7 @@ $('[data-body="equipe"]').addEventListener('change', async e => {
 $('[data-body="equipe"]').addEventListener('click', async e => {
   const s = e.target.closest('[data-eq-senha]');
   if (s) {
-    const senha = prompt(`Nova senha para ${s.dataset.email} (mín. 8 caracteres). A pessoa sai de todos os aparelhos e entra com a nova senha.`);
+    const senha = await OfertouUI.perguntar(`Nova senha para ${s.dataset.email} (mín. 8 caracteres). A pessoa sai de todos os aparelhos e entra com a nova senha.`);
     if (!senha) return;
     try { await api(`/api/admin/equipe/${s.dataset.eqSenha}/senha`, { method: 'POST', body: { senha } }); globalMsg('Senha alterada. Passe a nova senha para a pessoa.'); }
     catch (err) { globalMsg(err.message, false); }
@@ -1798,7 +1799,7 @@ $('[data-body="equipe"]').addEventListener('click', async e => {
   }
   const r = e.target.closest('[data-eq-remover]');
   if (r) {
-    if (!confirm(`Tirar ${r.dataset.nome} da equipe? A pessoa perde o acesso à Fila do SAC e às Postagens (a conta continua existindo).`)) return;
+    if (!await OfertouUI.confirmar(`Tirar ${r.dataset.nome} da equipe? A pessoa perde o acesso à Fila do SAC e às Postagens (a conta continua existindo).`)) return;
     try { await api(`/api/admin/equipe/${r.dataset.eqRemover}/remover`, { method: 'POST', body: {} }); globalMsg('Removido da equipe.'); loadEquipe(); }
     catch (err) { globalMsg(err.message, false); }
   }
@@ -1811,7 +1812,7 @@ function ligarPlano(u, preencher) {
   $('#ud-plano-aplicar').onclick = async () => {
     const plano = $('#ud-plano').value, validade = $('#ud-validade').value, ate = $('#ud-ate').value;
     const nome = $('#ud-plano').selectedOptions[0]?.textContent.split(' — ')[0] || 'sem plano';
-    if (!confirm(plano ? `Trocar o plano desta conta para "${nome}"?` : 'Tirar o plano desta conta?')) return;
+    if (!await OfertouUI.confirmar(plano ? `Trocar o plano desta conta para "${nome}"?` : 'Tirar o plano desta conta?')) return;
     const b = $('#ud-plano-aplicar'); b.disabled = true;
     try {
       await api(`/api/admin/users/${u.id}/plano`, { method: 'POST', body: { plano, validade, ate } });
@@ -1952,7 +1953,7 @@ $('#user-dlg').addEventListener('click', async e => {
       if (!(await userAction(id, b.dataset.dact))) return;
       if (b.dataset.dact === 'excluir') { dlg.close(); loadUsers(); loadModLog(); return globalMsg('Perfil excluído.'); }
     } else if (b.dataset.lhide) {
-      const motivo = b.dataset.oculta === '1' ? prompt('Motivo para ocultar a loja (opcional):', '') : '';
+      const motivo = b.dataset.oculta === '1' ? await OfertouUI.perguntar('Motivo para ocultar a loja (opcional):', '') : '';
       if (motivo === null) return;
       await api(`/api/admin/lojas/${b.dataset.lhide}/visibilidade`, { method: 'POST', body: { oculta: b.dataset.oculta === '1', motivo } });
     } else if (b.dataset.lsync) {
@@ -1962,7 +1963,7 @@ $('#user-dlg').addEventListener('click', async e => {
     } else if (b.dataset.phide) {
       await api(`/api/admin/offers/${b.dataset.phide}`, { method: 'PATCH', body: { oculto: b.dataset.hidden !== '1' } });
     } else if (b.dataset.pdel) {
-      if (!confirm('Excluir esta publicação?')) return;
+      if (!await OfertouUI.confirmar('Excluir esta publicação?')) return;
       await api(`/api/admin/offers/${b.dataset.pdel}`, { method: 'DELETE' });
     } else return;
     await openUser(id);
@@ -2035,12 +2036,12 @@ document.addEventListener('click', async e => {
   if (!pg && !rc && !ex) return;
   try {
     if (pg) {
-      if (!confirm(`Você já enviou ${brl(Number(pg.dataset.valor))} pelo Pix para a chave da empresa?`)) return;
-      const obs = prompt('Observação para a empresa (opcional, ex.: ID da transferência):') ?? '';
+      if (!await OfertouUI.confirmar(`Você já enviou ${brl(Number(pg.dataset.valor))} pelo Pix para a chave da empresa?`)) return;
+      const obs = await OfertouUI.perguntar('Observação para a empresa (opcional, ex.: ID da transferência):') ?? '';
       await api(`/api/admin/saques/${pg.dataset.saquePagar}/pagar`, { method: 'POST', body: { observacao: obs } });
       globalMsg('Saque marcado como pago. A empresa foi avisada.');
     } else if (rc) {
-      const motivo = prompt('Motivo da recusa (a empresa verá):');
+      const motivo = await OfertouUI.perguntar('Motivo da recusa (a empresa verá):');
       if (motivo === null) return;
       await api(`/api/admin/saques/${rc.dataset.saqueRecusar}/recusar`, { method: 'POST', body: { observacao: motivo } });
       globalMsg('Saque recusado. O valor voltou ao saldo da empresa.');
@@ -2059,7 +2060,7 @@ document.addEventListener('click', async e => {
 $('#at-lojas').addEventListener('click', async e => {
   const b = e.target.closest('[data-quitar]');
   if (!b) return;
-  if (!confirm(`Confirmar que você recebeu ${brl(Number(b.dataset.valor))} de taxa desta loja?`)) return;
+  if (!await OfertouUI.confirmar(`Confirmar que você recebeu ${brl(Number(b.dataset.valor))} de taxa desta loja?`)) return;
   try {
     await api(`/api/admin/taxas/${b.dataset.quitar}/quitar`, { method: 'POST', body: {} });
     globalMsg('Baixa registrada.');
@@ -2186,7 +2187,7 @@ $('#pl-lista').addEventListener('click', async e => {
   const aviso = p.assinantes
     ? `O plano "${p.nome}" tem ${p.assinantes} assinante(s). Ele sai da venda agora, mas continua valendo para essas pessoas até o fim do prazo pago. Continuar?`
     : `Excluir o plano "${p.nome}"? Ele sai da página e da compra. Não dá para desfazer.`;
-  if (!confirm(aviso)) return;
+  if (!await OfertouUI.confirmar(aviso)) return;
   try {
     const r = await api(`/api/admin/planos/${encodeURIComponent(p.id)}`, { method: 'DELETE' });
     globalMsg(r.arquivado ? `Plano retirado da venda (continua valendo para ${r.assinantes} assinante(s) até vencer).` : 'Plano excluído.');
@@ -2203,7 +2204,7 @@ $('#pl-tipos').addEventListener('change', e => {
 $('#pl-form').addEventListener('change', e => { if (['gratis', 'sem_vencimento'].includes(e.target.name)) plTipoMudou(); });
 $('#pl-sugerir').addEventListener('click', async () => {
   const f = $('#pl-form');
-  if (f.elements.beneficios.value.trim() && !confirm('Trocar os benefícios escritos pelos gerados a partir das funções?')) return;
+  if (f.elements.beneficios.value.trim() && !await OfertouUI.confirmar('Trocar os benefícios escritos pelos gerados a partir das funções?')) return;
   const r = await api('/api/admin/planos/sugerir-beneficios', { method: 'POST', body: plDados() });
   f.elements.beneficios.value = r.beneficios.join('\n');
 });
@@ -2255,11 +2256,11 @@ $('#pedidos-body').addEventListener('click', async e => {
   const id = b.dataset.id;
   try {
     if (b.dataset.ped === 'confirmar') {
-      if (!confirm('Confirmar que o pagamento deste pedido foi recebido? A conta será liberada na hora.')) return;
+      if (!await OfertouUI.confirmar('Confirmar que o pagamento deste pedido foi recebido? A conta será liberada na hora.')) return;
       await api(`/api/admin/pagamentos/${id}/confirmar`, { method: 'POST', body: {} });
       globalMsg('Pagamento confirmado e acesso liberado.');
     } else if (b.dataset.ped === 'cancelar') {
-      if (!confirm('Cancelar este pedido?')) return;
+      if (!await OfertouUI.confirmar('Cancelar este pedido?')) return;
       await api(`/api/admin/pagamentos/${id}/cancelar`, { method: 'POST', body: {} });
     } else if (b.dataset.ped === 'email') {
       await api(`/api/admin/pagamentos/${id}/email`, { method: 'POST', body: {} });
@@ -2340,7 +2341,7 @@ function gnJanela(titulo, campos, aoSalvar) {
   const form = $('#gn-dlg-form');
   form.onsubmit = async e => {
     e.preventDefault();
-    try { await aoSalvar(Object.fromEntries(new FormData(form))); $('#gn-dlg').close(); loadGanhos(); } catch (err) { alert(err.message); }
+    try { await aoSalvar(Object.fromEntries(new FormData(form))); $('#gn-dlg').close(); loadGanhos(); } catch (err) { OfertouUI.avisar(err.message); }
   };
   $('#gn-dlg').showModal();
 }
@@ -2370,10 +2371,10 @@ $('[data-body="ganhos"]').addEventListener('click', async e => {
         <label class="field" style="margin-top:8px">Acompanhar esta plataforma <select name="ativo"><option value="1"${p.ativo ? ' selected' : ''}>Sim</option><option value="0"${p.ativo ? '' : ' selected'}>Não</option></select></label>`,
       dados => api(`/api/admin/ganhos/plataformas/${p.id}`, { method: 'PUT', body: { ...dados, ativo: dados.ativo === '1' } }));
     } else if (b.dataset.gnDel) {
-      if (!confirm('Excluir esta venda?')) return;
+      if (!await OfertouUI.confirmar('Excluir esta venda?')) return;
       await api(`/api/admin/ganhos/vendas/${b.dataset.gnDel}`, { method: 'DELETE' }); loadGanhos();
     } else if (b.dataset.gnDelSaque) {
-      if (!confirm('Excluir este saque? O saldo volta a contar esse valor.')) return;
+      if (!await OfertouUI.confirmar('Excluir este saque? O saldo volta a contar esse valor.')) return;
       await api(`/api/admin/ganhos/saques/${b.dataset.gnDelSaque}`, { method: 'DELETE' }); loadGanhos();
     } else if (b.dataset.gnLida) {
       await api(`/api/admin/notificacoes/${b.dataset.gnLida}/lida`, { method: 'POST', body: {} }); loadGanhos();
@@ -2491,18 +2492,18 @@ $('#cli-body').addEventListener('click', async e => {
   try {
     if (b.dataset.cli === 'renovar') await api(`/api/admin/clientes/${id}/renovar`, { method: 'POST', body: { dias: 30 } });
     else if (b.dataset.cli === 'renovar-x') {
-      const dias = prompt('Renovar por quantos dias?', '30');
+      const dias = await OfertouUI.perguntar('Renovar por quantos dias?', '30');
       if (!dias) return;
       await api(`/api/admin/clientes/${id}/renovar`, { method: 'POST', body: { dias } });
     } else if (b.dataset.cli === 'bloquear' || b.dataset.cli === 'ativar') {
       await api(`/api/admin/clientes/${id}/status`, { method: 'POST', body: { status: b.dataset.cli === 'bloquear' ? 'bloqueado' : 'ativo' } });
     } else if (b.dataset.cli === 'senha') {
-      const senha = prompt('Nova senha do cliente (mínimo 8 caracteres):', '');
+      const senha = await OfertouUI.perguntar('Nova senha do cliente (mínimo 8 caracteres):', '');
       if (!senha) return;
       await api(`/api/admin/clientes/${id}`, { method: 'PUT', body: { senha } });
       globalMsg('Senha alterada. O cliente precisa entrar de novo.');
     } else if (b.dataset.cli === 'excluir') {
-      if (!confirm('Excluir este cliente? As configurações, a fila e o acesso dele serão apagados.')) return;
+      if (!await OfertouUI.confirmar('Excluir este cliente? As configurações, a fila e o acesso dele serão apagados.')) return;
       await api(`/api/admin/clientes/${id}`, { method: 'DELETE' });
     }
     loadClientes();
@@ -2587,7 +2588,7 @@ $('#fila-body').addEventListener('click', async e => {
   try { await api(`/api/admin/agenda/fila/${b.dataset.filaDel}`, { method: 'DELETE' }); loadAgenda(); } catch (err) { globalMsg(err.message, false); }
 });
 $('#fila-limpar').addEventListener('click', async () => {
-  if (!confirm('Tirar todas as ofertas que estão esperando na fila?')) return;
+  if (!await OfertouUI.confirmar('Tirar todas as ofertas que estão esperando na fila?')) return;
   try { await api('/api/admin/agenda/fila', { method: 'DELETE' }); loadAgenda(); } catch (err) { globalMsg(err.message, false); }
 });
 $('#agenda-run').addEventListener('click', async () => {
@@ -2781,11 +2782,11 @@ $('[data-body="ads"]').addEventListener('click', async e => {
     }
     if (d.adtoggle) await api(`/api/admin/publicidade/${d.adtoggle}`, { method: 'PATCH', body: { ativo: d.ativo !== '1' } });
     else if (d.addel) {
-      if (!confirm('Excluir esta campanha? As estatísticas dela também serão apagadas.')) return;
+      if (!await OfertouUI.confirmar('Excluir esta campanha? As estatísticas dela também serão apagadas.')) return;
       await api(`/api/admin/publicidade/${d.addel}`, { method: 'DELETE' });
     } else if (d.leadst) await api(`/api/admin/pedidos-publicidade/${d.leadst}`, { method: 'PATCH', body: { status: d.st } });
     else if (d.leaddel) {
-      if (!confirm('Excluir este pedido?')) return;
+      if (!await OfertouUI.confirmar('Excluir este pedido?')) return;
       await api(`/api/admin/pedidos-publicidade/${d.leaddel}`, { method: 'DELETE' });
     } else return;
     await loadAds();

@@ -15,7 +15,7 @@
   const css = document.createElement('style');
   css.textContent = `
   .cm { position: fixed; z-index: 2147483000; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    width: 190px; pointer-events: none; font-family: Figtree, system-ui, sans-serif; display: grid; justify-items: start;
+    width: 240px; pointer-events: none; font-family: Figtree, system-ui, sans-serif; display: grid; justify-items: start;
     animation: cm-entra .5s cubic-bezier(.2,1.4,.4,1) both; }
   .cm.saindo { animation: cm-sai .45s ease-in forwards; }
   .cm-balao { position: relative; margin: 0 0 6px 26px; background: #fff; color: #161b18; border-radius: 14px; padding: 7px 11px;
@@ -24,7 +24,7 @@
   .cm-balao::after { content: ""; position: absolute; left: 22px; bottom: -7px; border: 8px solid transparent; border-top-color: #fff; border-bottom: 0; }
   .cm-balao b { color: #0c8f4f; }
   .cm-balao.troca { animation: cm-pop .35s cubic-bezier(.2,1.6,.4,1) both; }
-  .cm-quadro { position: relative; width: 160px; height: 160px; }
+  .cm-quadro { position: relative; width: 210px; height: 210px; }
   .cm-quadro canvas { width: 100%; height: 100%; display: block; }
   .cm.recorte canvas { filter: drop-shadow(0 6px 8px rgba(0,0,0,.35)); }
   .cm.cenario .cm-quadro { width: 150px; height: 150px; border-radius: 22px; overflow: hidden; border: 3px solid #fff;
@@ -36,7 +36,7 @@
   @keyframes cm-entra { from { transform: translateY(120%) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes cm-sai { to { transform: translateY(120%) scale(.85); opacity: 0; } }
   @keyframes cm-pop { from { transform: scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
-  @media (max-width: 480px) { .cm-quadro { width: 128px; height: 128px; } .cm.cenario .cm-quadro { width: 120px; height: 120px; } }
+  @media (max-width: 480px) { .cm-quadro { width: 160px; height: 160px; } .cm.cenario .cm-quadro { width: 120px; height: 120px; } }
   @media (prefers-reduced-motion: reduce) { .cm, .cm * { animation-duration: 1ms !important; } }`;
   document.head.appendChild(css);
 
@@ -44,11 +44,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261123`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261124`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261123';
+      img.src = PASTA + m.arquivo + '?v=20261124';
       // onload em vez de img.decode(): o decode() pode ficar pendurado em alguns navegadores
       folhas[nome] = new Promise((ok, erro) => {
         img.onload = () => ok(img);

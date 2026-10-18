@@ -102,9 +102,7 @@ function completeProfile(u, body) {
   if (!TIPOS.includes(tipo)) throw new Error('Escolha o perfil: consumidor, empresarial ou usuário da ferramenta.');
   const mode = signupMode(tipo);
   if (mode === 'fechado') throw new Error(`Os cadastros de ${NOME_TIPO[tipo]} estão fechados no momento.`);
-  if (!(body.aceite_termos === true || body.aceite_termos === 'on' || body.aceite_termos === '1')) {
-    throw new Error('É preciso aceitar os Termos de uso e a Política de privacidade.');
-  }
+  require('./consentimento').validar(body); // LGPD + Termos de Uso (duas caixas obrigatórias)
   const dados = { ...cadastro.dadosPessoa(body), ...(tipo === 'empresa' ? cadastro.dadosEmpresa(body) : {}) };
   if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) {
     throw new Error('Não é possível concluir o cadastro com estes dados. Fale com o administrador.');

@@ -12,8 +12,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261092">
-<script src="/js/app-nativo.js?v=20261092"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261093">
+<script src="/js/app-nativo.js?v=20261093"></script>
 </head>
 <body>
 <header class="site-header">
@@ -263,8 +263,13 @@
         <form class="form" id="form-dados" novalidate>
           <div data-fields="pessoa" data-mode="cadastro"></div>
           <div data-fields="empresa" data-mode="cadastro" data-empresa hidden></div>
-          <label class="check-line"><input type="checkbox" name="aceite_termos" required>
-            <span>Li e aceito os <a href="/privacidade" target="_blank">Termos de uso e a Política de privacidade</a>, e confirmo que as informações são verdadeiras.</span></label>
+          <div class="aceites" role="group" aria-label="Aceites obrigatórios">
+            <p class="aceites-titulo">Antes de concluir, leia e confirme:</p>
+            <label class="aceite"><input type="checkbox" name="aceite_privacidade" required>
+              <span><b>Privacidade e proteção de dados (LGPD).</b> Declaro que li a <a href="/privacidade#privacidade" target="_blank" rel="noopener">Política de Privacidade</a> e estou ciente de como o Ofertou! coleta, usa, armazena e compartilha os meus dados pessoais, para as finalidades nela descritas, nos termos da Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018). Sei que posso, a qualquer momento, solicitar acesso, correção, portabilidade ou eliminação dos meus dados e revogar consentimentos, pelos canais informados na Política.</span></label>
+            <label class="aceite"><input type="checkbox" name="aceite_termos" required>
+              <span><b>Finalidade do site e responsabilidades.</b> Li e aceito os <a href="/privacidade#termos" target="_blank" rel="noopener">Termos de Uso</a>. Estou ciente de que o Ofertou! é uma plataforma de divulgação de ofertas das lojas on-line e de lojas parceiras, que <b>não fabrica, não vende, não estoca e não entrega produtos</b>. A venda, o preço final, a entrega, a troca, a devolução, a garantia e o atendimento sobre os produtos são de responsabilidade da loja vendedora, e o Ofertou! não se responsabiliza por essas transações, sem prejuízo dos direitos garantidos pelo Código de Defesa do Consumidor. Declaro ter 18 anos ou mais e que as informações que forneço são verdadeiras.</span></label>
+          </div>
           <div class="form-msg" hidden></div>
           <button class="btn btn-primary btn-block" type="submit">Concluir cadastro</button>
         </form>
@@ -608,8 +613,8 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/loja-painel.js?v=20261092" defer></script>
-<script src="/js/conta.js?v=20261092" defer></script>
-<script src="/js/chat-topo.js?v=20261092" defer></script>
+<script src="/js/loja-painel.js?v=20261093" defer></script>
+<script src="/js/conta.js?v=20261093" defer></script>
+<script src="/js/chat-topo.js?v=20261093" defer></script>
 </body>
 </html>

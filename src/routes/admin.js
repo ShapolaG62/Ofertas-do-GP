@@ -192,6 +192,7 @@ router.get('/api/admin/users', (req, res) => {
 router.get('/api/admin/users/:id', (req, res) => {
   const data = users.detailForAdmin(Number(req.params.id));
   if (!data) return res.status(404).json({ error: 'Usuário não encontrado.' });
+  data.consentimentos = require('../consentimento').historico(data.user.id, data.user.email);
   // Registro de atividades: conversas, pedidos feitos e (empresa) pedidos recebidos e números da loja
   const chat = require('../chat'), pedidosLoja = require('../pedidos-loja');
   const dono = `u:${data.user.id}`;

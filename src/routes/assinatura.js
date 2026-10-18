@@ -43,7 +43,11 @@ router.post('/api/assinatura', async (req, res) => {
   const wait = pedidoLimiter.hit(req.ip);
   if (wait) return res.status(429).json({ error: `Muitas tentativas. Tente de novo em ${wait} min.` });
   try {
-    res.json(await pagamentos.criarPedido(req.body || {}, req));
+    const r = await pagamentos.criarPedido(req.body || {}, req);
+    // Prova do aceite (a conta pode ser criada só depois do pagamento: fica ligada pelo e-mail)
+    const logado = require('../users').currentUser(req);
+    require('../consentimento').registrar({ dono: logado ? `u:${logado.id}` : null, email: logado?.email || req.body?.email, origem: 'assinatura', req });
+    res.json(r);
   } catch (err) {
     res.status(err.status || 400).json({ error: err.message });
   }

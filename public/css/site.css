@@ -1878,3 +1878,24 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 
 /* Página de ofertas: enquanto a próxima página/filtro carrega */
 #grid.is-loading { opacity: .55; pointer-events: none; transition: opacity .15s; }
+
+/* Aceites obrigatórios do cadastro (LGPD e Termos de Uso) */
+.aceites { display: grid; gap: 10px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); }
+.aceites-titulo { margin: 0; font-size: 13.5px; font-weight: 800; color: var(--ink); }
+.aceite { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.55; color: var(--ink-2); cursor: pointer; }
+.aceite input { flex: none; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--brand); cursor: pointer; }
+.aceite b { color: var(--ink); }
+.aceite a { color: var(--brand); font-weight: 700; }
+.aceite:has(input:focus-visible) { outline: 2px solid var(--brand); outline-offset: 4px; border-radius: 6px; }
+.legal-versao { color: var(--ink-3); font-size: 13px; margin-top: -6px; }
+.legal-indice { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
+.legal-indice a { font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); text-decoration: none; }
+.legal-indice a:hover { color: var(--brand); border-color: var(--brand); }
+.legal-quadro { margin: 18px 0; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.legal-quadro h2 { margin-top: 0; }
+.legal-parte { margin-top: 36px; padding-top: 18px; border-top: 2px solid var(--brand); scroll-margin-top: 80px; }
+.legal [id] { scroll-margin-top: 80px; }
+.legal-tabela { width: 100%; border-collapse: collapse; font-size: 14px; margin: 8px 0 12px; }
+.legal-tabela th, .legal-tabela td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.legal-tabela th { font-size: 12.5px; color: var(--ink-3); }
+@media (max-width: 600px) { .legal-tabela, .legal-tabela tbody, .legal-tabela tr, .legal-tabela td { display: block; } .legal-tabela thead { display: none; } .legal-tabela td:last-child { color: var(--ink-3); padding-top: 0; } }

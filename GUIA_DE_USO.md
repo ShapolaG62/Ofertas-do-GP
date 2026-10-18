@@ -394,3 +394,15 @@ A situação de cada loja e a busca pontual ficam em **Mineração**.
 - **Marcar como resolvido:** o cliente é avisado e pode avaliar.
 - O administrador pode assumir um atendimento que está com outra pessoa.
 - Chamado novo avisa todos os atendentes no sino. O **Painel** do admin mostra quantos chamados estão esperando em "Precisa da sua atenção".
+
+## 21. LGPD: aceites do cadastro e Termos de Uso / Política de Privacidade
+
+**No cadastro** (passo "Seus dados") e **na compra de plano**, a pessoa precisa marcar duas caixas obrigatórias. Elas nunca vêm marcadas.
+1. **Privacidade e proteção de dados (LGPD):** declara que leu a Política de Privacidade e está ciente de como os dados são tratados e dos seus direitos.
+2. **Finalidade do site e responsabilidades:** aceita os Termos de Uso. Ciente de que o Ofertou! divulga ofertas e não vende nem entrega produtos; de que venda, entrega, troca e garantia são da loja, sem prejuízo do Código de Defesa do Consumidor; e de que tem 18 anos ou mais.
+
+**Prova do aceite:** cada aceite é registrado com a versão dos documentos, data e hora, IP e navegador. Aparece na ficha do usuário (Painel → Usuários → "Aceite LGPD").
+
+**Documento:** a página `/privacidade` traz os Termos de Uso (`#termos`) e a Política de Privacidade (`#privacidade`), com versão e data. Para mudar o texto de forma relevante, atualize a versão em `src/consentimento.js` e no topo da página.
+
+**Preencha em Painel → Site → "Responsável pelo site (LGPD)":** nome ou razão social, CPF/CNPJ, cidade/UF, e-mail de privacidade e encarregado (DPO). Esses dados aparecem no documento.

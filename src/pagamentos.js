@@ -67,9 +67,7 @@ function perfilDaConta(p, b, u) {
 // Quem já está logado no site (e-mail/senha ou Google) compra para a própria conta, sem digitar e-mail e senha.
 function validarLogado(p, b, u) {
   if (!['onboarding', 'pending', 'active', 'suspended'].includes(u.status)) throw fail('Esta conta não pode assinar. Fale com o administrador.', 403);
-  if (!(b.aceite_termos === true || b.aceite_termos === 'on' || b.aceite_termos === '1')) {
-    throw fail('É preciso aceitar os Termos de uso e a Política de privacidade.');
-  }
+  require('./consentimento').validar(b); // LGPD + Termos de Uso (duas caixas obrigatórias)
   // Conta sem perfil ainda: os dados pessoais (e da empresa) vêm do formulário.
   const novosDados = perfil => {
     const dados = { ...cadastro.dadosPessoa(b), ...(perfil === 'empresa' ? cadastro.dadosEmpresa(b) : {}) };
@@ -110,9 +108,7 @@ function validarDados(p, b, logado = null) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailN) || emailN.length > 120) throw fail('Informe um e-mail válido.');
   const senha = String(b.senha || '');
   if (senha.length < 8 || senha.length > 200) throw fail('A senha precisa ter pelo menos 8 caracteres.');
-  if (!(b.aceite_termos === true || b.aceite_termos === 'on' || b.aceite_termos === '1')) {
-    throw fail('É preciso aceitar os Termos de uso e a Política de privacidade.');
-  }
+  require('./consentimento').validar(b); // LGPD + Termos de Uso (duas caixas obrigatórias)
   if (isBlocked(emailN)) throw fail('Não é possível usar este e-mail. Fale com o administrador.');
   const renovar = b.renovar === true || b.renovar === 'on' || b.renovar === '1';
 

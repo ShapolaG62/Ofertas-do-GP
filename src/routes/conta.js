@@ -131,6 +131,7 @@ router.use('/api/conta', users.requireUser);
 router.post('/api/conta/perfil-inicial', (req, res) => {
   try {
     const u = users.completeProfile(req.user, req.body || {});
+    require('../consentimento').registrar({ dono: `u:${u.id}`, email: u.email, origem: 'cadastro', req });
     res.json({ ok: true, status: u.status });
   } catch (err) { sendError(res, err); }
 });

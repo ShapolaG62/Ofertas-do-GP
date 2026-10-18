@@ -468,6 +468,20 @@
           <div class="actions"><button class="btn primary" type="submit">Salvar site</button></div>
         </div>
       </form>
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Responsável pelo site (LGPD)</h2>
+          <p class="hint">Aparece nos <a href="/privacidade" target="_blank">Termos de Uso e na Política de Privacidade</a>. A LGPD exige informar quem é o controlador dos dados e o canal do encarregado (art. 9º e art. 41). Preencha antes de divulgar o site.</p>
+          <div class="grid">
+            <label class="field">Nome completo ou razão social <input type="text" name="legal_nome" maxlength="150" placeholder="Ex.: Fulano de Tal ou Ofertou Tecnologia Ltda."></label>
+            <label class="field">CPF ou CNPJ <input type="text" name="legal_documento" maxlength="20"></label>
+            <label class="field">Cidade/UF ou endereço <input type="text" name="legal_endereco" maxlength="200" placeholder="Ex.: Goiânia/GO"></label>
+            <label class="field">E-mail de contato e privacidade <input type="email" name="legal_email" maxlength="120" placeholder="privacidade@seudominio.com.br"></label>
+            <label class="field">Encarregado de dados (DPO) <input type="text" name="legal_encarregado" maxlength="120" placeholder="Nome de quem responde pelos dados"></label>
+          </div>
+          <div class="actions"><button class="btn primary" type="submit">Salvar responsável</button></div>
+        </div>
+      </form>
     </div>
 
     <!-- USUÁRIOS DO SITE -->
@@ -1264,7 +1278,7 @@ const PAGINAS = {
   ganhos: ['Ganhos de afiliados', 'Comissões das plataformas, vendas importadas, saques e avisos de saldo para sacar.'],
   aff: ['Links de afiliado', 'Suas tags e credenciais de afiliado de cada loja. Ao salvar, todos os links das ofertas são atualizados.'],
   ads: ['Publicidade', 'Google AdSense, campanhas de anunciantes e pedidos de empresas que querem anunciar.'],
-  site: ['Site', 'Links das redes sociais exibidos no site e o Google Analytics.'],
+  site: ['Site', 'Links das redes sociais, Google Analytics e os dados do responsável pelo site (LGPD).'],
   account: ['Conta e senha', 'Troque a senha do painel.'],
 };
 for (const [aba, [titulo, desc]] of Object.entries(PAGINAS)) {
@@ -1747,7 +1761,8 @@ async function openUser(id) {
       <dt>Ramo</dt><dd>${esc(u.ramo || '—')}</dd>
       <dt>Site</dt><dd>${u.site_empresa ? `<a href="${esc(u.site_empresa)}" target="_blank" rel="noopener nofollow">${esc(u.site_empresa)}</a>` : '—'}</dd>
       <dt>Endereço da empresa</dt><dd>${fmtAddr(u, 'emp_')}</dd>` : ''}
-      <dt>Aceite dos termos</dt><dd>${fmtDate(u.aceite_termos_em)}</dd>
+      <dt>Aceite dos termos</dt><dd>${fmtDate(u.aceite_termos_em)}${u.aceite_versao ? ` · versão ${esc(u.aceite_versao)}` : ''}</dd>
+      <dt>Aceite LGPD (privacidade)</dt><dd>${fmtDate(u.aceite_privacidade_em)}${(d.consentimentos || []).length ? `<br><span class="hint" style="margin:0">${d.consentimentos.map(c => `${fmtDate(c.created_at)} · ${esc(c.origem)} · versão ${esc(c.versao)} · IP ${esc(c.ip || '—')}`).join('<br>')}</span>` : ''}</dd>
       <dt>Situação</dt><dd><span class="badge b-${u.status}">${esc(U_STATUS[u.status])}</span>
         ${u.suspenso_ate ? ` até ${fmtDate(u.suspenso_ate)}` : ''}${u.status_motivo ? ` — ${esc(u.status_motivo)}` : ''}
         ${u.bloqueio_publicacao ? ' <span class="tag">impedido de publicar</span>' : ''}

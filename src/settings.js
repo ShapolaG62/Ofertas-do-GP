@@ -17,6 +17,12 @@ const DEFAULTS = {
   adsense_slot_lateral: '',
   adsense_slot_paginas: '',
   ga_id: '',
+  // Responsável pelo site (aparece nos Termos de Uso e na Política de Privacidade — LGPD)
+  legal_nome: '',               // nome completo ou razão social do responsável (controlador dos dados)
+  legal_documento: '',          // CPF ou CNPJ
+  legal_endereco: '',           // cidade/UF ou endereço para correspondência
+  legal_email: '',              // e-mail de contato e do encarregado de dados (DPO)
+  legal_encarregado: '',        // nome do encarregado pelo tratamento de dados (DPO)
 
   // Mineração
   search_terms: DEFAULT_SEARCH_TERMS,
@@ -159,7 +165,8 @@ const DEFAULTS = {
 };
 
 // Chaves que o site público pode ler.
-const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsense_client', 'ga_id'];
+const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsense_client', 'ga_id',
+  'legal_nome', 'legal_documento', 'legal_endereco', 'legal_email', 'legal_encarregado'];
 
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',

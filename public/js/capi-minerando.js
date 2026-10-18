@@ -1,6 +1,6 @@
 // A Capi minerando ofertas: animações feitas a partir dos vídeos da Capi (recortados em video/capi/recortar.js)
 // e tocadas quadro a quadro a partir de uma folha WebP (public/images/capi-anim/).
-// MODO_TESTE = true: aparece a cada 10 s em todas as páginas, revezando as 4 animações (para avaliar o visual).
+// MODO_TESTE = true: aparece a cada 10 s em todas as páginas, revezando as animações (para avaliar o visual).
 // MODO_TESTE = false: só aparece em momentos aleatórios enquanto a mineração está rodando (/api/mineracao/status).
 // Para ver na hora: acrescente ?capi=teste ao endereço de qualquer página.
 (() => {
@@ -12,7 +12,7 @@
   const ENTRE = [70000, 180000];      // modo normal: espera entre aparições
   const MAX_POR_MINERACAO = 3;
   const PASTA = '/images/capi-anim/';
-  const ORDEM = ['capi1', 'capi3', 'capi2', 'capi4'];
+  const ORDEM = ['capi1', 'capi2'];
   const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const css = document.createElement('style');

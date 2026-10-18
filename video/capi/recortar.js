@@ -16,8 +16,6 @@ const COLS = 10;
 const VIDEOS = [
   { n: 1, recorte: true, ini: 0, fim: 5.0 },
   { n: 2, recorte: true, ini: 0, fim: 5.0 },
-  { n: 3, recorte: false, ini: 1.5, fim: 5.0 },
-  { n: 4, recorte: false, ini: 1.5, fim: 5.0 },
 ];
 
 (async () => {

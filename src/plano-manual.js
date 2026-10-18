@@ -1,6 +1,7 @@
 // Troca manual do plano de uma conta pelo administrador (Painel → Usuários → ficha → Plano).
-// Usa as mesmas regras da compra: tipo de conta compatível, ferramenta de afiliado liberada quando o plano inclui,
-// conta em aprovação passa a ativa. Fica registrado no histórico de moderação.
+// O administrador pode dar qualquer plano a qualquer conta: se o plano for de outro tipo, a conta passa a ser do tipo
+// do plano (empresa que deixa de ser empresa tem a loja tirada do ar, sem apagar; volta sozinha se a conta voltar a ser
+// empresa). Ferramenta de afiliado liberada quando o plano inclui; conta em aprovação passa a ativa. Tudo no histórico.
 const db = require('./db');
 const planos = require('./planos');
 const users = require('./users');
@@ -35,29 +36,28 @@ function trocar(userId, b, quem = 'admin') {
   if (!p || p.arquivado) throw fail('Plano não encontrado.');
   const validade = calcularValidade(p, b);
 
+  // Tipo da conta com o plano novo: mantém o atual se o plano aceita; senão, passa para o tipo do plano
+  const tipo = tipoComPlano(u.tipo, p);
   db.transaction(() => {
-    if (p.conta === 'usuario') {
-      // O plano precisa aceitar o tipo da conta (conta sem tipo ou de afiliado assume o tipo do plano)
-      let tipo = u.tipo;
-      if (!tipo || (tipo === 'afiliado' && !p.perfis.includes('afiliado'))) tipo = p.perfil;
-      if (!p.perfis.includes(tipo)) {
-        throw fail(`O plano ${p.nome} é para conta de ${p.perfis.map(t => NOME_TIPO[t] || t).join(' ou ')}; esta conta é de ${NOME_TIPO[u.tipo] || u.tipo}.`);
-      }
-      db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = ?,
-              status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, tipo, u.id);
-    } else {
-      // Plano só da ferramenta de afiliado: a conta ganha o painel de afiliado (mesmo login)
-      if (u.tipo && u.tipo !== 'afiliado') {
-        throw fail(`O plano ${p.nome} é só da ferramenta de afiliado; esta conta é de ${NOME_TIPO[u.tipo]}. Use um plano de ${NOME_TIPO[u.tipo]} com a ferramenta junto.`);
-      }
-      db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = 'afiliado',
-              status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, u.id);
-    }
+    db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = ?,
+            status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, tipo, u.id);
+    // Loja: sai do ar quando a conta deixa de ser empresa (oculta = 2 marca "pelo plano"); volta quando é empresa de novo
+    if (u.tipo === 'empresa' && tipo !== 'empresa') db.run('UPDATE lojas SET oculta = 2 WHERE user_id = ? AND oculta = 0', u.id);
+    if (tipo === 'empresa') db.run('UPDATE lojas SET oculta = 0 WHERE user_id = ? AND oculta = 2', u.id);
     if (p.ferramenta) require('./clientes').liberarPlano(users.getById(u.id), p.id, () => validade);
   });
+  if (u.tipo && tipo !== u.tipo) {
+    users.logAction(users.getById(u.id), 'tipo_alterado', `de ${NOME_TIPO[u.tipo] || u.tipo} para ${NOME_TIPO[tipo] || tipo}, pelo plano ${p.nome}${u.tipo === 'empresa' ? ' (loja tirada do ar)' : ''}`);
+  }
   const fim = validade === planos.SEM_VENCIMENTO ? 'sem vencimento' : `até ${new Date(validade.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
   users.logAction(users.getById(u.id), 'plano_alterado', `${p.nome} — ${fim} (${quem})`);
   return users.getById(u.id);
 }
 
-module.exports = { trocar };
+// Tipo que a conta terá com o plano (usado também no painel para avisar antes de aplicar)
+function tipoComPlano(tipoAtual, p) {
+  if (p.conta !== 'usuario') return 'afiliado'; // plano só da ferramenta de afiliado
+  return tipoAtual && p.perfis.includes(tipoAtual) ? tipoAtual : p.perfil;
+}
+
+module.exports = { trocar, tipoComPlano };

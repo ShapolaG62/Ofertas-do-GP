@@ -248,9 +248,9 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261118"></script>
-<script src="/js/capi-minerando.js?v=20261118" defer></script>
-<script src="/js/cadastro-auto.js?v=20261118" defer></script>
+<script src="/js/dialogo.js?v=20261119"></script>
+<script src="/js/capi-minerando.js?v=20261119" defer></script>
+<script src="/js/cadastro-auto.js?v=20261119" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1847,22 +1847,28 @@ $('[data-body="equipe"]').addEventListener('click', async e => {
 });
 
 // Caixa "Plano" da ficha do usuário
-function ligarPlano(u, preencher) {
+function ligarPlano(u, preencher, l) {
   preencher();
   $('#ud-validade').onchange = () => { $('#ud-ate-campo').hidden = $('#ud-validade').value !== 'data'; };
   $('#ud-plano-aplicar').onclick = async () => {
     const plano = $('#ud-plano').value, validade = $('#ud-validade').value, ate = $('#ud-ate').value;
     const nome = $('#ud-plano').selectedOptions[0]?.textContent.split(' — ')[0] || 'sem plano';
-    if (!await OfertouUI.confirmar(plano ? `Trocar o plano desta conta para "${nome}"?` : 'Tirar o plano desta conta?')) return;
+    const p = (PLANOS_UD || []).find(x => x.id === plano);
+    const NOMES = { consumidor: 'consumidor', empresa: 'empresa', afiliado: 'usuário da ferramenta' };
+    const novoTipo = !p ? u.tipo : p.conta !== 'usuario' ? 'afiliado' : (u.tipo && p.perfis.includes(u.tipo) ? u.tipo : p.perfil);
+    const muda = p && u.tipo && novoTipo !== u.tipo
+      ? ` A conta passa de ${NOMES[u.tipo] || u.tipo} para ${NOMES[novoTipo] || novoTipo}${u.tipo === 'empresa' && l ? ' e a loja sai do ar (nada é apagado; volta se a conta voltar a ser empresa)' : ''}.` : '';
+    if (!await OfertouUI.confirmar(plano ? `Trocar o plano desta conta para "${nome}"?${muda}` : 'Tirar o plano desta conta?')) return;
     const b = $('#ud-plano-aplicar'); b.disabled = true;
     try {
       await api(`/api/admin/users/${u.id}/plano`, { method: 'POST', body: { plano, validade, ate } });
-      globalMsg(plano ? `Plano trocado para ${nome}.` : 'Plano removido.');
+      globalMsg(plano ? `Plano trocado para ${nome}.${muda ? ' Tipo da conta atualizado.' : ''}` : 'Plano removido.');
       openUser(u.id); loadUsers(); loadModLog();
     } catch (err) { $('#ud-plano-msg').textContent = err.message; $('#ud-plano-msg').style.color = 'var(--red)'; b.disabled = false; }
   };
 }
 
+let PLANOS_UD = []; // planos carregados na ficha do usuário (para avisar se a conta muda de tipo)
 async function openUser(id) {
   const d = await api(`/api/admin/users/${id}`);
   const u = d.user, l = d.loja;
@@ -1885,7 +1891,7 @@ async function openUser(id) {
     const atualP = u.plano ? `${esc(u.plano)}` : 'sem plano';
     const vence = !u.assinatura_ate ? '' : u.assinatura_ate.startsWith('9999') ? ' · sem vencimento' : ` · vence em ${new Date(u.assinatura_ate.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${u.assinatura_ate < new Date().toISOString().replace('T', ' ') ? ' (vencido)' : ''}`;
     try {
-      const pl = (await api('/api/admin/planos')).planos;
+      const pl = (await api('/api/admin/planos')).planos; PLANOS_UD = pl;
       const nome = id => pl.find(p => p.id === id)?.nome || id;
       $('#ud-plano-atual').textContent = (u.plano ? nome(u.plano) : 'sem plano') + vence;
       $('#ud-plano').innerHTML = '<option value="">Sem plano</option>' + pl.map(p => `<option value="${esc(p.id)}" ${p.id === u.plano ? 'selected' : ''}>${esc(p.nome)} — ${p.gratis ? 'grátis' : brl(p.preco)}${p.sem_vencimento ? ' · sem vencimento' : ` · ${p.dias} dias`} · ${esc(p.tipo_nome)}${p.ativo ? '' : ' (fora de venda)'}</option>`).join('');
@@ -1981,7 +1987,7 @@ async function openUser(id) {
       <div class="log-list">${d.historico.length ? d.historico.map(h => `<div><b>${fmtDate(h.created_at)}</b> · ${esc(h.acao.replace(/_/g, ' '))}${h.detalhe ? ` — ${esc(h.detalhe)}` : ''}</div>`).join('') : '<span class="hint">Sem registros.</span>'}</div>
     </div>`;
   $('#user-dlg').dataset.id = id;
-  ligarPlano(u, preencherPlano);
+  ligarPlano(u, preencherPlano, l);
   if (!$('#user-dlg').open) $('#user-dlg').showModal();
 }
 

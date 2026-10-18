@@ -82,7 +82,7 @@
   .msg.ok { background: var(--green-soft); color: var(--green); }
   .msg.err { background: transparent; border: 1px solid currentColor; color: var(--red); }
   .center-box { max-width: 420px; margin: 10vh auto; }
-  .hidden { display: none !important; }
+  .hidden, .field[hidden] { display: none !important; }
   .gn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
   .gn-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface-2); display: grid; gap: 2px; }
   .gn-card.is-pronto { border-color: var(--green-line); box-shadow: 0 0 0 1px var(--green-line); }
@@ -1726,6 +1726,23 @@ function fmtAddr(u, p) {
   return esc(`${u[`${p}logradouro`]}, ${u[`${p}numero`]}${u[`${p}complemento`] ? ` — ${u[`${p}complemento`]}` : ''}, ${u[`${p}bairro`]}, ${u[`${p}cidade`]}/${u[`${p}uf`]} — CEP ${cep}`);
 }
 
+// Caixa "Plano" da ficha do usuário
+function ligarPlano(u, preencher) {
+  preencher();
+  $('#ud-validade').onchange = () => { $('#ud-ate-campo').hidden = $('#ud-validade').value !== 'data'; };
+  $('#ud-plano-aplicar').onclick = async () => {
+    const plano = $('#ud-plano').value, validade = $('#ud-validade').value, ate = $('#ud-ate').value;
+    const nome = $('#ud-plano').selectedOptions[0]?.textContent.split(' — ')[0] || 'sem plano';
+    if (!confirm(plano ? `Trocar o plano desta conta para "${nome}"?` : 'Tirar o plano desta conta?')) return;
+    const b = $('#ud-plano-aplicar'); b.disabled = true;
+    try {
+      await api(`/api/admin/users/${u.id}/plano`, { method: 'POST', body: { plano, validade, ate } });
+      globalMsg(plano ? `Plano trocado para ${nome}.` : 'Plano removido.');
+      openUser(u.id); loadUsers(); loadModLog();
+    } catch (err) { $('#ud-plano-msg').textContent = err.message; $('#ud-plano-msg').style.color = 'var(--red)'; b.disabled = false; }
+  };
+}
+
 async function openUser(id) {
   const d = await api(`/api/admin/users/${id}`);
   const u = d.user, l = d.loja;
@@ -1743,6 +1760,16 @@ async function openUser(id) {
   }
   actions.push(btn('excluir', 'Excluir perfil', 'danger'));
 
+  const preencherPlano = async () => {
+    const atualP = u.plano ? `${esc(u.plano)}` : 'sem plano';
+    const vence = !u.assinatura_ate ? '' : u.assinatura_ate.startsWith('9999') ? ' · sem vencimento' : ` · vence em ${new Date(u.assinatura_ate.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}${u.assinatura_ate < new Date().toISOString().replace('T', ' ') ? ' (vencido)' : ''}`;
+    try {
+      const pl = (await api('/api/admin/planos')).planos;
+      const nome = id => pl.find(p => p.id === id)?.nome || id;
+      $('#ud-plano-atual').textContent = (u.plano ? nome(u.plano) : 'sem plano') + vence;
+      $('#ud-plano').innerHTML = '<option value="">Sem plano</option>' + pl.map(p => `<option value="${esc(p.id)}" ${p.id === u.plano ? 'selected' : ''}>${esc(p.nome)} — ${p.gratis ? 'grátis' : brl(p.preco)}${p.sem_vencimento ? ' · sem vencimento' : ` · ${p.dias} dias`} · ${esc(p.tipo_nome)}${p.ativo ? '' : ' (fora de venda)'}</option>`).join('');
+    } catch (err) { $('#ud-plano-atual').textContent = atualP + vence; $('#ud-plano-msg').textContent = err.message; }
+  };
   $('#ud-body').innerHTML = `
     <dl class="kv">
       <dt>Tipo</dt><dd>${tipoLabel(u.tipo)}</dd>
@@ -1771,6 +1798,20 @@ async function openUser(id) {
       <dt>Último acesso</dt><dd>${fmtDate(u.last_login_at)}</dd>
     </dl>
     <div class="mod-actions">${actions.join('')}</div>
+    <div class="store-card plano-box" data-uid="${u.id}">
+      <h4>Plano</h4>
+      <p class="hint" style="margin:2px 0 10px">Atual: <b id="ud-plano-atual">…</b></p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+        <label class="field">Trocar para <select id="ud-plano"><option value="">Carregando planos…</option></select></label>
+        <label class="field">Validade <select id="ud-validade">
+          <option value="plano">Duração do plano (a partir de hoje)</option>
+          <option value="sem">Sem vencimento</option>
+          <option value="data">Até uma data…</option></select></label>
+        <label class="field" id="ud-ate-campo" hidden>Vence em <input type="date" id="ud-ate"></label>
+      </div>
+      <div class="row" style="margin-top:10px;gap:8px"><button class="btn primary small" type="button" id="ud-plano-aplicar">Aplicar plano</button>
+        <span class="hint" style="margin:0" id="ud-plano-msg"></span></div>
+    </div>
     ${l ? `
       <div class="store-card">
         <h4>Loja: ${esc(l.nome)} ${l.oculta ? '<span class="badge b-banned">Oculta</span>' : '<span class="badge b-active">Visível</span>'}</h4>
@@ -1818,6 +1859,7 @@ async function openUser(id) {
       <div class="log-list">${d.historico.length ? d.historico.map(h => `<div><b>${fmtDate(h.created_at)}</b> · ${esc(h.acao.replace(/_/g, ' '))}${h.detalhe ? ` — ${esc(h.detalhe)}` : ''}</div>`).join('') : '<span class="hint">Sem registros.</span>'}</div>
     </div>`;
   $('#user-dlg').dataset.id = id;
+  ligarPlano(u, preencherPlano);
   if (!$('#user-dlg').open) $('#user-dlg').showModal();
 }
 

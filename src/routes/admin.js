@@ -205,6 +205,14 @@ router.get('/api/admin/users/:id', (req, res) => {
   res.json(data);
 });
 
+// Troca manual do plano da conta (qualquer plano, inclusive grátis ou fora de venda; ou "sem plano")
+router.post('/api/admin/users/:id/plano', (req, res) => {
+  try {
+    const u = require('../plano-manual').trocar(Number(req.params.id), req.body || {});
+    res.json({ ok: true, plano: u.plano, assinatura_ate: u.assinatura_ate, tipo: u.tipo, status: u.status });
+  } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
+
 router.post('/api/admin/users/:id/acao', (req, res) => {
   const b = req.body || {};
   try {

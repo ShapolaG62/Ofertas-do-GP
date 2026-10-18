@@ -12,7 +12,7 @@
   const ENTRE = [70000, 180000];      // modo normal: espera entre aparições
   const MAX_POR_MINERACAO = 3;
   const PASTA = '/images/capi-anim/';
-  const ORDEM = ['capi1', 'capi2'];
+  const ORDEM = ['capi1', 'capi3', 'capi2']; // capi3: sentada cavando
   const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const css = document.createElement('style');
@@ -47,11 +47,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261109`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261110`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261109';
+      img.src = PASTA + m.arquivo + '?v=20261110';
       folhas[nome] = img.decode().then(() => img);
     }
     return { m, img: await folhas[nome] };

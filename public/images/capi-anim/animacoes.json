@@ -14,5 +14,13 @@
     "lado": 200,
     "fps": 15,
     "recorte": true
+  },
+  "capi3": {
+    "arquivo": "capi3.webp",
+    "quadros": 65,
+    "colunas": 10,
+    "lado": 200,
+    "fps": 15,
+    "recorte": true
   }
 }

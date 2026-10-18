@@ -23,6 +23,13 @@ const VIDEOS = [
     [2.1, 3.033], [2.967, 2.4], [2.433, 3.033], // comemoração (o braço vai e volta)
   ] },
   { n: 2, recorte: true, ini: 0, fim: 5.0 },
+  // Clipe separado (sai como capi3): a Capi sentada cavando o monte de terra, do fim do vídeo 1
+  { n: 1, nome: 'capi3', recorte: true, trechos: [
+    [3.117, 4.117, 0.8],            // ergue e golpeia o monte de terra
+    [3.45, 4.117, 0.8],             // golpe 2 (volta a erguer a picareta)
+    [3.45, 4.117, 0.8],             // golpe 3
+    [4.183, 5.05, 0.8],             // golpe curto e descansa com a picareta no chão
+  ] },
 ];
 
 (async () => {
@@ -83,6 +90,21 @@ const VIDEOS = [
             const p = y * W + x, i = p * 4; const mn = Math.min(d[i], d[i+1], d[i+2]), mx = Math.max(d[i], d[i+1], d[i+2]);
             if (mn > 120 && mx - mn < 30) fundo[p] = 1;
           }
+          // Ilhas de fundo presas no desenho (ex.: entre o cabo da picareta, o braço e o boné): manchas grandes da
+          // mesma cor cinza-clara do fundo. Brilho dos olhos e dentes são pequenos ou mais brancos e ficam.
+          const doFundo = i => { const r = d[i], g2 = d[i+1], b = d[i+2]; return r > 200 && r < 250 && g2 > 200 && g2 < 250 && b > 200 && b < 252 && Math.max(r, g2, b) - Math.min(r, g2, b) < 16; };
+          const visto = new Uint8Array(N);
+          for (let p0 = 0; p0 < N; p0++) {
+            if (fundo[p0] || visto[p0] || !doFundo(p0 * 4)) continue;
+            const grupo = [p0]; visto[p0] = 1;
+            for (let j = 0; j < grupo.length; j++) {
+              const p = grupo[j], x = p % W, y = (p / W) | 0;
+              for (const q of [x > 0 ? p - 1 : -1, x < W - 1 ? p + 1 : -1, y > 0 ? p - W : -1, y < H - 1 ? p + W : -1]) {
+                if (q >= 0 && !visto[q] && !fundo[q] && doFundo(q * 4)) { visto[q] = 1; grupo.push(q); }
+              }
+            }
+            if (grupo.length > 250) for (const p of grupo) fundo[p] = 1;
+          }
           for (let p = 0; p < N; p++) if (fundo[p]) d[p * 4 + 3] = 0;
           // Borda suave: pixel claro encostado no fundo fica semitransparente e escurece (sem halo branco no fundo escuro)
           for (let p = 0; p < N; p++) {
@@ -112,9 +134,9 @@ const VIDEOS = [
         const url = folha.toDataURL('image/webp', vd.recorte ? 0.86 : 0.8);
         return { url, total, linhas, W, H };
       })()`);
-      fs.writeFileSync(path.join(SAIDA, `capi${vd.n}.webp`), Buffer.from(r.url.split(',')[1], 'base64'));
-      meta[`capi${vd.n}`] = { arquivo: `capi${vd.n}.webp`, quadros: r.total, colunas: COLS, lado: LADO, fps: FPS, recorte: vd.recorte };
-      console.log(`capi${vd.n}: ${r.total} quadros, ${(fs.statSync(path.join(SAIDA, `capi${vd.n}.webp`)).size / 1024).toFixed(0)} KB`);
+      fs.writeFileSync(path.join(SAIDA, `${vd.nome || `capi${vd.n}`}.webp`), Buffer.from(r.url.split(',')[1], 'base64'));
+      meta[vd.nome || `capi${vd.n}`] = { arquivo: `${vd.nome || `capi${vd.n}`}.webp`, quadros: r.total, colunas: COLS, lado: LADO, fps: FPS, recorte: vd.recorte };
+      console.log(`${vd.nome || `capi${vd.n}`}: ${r.total} quadros, ${(fs.statSync(path.join(SAIDA, `${vd.nome || `capi${vd.n}`}.webp`)).size / 1024).toFixed(0)} KB`);
     }
     fs.writeFileSync(path.join(SAIDA, 'animacoes.json'), JSON.stringify(meta, null, 2));
   } finally { await b.fechar(); srv.close(); }

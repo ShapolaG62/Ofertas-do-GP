@@ -406,3 +406,20 @@ A situação de cada loja e a busca pontual ficam em **Mineração**.
 **Documento:** a página `/privacidade` traz os Termos de Uso (`#termos`) e a Política de Privacidade (`#privacidade`), com versão e data. Para mudar o texto de forma relevante, atualize a versão em `src/consentimento.js` e no topo da página.
 
 **Preencha em Painel → Site → "Responsável pelo site (LGPD)":** nome ou razão social, CPF/CNPJ, cidade/UF, e-mail de privacidade e encarregado (DPO). Esses dados aparecem no documento.
+
+## 22. Equipe (staff): atendimento do SAC e postagens
+
+**Cadastrar:** em Painel → **Equipe (staff)**, informe nome, e-mail e uma senha inicial e marque as funções:
+- **Atender o SAC:** acesso à Fila do SAC.
+- **Postar anúncios:** pode escolher ofertas e postar nos grupos e redes.
+
+Se o e-mail já tem conta no site, a pessoa só ganha as funções e a senha continua a dela, a menos que você digite uma nova.
+
+**Gerenciar:** na lista da Equipe você pode:
+- marcar ou desmarcar as funções a qualquer momento;
+- **Nova senha:** a pessoa sai de todos os aparelhos e passa a entrar com a senha nova;
+- **Tirar da equipe:** a pessoa perde as funções, mas a conta continua existindo.
+
+Tudo fica registrado no histórico da conta.
+
+**Para a pessoa da equipe:** ela entra em **/conta** com o e-mail e a senha. A conta abre na aba **Área da equipe**, com os atalhos para a **Fila do SAC** e para **Postar anúncios**. Ela pode trocar a senha em Minha conta → Senha e conta.

@@ -205,6 +205,15 @@ router.get('/api/admin/users/:id', (req, res) => {
   res.json(data);
 });
 
+// ── Equipe (staff): quem atende o SAC e posta os anúncios ──
+const equipe = require('../equipe');
+const erroEquipe = (res, err) => res.status(err.status || 400).json({ error: err.message });
+router.get('/api/admin/equipe', (req, res) => res.json({ equipe: equipe.listar() }));
+router.post('/api/admin/equipe', (req, res) => { try { res.json({ pessoa: equipe.adicionar(req.body || {}) }); } catch (err) { erroEquipe(res, err); } });
+router.post('/api/admin/equipe/:id', (req, res) => { try { res.json({ pessoa: equipe.atualizar(req.params.id, req.body || {}) }); } catch (err) { erroEquipe(res, err); } });
+router.post('/api/admin/equipe/:id/senha', (req, res) => { try { res.json({ pessoa: equipe.definirSenha(req.params.id, req.body?.senha) }); } catch (err) { erroEquipe(res, err); } });
+router.post('/api/admin/equipe/:id/remover', (req, res) => { try { res.json({ ok: equipe.remover(req.params.id) }); } catch (err) { erroEquipe(res, err); } });
+
 // Troca manual do plano da conta (qualquer plano, inclusive grátis ou fora de venda; ou "sem plano")
 router.post('/api/admin/users/:id/plano', (req, res) => {
   try {

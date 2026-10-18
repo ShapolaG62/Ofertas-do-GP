@@ -418,12 +418,18 @@
     show('conta');
     const empresa = ME.tipo === 'empresa';
     $('#who-name').textContent = empresa ? (ME.empresa_nome || ME.nome) : ME.nome;
-    $('#who-type').textContent = empresa ? `Conta empresarial · ${ME.nome}` : 'Conta de consumidor';
+    $('#who-type').textContent = empresa ? `Conta empresarial · ${ME.nome}` : ME.staff ? 'Equipe Ofertou!' : 'Conta de consumidor';
     $('#who-avatar').hidden = !ME.avatar_url;
     if (ME.avatar_url) $('#who-avatar').src = ME.avatar_url;
     // Empresa ainda sem loja: o "Painel da loja" fica escondido e a conta abre em "Minha loja" para criar a loja
-    const tabs = empresa ? TABS_EMPRESA.filter(([k]) => k !== 'painel' || LOJA) : TABS_CONSUMIDOR;
+    const equipe = ME.staff || ME.pode_sac || ME.pode_postar;
+    const tabs = [...(equipe ? [['equipe', 'Área da equipe']] : []), ...(empresa ? TABS_EMPRESA.filter(([k]) => k !== 'painel' || LOJA) : TABS_CONSUMIDOR)];
+    if (equipe) {
+      $('#eq-sac').hidden = !ME.pode_sac;
+      $('#eq-postar').hidden = !ME.pode_postar;
+    }
     if (empresa && !LOJA && currentTab === null) currentTab = 'loja';
+    if (equipe && currentTab === null) currentTab = 'equipe';
     if (!tabs.some(([k]) => k === currentTab)) currentTab = empresa ? (LOJA ? 'painel' : 'loja') : 'meuperfil';
     $('#loja-boas-vindas').hidden = !(empresa && !LOJA);
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>

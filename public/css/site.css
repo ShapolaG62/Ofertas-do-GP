@@ -1916,3 +1916,13 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   .header-actions .btn { padding: 0 10px; }
   .header-actions .btn-wa, .header-actions .sino-btn { width: 42px; }
 }
+
+/* Minha conta: Área da equipe (staff) */
+.eq-cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+.eq-cartao { display: grid; gap: 6px; padding: 18px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); text-decoration: none; }
+.eq-cartao[hidden] { display: none; }
+.eq-cartao:hover { border-color: var(--brand); }
+.eq-cartao b { font-size: 17px; }
+.eq-cartao small { color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
+.eq-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--brand-soft); margin-bottom: 4px; }
+.eq-ico svg { width: 24px; height: 24px; fill: none; stroke: var(--brand); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

@@ -22,7 +22,7 @@ A assinatura comprada no app vale também no site, e vice-versa: o plano fica na
 
 ## 1. O que você precisa ter
 
-1. **Site no ar com domínio e https**, com banco de dados permanente: siga o `PASSO_A_PASSO_VPS.md` (ex.: `https://ofertou.com.br`). A Vercel não serve, porque apaga os dados.
+1. **Site no ar com domínio e https**, com banco de dados permanente: siga o `PASSO_A_PASSO_VPS.md` (ex.: `https://tanoofertou.com.br`). A Vercel não serve, porque apaga os dados.
 2. **Google Play Console**: conta de desenvolvedor, taxa única de US$ 25 — https://play.google.com/console
 3. **Apple Developer Program**: US$ 99 por ano — https://developer.apple.com/programs/ (pessoa física ou, melhor, empresa com CNPJ e número D-U-N-S).
 4. **RevenueCat** (grátis até US$ 2.500/mês de receita): https://app.revenuecat.com — confere as compras das duas lojas e avisa o site.
@@ -33,7 +33,7 @@ A assinatura comprada no app vale também no site, e vice-versa: o plano fica na
 
 ## 2. Apontar o app para o seu domínio
 
-Abra `mobile/capacitor.config.json` e troque o endereço em `"url"` pelo do seu site (está `https://ofertou.com.br`).
+Abra `mobile/capacitor.config.json` e troque o endereço em `"url"` pelo do seu site (está `https://tanoofertou.com.br`).
 Troque também em `mobile/www/erro.html` (botão "Tentar de novo"). Depois, no terminal, dentro da pasta `mobile`:
 
 ```bash

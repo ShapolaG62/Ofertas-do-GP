@@ -61,7 +61,7 @@ docker compose logs -f
 
 ## 🔒 Passo Adicional: Configurar Domínio Próprio e SSL Grátis (HTTPS)
 
-Para acessar `https://seusite.com.br` sem precisar digitar `:3000`:
+Para acessar `https://tanoofertou.com.br` sem precisar digitar `:3000`:
 
 ### 1. Instalar Nginx e Certbot
 ```bash
@@ -75,11 +75,11 @@ Crie o arquivo de configuração do seu site:
 sudo nano /etc/nginx/sites-available/ofertas
 ```
 
-Cole o conteúdo abaixo (substituindo `seusite.com.br` pelo seu domínio):
+Cole o conteúdo abaixo (substituindo `tanoofertou.com.br` pelo seu domínio):
 ```nginx
 server {
     listen 80;
-    server_name seusite.com.br www.seusite.com.br;
+    server_name tanoofertou.com.br www.tanoofertou.com.br;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -103,7 +103,7 @@ sudo systemctl restart nginx
 
 ### 3. Gerar Certificado SSL Grátis (HTTPS)
 ```bash
-sudo certbot --nginx -d seusite.com.br -d www.seusite.com.br
+sudo certbot --nginx -d tanoofertou.com.br -d www.tanoofertou.com.br
 ```
 
 ---

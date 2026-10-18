@@ -3,7 +3,7 @@
   "appName": "Ofertou!",
   "webDir": "www",
   "server": {
-    "url": "https://ofertou.com.br",
+    "url": "https://tanoofertou.com.br",
     "errorPath": "erro.html",
     "androidScheme": "https"
   },

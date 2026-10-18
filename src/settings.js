@@ -60,7 +60,7 @@ const DEFAULTS = {
   // Login com Google (Google Cloud > APIs e serviços > Credenciais > ID do cliente OAuth)
   google_client_id: '',
   google_client_secret: '',
-  // Endereço público do site (ex.: https://ofertou.com.br). Vazio = usa o endereço acessado.
+  // Endereço público do site (ex.: https://tanoofertou.com.br). Vazio = usa o endereço acessado.
   site_url: '',
 
   // Postagem automática nas redes sociais (APIs oficiais)

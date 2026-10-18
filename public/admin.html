@@ -130,7 +130,8 @@
   .check { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
   .db-dinheiro .db-total b { color: var(--green, #2bb673); }
   /* SAC dentro do painel */
-  .sac-quadro { display: block; width: 100%; height: calc(100vh - 190px); min-height: 560px; border: 0; border-radius: 14px; background: transparent; }
+  .wrap:has(.tab-body[data-body="sac"]:not(.hidden)) { padding-bottom: 16px; } /* aba SAC: cabe na tela, sem rolar o painel */
+  .sac-quadro { display: block; width: 100%; height: calc(100vh - 236px); min-height: 480px; border: 0; border-radius: 14px; background: transparent; }
   /* Botão liga/desliga */
   .capi-chave { align-items: flex-start; gap: 12px; font-weight: 400; }
   .check.capi-chave input { appearance: none; -webkit-appearance: none; flex: none; width: 44px; height: 24px; margin: 2px 0 0; border-radius: 999px;
@@ -247,9 +248,9 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261117"></script>
-<script src="/js/capi-minerando.js?v=20261117" defer></script>
-<script src="/js/cadastro-auto.js?v=20261117" defer></script>
+<script src="/js/dialogo.js?v=20261118"></script>
+<script src="/js/capi-minerando.js?v=20261118" defer></script>
+<script src="/js/cadastro-auto.js?v=20261118" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -516,7 +517,7 @@
 
     <!-- EQUIPE (STAFF) -->
     <div class="tab-body hidden" data-body="sac">
-      <iframe class="sac-quadro" id="sac-quadro" title="Fila do SAC" loading="lazy"></iframe>
+      <iframe class="sac-quadro" id="sac-quadro" title="Fila do SAC"></iframe>
     </div>
 
     <div class="tab-body hidden" data-body="equipe">

@@ -1939,4 +1939,11 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .sac-embed body, .sac-embed .sac-body { background: transparent; }
 .sac-embed .sac-page { padding: 0; max-width: none; }
 .sac-embed .sac-topo { margin-bottom: 12px; }
-.sac-embed .sac-grade { height: calc(100vh - 70px); }
+/* a página do SAC ocupa exatamente o quadro do painel: topo parado, só a lista e a conversa rolam (barras invisíveis) */
+.sac-embed, .sac-embed body { height: 100%; overflow: hidden; scrollbar-width: none; }
+.sac-embed::-webkit-scrollbar, .sac-embed body::-webkit-scrollbar { display: none; }
+.sac-embed .sac-page { height: 100%; display: flex; flex-direction: column; }
+.sac-embed .sac-topo { flex: none; }
+.sac-embed .sac-grade { flex: 1; height: auto; min-height: 0; }
+.sac-embed .sac-lista, .sac-embed .sac-conversa { min-height: 0; max-height: none; }
+@media (max-width: 860px) { .sac-embed .sac-grade { grid-template-rows: minmax(0, 38%) minmax(0, 1fr); } }

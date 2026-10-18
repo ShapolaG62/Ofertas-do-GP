@@ -822,7 +822,7 @@
               ${p.no_prazo ? ` · até ${fmtDate(p.expires_at)}` : ''}</div>
           </div>
           <div class="row-actions">
-            ${isAd && p.no_prazo && !p.oculto ? `<a class="btn btn-sm" href="/anuncio/${p.id}" target="_blank">Ver</a>` : ''}
+            ${isAd && p.no_prazo && !p.oculto ? `<a class="btn btn-sm" href="/anuncio/${p.id}">Ver</a>` : ''}
             ${isAd ? `<button class="btn btn-sm" type="button" data-edit="${p.id}">${p.no_prazo ? 'Editar' : 'Editar e renovar'}</button>` : ''}
             <button class="btn btn-sm" type="button" data-del="${p.id}">Excluir</button>
           </div>
@@ -988,7 +988,7 @@
     toast(editingId ? 'Anúncio atualizado!' : 'Anúncio publicado!');
     closeEditor();
     loadProducts();
-    if (!editingId && confirm('Anúncio publicado! Quer ver como ficou?')) window.open(`/anuncio/${r.id}`, '_blank');
+    if (!editingId && confirm('Anúncio publicado! Quer ver como ficou?')) location.href = `/anuncio/${r.id}`;
   });
 
   // ── Importação, dados e segurança ──────────────────────────────────────────

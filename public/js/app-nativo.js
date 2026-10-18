@@ -11,6 +11,22 @@
   const plataforma = (cap && cap.getPlatform && cap.getPlatform()) || (/iPhone|iPad|iPod/.test(navigator.userAgent) ? 'ios' : 'android');
   const loja = plataforma === 'ios' ? 'App Store' : 'Google Play';
   document.documentElement.classList.add('is-app', `is-app-${plataforma}`);
+  // Links do próprio site ficam dentro do app (mesmo os marcados para abrir em nova guia);
+  // só os de outros sites (lojas, WhatsApp, redes) vão para o navegador do celular.
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[target="_blank"][href]');
+    if (!a || e.defaultPrevented) return;
+    let url;
+    try { url = new URL(a.getAttribute('href'), location.href); } catch { return; }
+    if (url.origin !== location.origin || url.pathname.startsWith('/oferta/') || url.pathname.startsWith('/o/')) return;
+    e.preventDefault();
+    location.href = url.href;
+  }, true);
+  const abrirOriginal = window.open;
+  window.open = (url, alvo, ...resto) => {
+    try { const u = new URL(url, location.href); if (u.origin === location.origin && !u.pathname.startsWith('/oferta/')) { location.href = u.href; return null; } } catch { /* segue */ }
+    return abrirOriginal.call(window, url, alvo, ...resto);
+  };
   const estilo = document.createElement('style');
   estilo.textContent = `
     .is-app .so-web, .is-app a[href="/anuncie"], .is-app .ad-invite { display: none !important; }

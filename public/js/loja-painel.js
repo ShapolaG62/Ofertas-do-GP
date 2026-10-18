@@ -70,7 +70,7 @@
       <div class="dash-topo">
         <div class="dash-loja">${d.loja.logo ? `<img src="${esc(d.loja.logo)}" alt="" referrerpolicy="no-referrer">` : ''}
           <div><h2>${esc(d.loja.nome)}</h2><span class="muted">Resumo dos últimos 30 dias · ${d.loja.aceita_pedidos ? `<b class="dash-on">Recebendo pedidos</b> (${esc(d.loja.metodos.join(' e '))})` : '<b class="dash-off">Pedidos pelo site desligados</b>'}</span></div></div>
-        <div class="row-actions"><a class="btn btn-sm" href="/loja/${esc(d.loja.slug)}" target="_blank">Ver minha loja ↗</a><button class="btn btn-sm btn-primary" type="button" data-ir="novo-anuncio">Novo anúncio</button></div>
+        <div class="row-actions"><a class="btn btn-sm" href="/loja/${esc(d.loja.slug)}">Ver minha loja</a><button class="btn btn-sm btn-primary" type="button" data-ir="novo-anuncio">Novo anúncio</button></div>
       </div>
 
       <div class="dash-kpis">
@@ -125,7 +125,7 @@
           ${k.avaliacao.total ? `<div class="dash-estrelas">${[5, 4, 3, 2, 1].map(s => `<div><span>${s} ★</span><div class="dash-barra"><i style="width:${((k.avaliacao.estrelas[s] || 0) / k.avaliacao.total * 100).toFixed(1)}%"></i></div><small>${num(k.avaliacao.estrelas[s] || 0)}</small></div>`).join('')}</div>` : ''}
           ${d.avaliacoes.length ? `<ul class="dash-avs">${d.avaliacoes.map(a => `<li><div><b class="dash-nota-est">${estrelasTxt(a.nota)}</b> <span class="muted">${esc(a.autor)} · ${diaMes(a.created_at)}</span></div>${a.texto ? `<p>${esc(a.texto)}</p>` : ''}${a.resposta ? '' : '<small class="dash-sem-resp">Sem resposta</small>'}</li>`).join('')}</ul>`
             : '<p class="muted dash-vazio">Sua loja ainda não recebeu avaliações.</p>'}
-          <a class="btn btn-sm" href="/loja/${esc(d.loja.slug)}#avaliacoes" target="_blank">Ver e responder na loja ↗</a>
+          <a class="btn btn-sm" href="/loja/${esc(d.loja.slug)}#avaliacoes">Ver e responder na loja</a>
         </section>
       </div>`;
 
@@ -134,7 +134,7 @@
       el.querySelector('#dash-graf').innerHTML = grafico(d.serie, b.dataset.graf);
     }));
     el.querySelectorAll('[data-ir]').forEach(b => b.addEventListener('click', () => abrirAba(b.dataset.ir)));
-    el.querySelectorAll('[data-link]').forEach(b => b.addEventListener('click', () => window.open(b.dataset.link, '_blank')));
+    el.querySelectorAll('[data-link]').forEach(b => b.addEventListener('click', () => { location.href = b.dataset.link; }));
   }
 
   async function carregar(el, abrirAba) {

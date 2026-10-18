@@ -737,9 +737,12 @@ body.is-landing { overflow-x: clip; }
 .lp-band, .lp-hero, .lp-final { position: relative; isolation: isolate; }
 .lp-band::before, .lp-hero::before, .lp-final::before { content: ""; position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; }
 .lp-band::before { background: var(--surface); border-block: 1px solid var(--line); }
-.lp-hero::before { background:
-  radial-gradient(60% 80% at 85% 10%, var(--brand-soft), transparent 70%),
-  radial-gradient(50% 60% at 0% 100%, var(--gold-soft), transparent 70%); }
+.lp-hero::before { background: radial-gradient(60% 80% at 85% 10%, var(--brand-soft), transparent 70%); }
+/* Mancha dourada à esquerda: desce do topo até o "Como funciona", sem corte reto no fim do topo (as seções de baixo ficam por cima dela) */
+.lp-hero { z-index: 0; }
+.lp-hero ~ .lp-lojas, .lp-hero ~ .lp-sec { position: relative; z-index: 1; }
+.lp-hero::after { content: ""; position: absolute; z-index: -1; pointer-events: none; left: calc(50% - 50vw); width: min(60vw, 900px); top: 35%; height: 1000px;
+  background: radial-gradient(ellipse 100% 50% at 0% 50%, var(--gold-soft), transparent 75%); }
 
 .lp-hero { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 56px; align-items: center; padding: 56px 0 48px; }
 .lp-eyebrow { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 12px; border-radius: 999px;

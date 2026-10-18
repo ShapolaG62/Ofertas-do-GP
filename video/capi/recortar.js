@@ -16,15 +16,9 @@ const COLS = 10;
 // "trechos": montagem com partes do vídeo, em segundos: [de, até, velocidade (1 = normal), pausa no fim em quadros]
 // (de > até toca de trás para frente)
 const VIDEOS = [
-  { n: 1, recorte: true, trechos: [
-    [0, 1.3],                       // ergue a picareta
-    [1.367, 1.7, 0.6, 2], [1.367, 1.7, 0.6, 2], // golpes 1 e 2 na pedra (batida + faísca), mais lentos e com uma pausa
-    [1.367, 2.033, 0.6],            // golpe 3: a picareta assenta na pedra
-    [2.1, 3.033], [2.967, 2.4], [2.433, 3.033], // comemoração (o braço vai e volta)
-  ] },
+  // A Capi ergue a picareta, dá 1 golpe na pedra (faísca) e comemora, do jeito natural do vídeo
+  { n: 1, recorte: true, trechos: [[0, 3.033]] },
   { n: 2, recorte: true, ini: 0, fim: 5.0 },
-  // Clipe separado (sai como capi4): o mesmo golpe do capi1, do jeito natural do vídeo (1 golpe, velocidade normal) e a comemoração
-  { n: 1, nome: 'capi4', recorte: true, trechos: [[0, 3.033]] },
   // Clipe separado (sai como capi3): a Capi sentada cavando o monte de terra, do fim do vídeo 1
   { n: 1, nome: 'capi3', recorte: true, trechos: [
     [3.117, 4.117, 0.8],            // ergue e golpeia o monte de terra

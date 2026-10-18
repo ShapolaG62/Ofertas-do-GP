@@ -1,7 +1,7 @@
 {
   "capi1": {
     "arquivo": "capi1.webp",
-    "quadros": 96,
+    "quadros": 46,
     "colunas": 10,
     "lado": 200,
     "fps": 15,
@@ -10,14 +10,6 @@
   "capi2": {
     "arquivo": "capi2.webp",
     "quadros": 75,
-    "colunas": 10,
-    "lado": 200,
-    "fps": 15,
-    "recorte": true
-  },
-  "capi4": {
-    "arquivo": "capi4.webp",
-    "quadros": 46,
     "colunas": 10,
     "lado": 200,
     "fps": 15,

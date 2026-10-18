@@ -16,8 +16,6 @@ const COLS = 10;
 // "trechos": montagem com partes do vídeo, em segundos: [de, até, velocidade (1 = normal), pausa no fim em quadros]
 // (de > até toca de trás para frente)
 const VIDEOS = [
-  // A Capi ergue a picareta, dá 1 golpe na pedra (faísca) e comemora, do jeito natural do vídeo
-  { n: 1, recorte: true, trechos: [[0, 3.033]] },
   { n: 2, recorte: true, ini: 0, fim: 5.0 },
   // Clipe separado (sai como capi3): a Capi sentada cavando o monte de terra, do fim do vídeo 1
   { n: 1, nome: 'capi3', recorte: true, trechos: [

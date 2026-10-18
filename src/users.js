@@ -334,6 +334,14 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
       db.run('UPDATE users SET pode_postar = 0 WHERE id = ?', id);
       logAction(u, 'postagens_removidas', motivo);
       break;
+    case 'permitir_sac':
+      db.run('UPDATE users SET pode_sac = 1 WHERE id = ?', id);
+      logAction(u, 'atendente_sac_permitido');
+      break;
+    case 'remover_sac':
+      db.run('UPDATE users SET pode_sac = 0 WHERE id = ?', id);
+      logAction(u, 'atendente_sac_removido', motivo);
+      break;
     case 'excluir_publicacoes': {
       const n = db.run('DELETE FROM offers WHERE loja_id IN (SELECT id FROM lojas WHERE user_id = ?)', id).changes;
       logAction(u, 'publicacoes_excluidas', `${n} produto(s)${motivo ? ` — ${motivo}` : ''}`);
@@ -372,7 +380,7 @@ function listForAdmin({ q = '', tipo = '', status = '', page = 1, perPage = 30 }
   const total = db.get(`SELECT COUNT(*) AS n ${from} ${whereSql}`, ...params).n;
   const rows = db.all(
     `SELECT u.id, u.tipo, u.nome, u.email, u.empresa_nome, u.cnpj, u.status, u.status_motivo, u.suspenso_ate,
-            u.bloqueio_publicacao, u.pode_postar, u.created_at, u.last_login_at,
+            u.bloqueio_publicacao, u.pode_postar, u.pode_sac, u.created_at, u.last_login_at,
             l.id AS loja_id, l.nome AS loja_nome, l.slug AS loja_slug, l.oculta AS loja_oculta,
             (SELECT COUNT(*) FROM offers o WHERE o.loja_id = l.id) AS produtos
      ${from} ${whereSql}

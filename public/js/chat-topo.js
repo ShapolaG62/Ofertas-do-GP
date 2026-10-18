@@ -44,14 +44,15 @@
   document.body.appendChild(raiz);
   const $ = s => raiz.querySelector(s);
   const painel = $('#chatf-painel'), corpo = $('#chatf-corpo'), form = $('#chatf-form'), banner = $('#chatf-banner');
-  let ATUAL = null, MSGS = [], timer = null;
+  let ATUAL = null, MSGS = [], timer = null, MODO = 'chat', RESUMO = {};
 
   // ── Contador ─────────────────────────────────────────────────────────────
   async function atualizarContador() {
     try {
       const r = await api('/api/chat/resumo');
       raiz.hidden = !r.logado;
-      const n = (r.nao_lidas || 0) + (r.pedidos || 0);
+      RESUMO = r;
+      const n = (r.nao_lidas || 0) + (r.pedidos || 0) + (r.sac || 0) + (r.sac_atendente ? r.sac_atendente.fila + r.sac_atendente.nao_lidas : 0);
       const b = $('.chatf-n');
       b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
       $('#chatf-botao').title = r.pedidos ? `${r.pedidos} pedido(s) de mensagem esperando sua resposta` : n ? `${n} mensagem(ns) não lida(s)` : 'Mensagens';
@@ -95,13 +96,14 @@
     const a = e.target.closest('[data-sino-link]');
     if (!a) return;
     // Links de conversa/pedido abrem no painel de mensagens, sem sair da página
+    if (a.dataset.sinoLink === '/sac/meu') { e.preventDefault(); sinoPop.hidden = true; window.OfertouChat.sac(); return; }
     const m = /^\/mensagens\?c=(\d+)(?:&pedido=(\d+))?/.exec(a.dataset.sinoLink);
     if (m) { e.preventDefault(); sinoPop.hidden = true; window.OfertouChat.abrir(Number(m[1]), m[2] ? Number(m[2]) : null); }
   });
 
   // ── Lista ────────────────────────────────────────────────────────────────
   async function mostrarLista() {
-    ATUAL = null; clearInterval(timer);
+    ATUAL = null; MODO = 'chat'; clearInterval(timer);
     $('[data-chatf="voltar"]').hidden = true;
     $('#chatf-titulo').innerHTML = '<b>Mensagens</b>';
     $('[data-chatf="menu"]').hidden = true;
@@ -110,7 +112,16 @@
     try {
       const d = await api('/api/chat/conversas');
       const lista = d.conversas.sort((a, b) => (b.pedido_para_mim - a.pedido_para_mim));
-      corpo.innerHTML = lista.length ? lista.map(c => `
+      const sa = RESUMO.sac_atendente;
+      const topo = (sa?.admin ? "" : `<button type="button" class="chatf-item chatf-sac${RESUMO.sac ? ' tem-novas' : ''}" data-sac>
+          <span class="chatf-av chatf-av-sac">${ICO_SAC}</span>
+          <span class="chatf-item-txt"><b>Suporte Ofertou!</b><small>Dúvidas? Fale com a nossa equipe</small></span>
+          <span class="chatf-item-lado">${RESUMO.sac ? `<b class="chatf-n-item">${RESUMO.sac}</b>` : ''}</span></button>`)+`
+        ${sa ? `<a class="chatf-item chatf-sac-fila${sa.fila || sa.nao_lidas ? ' tem-novas' : ''}" href="/sac">
+          <span class="chatf-av chatf-av-sac">${ICO_FILA}</span>
+          <span class="chatf-item-txt"><b>Fila do SAC</b><small>${sa.fila} na fila · ${sa.meus} com você</small></span>
+          <span class="chatf-item-lado">${sa.fila + sa.nao_lidas ? `<b class="chatf-n-item">${sa.fila + sa.nao_lidas}</b>` : ''}</span></a>` : ''}`;
+      corpo.innerHTML = topo + (lista.length ? lista.map(c => `
         <button type="button" class="chatf-item${c.nao_lidas || c.pedido_para_mim ? ' tem-novas' : ''}" data-conv="${c.id}">
           ${avatar(c.outro)}
           <span class="chatf-item-txt"><b>${esc(c.outro.nome)}</b>
@@ -118,7 +129,7 @@
               : c.status === 'bloqueada' ? 'Bloqueada' : c.ultima ? `${c.ultima.minha ? 'Você: ' : ''}${esc(c.ultima.texto)}` : ''}</small></span>
           <span class="chatf-item-lado"><small>${hora(c.ultima_msg_at)}</small>${c.nao_lidas ? `<b class="chatf-n-item">${c.nao_lidas}</b>` : c.pedido_para_mim ? '<b class="chatf-n-item">!</b>' : ''}</span>
         </button>`).join('')
-        : '<p class="chatf-vazio">Nenhuma conversa ainda. Abra o perfil de alguém ou a página de uma loja para começar.</p>';
+        : '<p class="chatf-vazio">Nenhuma conversa ainda. Abra o perfil de alguém ou a página de uma loja para começar.</p>');
     } catch (err) { corpo.innerHTML = `<p class="chatf-vazio">${esc(err.message)}</p>`; }
   }
 
@@ -126,6 +137,8 @@
   let pedidoFoco = null;
   async function abrirConversa(id, foco = null) {
     const d = await api(`/api/chat/conversas/${id}`);
+    MODO = 'chat';
+    form.texto.placeholder = 'Escreva uma mensagem…';
     ATUAL = d.conversa; MSGS = d.mensagens;
     pedidoFoco = foco;
     $('[data-chatf="voltar"]').hidden = false;
@@ -215,6 +228,89 @@
     if (mudou) cabecalho();
   }
 
+  // ── SAC: suporte da equipe Ofertou! (chamado → fila → atendente) ─────────
+  const ICO_SAC = '<svg class="ico-linha" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19a3 3 0 0 1-3 3h-3"/></svg>';
+  const ICO_FILA = '<svg class="ico-linha" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>';
+  let SAC = null, SAC_MSGS = [], SAC_ASSUNTOS = {};
+  function cabecalhoSac() {
+    const st = SAC ? `${esc(SAC.codigo)} · ${SAC.status === 'fila' ? `Na fila${SAC.posicao ? ` (posição ${SAC.posicao})` : ''}`
+      : SAC.status === 'atendimento' ? `Em atendimento com ${esc(SAC.atendente?.nome || 'a equipe')}` : 'Resolvido'}` : 'Tire suas dúvidas com a nossa equipe';
+    $('#chatf-titulo').innerHTML = `<span class="chatf-sac-tit"><span class="chatf-av chatf-av-sac">${ICO_SAC}</span><span><b>Suporte Ofertou!</b><small>${st}</small></span></span>`;
+  }
+  function renderSac(rolar) {
+    cabecalhoSac();
+    if (!SAC) {
+      form.hidden = true; banner.hidden = true;
+      corpo.innerHTML = `<form class="chatf-sac-novo" id="sac-novo">
+        <p>Conte sua dúvida: ela entra na fila e o primeiro atendente livre responde aqui mesmo. Você recebe um aviso no sino 🔔 e no e-mail.</p>
+        <label>Assunto<select name="assunto">${Object.entries(SAC_ASSUNTOS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
+        <label>Sua mensagem<textarea name="texto" rows="5" maxlength="2000" required placeholder="Ex.: fiz um pedido e o pagamento não aparece…"></textarea></label>
+        <button class="btn btn-primary btn-block" type="submit">Entrar na fila de atendimento</button>
+      </form>`;
+      return;
+    }
+    corpo.innerHTML = SAC_MSGS.map(m => {
+      if (!m.autor) return `<div class="chatf-sis">${esc(m.texto)}</div>`;
+      const minha = m.autor === SAC.cliente.dono;
+      return `<div class="chatf-bolha ${minha ? 'minha' : 'dele'}">${minha ? '' : `<small class="chatf-autor">${esc(m.autor_nome)}</small>`}<p>${esc(m.texto).replace(/\n/g, '<br>')}</p><small>${hora(m.created_at)}</small></div>`;
+    }).join('');
+    form.hidden = false; banner.hidden = false;
+    form.texto.placeholder = SAC.status === 'resolvido' ? 'Escreva para abrir um novo chamado…' : 'Escreva para o suporte…';
+    if (SAC.status === 'resolvido') {
+      banner.innerHTML = SAC.nota ? `<p>Obrigado pela avaliação (${'★'.repeat(SAC.nota)})! Precisa de mais ajuda? É só escrever.</p>`
+        : `<p>Como foi o atendimento?</p><div class="chatf-estrelas">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-sac-nota="${n}" title="${n} de 5">★</button>`).join('')}</div>`;
+    } else {
+      banner.innerHTML = `<p>${SAC.status === 'fila' ? `Você está na fila${SAC.posicao ? ` — <b>posição ${SAC.posicao}</b>` : ''}. Pode continuar escrevendo.` : `<b>${esc(SAC.atendente?.nome || 'Um atendente')}</b> está te atendendo.`}</p>
+        <div class="chatf-acoes"><button class="btn btn-sm" type="button" data-sac-acao="encerrar">Encerrar chamado</button></div>`;
+    }
+    if (rolar) corpo.scrollTop = corpo.scrollHeight;
+  }
+  function aplicarSac(d) {
+    SAC = d.chamado; SAC_MSGS = d.mensagens; if (d.assuntos) SAC_ASSUNTOS = d.assuntos;
+    renderSac(true);
+  }
+  async function abrirSac() {
+    ATUAL = null; MODO = 'sac'; clearInterval(timer);
+    $('[data-chatf="voltar"]').hidden = false;
+    $('[data-chatf="menu"]').hidden = true;
+    form.hidden = true; banner.hidden = true;
+    corpo.innerHTML = '<p class="chatf-vazio">Carregando…</p>';
+    aplicarSac(await api('/api/sac/meu'));
+    timer = setInterval(() => { if (document.visibilityState === 'visible') novasSac().catch(() => {}); }, 4000);
+    atualizarContador();
+  }
+  async function novasSac() {
+    if (MODO !== 'sac') return;
+    const ult = SAC_MSGS.length ? SAC_MSGS[SAC_MSGS.length - 1].id : 0;
+    const d = await api(`/api/sac/meu?depois=${ult}`);
+    if (MODO !== 'sac') return;
+    if (!d.chamado || !SAC || d.chamado.id !== SAC.id) { if (d.chamado?.id !== SAC?.id) aplicarSac(await api('/api/sac/meu')); return; }
+    const vistas = new Set(SAC_MSGS.map(m => m.id));
+    const novasMsgs = d.mensagens.filter(m => !vistas.has(m.id));
+    const mudou = d.chamado.status !== SAC.status || d.chamado.posicao !== SAC.posicao || d.chamado.atendente?.dono !== SAC.atendente?.dono;
+    SAC = d.chamado;
+    if (novasMsgs.length || mudou) { SAC_MSGS = SAC_MSGS.concat(novasMsgs); renderSac(novasMsgs.length > 0); }
+  }
+  async function enviarSac(t) {
+    const btn = form.querySelector('button');
+    btn.disabled = true;
+    try {
+      aplicarSac(await api(`/api/sac/${SAC.id}/mensagem`, { texto: t }));
+      form.texto.value = ''; form.texto.style.height = '';
+    } catch (err) { alert(err.message); }
+    btn.disabled = false;
+    form.texto.focus();
+  }
+  raiz.addEventListener('submit', async e => {
+    if (e.target.id !== 'sac-novo') return;
+    e.preventDefault();
+    const fn = e.target, btn = fn.querySelector('button');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try { aplicarSac(await api('/api/sac', { assunto: fn.assunto.value, texto: fn.texto.value })); atualizarContador(); }
+    catch (err) { alert(err.message); btn.disabled = false; btn.textContent = 'Entrar na fila de atendimento'; }
+  });
+
+
   // ── Eventos ──────────────────────────────────────────────────────────────
   function abrirPainel(lista = true) {
     painel.hidden = false;
@@ -252,6 +348,18 @@
       try { ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: desbloquear ? 'desbloquear' : 'bloquear' }); cabecalho(); await novas(true); } catch (err) { alert(err.message); }
       return;
     }
+    if (e.target.closest('[data-sac]')) return abrirSac().catch(err => { corpo.innerHTML = `<p class="chatf-vazio">${esc(err.message)}</p>`; });
+    const sacAcao = e.target.closest('[data-sac-acao]');
+    if (sacAcao && SAC) {
+      if (sacAcao.dataset.sacAcao === 'encerrar' && !confirm('Encerrar o chamado? Se precisar depois, é só escrever de novo.')) return;
+      try { aplicarSac(await api(`/api/sac/${SAC.id}/encerrar`, {})); } catch (err) { alert(err.message); }
+      return;
+    }
+    const sacNota = e.target.closest('[data-sac-nota]');
+    if (sacNota && SAC) {
+      try { aplicarSac(await api(`/api/sac/${SAC.id}/avaliar`, { nota: Number(sacNota.dataset.sacNota) })); } catch (err) { alert(err.message); }
+      return;
+    }
     const c = e.target.closest('[data-conv]');
     if (c) return abrirConversa(Number(c.dataset.conv)).catch(err => { corpo.innerHTML = `<p class="chatf-vazio">${esc(err.message)}</p>`; });
     const r = e.target.closest('[data-resp]');
@@ -268,6 +376,7 @@
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const t = form.texto.value.trim();
+    if (MODO === 'sac') { if (t) enviarSac(t); return; }
     if (!t || !ATUAL) return;
     form.querySelector('button').disabled = true;
     try {
@@ -284,10 +393,18 @@
   form.texto.addEventListener('input', e => { e.target.style.height = ''; e.target.style.height = `${Math.min(e.target.scrollHeight, 110)}px`; });
 
   // Outras partes do site podem abrir uma conversa direto no painel (ex.: OfertouChat.abrir(12))
-  window.OfertouChat = { abrir: (id, pedido = null) => { abrirPainel(false); abrirConversa(Number(id), pedido ? Number(pedido) : null).catch(() => mostrarLista()); } };
+  window.OfertouChat = {
+    abrir: (id, pedido = null) => { abrirPainel(false); abrirConversa(Number(id), pedido ? Number(pedido) : null).catch(() => mostrarLista()); },
+    sac: () => { raiz.hidden = false; abrirPainel(false); abrirSac().catch(() => mostrarLista()); },
+  };
 
   // Link para uma conversa (?chat=ID&pedido=ID, vindo de /mensagens, e-mails ou do pedido): abre direto no painel
   const qs = new URLSearchParams(location.search);
+  if (qs.has('sac')) { // /sac/meu (avisos e e-mails): abre o chamado no painel
+    qs.delete('sac');
+    history.replaceState(null, '', location.pathname + (qs.toString() ? `?${qs}` : '') + location.hash);
+    setTimeout(() => window.OfertouChat.sac(), 0);
+  }
   if (qs.has('chat')) {
     const id = Number(qs.get('chat')), ped = Number(qs.get('pedido')) || null;
     qs.delete('chat'); qs.delete('pedido');

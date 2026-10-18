@@ -376,3 +376,21 @@ A situação de cada loja e a busca pontual ficam em **Mineração**.
 - gráfico e funil de vendas;
 - checklist de configuração da loja;
 - mais vendidos, últimos pedidos e avaliações.
+
+## 20. SAC: suporte com fila de atendimento
+
+**Cliente:**
+1. Em **Mensagens** (botão no canto inferior direito), o primeiro item é **Suporte Ofertou!**.
+2. A pessoa escolhe o assunto (dúvida, pedido/pagamento, conta/plano, loja parceira, anúncios ou outro), escreve e entra na **fila**. Ela vê a posição na fila e depois quem está atendendo.
+3. As respostas chegam no mesmo lugar, com aviso no sino 🔔 e por e-mail.
+4. Quando o chamado é resolvido, a pessoa avalia de 1 a 5 estrelas. Se escrever de novo, abre um chamado novo. A própria pessoa também pode encerrar o chamado.
+
+**Atendentes:**
+- Quem atende: o administrador e os usuários com a permissão **Atendente do SAC**. Para dar a permissão, vá em Painel → Usuários → ficha da pessoa → **Permitir atender o SAC** (para tirar, use o mesmo lugar).
+- A **Fila do SAC** fica em `/sac`. O admin chega pelo menu do painel (**SAC (fila de atendimento)**, em Pessoas); os atendentes, pelo item **Fila do SAC** no painel de Mensagens.
+- Abas: **Na fila** (com o tempo de espera), **Meus**, **Outros** (com outros atendentes) e **Resolvidos**. No topo: números da fila e a nota média.
+- **Assumir chamado:** só um atendente fica com cada chamado. Se dois clicarem juntos, o segundo recebe "Outro atendente já assumiu". Depois de assumir, é só responder; Enter envia.
+- **Devolver à fila:** outro atendente continua o atendimento.
+- **Marcar como resolvido:** o cliente é avisado e pode avaliar.
+- O administrador pode assumir um atendimento que está com outra pessoa.
+- Chamado novo avisa todos os atendentes no sino. O **Painel** do admin mostra quantos chamados estão esperando em "Precisa da sua atenção".

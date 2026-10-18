@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fila do SAC — Ofertou!</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0e1210">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261089">
+</head>
+<body class="sac-body">
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertou! — ofertas">
+      <img src="/images/capi-76.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertou<b>!</b></span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-sm" href="/" id="sac-voltar">Ver site</a>
+    </div>
+  </div>
+</header>
+
+<main class="container sac-page">
+  <div class="sac-topo">
+    <div><h1>Fila do SAC</h1><p class="muted" id="sac-eu">Carregando…</p></div>
+    <div class="sac-nums" id="sac-nums"></div>
+  </div>
+  <div class="sac-grade" id="sac-app" hidden>
+    <aside class="sac-lista panel-card">
+      <div class="sac-abas" role="tablist">
+        <button type="button" data-aba="fila" aria-selected="true">Na fila <b id="n-fila"></b></button>
+        <button type="button" data-aba="meus" aria-selected="false">Meus <b id="n-meus"></b></button>
+        <button type="button" data-aba="outros" aria-selected="false">Outros <b id="n-outros"></b></button>
+        <button type="button" data-aba="resolvidos" aria-selected="false">Resolvidos</button>
+      </div>
+      <div class="sac-itens" id="sac-itens"></div>
+    </aside>
+    <section class="sac-conversa panel-card" id="sac-conversa">
+      <div class="sac-vazio">
+        <svg class="ico-linha" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19a3 3 0 0 1-3 3h-3"/></svg>
+        <p>Escolha um chamado da fila e clique em <b>Assumir</b> para atender.</p>
+      </div>
+    </section>
+  </div>
+  <div class="panel-card" id="sac-sem-acesso" hidden>
+    <h2>Somente atendentes</h2>
+    <p class="muted">Esta página é da equipe de atendimento. O administrador libera o acesso em Painel → Usuários → ficha do usuário → <b>Permitir atender o SAC</b>.</p>
+    <p class="muted">Precisa de ajuda? Abra <b>Mensagens → Suporte Ofertou!</b> no canto inferior direito do site.</p>
+  </div>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script src="/js/sac.js?v=20261089" defer></script>
+</body>
+</html>

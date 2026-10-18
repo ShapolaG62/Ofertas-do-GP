@@ -25,7 +25,9 @@ function exigirDono(req, res, next) {
 router.get('/api/chat/resumo', (req, res) => {
   const dono = perfis.donoDe(req);
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ logado: Boolean(dono), ...chat.resumo(dono), notificacoes: require('../notificacoes').naoLidas(dono) });
+  const sac = require('../sac');
+  res.json({ logado: Boolean(dono), ...chat.resumo(dono), notificacoes: require('../notificacoes').naoLidas(dono),
+    sac: dono ? sac.resumoCliente(dono) : 0, sac_atendente: dono ? sac.resumoAtendente(dono) : null });
 });
 
 router.get('/api/chat/conversas', exigirDono, (req, res) => {

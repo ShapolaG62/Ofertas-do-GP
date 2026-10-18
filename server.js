@@ -75,6 +75,9 @@ app.get(['/mensagens', '/mensagens.html'], (req, res) => {
   res.redirect(`/?${q}`);
 });
 app.get('/mensagens/tela', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'mensagens.html')));
+// SAC: o chamado do usuário abre no painel de Mensagens; /sac é a fila de atendimento (admin e atendentes)
+app.get('/sac/meu', (req, res) => res.redirect('/?sac=1'));
+app.get(['/sac', '/sac.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'sac.html')));
 
 // O próprio perfil fica em Minha conta (aba "Meu perfil"); admin e clientes só da ferramenta continuam em /perfil.
 app.get(['/perfil', '/perfil.html'], (req, res, next) => {
@@ -141,6 +144,7 @@ app.use(appRoutes);
 app.use(perfilRoutes);
 app.use(ganhosRoutes);
 app.use(require('./src/routes/chat'));
+app.use(require('./src/routes/sac')); // SAC: chamados e fila de atendimento
 app.use(require('./src/routes/loja')); // página profissional das lojas: aparência, catálogos e avaliações // mensagens, pedidos às lojas e contadores de acesso
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));

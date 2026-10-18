@@ -59,7 +59,7 @@ const slugOf = o => `${String(o.produto || '').toLowerCase().normalize('NFD').re
 function postLink(o, s = settings.getAll()) {
   if (o.__link) return o.__link; // postagem de cliente: link de afiliado dele
   const site = String(s.site_url || '').replace(/\/+$/, '');
-  return /^https:\/\//i.test(site) ? `${site}/oferta/${slugOf(o)}` : (o.affiliate_url || o.original_url);
+  return /^https:\/\//i.test(site) ? `${site}/o/${o.id}` : (o.affiliate_url || o.original_url); // /o/<id>: link curto do site
 }
 
 // Imagem que as redes conseguem baixar: a da loja (https) ou a enviada pela empresa, se o site for público.
@@ -244,15 +244,24 @@ async function postWhatsApp(o, texto, s) {
   return `enviado para ${ok.length} grupo(s)${erros.length ? `; falhou em ${erros.join(' | ')}` : ''}`;
 }
 
+// Título das postagens: no máximo ~2 linhas na tela do celular (corta na palavra e põe "…").
+const TITULO_MAX = 58;
+function tituloCurto(t) {
+  t = String(t || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= TITULO_MAX) return t;
+  const corte = t.slice(0, TITULO_MAX + 1).replace(/\s+\S*$/, '').replace(/[\s,;:.\-–—|/(]+$/, '');
+  return `${corte || t.slice(0, TITULO_MAX)}…`;
+}
+
 // Texto padrão de uma oferta (mesmo modelo da tela de postagens), usado nas postagens agendadas.
 function textoPadrao(o, s = settings.getAll()) {
   const LOJAS = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', kabum: 'KaBuM!', temu: 'Temu' };
   const lines = [
-    `*${o.produto}*`, '',
-    `De ~R$ ${brl(o.preco_anterior)}~`,
-    `*Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
-    `Loja: ${LOJAS[o.store_id] || o.plataforma}`, '',
-    postLink(o, s),
+    `*${tituloCurto(o.produto)}*`, '',
+    `❌ De ~R$ ${brl(o.preco_anterior)}~`,
+    `✅ *Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
+    `🏬 Loja: ${LOJAS[o.store_id] || o.plataforma}`, '',
+    `🛒 Compre aqui: ${postLink(o, s)}`,
   ];
   const seen = o.last_seen_at && new Date(String(o.last_seen_at).replace(' ', 'T') + 'Z');
   if (seen && !isNaN(seen)) {
@@ -301,4 +310,4 @@ function historico(offerIds, clienteId = null) {
   return out;
 }
 
-module.exports = { REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, textoPadrao, oauthHeader, toTelegramHtml, plain, textoCurto };
+module.exports = { REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, textoPadrao, tituloCurto, oauthHeader, toTelegramHtml, plain, textoCurto };

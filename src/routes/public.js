@@ -142,6 +142,9 @@ router.get('/img/recorte/:id.webp', async (req, res) => {
   res.sendFile(arquivo);
 });
 
+// Link curto das postagens: /o/<id> (vai para /oferta, que conta o clique e manda para a loja)
+router.get('/o/:id', (req, res) => res.redirect(`/oferta/${Number(req.params.id) || 0}`));
+
 // Redireciona para a loja (link de afiliado). Só funciona para ofertas válidas e visíveis.
 router.get('/oferta/:slug', (req, res) => {
   const id = Number(String(req.params.slug).split('-').pop());

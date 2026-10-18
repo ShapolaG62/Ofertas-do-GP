@@ -132,6 +132,7 @@ async function executar(motivo = 'agendado', cid = null) {
       const o = db.get('SELECT * FROM offers WHERE id = ?', it.offer_id);
       const link = cid ? await clientes.linkParaPostar(cid, o, s) : null; // cliente: link de afiliado dele
       if (link) o.__link = link;
+      if (!it.texto) o.__link = await require('./encurtador').curto(social.postLink(o, s)); // link curto no post
       const texto = it.texto || social.textoPadrao(o, s);
       let resultados;
       try { resultados = await social.publicar(it.offer_id, prontas, texto, `agenda (${motivo})`, cid ? { s, clienteId: cid, link } : {}); }

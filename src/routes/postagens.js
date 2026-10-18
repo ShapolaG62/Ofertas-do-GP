@@ -70,8 +70,12 @@ router.get('/api/postagens/ofertas', async (req, res) => {
      FROM offers WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids);
   const hist = social.historico(ids, cid);
   const out = [];
-  for (const o of rows) {
-    const link = cid ? await clientes.linkAfiliado(cid, o, req.cfg) : social.postLink(o, req.cfg);
+  // Links curtos para o post (encurtados uma vez e guardados)
+  const longos = [];
+  for (const o of rows) longos.push(cid ? await clientes.linkAfiliado(cid, o, req.cfg) : social.postLink(o, req.cfg));
+  const curtos = await require('../encurtador').curtos(longos);
+  for (const [i, o] of rows.entries()) {
+    const link = curtos[i];
     out.push({
       id: o.id, store_id: o.store_id, plataforma: o.plataforma, produto: o.produto, preco_atual: o.preco_atual,
       preco_anterior: o.preco_anterior, desconto_pct: o.desconto_pct, categoria: o.categoria, last_seen_at: o.last_seen_at,

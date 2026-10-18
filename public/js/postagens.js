@@ -29,14 +29,22 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
   }
 
+  // Título: no máximo ~2 linhas na tela do celular (corta na palavra e põe "…")
+  const TITULO_MAX = 58;
+  function tituloCurto(t) {
+    t = String(t || '').replace(/\s+/g, ' ').trim();
+    if (t.length <= TITULO_MAX) return t;
+    const corte = t.slice(0, TITULO_MAX + 1).replace(/\s+\S*$/, '').replace(/[\s,;:.\-–—|/(]+$/, '');
+    return `${corte || t.slice(0, TITULO_MAX)}…`;
+  }
   function defaultText(o) {
     const store = STORES[o.store_id] || o.plataforma;
     const lines = [
-      `*${o.produto}*`, '',
-      `De ~R$ ${brl(o.preco_anterior)}~`,
-      `*Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
-      `Loja: ${store}`, '',
-      o.link,
+      `*${tituloCurto(o.produto)}*`, '',
+      `❌ De ~R$ ${brl(o.preco_anterior)}~`,
+      `✅ *Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
+      `🏬 Loja: ${store}`, '',
+      `🛒 Compre aqui: ${o.link}`,
     ];
     const seen = parseDate(o.last_seen_at);
     if (seen && !isNaN(seen)) lines.push('', `_Preço conferido em ${fmtWhen(seen)}. Pode mudar a qualquer momento._`);

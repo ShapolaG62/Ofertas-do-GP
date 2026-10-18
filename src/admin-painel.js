@@ -60,6 +60,7 @@ function dashboard() {
     saques: carteiras.saques, saques_valor: carteiras.saques_valor,
     avisos: um(`SELECT COUNT(*) n FROM admin_notificacoes WHERE lida = 0`).n || 0,
     postagens_erro: um(`SELECT COUNT(*) n FROM post_queue WHERE status = 'erro' AND created_at >= datetime('now', '-3 days')`).n || 0,
+    cartao_sem_chave: Boolean(require('./settings').get('mp_access_token')) && !String(require('./settings').get('mp_public_key') || '').trim(),
     clientes_vencendo: um(`SELECT COUNT(*) n FROM clientes WHERE status = 'ativo' AND validade >= date('now') AND validade <= date('now', '+5 days')`).n || 0,
   };
 

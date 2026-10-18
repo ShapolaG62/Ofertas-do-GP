@@ -257,7 +257,7 @@ router.get('/api/admin/atendimento', (req, res) => {
       acessos30: m.acessos.pagina.d30, produtos30: m.acessos.produto.d30, site30: m.acessos.site.d30, acessos: m.acessos.pagina.total };
   });
   res.json({ conversas: chat.listarAdmin({ q }), pedidos: pedidosLoja.listarAdmin({ q }), lojas: lojasLista,
-    taxa: { pct: pedidosLoja.taxaPct(), gateway_ok: pedidosLoja.gatewayPronto() }, carteiras: require('../carteira').visaoAdmin() });
+    taxa: { pct: pedidosLoja.taxaPct(), gateway_ok: pedidosLoja.gatewayPronto(), cartao_ok: Boolean(pedidosLoja.chavePublica()) }, carteiras: require('../carteira').visaoAdmin() });
 });
 // Carteiras: pagar ou recusar um saque pedido pela empresa
 router.post('/api/admin/saques/:id/pagar', (req, res) => {

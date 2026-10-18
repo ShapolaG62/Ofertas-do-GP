@@ -1339,6 +1339,7 @@ async function loadDashboard() {
   // O que precisa de atenção (cada item abre a página certa)
   const acoes = [];
   const add = (n, txt, aba, forte, ico = 'alerta') => { if (n) acoes.push({ txt, aba, forte, ico }); };
+  add(p.cartao_sem_chave, '<b>Cartão desligado nos pedidos às lojas:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro');
   add(p.cadastros, `<b>${p.cadastros} cadastro(s) de empresa</b> esperando aprovação`, 'users', true);
   add(p.saques, `<b>${p.saques} saque(s) de lojas</b> para pagar (${brl(p.saques_valor)})`, 'atendimento', true, 'dinheiro');
   add(p.assinaturas, `<b>${p.assinaturas} pedido(s) de assinatura</b> para confirmar o pagamento`, 'planos', true, 'dinheiro');
@@ -1866,7 +1867,7 @@ async function loadAtendimento() {
       ${l.taxas.a_pagar.valor > 0 ? `<br><b style="color:var(--yellow)">a receber ${brl(l.taxas.a_pagar.valor)}</b>${l.taxas.aviso_pagamento_em ? ' <span class="tag">loja avisou que pagou</span>' : ''}
         <br><button class="btn small primary" type="button" data-quitar="${l.id}" data-valor="${l.taxas.a_pagar.valor}">Recebi</button>` : ''}</td></tr>`).join('')
     : '<tr><td colspan="9" class="hint">Nenhuma loja cadastrada.</td></tr>';
-  $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(d.taxa.pct).replace('.', ',')}%</b> · Mercado Pago do site: ${d.taxa.gateway_ok ? '<b>configurado</b> (pedidos liberados)' : '<b style="color:var(--yellow)">não configurado — cole o Access Token em Planos → Formas de recebimento; até lá o botão Fazer pedido não aparece</b>'}`;
+  $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(d.taxa.pct).replace('.', ',')}%</b> · Mercado Pago do site: ${d.taxa.gateway_ok ? `<b>configurado</b> (pedidos liberados)${d.taxa.cartao_ok ? '' : ' · <b style="color:var(--yellow)">cartão desligado: falta a Public Key em Planos e pagamentos → Formas de recebimento</b>'}` : '<b style="color:var(--yellow)">não configurado — cole o Access Token em Planos → Formas de recebimento; até lá o botão Fazer pedido não aparece</b>'}`;
   const cw = d.carteiras;
   const ST_SQ = { solicitado: ['b-pending', 'Aguardando pagamento'], pago: ['b-active', 'Pago'], recusado: ['b-banned', 'Recusado'] };
   $('#at-saques').innerHTML = cw.saques.length ? cw.saques.map(q => `<tr>

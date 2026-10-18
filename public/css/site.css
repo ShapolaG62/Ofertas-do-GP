@@ -1907,3 +1907,12 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .loja-boas-vindas p { margin: 0; line-height: 1.55; }
 .loja-bv-ico { flex: none; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--brand); }
 .loja-bv-ico svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Celulares pequenos (até 400 px): botões do topo um pouco mais juntos, para caberem sem encostar na borda */
+@media (max-width: 400px) {
+  .container { padding: 0 12px; }
+  .header-row { gap: 8px; }
+  .header-actions { gap: 6px; }
+  .header-actions .btn { padding: 0 10px; }
+  .header-actions .btn-wa, .header-actions .sino-btn { width: 42px; }
+}

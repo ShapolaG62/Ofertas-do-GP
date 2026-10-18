@@ -29,10 +29,6 @@
   .cm.recorte canvas { filter: drop-shadow(0 6px 8px rgba(0,0,0,.35)); }
   .cm.cenario .cm-quadro { width: 150px; height: 150px; border-radius: 22px; overflow: hidden; border: 3px solid #fff;
     box-shadow: 0 10px 28px -8px rgba(0,0,0,.55); background: #2a2116; }
-  .cm-x { pointer-events: auto; position: absolute; right: -6px; top: -6px; z-index: 2; width: 26px; height: 26px; border-radius: 50%; border: 0; cursor: pointer;
-    background: rgba(14,18,16,.8); color: #fff; font-size: 15px; line-height: 26px; padding: 0; }
-  .cm.cenario .cm-x { right: 4px; top: 4px; }
-  .cm-x:hover, .cm-x:focus-visible { outline: 2px solid #2bb673; }
   @keyframes cm-entra { from { transform: translateY(120%) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes cm-sai { to { transform: translateY(120%) scale(.85); opacity: 0; } }
   @keyframes cm-pop { from { transform: scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -44,11 +40,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261125`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261126`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261125';
+      img.src = PASTA + m.arquivo + '?v=20261126';
       // onload em vez de img.decode(): o decode() pode ficar pendurado em alguns navegadores
       folhas[nome] = new Promise((ok, erro) => {
         img.onload = () => ok(img);
@@ -73,8 +69,7 @@
     el.className = `cm ${m.recorte ? 'recorte' : 'cenario'}`;
     el.setAttribute('role', 'status');
     el.innerHTML = `<div class="cm-balao">Minerando <b>ofertas</b>… ⛏️</div>
-      <div class="cm-quadro"><canvas width="${m.lado}" height="${m.lado}" aria-label="Capi minerando ofertas"></canvas>
-      <button class="cm-x" type="button" aria-label="Fechar a animação">×</button></div>`;
+      <div class="cm-quadro"><canvas width="${m.lado}" height="${m.lado}" aria-label="Capi minerando ofertas"></canvas></div>`;
     document.body.appendChild(el);
     aberto = el;
     const g = el.querySelector('canvas').getContext('2d');
@@ -105,11 +100,6 @@
       el.classList.add('saindo');
       setTimeout(() => { el.remove(); if (aberto === el) aberto = null; terminou(true); }, 450);
     }
-    // × fecha e a Capi não volta mais nesta visita
-    el.querySelector('.cm-x').addEventListener('click', () => {
-      fechar();
-      if (!TESTE) try { sessionStorage.setItem('cm-fechou', '1'); } catch { /* só fecha */ }
-    });
     return fim;
   }
 
@@ -117,8 +107,7 @@
 
   // ── Quando aparece ──
   let cfg = { so_mineracao: false, intervalo: 10 }, minerando = false, carregou = false, proxima = null, rodando = false;
-  const fechouNaSessao = () => { try { return sessionStorage.getItem('cm-fechou') === '1'; } catch { return false; } };
-  const pode = () => !fechouNaSessao() && (TESTE || !cfg.so_mineracao || minerando);
+  const pode = () => TESTE || !cfg.so_mineracao || minerando;
 
   // Um clipe por vez; o intervalo conta do fim de um até o começo do próximo
   async function ciclo() {

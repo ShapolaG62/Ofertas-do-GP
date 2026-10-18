@@ -35,6 +35,11 @@ router.get('/api/cadastro/cnpj/:cnpj', async (req, res) => {
   try { res.json(await require('../consulta-cnpj').consultar(req.params.cnpj)); }
   catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 });
+// A Capi aparece minerando pelo site enquanto a mineração está rodando
+router.get('/api/mineracao/status', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(require('../miner').statusPublico());
+});
 router.get('/api/senha/regras', (req, res) => res.json({ regras: require('../senha').REGRAS }));
 
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.

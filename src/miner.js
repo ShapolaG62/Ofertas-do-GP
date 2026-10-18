@@ -8,6 +8,7 @@ const { sleep } = require('./util');
 const DELAY_BETWEEN_QUERIES_MS = 2500;
 
 let running = null;
+let runningSince = null; // quando a mineração em andamento começou (para a animação da Capi no site)
 let lastRun = null;
 let timer = null;
 
@@ -94,8 +95,9 @@ async function runMining(options = {}) {
   const stores = STORES.filter(st => !options.storeIds || options.storeIds.includes(st.id));
   const log = msg => console.log(`[MINER] ${msg}`);
 
+  runningSince = new Date().toISOString();
   running = (async () => {
-    const startedAt = new Date().toISOString();
+    const startedAt = runningSince;
     log(`Iniciando mineração (${options.query ? `termo "${options.query}"` : `${terms.length} termos`})`);
     const results = await Promise.all(stores.map(store => {
       if (store.automatic && enabled[store.id] === false) {
@@ -114,8 +116,12 @@ async function runMining(options = {}) {
     return await running;
   } finally {
     running = null;
+    runningSince = null;
   }
 }
+
+// Situação resumida e pública: só diz se está minerando agora (usada pela animação da Capi)
+const statusPublico = () => ({ minerando: Boolean(running), desde: runningSince });
 
 function getState() {
   return {
@@ -144,4 +150,4 @@ function startScheduler() {
   schedule(10 * 1000);
 }
 
-module.exports = { runMining, getState, startScheduler };
+module.exports = { statusPublico, runMining, getState, startScheduler };

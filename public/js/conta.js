@@ -403,9 +403,9 @@
   });
 
   // ── Área do usuário ────────────────────────────────────────────────────────
-  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['pedidos', 'Meus pedidos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   const TABS_EMPRESA = [['painel', 'Painel da loja'], ['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
-    ['pedidos', 'Meus pedidos'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+    ['pedidos', 'Meus pedidos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   let currentTab = null; // empresa abre no Painel da loja; consumidor, em Meu perfil
 
   function renderAccount() {
@@ -487,6 +487,8 @@
     }
     if (tab === 'loja' && LOJA) loadEditorLoja().catch(err => toast(err.message));
     if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
+    if (tab === 'cartoes') window.OfertouCartoes?.gerenciar($('#meus-cartoes'));
+    else window.OfertouCartoes?.desmontar();
   }
   $('#account-nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) openTab(b.dataset.tab); });
   $('#view-conta').addEventListener('click', e => {

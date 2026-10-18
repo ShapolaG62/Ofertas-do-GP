@@ -160,6 +160,21 @@ router.put('/api/conta/perfil', (req, res) => {
 });
 
 // ── Loja (somente empresas) ──────────────────────────────────────────────────
+// Cartões salvos no Mercado Pago (o site não guarda os dados do cartão)
+const cartoes = require('../cartoes');
+const pedidosLoja = require('../pedidos-loja');
+router.get('/api/conta/cartoes', async (req, res) => {
+  const base = { public_key: pedidosLoja.chavePublica(), disponivel: pedidosLoja.gatewayPronto() && Boolean(pedidosLoja.chavePublica()), max: cartoes.MAX_CARTOES, parcelas: pedidosLoja.parcelas() };
+  if (!base.disponivel) return res.json({ ...base, cartoes: [] });
+  try { res.json({ ...base, cartoes: await cartoes.listar(`u:${req.user.id}`) }); } catch (err) { sendError(res, err); }
+});
+router.post('/api/conta/cartoes', async (req, res) => {
+  try { res.json({ ok: true, cartao: await cartoes.adicionar(`u:${req.user.id}`, req.body?.token) }); } catch (err) { sendError(res, err); }
+});
+router.delete('/api/conta/cartoes/:id', async (req, res) => {
+  try { await cartoes.remover(`u:${req.user.id}`, req.params.id); res.json({ ok: true }); } catch (err) { sendError(res, err); }
+});
+
 router.delete('/api/conta/loja', (req, res) => {
   try {
     const loja = lojas.getByUser(req.user.id);

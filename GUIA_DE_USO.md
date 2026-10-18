@@ -437,3 +437,15 @@ Tudo fica registrado no histórico da conta.
 Os dados de CPF **não são consultados**: a Receita não disponibiliza dados de pessoas físicas para consulta pública, e a LGPD protege esses dados. O CPF é apenas validado (dígitos verificadores).
 
 No Painel → Usuários, a ficha da empresa mostra o **Tipo de loja**.
+
+## 24. Meus cartões (cartões salvos)
+
+Em **Minha conta → Meus cartões**, qualquer conta do site pode salvar até 5 cartões:
+- **Adicionar cartão:** número, validade e código de segurança são digitados nos campos seguros do Mercado Pago, e os dados vão direto para ele. Também se informa o nome impresso e o CPF do titular.
+- **Remover** um cartão a qualquer momento. A lista mostra bandeira, final, validade e titular; cartão vencido aparece marcado.
+
+**No pedido a uma loja parceira:** ao escolher cartão, aparecem os cartões salvos. A pessoa escolhe um, digita só o código de segurança, escolhe as parcelas e paga. Também dá para usar outro cartão (formulário completo).
+
+**Segurança:** o Ofertou! não guarda número, validade nem código de segurança. Os cartões ficam guardados no Mercado Pago do site (clientes e cartões), e o site guarda só o código do cliente no Mercado Pago. Uma conta não consegue usar o cartão de outra.
+
+Os planos são pagos na página do próprio Mercado Pago, que tem os cartões salvos dele.

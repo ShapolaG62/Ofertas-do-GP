@@ -12,11 +12,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261116">
-<script src="/js/app-nativo.js?v=20261116"></script>
-<script src="/js/dialogo.js?v=20261116"></script>
-<script src="/js/capi-minerando.js?v=20261116" defer></script>
-<script src="/js/cadastro-auto.js?v=20261116" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261117">
+<script src="/js/app-nativo.js?v=20261117"></script>
+<script src="/js/dialogo.js?v=20261117"></script>
+<script src="/js/cartoes.js?v=20261117" defer></script>
+<script src="/js/capi-minerando.js?v=20261117" defer></script>
+<script src="/js/cadastro-auto.js?v=20261117" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -601,6 +602,15 @@
             </div>
           </div>
 
+          <!-- Meus cartões (todos): guardados no Mercado Pago -->
+          <div class="tab-pane" data-pane="cartoes" hidden>
+            <div class="panel-card">
+              <h2>Meus cartões</h2>
+              <p class="muted">Salve seus cartões para pagar os pedidos às lojas parceiras mais rápido: na compra, você escolhe o cartão e digita só o código de segurança. Os cartões ficam guardados com segurança no Mercado Pago; o Ofertou! não guarda os dados do cartão.</p>
+              <div id="meus-cartoes"><p class="muted">Carregando…</p></div>
+            </div>
+          </div>
+
           <div class="tab-pane" data-pane="seguranca" hidden>
             <div class="panel-card">
               <h2 id="senha-title">Trocar senha</h2>
@@ -643,8 +653,8 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/loja-painel.js?v=20261116" defer></script>
-<script src="/js/conta.js?v=20261116" defer></script>
-<script src="/js/chat-topo.js?v=20261116" defer></script>
+<script src="/js/loja-painel.js?v=20261117" defer></script>
+<script src="/js/conta.js?v=20261117" defer></script>
+<script src="/js/chat-topo.js?v=20261117" defer></script>
 </body>
 </html>

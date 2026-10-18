@@ -245,7 +245,9 @@ async function criar(dono, b) {
   const abertos = db.get(`SELECT COUNT(*) n FROM pedidos_loja WHERE comprador = ? AND status = 'aguardando_pagamento' AND created_at > datetime('now', '-1 day')`, dono).n;
   if (abertos >= 10) throw fail('Você tem muitos pedidos aguardando pagamento. Pague ou cancele os anteriores.', 429);
   const cartao = metodo === 'cartao' ? (b.cartao || {}) : null;
-  if (cartao && (!cartao.token || !cartao.payment_method_id)) throw fail('Preencha os dados do cartão.');
+  // Cartão salvo (Minha conta → Meus cartões): o token vem do código de segurança + id do cartão; o resto vem do Mercado Pago
+  const salvo = cartao?.card_id ? await require('./cartoes').paraPagamento(dono, cartao.card_id) : null;
+  if (cartao && (!cartao.token || !(salvo || cartao.payment_method_id))) throw fail('Preencha os dados do cartão.');
   const resumoValor = taxa ? `${brl(subtotal)} + taxa do site ${brl(taxa)} = ${brl(total)}` : brl(total);
   let id;
   db.transaction(() => {
@@ -276,14 +278,16 @@ async function criar(dono, b) {
     } else {
       const parc = Math.min(Math.max(parseInt(cartao.installments, 10) || 1, 1), parcelas());
       const doc = cartao.payer?.identification;
+      const issuer = salvo ? salvo.issuer_id : cartao.issuer_id;
       pay = await mp('post', '/v1/payments', {
-        transaction_amount: total, token: String(cartao.token), installments: parc, payment_method_id: String(cartao.payment_method_id),
-        ...(cartao.issuer_id ? { issuer_id: String(cartao.issuer_id) } : {}),
+        transaction_amount: total, token: String(cartao.token), installments: parc, payment_method_id: String(salvo ? salvo.payment_method_id : cartao.payment_method_id),
+        ...(issuer ? { issuer_id: String(issuer) } : {}),
         description: `${descricao} — pedido ${codigo(id)} (Ofertou!)`, external_reference: ref, statement_descriptor: 'OFERTOU',
-        payer: { email: String(cartao.payer?.email || email), ...(doc?.number ? { identification: { type: String(doc.type || 'CPF'), number: String(doc.number) } } : {}) }, ...notif,
+        payer: salvo ? { type: 'customer', id: salvo.customer_id, email }
+          : { email: String(cartao.payer?.email || email), ...(doc?.number ? { identification: { type: String(doc.type || 'CPF'), number: String(doc.number) } } : {}) }, ...notif,
       }, { 'X-Idempotency-Key': ref });
       db.run('UPDATE pedidos_loja SET mp_payment_id = ? WHERE id = ?', String(pay.id), id);
-      evento(id, dono, 'cartao', `Cartão em ${parc}x — situação no Mercado Pago: ${pay.status}`);
+      evento(id, dono, 'cartao', `${salvo ? `Cartão salvo ${salvo.cartao.bandeira} final ${salvo.cartao.final}` : 'Cartão'} em ${parc}x — situação no Mercado Pago: ${pay.status}`);
     }
   } catch (err) {
     db.run(`UPDATE pedidos_loja SET status = 'cancelado', cancelado_por = 'sistema' WHERE id = ?`, id);
@@ -617,6 +621,6 @@ function detalheAdmin(id) {
 }
 
 module.exports = {
-  chavePublica, codigo, STATUS, METODOS, FINALIZADOS, taxaPct, gatewayPronto, salvarPagamento, configPagamento, publicoLoja, pixCopiaECola, criar, acao, detalhe,
+  mp, parcelas, chavePublica, codigo, STATUS, METODOS, FINALIZADOS, taxaPct, gatewayPronto, salvarPagamento, configPagamento, publicoLoja, pixCopiaECola, criar, acao, detalhe,
   verificarMP, iniciar, reputacao, meusPedidos, pedidosDaLoja, registrarVisita, metricas, taxas, quitarTaxas, listarAdmin, detalheAdmin,
 };

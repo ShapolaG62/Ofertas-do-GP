@@ -48,7 +48,7 @@
   .hint { color: var(--muted); font-size: 12.5px; line-height: 1.55; margin: 4px 0 12px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
   label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 12.5px; color: var(--muted); }
-  input[type=text], input[type=password], input[type=url], input[type=number], input[type=date], input[type=email], select, textarea {
+  input[type=text], input[type=search], input[type=password], input[type=url], input[type=number], input[type=date], input[type=email], select, textarea {
     background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 12px; outline: none; width: 100%;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--green-line); }
@@ -741,12 +741,14 @@
     <!-- ATENDIMENTO: conversas, pedidos às lojas e números das empresas -->
     <div class="tab-body hidden" data-body="atendimento">
       <div class="panel">
-        <h2>Atendimento</h2>
-        <p class="hint">Registro de todas as conversas (tickets CV-…) e dos pedidos feitos às lojas parceiras pelo site (tickets PD-…), com o histórico completo. A ficha de cada usuário (aba Usuários) também mostra as conversas e pedidos dele e, nas empresas, os números da loja.</p>
-        <div class="row" style="gap:8px;flex-wrap:wrap">
-          <input type="search" id="at-busca" placeholder="Buscar por nome, produto ou número (CV-12, PD-7)…" style="flex:1;min-width:240px">
-          <button class="btn" type="button" id="at-buscar">Buscar</button>
-        </div>
+        <h2>Buscar ticket</h2>
+        <p class="hint">Encontre uma conversa (CV-…) ou um pedido (PD-…) pelo número, pelo nome da pessoa ou da loja, ou pelo produto. Clique no resultado para ver o histórico completo. A ficha de cada usuário (aba Usuários) também mostra as conversas e pedidos dele.</p>
+        <form class="row" id="at-form" style="gap:8px;flex-wrap:wrap">
+          <input type="search" id="at-busca" placeholder="Ex.: PD-7, CV-12, nome do cliente ou produto" style="flex:1;min-width:240px" autocomplete="off">
+          <button class="btn primary" type="submit" id="at-buscar">Buscar</button>
+          <button class="btn" type="button" id="at-limpar" hidden>Limpar</button>
+        </form>
+        <div id="at-resultado" hidden style="margin-top:12px"></div>
       </div>
       <form class="settings-form">
         <div class="panel">
@@ -1837,8 +1839,24 @@ const linhasConversas = lista => lista.length ? lista.map(c => `<tr data-tk="con
     <td><b>${esc(c.ticket)}</b></td><td>${c.tipo === 'loja' ? 'Atendimento de loja' : 'Pessoal'}</td><td>${esc(c.a.nome)}</td><td>${esc(c.b.nome)}</td>
     <td class="num">${c.mensagens}</td><td><span class="badge ${(ST_CONV[c.status] || [])[0] || ''}">${esc((ST_CONV[c.status] || [])[1] || c.status)}</span></td>
     <td class="num">${fmtDate(c.ultima_msg_at || c.created_at)}</td></tr>`).join('') : '<tr><td colspan="7" class="hint">Nenhuma conversa.</td></tr>';
+async function buscarTicket() {
+  const q = $('#at-busca').value.trim();
+  const box = $('#at-resultado');
+  $('#at-limpar').hidden = !q;
+  if (!q) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = '<p class="hint">Buscando…</p>';
+  const d = await api(`/api/admin/atendimento?q=${encodeURIComponent(q)}`);
+  const total = d.pedidos.length + d.conversas.length;
+  box.innerHTML = !total ? `<div class="msg err" style="margin:0">Nada encontrado para "${esc(q)}".</div>`
+    : `<p class="hint" style="margin:0 0 6px"><b>${d.pedidos.length}</b> pedido(s) e <b>${d.conversas.length}</b> conversa(s) para "${esc(q)}". Clique para abrir.</p>
+      ${d.pedidos.length ? `<div class="table-wrap"><table><thead><tr><th>Pedido</th><th>Data</th><th>Loja</th><th>Cliente</th><th>Produto</th><th>Total</th><th>Pagamento</th><th>Situação</th></tr></thead><tbody>${linhasPedidos(d.pedidos)}</tbody></table></div>` : ''}
+      ${d.conversas.length ? `<div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Ticket</th><th>Tipo</th><th>De</th><th>Para</th><th>Mensagens</th><th>Situação</th><th>Última</th></tr></thead><tbody>${linhasConversas(d.conversas)}</tbody></table></div>` : ''}`;
+  // Um resultado só: abre direto
+  if (total === 1) { const tr = box.querySelector('tr[data-tk]'); if (tr) tr.click(); }
+}
 async function loadAtendimento() {
-  const d = await api(`/api/admin/atendimento?q=${encodeURIComponent($('#at-busca').value.trim())}`);
+  const d = await api('/api/admin/atendimento');
   $('#at-lojas').innerHTML = d.lojas.length ? d.lojas.map(l => `<tr>
     <td><a href="/loja/${esc(l.slug)}" target="_blank">${esc(l.nome)}</a>${l.oculta ? ' <span class="tag">oculta</span>' : ''}${l.aceita_pedidos ? '' : ' <span class="tag">sem pedidos</span>'}</td>
     <td class="num"><b>${l.finalizacoes.total}</b> <span class="hint" style="margin:0">(${l.finalizacoes.d30} em 30d)</span></td>
@@ -1866,7 +1884,9 @@ async function loadAtendimento() {
   $('#at-pedidos').innerHTML = linhasPedidos(d.pedidos);
   $('#at-conversas').innerHTML = linhasConversas(d.conversas);
 }
-$('#at-buscar').addEventListener('click', () => loadAtendimento().catch(e => globalMsg(e.message, false)));
+$('#at-form').addEventListener('submit', e => { e.preventDefault(); buscarTicket().catch(err => globalMsg(err.message, false)); });
+$('#at-limpar').addEventListener('click', () => { $('#at-busca').value = ''; buscarTicket(); $('#at-busca').focus(); });
+$('#at-busca').addEventListener('search', () => { if (!$('#at-busca').value) buscarTicket(); });
 // Saques: pagar / recusar; extrato da carteira
 document.addEventListener('click', async e => {
   const pg = e.target.closest('[data-saque-pagar]'), rc = e.target.closest('[data-saque-recusar]'), ex = e.target.closest('[data-extrato]');
@@ -1904,7 +1924,6 @@ $('#at-lojas').addEventListener('click', async e => {
     loadAtendimento();
   } catch (err) { globalMsg(err.message, false); }
 });
-$('#at-busca').addEventListener('keydown', e => { if (e.key === 'Enter') $('#at-buscar').click(); });
 
 async function abrirTicket(tipo, id) {
   const body = $('#tk-body');

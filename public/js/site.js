@@ -164,12 +164,14 @@
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const tabs = [`<button class="store-tab" type="button" data-loja="" aria-pressed="${!state.loja}">Todas as lojas <span class="count">${total}</span></button>`];
     const partners = ALL.filter(o => o.loja_slug && matches(o, 'loja')).length;
-    if (partners || state.loja === 'parceiros') {
+    // Lojas parceiras não aparecem nesta barra (só as lojas mineradas); o botão só volta se o filtro já estiver ativo
+    if (state.loja === 'parceiros') {
       STORES_EXTRA = `<button class="store-tab" type="button" data-loja="parceiros" aria-pressed="${state.loja === 'parceiros'}">
         <span class="store-dot" style="background:var(--brand)"></span>Lojas parceiras <span class="count">${partners}</span></button>`;
     } else STORES_EXTRA = '';
     for (const s of STORES) {
       const n = counts[s.id] || 0;
+      if (!n && state.loja !== s.id) continue; // só lojas com produtos minerados
       tabs.push(`<button class="store-tab" type="button" data-loja="${s.id}" aria-pressed="${state.loja === s.id}" ${n || state.loja === s.id ? '' : 'disabled'}>
         <span class="store-dot" style="background:${s.color}"></span>${esc(s.name)} <span class="count">${n}</span></button>`);
     }

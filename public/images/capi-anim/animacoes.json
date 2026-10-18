@@ -1,7 +1,7 @@
 {
   "capi1": {
     "arquivo": "capi1.webp",
-    "quadros": 75,
+    "quadros": 79,
     "colunas": 10,
     "lado": 200,
     "fps": 15,

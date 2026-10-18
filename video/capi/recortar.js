@@ -13,8 +13,14 @@ const SAIDA = path.join(DIR, '..', '..', 'public', 'images', 'capi-anim');
 const FPS = 15;
 const LADO = 200; // tamanho de cada quadro na folha (px)
 const COLS = 10;
+// "trechos": montagem com partes do vídeo, em segundos ([de, até]; de > até toca de trás para frente)
 const VIDEOS = [
-  { n: 1, recorte: true, ini: 0, fim: 5.0 },
+  { n: 1, recorte: true, trechos: [
+    [0, 1.3],                       // ergue a picareta
+    [1.367, 1.7], [1.367, 1.7],     // golpes 1 e 2 na pedra (batida + faísca)
+    [1.367, 2.033],                 // golpe 3: a picareta assenta na pedra
+    [2.1, 3.033], [2.967, 2.4], [2.433, 3.033], // comemoração (o braço vai e volta)
+  ] },
   { n: 2, recorte: true, ini: 0, fim: 5.0 },
 ];
 
@@ -29,6 +35,16 @@ const VIDEOS = [
   fs.mkdirSync(SAIDA, { recursive: true });
   const b = await abrirNavegador({ largura: 800, altura: 600, porta: 9339 });
   const meta = {};
+  // Instantes de cada quadro
+  for (const vd of VIDEOS) {
+    const trechos = vd.trechos || [[vd.ini, vd.fim]];
+    vd.tempos = [];
+    for (const [de, ate] of trechos) {
+      const passos = Math.round(Math.abs(ate - de) * FPS), dir = ate >= de ? 1 : -1;
+      for (let i = 0; i <= passos; i++) vd.tempos.push(Math.round((de + dir * i / FPS) * 1000) / 1000);
+    }
+    if (!vd.trechos) vd.tempos.pop(); // trecho único: sem repetir o último instante
+  }
   try {
     await b.ir(`http://127.0.0.1:${srv.address().port}/olhar.html`, 200);
     for (const vd of VIDEOS) {
@@ -39,8 +55,9 @@ const VIDEOS = [
         await new Promise(ok => { v.onloadeddata = ok; });
         const W = v.videoWidth, H = v.videoHeight;
         const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true });
-        const fim = Math.min(vd.fim, v.duration - 0.05);
-        const total = Math.floor((fim - vd.ini) * FPS);
+        const tempos = vd.tempos.map(t => Math.min(t, v.duration - 0.05));
+        const total = tempos.length;
+        const prontos = new Map(); // instante → quadro já recortado (os golpes repetem quadros)
         const linhas = Math.ceil(total / COLS);
         const folha = document.createElement('canvas'); folha.width = COLS * LADO; folha.height = linhas * LADO;
         const fg = folha.getContext('2d'); fg.imageSmoothingQuality = 'high';
@@ -78,10 +95,14 @@ const VIDEOS = [
         }
 
         for (let k = 0; k < total; k++) {
-          v.currentTime = vd.ini + k / FPS; await new Promise(ok => { v.onseeked = ok; });
-          g.drawImage(v, 0, 0);
-          const img = g.getImageData(0, 0, W, H);
-          if (vd.recorte) tirarFundo(img);
+          let img = prontos.get(tempos[k]);
+          if (!img) {
+            v.currentTime = tempos[k]; await new Promise(ok => { v.onseeked = ok; });
+            g.drawImage(v, 0, 0);
+            img = g.getImageData(0, 0, W, H);
+            if (vd.recorte) tirarFundo(img);
+            prontos.set(tempos[k], img);
+          }
           tg.clearRect(0, 0, W, H); tg.putImageData(img, 0, 0);
           const corte = vd.recorte ? [0, 0, W, H] : [70, 70, W - 70, H - 70]; // cenário: corta a marca d'água do canto
           fg.drawImage(tmp, ...corte, (k % COLS) * LADO, Math.floor(k / COLS) * LADO, LADO, LADO);

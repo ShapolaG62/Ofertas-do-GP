@@ -154,6 +154,7 @@ app.get('/cliente', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'cliente.ht
 app.get('/assinar', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'assinar.html')));
 app.get('/anuncie', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'anuncie.html')));
 app.get('/privacidade', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'privacidade.html')));
+app.get('/ajuda', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'ajuda.html'))); // Guia do usuário (aberto a todos)
 app.get('/loja/:slug', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'loja.html')));
 app.get('/anuncio/:id', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'anuncio.html')));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Rota não encontrada.' }));

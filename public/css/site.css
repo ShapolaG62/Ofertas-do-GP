@@ -1947,3 +1947,8 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .sac-embed .sac-grade { flex: 1; height: auto; min-height: 0; }
 .sac-embed .sac-lista, .sac-embed .sac-conversa { min-height: 0; max-height: none; }
 @media (max-width: 860px) { .sac-embed .sac-grade { grid-template-rows: minmax(0, 38%) minmax(0, 1fr); } }
+
+/* Botão do Guia do usuário */
+.guia-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
+.guia-btn .ico-btn { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chatf-sac-novo .guia-btn { margin: 0 0 4px; }

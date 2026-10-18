@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guia do usuário — Ofertou!</title>
+<meta name="description" content="Como usar o Ofertou!: criar conta, encontrar ofertas, comprar das lojas parceiras, pagar com Pix ou cartão, mensagens, suporte, perfil e loja parceira.">
+<link rel="icon" href="/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="/js/app-nativo.js?v=20261121"></script>
+<style>
+/* Guia do usuário: índice fixo à esquerda no computador, coluna única no celular; cores da marca Ofertou! */
+:root {
+  --bg: #f4f5f2; --surface: #ffffff; --surface-2: #eef0ec;
+  --ink: #161b18; --ink-2: #48514c; --ink-3: #6f7873;
+  --line: #e2e6e1; --line-strong: #cfd5cf;
+  --brand: #0c8f4f; --brand-strong: #087340; --brand-soft: #e5f3eb;
+  --gold: #9a6800; --gold-soft: #fff4d6;
+  --deal: #c2372a; --deal-soft: #fdecea;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d;
+  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #8b958f;
+  --line: #262d28; --line-strong: #343c36;
+  --brand: #2bb673; --brand-strong: #49c98a; --brand-soft: #16301f;
+  --gold: #e6b143; --gold-soft: #33290f;
+  --deal: #ff7b6b; --deal-soft: #3a1c18; color-scheme: dark;
+} }
+* { box-sizing: border-box; }
+html { scroll-padding-top: 80px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6;
+  padding-bottom: env(safe-area-inset-bottom, 0px); }
+a { color: var(--brand-strong); }
+img, video { max-width: 100%; }
+
+/* Topo */
+.topo { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+.topo-in { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.marca { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 800; font-size: 19px; }
+.marca img { width: 36px; height: 36px; }
+.marca b { color: var(--brand); }
+.marca span small { display: block; font-size: 12px; font-weight: 600; color: var(--ink-3); margin-top: -3px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface);
+  color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.btn:hover, .btn:focus-visible { border-color: var(--brand); outline: none; }
+.btn.prim { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 22px; padding-block: 18px 60px; } }
+
+nav.toc { position: sticky; top: 84px; align-self: start; max-height: calc(100vh - 100px); overflow-y: auto; scrollbar-width: none; font-size: 14px; }
+nav.toc::-webkit-scrollbar { display: none; }
+nav.toc p { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+nav.toc a { display: block; padding: 6px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible, nav.toc a.atual { background: var(--surface-2); color: var(--ink); outline: none; }
+nav.toc a.atual { color: var(--brand-strong); font-weight: 700; }
+@media (max-width: 900px) {
+  nav.toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
+}
+
+main { min-width: 0; }
+.capa { padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; margin: 8px 0 12px; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--brand); }
+.lead { font-size: 18px; color: var(--ink-2); max-width: 64ch; margin: 0 0 18px; }
+.video { margin: 18px 0 4px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #0e1210; aspect-ratio: 16 / 9; max-width: 860px; }
+.video video { display: block; width: 100%; height: 100%; }
+.legenda { font-size: 13.5px; color: var(--ink-3); margin: 6px 0 0; }
+.atalhos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+
+section { padding-top: 38px; }
+h2 { font-size: 25px; line-height: 1.2; margin: 0 0 6px; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; }
+h2 + .sub { color: var(--ink-3); margin: 0 0 16px; max-width: 64ch; }
+h3 { font-size: 18px; margin: 24px 0 8px; font-weight: 700; }
+p, li { max-width: 70ch; }
+p { margin: 0 0 12px; }
+ul { margin: 0 0 14px; padding-left: 22px; }
+li { margin-bottom: 5px; }
+li::marker { color: var(--brand); }
+b { font-weight: 700; }
+.caminho { font-weight: 700; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; white-space: nowrap; }
+
+.passos { list-style: none; padding: 0; margin: 10px 0 18px; counter-reset: p; }
+.passos li { counter-increment: p; position: relative; padding: 0 0 16px 46px; max-width: none; margin: 0; }
+.passos li::before { content: counter(p); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--brand-soft); color: var(--brand-strong); font-weight: 800; font-size: 14px; display: grid; place-items: center; }
+.passos li::after { content: ""; position: absolute; left: 14.5px; top: 32px; bottom: 2px; width: 1px; background: var(--line-strong); }
+.passos li:last-child::after { display: none; }
+.passos b { display: block; }
+.passos span { color: var(--ink-2); font-size: 15px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 12px; margin: 8px 0 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+.card h4 { margin: 0 0 6px; font-size: 16px; }
+.card p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
+
+.nota { border-radius: 12px; padding: 14px 16px; margin: 8px 0 18px; font-size: 15px; background: var(--brand-soft); }
+.nota.ouro { background: var(--gold-soft); }
+.nota b:first-child { display: block; margin-bottom: 2px; }
+.nota p:last-child, .nota ul:last-child { margin-bottom: 0; }
+
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 16px; margin-bottom: 8px; }
+details summary { cursor: pointer; padding: 13px 0; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+details summary::-webkit-details-marker { display: none; }
+details summary::after { content: "+"; color: var(--brand); font-weight: 800; }
+details[open] summary::after { content: "–"; }
+details p { color: var(--ink-2); }
+
+.rodape { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 14px; display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <a class="marca" href="/"><img src="/images/capi-76.png" alt="" width="36" height="36"><span>Ofertou<b>!</b><small>Guia do usuário</small></span></a>
+    <a class="btn" href="/" id="voltar">Voltar ao site</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Índice">
+    <p>Neste guia</p>
+    <ol>
+      <li><a href="#inicio">O que é o Ofertou!</a></li>
+      <li><a href="#conta">Criar conta e entrar</a></li>
+      <li><a href="#planos">Planos</a></li>
+      <li><a href="#ofertas">Encontrar ofertas</a></li>
+      <li><a href="#comprar">Comprar de lojas parceiras</a></li>
+      <li><a href="#cartoes">Meus cartões</a></li>
+      <li><a href="#mensagens">Mensagens</a></li>
+      <li><a href="#suporte">Suporte (SAC)</a></li>
+      <li><a href="#perfil">Perfil e comunidade</a></li>
+      <li><a href="#loja">Para lojas parceiras</a></li>
+      <li><a href="#afiliado">Para afiliados (Afiliado Pro)</a></li>
+      <li><a href="#seguranca">Sua conta e seus dados</a></li>
+      <li><a href="#duvidas">Perguntas frequentes</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="capa" id="inicio">
+      <div class="eyebrow">Guia do usuário</div>
+      <h1>Como usar o <em>Ofertou!</em></h1>
+      <p class="lead">O Ofertou! reúne ofertas reais das maiores lojas on-line do Brasil num lugar só, com o preço conferido, e tem lojas parceiras que vendem direto pelo site. Este guia mostra, passo a passo, tudo o que você pode fazer aqui.</p>
+      <div class="video">
+        <video controls playsinline preload="metadata" poster="/videos/ofertou-apresentacao.jpg">
+          <source src="/videos/ofertou-apresentacao.mp4" type="video/mp4">
+          Seu navegador não conseguiu tocar o vídeo.
+        </video>
+      </div>
+      <p class="legenda">Conheça o Ofertou! em menos de 1 minuto (com som).</p>
+      <div class="atalhos">
+        <a class="btn prim" href="#conta">Começar pelo cadastro</a>
+        <a class="btn" href="#comprar">Como comprar</a>
+        <a class="btn" href="#suporte">Falar com o suporte</a>
+      </div>
+    </header>
+
+    <section id="o-que">
+      <h2>O que é o Ofertou!</h2>
+      <p class="sub">Um lugar para achar desconto de verdade, sem precisar abrir dezenas de sites.</p>
+      <div class="cards">
+        <div class="card"><h4>Ofertas conferidas</h4><p>Buscamos promoções nas grandes lojas on-line várias vezes por dia. Cada oferta mostra o preço de agora, o preço anterior, o desconto e quando o preço foi conferido.</p></div>
+        <div class="card"><h4>Lojas parceiras</h4><p>Empresas e vendedores que têm loja dentro do site. Você vê os produtos, conversa com a loja e compra com Pix ou cartão.</p></div>
+        <div class="card"><h4>Comunidade</h4><p>Cada pessoa tem um perfil com conquistas. Siga lojas e pessoas para acompanhar as novidades.</p></div>
+        <div class="card"><h4>Suporte humano</h4><p>Ficou com dúvida? Abra um chamado e a nossa equipe responde pelo próprio site.</p></div>
+      </div>
+      <div class="nota"><b>Importante saber</b>O Ofertou! divulga ofertas e aproxima você das lojas. Ele não fabrica, não estoca e não entrega produtos: venda, entrega, troca e garantia são da loja que vende, sem prejuízo dos seus direitos de consumidor. Alguns links das lojas são de afiliado, e isso não muda o preço para você.</div>
+    </section>
+
+    <section id="conta">
+      <h2>Criar conta e entrar</h2>
+      <p class="sub">Para ver as ofertas, é preciso ter uma conta. O cadastro leva poucos minutos.</p>
+      <ol class="passos">
+        <li><b>Abra a página inicial e toque em "Criar conta"</b><span>Use seu e-mail e uma senha, ou o botão <b>Entrar com Google</b>.</span></li>
+        <li><b>Crie uma senha forte</b><span>Ela precisa ter pelo menos 8 caracteres, uma letra maiúscula, uma minúscula, um número e um símbolo (ex.: ! @ # $). Enquanto você digita, a lista embaixo do campo marca com ✓ o que já está certo. Senhas muito óbvias ou com o seu nome ou e-mail não são aceitas.</span></li>
+        <li><b>Escolha o tipo de conta</b><span><b>Consumidor</b> (para comprar e acompanhar ofertas), <b>Empresarial</b> (para ter uma loja no site) ou <b>Usuário da ferramenta</b> (para divulgar ofertas com os seus próprios links).</span></li>
+        <li><b>Preencha seus dados</b><span>Nome, CPF, data de nascimento (é preciso ter 18 anos ou mais), celular e endereço. Ao digitar o CEP, rua, bairro, cidade e estado aparecem sozinhos: confira e complete o número.</span></li>
+        <li><b>Leia e aceite os termos</b><span>Duas caixas: a Política de Privacidade (LGPD) e os Termos de Uso. Elas nunca vêm marcadas: você marca depois de ler.</span></li>
+        <li><b>Pronto</b><span>Com um plano, a conta é liberada na hora. Sem plano, o cadastro passa por uma análise rápida da nossa equipe e você recebe a liberação.</span></li>
+      </ol>
+      <h3>Para entrar depois</h3>
+      <ul>
+        <li>Use o mesmo e-mail e senha, ou o Google. Você continua conectado no aparelho enquanto usar o site.</li>
+        <li>Esqueceu a senha ou não consegue entrar? Fale com o suporte pelo e-mail informado no fim deste guia.</li>
+      </ul>
+    </section>
+
+    <section id="planos">
+      <h2>Planos</h2>
+      <p class="sub">Os planos e os preços atuais ficam na página inicial, em "Planos".</p>
+      <div class="cards">
+        <div class="card"><h4>Caçador de Ofertas</h4><p>Para consumidores. Grátis e sem vencimento: acesso às ofertas, perfil, mensagens e compras das lojas parceiras.</p></div>
+        <div class="card"><h4>Loja Parceira</h4><p>Para empresas e vendedores: página da loja, anúncios, catálogos, pedidos pagos pelo site e painel de vendas.</p></div>
+        <div class="card"><h4>Afiliado Pro</h4><p>Para quem divulga ofertas: usa as ofertas do site com os seus próprios links de afiliado e posta nos seus canais.</p></div>
+      </div>
+      <ul>
+        <li><b>Assinar:</b> toque no plano, preencha os dados e pague com Pix ou cartão. A conta é liberada assim que o pagamento é confirmado.</li>
+        <li><b>Renovar:</b> quando o plano vence, aparece o botão <b>Reativar plano</b>. Renovar antes do fim soma os dias ao prazo que você ainda tinha.</li>
+        <li>Você recebe um e-mail com a data de vencimento a cada compra.</li>
+      </ul>
+    </section>
+
+    <section id="ofertas">
+      <h2>Encontrar ofertas</h2>
+      <p class="sub">A tela de ofertas é a primeira coisa que você vê ao entrar.</p>
+      <ul>
+        <li><b>Busca:</b> digite o produto no campo do topo (ex.: "air fryer", "fone bluetooth").</li>
+        <li><b>Filtros:</b> por loja, categoria, faixa de preço e desconto. No celular, toque no botão <b>Filtros</b>.</li>
+        <li><b>Abas das lojas:</b> veja só as ofertas de uma loja.</li>
+        <li><b>Cada oferta mostra</b> o preço de agora, o preço anterior riscado, a porcentagem de desconto e quando o preço foi conferido.</li>
+        <li><b>Ir à loja:</b> toque na oferta para abrir a página do produto na loja e finalizar a compra por lá.</li>
+      </ul>
+      <div class="nota ouro"><b>Preço mudou?</b>As lojas mudam os preços a qualquer momento. Antes de pagar, confira sempre o valor final na página da loja. Ofertas que acabam saem do Ofertou! sozinhas.</div>
+    </section>
+
+    <section id="comprar">
+      <h2>Comprar de lojas parceiras</h2>
+      <p class="sub">Nas lojas parceiras, a compra acontece dentro do Ofertou!, com pagamento seguro pelo Mercado Pago.</p>
+      <ol class="passos">
+        <li><b>Abra o produto</b><span>Pela página da loja, pelo perfil da loja ou pela página do anúncio. Toque em <b>Fazer pedido</b>.</span></li>
+        <li><b>Escolha a quantidade e escreva observações</b><span>Ex.: cor, tamanho, endereço de entrega. O resumo mostra o valor dos produtos, a taxa de uso do site e o total.</span></li>
+        <li><b>Pague com Pix ou cartão</b><span><b>Pix:</b> aparece o QR code e o código "copia e cola", que vale por 60 minutos. <b>Cartão:</b> use um cartão salvo (só digita o código de segurança) ou cadastre um novo, e escolha as parcelas.</span></li>
+        <li><b>Confirmação automática</b><span>Assim que o pagamento é aprovado, a tela mostra "Pagamento confirmado!". Não precisa enviar comprovante.</span></li>
+        <li><b>Combine a entrega com a loja</b><span>O pedido aparece na conversa com a loja, com produto, total e observações. A loja marca quando enviar e quando concluir.</span></li>
+      </ol>
+      <ul>
+        <li><b>Meus pedidos:</b> em <span class="caminho">Minha conta → Meus pedidos</span> ficam todos os pedidos, com a situação e o histórico.</li>
+        <li><b>Cancelamento:</b> se a loja cancelar um pedido já pago, o valor volta para você pelo Mercado Pago automaticamente.</li>
+        <li><b>Avalie a loja:</b> depois da compra, dê de 1 a 5 estrelas na página da loja. Sua avaliação aparece com o selo "Compra verificada".</li>
+      </ul>
+    </section>
+
+    <section id="cartoes">
+      <h2>Meus cartões</h2>
+      <p class="sub">Salve seus cartões para pagar mais rápido.</p>
+      <ol class="passos">
+        <li><b>Abra <span class="caminho">Minha conta → Meus cartões</span></b><span>Toque em <b>+ Adicionar cartão</b>.</span></li>
+        <li><b>Digite os dados do cartão</b><span>Número, validade e código de segurança, nome impresso e CPF do titular. Você pode salvar até 5 cartões.</span></li>
+        <li><b>Na compra, o cartão já vem escolhido</b><span>Você só digita o código de segurança (pedido a cada compra pelas bandeiras) e escolhe as parcelas. Use <b>Trocar cartão</b> para escolher outro ou <b>+ Cadastrar cartão novo</b> na hora.</span></li>
+      </ol>
+      <div class="nota"><b>Seu cartão protegido</b>Os dados do cartão são digitados em campos seguros do Mercado Pago e vão direto para ele. O Ofertou! não guarda número, validade nem código de segurança. Remova um cartão quando quiser.</div>
+    </section>
+
+    <section id="mensagens">
+      <h2>Mensagens</h2>
+      <p class="sub">O botão <b>Mensagens</b> fica no canto inferior direito de todas as páginas, com o número de mensagens não lidas.</p>
+      <ul>
+        <li><b>Falar com uma loja:</b> toque em <b>Conversar com a loja</b> no produto, na página ou no perfil da loja. A conversa abre na hora.</li>
+        <li><b>Falar com uma pessoa:</b> no perfil dela, toque em <b>Mensagem</b>. A primeira mensagem chega como um pedido: a pessoa aceita, recusa ou bloqueia.</li>
+        <li><b>Recebeu um pedido de mensagem?</b> Use o menu ⋯ da conversa para aceitar, recusar ou bloquear. Responder também aceita.</li>
+        <li>Cada conversa tem um número (ex.: CV-000123), útil para falar com o suporte.</li>
+      </ul>
+    </section>
+
+    <section id="suporte">
+      <h2>Suporte (SAC)</h2>
+      <p class="sub">Dúvidas sobre conta, pedidos, pagamentos ou o site? Fale com a equipe do Ofertou!.</p>
+      <ol class="passos">
+        <li><b>Abra Mensagens → Suporte Ofertou!</b><span>É o primeiro item da lista de conversas.</span></li>
+        <li><b>Escolha o assunto e escreva sua dúvida</b><span>Seu chamado entra na fila e você vê a sua posição.</span></li>
+        <li><b>Um atendente responde</b><span>A resposta chega no mesmo lugar, com aviso no sino 🔔 e por e-mail. Você vê o nome de quem está atendendo.</span></li>
+        <li><b>Avalie o atendimento</b><span>Quando o chamado é resolvido, dê de 1 a 5 estrelas. Se precisar de novo, é só escrever: um chamado novo é aberto.</span></li>
+      </ol>
+      <div class="nota ouro"><b>Antes de abrir um chamado</b>Tenha em mãos o número do pedido (PD-…) ou da conversa (CV-…), se a dúvida for sobre eles. Nunca envie senha ou dados completos do cartão pelo chat: a nossa equipe não pede isso.</div>
+    </section>
+
+    <section id="perfil">
+      <h2>Perfil e comunidade</h2>
+      <p class="sub">Seu perfil fica em <span class="caminho">Minha conta → Meu perfil</span>.</p>
+      <ul>
+        <li><b>Editar perfil:</b> foto, capa, nome, título, cidade, resumo, cor, moldura da foto e links (ex.: Instagram). O que dá para personalizar depende do seu plano.</li>
+        <li><b>Conquistas:</b> você ganha conquistas e XP usando o site (tempo de conta, idas às lojas, compras e mais). O XP define o seu nível. Escolha quais conquistas aparecem na vitrine.</li>
+        <li><b>Comunidade:</b> na tela de ofertas, o quadro <b>Comunidade</b> mostra os perfis e as lojas. Pesquise com <b>#nome</b> e toque em <b>Seguir</b>. Veja quem você segue e seus seguidores em "Ver todos".</li>
+        <li>Quem visita seu perfil vê só o que você configurou e as conquistas que você já tem.</li>
+      </ul>
+    </section>
+
+    <section id="loja">
+      <h2>Para lojas parceiras</h2>
+      <p class="sub">Tudo o que a sua loja precisa fica em <b>Minha conta</b>.</p>
+      <h3>Criar a loja</h3>
+      <ol class="passos">
+        <li><b>Cadastro como empresa</b><span>Escolha <b>Pessoa jurídica</b> (ao digitar o CNPJ, os dados da empresa são preenchidos sozinhos com os dados públicos da Receita Federal) ou <b>Pessoa física</b> (vende com o seu CPF, sem precisar de CNPJ).</span></li>
+        <li><b>Minha loja</b><span>Preencha nome, frase de destaque, apresentação, logo, banner, cor, contatos, horário, endereço e as políticas de entrega e troca. Toque em <b>Salvar loja</b>.</span></li>
+        <li><b>Painel da loja liberado</b><span>Depois de salvar, aparece o <b>Painel da loja</b> com vendas, saldo, acessos, avaliação, pendências e um checklist do que falta configurar.</span></li>
+      </ol>
+      <h3>Anunciar produtos</h3>
+      <ul>
+        <li><b>Criar anúncio:</b> em <span class="caminho">Anúncios → Criar anúncio</span>: até 6 fotos, título, categoria, descrição, preço normal e promocional (o desconto é calculado), parcelamento, frete, estoque, garantia e por quantos dias fica no ar. Há uma prévia ao vivo.</li>
+        <li><b>Importação automática:</b> se você tem loja virtual (Shopify, WooCommerce, Nuvemshop, Tray, Loja Integrada, VTEX…), cole o link em <span class="caminho">Importação automática</span>. Entram os produtos com preço promocional, e a lista é atualizada sozinha.</li>
+        <li><b>Catálogos:</b> agrupe produtos em coleções (ex.: "Promoções da semana"). Cada catálogo vira uma aba na página da loja.</li>
+        <li><b>Avaliações:</b> responda publicamente as avaliações dos clientes em <span class="caminho">Minha loja</span>.</li>
+      </ul>
+      <h3>Vender e receber</h3>
+      <ul>
+        <li><b>Pedidos:</b> você só recebe o pedido depois que o cliente paga. Ele chega na conversa com o cliente, com aviso no sino e por e-mail. Marque <b>Enviado</b> e depois <b>Concluído</b>.</li>
+        <li><b>Minha carteira</b> (<span class="caminho">Vendas e pagamentos</span>): cada venda entra com o valor dos produtos menos a tarifa do Mercado Pago. O valor fica "a liberar" pelo prazo mostrado na carteira e depois fica disponível.</li>
+        <li><b>Saque:</b> com o valor mínimo, peça o saque para a sua chave Pix cadastrada em "Recebimento dos saques". Você é avisado quando ele for pago.</li>
+        <li><b>Excluir a loja:</b> no fim de <span class="caminho">Minha loja</span>. Não é possível com pedidos em andamento ou dinheiro na carteira. Sua conta continua.</li>
+      </ul>
+    </section>
+
+    <section id="afiliado">
+      <h2>Para afiliados (Afiliado Pro)</h2>
+      <p class="sub">Use as ofertas do Ofertou! para vender com os seus próprios links.</p>
+      <ul>
+        <li><b>Painel do afiliado:</b> fica no link "Painel do afiliado", no rodapé da página inicial, e abre com o mesmo e-mail e senha da sua conta.</li>
+        <li><b>Seus links:</b> cadastre os seus códigos de afiliado de cada loja. As ofertas que você posta saem com os seus links.</li>
+        <li><b>Seus canais:</b> conecte WhatsApp, Telegram, Facebook/Instagram e X, e coloque a sua marca d'água nas imagens.</li>
+        <li><b>Postar:</b> escolha as ofertas, revise o texto pronto e publique na hora ou agende para os horários que preferir.</li>
+      </ul>
+      <div class="nota ouro"><b>Boas práticas</b>Poste só em grupos onde as pessoas entraram por vontade própria e mantenha um intervalo entre as postagens. O WhatsApp pode bloquear números que enviam mensagens automáticas demais.</div>
+    </section>
+
+    <section id="seguranca">
+      <h2>Sua conta e seus dados</h2>
+      <p class="sub">Você controla os seus dados a qualquer momento.</p>
+      <ul>
+        <li><b>Meus dados:</b> atualize nome, celular, endereço e os dados da empresa. E-mail, CPF e CNPJ não podem ser trocados por você: fale com o suporte.</li>
+        <li><b>Senha e conta:</b> troque a senha (você sai dos outros aparelhos) ou exclua a sua conta. A exclusão pede confirmação.</li>
+        <li><b>Privacidade (LGPD):</b> você pode pedir acesso, correção, portabilidade ou exclusão dos seus dados. Os detalhes estão em <a href="/privacidade">Termos de Uso e Política de Privacidade</a>.</li>
+        <li><b>Sair:</b> pelo menu da sua foto, no topo, ou em <span class="caminho">Minha conta</span>.</li>
+      </ul>
+      <div class="nota"><b>Proteja sua conta</b>O Ofertou! nunca pede a sua senha por mensagem, e-mail ou telefone. Desconfie de links estranhos e não compartilhe códigos de verificação.</div>
+    </section>
+
+    <section id="duvidas">
+      <h2>Perguntas frequentes</h2>
+      <p class="sub">As dúvidas mais comuns.</p>
+      <details><summary>O Ofertou! cobra alguma coisa para eu ver as ofertas?</summary><p>Não. Com o plano Caçador de Ofertas, que é grátis e não vence, você vê todas as ofertas. Planos pagos são para lojas e afiliados.</p></details>
+      <details><summary>Comprei numa loja grande (ex.: Amazon) pelo Ofertou!. Com quem falo sobre a entrega?</summary><p>Com a própria loja, porque a compra foi feita no site dela. O Ofertou! só mostra a oferta.</p></details>
+      <details><summary>Paguei o Pix de um pedido e ainda não confirmou. E agora?</summary><p>A confirmação costuma ser em segundos. Deixe a janela do pedido aberta ou veja em Minha conta → Meus pedidos. Se passar alguns minutos, abra um chamado no Suporte com o número do pedido.</p></details>
+      <details><summary>Por que preciso digitar o código de segurança se o cartão está salvo?</summary><p>É uma regra de segurança do Mercado Pago e das bandeiras: o código de segurança nunca fica guardado e é pedido a cada compra.</p></details>
+      <details><summary>Uma oferta mostrava um preço e na loja estava outro.</summary><p>As lojas mudam preços a qualquer momento. Cada oferta mostra quando o preço foi conferido. Se a diferença for grande, avise o suporte para revisarmos.</p></details>
+      <details><summary>Meu cadastro está aguardando aprovação. Quanto tempo leva?</summary><p>A equipe analisa os cadastros sem plano o mais rápido possível. Se quiser acesso na hora, escolha um plano na página inicial.</p></details>
+      <details><summary>Como faço para ter uma loja no Ofertou!?</summary><p>Escolha o plano Loja Parceira na página inicial ou crie a conta como Empresarial. Depois, configure a loja em Minha conta → Minha loja.</p></details>
+    </section>
+
+    <div class="rodape">
+      <span>Ainda com dúvida? Abra <b>Mensagens → Suporte Ofertou!</b> no canto da tela, ou escreva para <b>tanoofertou@gmail.com</b>.</span>
+      <span><a href="/privacidade">Termos de Uso e Política de Privacidade</a> · <a href="/">Voltar ao Ofertou!</a></span>
+    </div>
+  </main>
+</div>
+<script>
+// "Voltar ao site": volta para a página de onde a pessoa veio (dentro do Ofertou!)
+(() => {
+  const v = document.getElementById('voltar');
+  try { const r = document.referrer && new URL(document.referrer); if (r && r.origin === location.origin && !r.pathname.startsWith('/ajuda')) { v.href = r.pathname + r.search; v.textContent = 'Voltar'; } } catch { /* fica "Voltar ao site" */ }
+  // índice: marca a seção que está na tela
+  const links = [...document.querySelectorAll('nav.toc a')];
+  const alvos = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const obs = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) links.forEach(a => a.classList.toggle('atual', a.getAttribute('href') === '#' + e.target.id));
+  }), { rootMargin: '-30% 0px -60% 0px' });
+  alvos.forEach(s => obs.observe(s));
+})();
+</script>
+</body>
+</html>

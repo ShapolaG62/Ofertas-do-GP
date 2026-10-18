@@ -449,3 +449,14 @@ Em **Minha conta → Meus cartões**, qualquer conta do site pode salvar até 5 
 **Segurança:** o Ofertou! não guarda número, validade nem código de segurança. Os cartões ficam guardados no Mercado Pago do site (clientes e cartões), e o site guarda só o código do cliente no Mercado Pago. Uma conta não consegue usar o cartão de outra.
 
 Os planos são pagos na página do próprio Mercado Pago, que tem os cartões salvos dele.
+
+## 25. Guia do usuário (/ajuda)
+
+A página **/ajuda** é o guia para quem usa o site: o vídeo de apresentação e o passo a passo de cadastro, planos, ofertas, compras, cartões, mensagens, suporte, perfil, loja parceira e Afiliado Pro, mais perguntas frequentes. Ela não mostra nada interno (painel, configurações, valores do site). Fica aberta a todos, mesmo sem login.
+
+O botão **Guia do usuário** aparece:
+- na tela de login (embaixo da caixa "Acesse sua conta") e no rodapé da página inicial;
+- em Minha conta (menu lateral, em todas as abas, inclusive Meu perfil) e na página de perfil;
+- no Suporte (Mensagens → Suporte Ofertou!, ao abrir um chamado) e na Fila do SAC.
+
+O vídeo do guia fica em `public/videos/ofertou-apresentacao.mp4` (versão leve, 720p). Para trocar, coloque o vídeo novo em `video/guia/original.mp4` e rode `node video/guia/reduzir.js` (com a variável `CDP_SOM=1` para gravar o som) e `node video/guia/capa.js 5` para a capa.

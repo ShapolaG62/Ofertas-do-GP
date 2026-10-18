@@ -243,6 +243,7 @@
       form.hidden = true; banner.hidden = true;
       corpo.innerHTML = `<form class="chatf-sac-novo" id="sac-novo">
         <p>Conte sua dúvida: ela entra na fila e o primeiro atendente livre responde aqui mesmo. Você recebe um aviso no sino 🔔 e no e-mail.</p>
+        <a class="btn btn-sm btn-block guia-btn" href="/ajuda"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5V5.5M8 7h8M8 11h6"/></svg>Antes, veja o Guia do usuário</a>
         <label>Assunto<select name="assunto">${Object.entries(SAC_ASSUNTOS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select></label>
         <label>Sua mensagem<textarea name="texto" rows="5" maxlength="2000" required placeholder="Ex.: fiz um pedido e o pagamento não aparece…"></textarea></label>
         <button class="btn btn-primary btn-block" type="submit">Entrar na fila de atendimento</button>

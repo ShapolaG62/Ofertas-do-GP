@@ -13,7 +13,7 @@ async function abrirNavegador({ largura = 1920, altura = 1080, porta = 9333 } = 
   const perfil = fs.mkdtempSync(path.join(os.tmpdir(), 'ofertou-video-'));
   const proc = spawn(EDGE, [
     '--headless=new', `--remote-debugging-port=${porta}`, `--user-data-dir=${perfil}`, `--window-size=${largura},${altura}`,
-    '--autoplay-policy=no-user-gesture-required', '--hide-scrollbars', '--mute-audio', '--no-first-run', '--disable-extensions',
+    '--autoplay-policy=no-user-gesture-required', '--hide-scrollbars', ...(process.env.CDP_SOM ? [] : ['--mute-audio']), '--no-first-run', '--disable-extensions',
     '--force-device-scale-factor=1', 'about:blank',
   ], { stdio: 'ignore' });
   let alvo;

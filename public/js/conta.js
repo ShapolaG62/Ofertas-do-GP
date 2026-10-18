@@ -421,8 +421,11 @@
     $('#who-type').textContent = empresa ? `Conta empresarial · ${ME.nome}` : 'Conta de consumidor';
     $('#who-avatar').hidden = !ME.avatar_url;
     if (ME.avatar_url) $('#who-avatar').src = ME.avatar_url;
-    const tabs = empresa ? TABS_EMPRESA : TABS_CONSUMIDOR;
-    if (!tabs.some(([k]) => k === currentTab)) currentTab = empresa ? 'painel' : 'meuperfil';
+    // Empresa ainda sem loja: o "Painel da loja" fica escondido e a conta abre em "Minha loja" para criar a loja
+    const tabs = empresa ? TABS_EMPRESA.filter(([k]) => k !== 'painel' || LOJA) : TABS_CONSUMIDOR;
+    if (empresa && !LOJA && currentTab === null) currentTab = 'loja';
+    if (!tabs.some(([k]) => k === currentTab)) currentTab = empresa ? (LOJA ? 'painel' : 'loja') : 'meuperfil';
+    $('#loja-boas-vindas').hidden = !(empresa && !LOJA);
     $('#account-nav').innerHTML = tabs.map(([k, label]) =>
       `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}${k === 'mensagens' ? '<b class="nav-n" id="nav-msg-n" hidden></b>' : ''}</button>`).join('');
     fetch('/api/chat/resumo', { cache: 'no-store' }).then(r => r.json()).then(r => {
@@ -662,9 +665,18 @@
   }
 
   bind('#form-loja', async (form, d) => {
+    const primeira = !LOJA;
     const r = await api('/api/conta/loja', { method: 'PUT', body: d });
     LOJA = r.loja;
     await api('/api/conta/loja/aparencia', { method: 'PUT', body: { ...d, mostrar_avaliacoes: form.mostrar_avaliacoes.checked } });
+    if (primeira) {
+      // Loja criada: o "Painel da loja" aparece no menu e abre
+      currentTab = 'painel';
+      renderAccount();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast('Loja criada! Seu Painel da loja foi liberado.');
+      return;
+    }
     renderAccount();
     openTab('loja');
     msg($('#form-loja'), 'Loja salva! Veja como ficou em "Ver minha loja".', true);

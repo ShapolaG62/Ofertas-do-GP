@@ -1899,3 +1899,11 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .legal-tabela th, .legal-tabela td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .legal-tabela th { font-size: 12.5px; color: var(--ink-3); }
 @media (max-width: 600px) { .legal-tabela, .legal-tabela tbody, .legal-tabela tr, .legal-tabela td { display: block; } .legal-tabela thead { display: none; } .legal-tabela td:last-child { color: var(--ink-3); padding-top: 0; } }
+
+/* Minha conta: boas-vindas da empresa que ainda não criou a loja */
+.loja-boas-vindas { display: flex; gap: 16px; align-items: flex-start; border-color: var(--brand) !important; background: color-mix(in srgb, var(--brand-soft) 60%, var(--surface)) !important; }
+.loja-boas-vindas[hidden] { display: none; }
+.loja-boas-vindas h2 { margin: 0 0 4px; font-size: 18px; }
+.loja-boas-vindas p { margin: 0; line-height: 1.55; }
+.loja-bv-ico { flex: none; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--brand); }
+.loja-bv-ico svg { width: 26px; height: 26px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

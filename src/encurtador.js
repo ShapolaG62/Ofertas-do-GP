@@ -1,48 +1,26 @@
-// Links curtos para as postagens nas redes. Com o site público (https), usa o próprio link curto do site (/o/<id>,
-// que conta o clique e manda para a loja). Sem isso, encurta o link de afiliado no is.gd (TinyURL de reserva)
-// e guarda o resultado, para não pedir de novo o mesmo link.
-const axios = require('axios');
-const db = require('./db');
-
-db.db.exec(`CREATE TABLE IF NOT EXISTS links_curtos (url TEXT PRIMARY KEY, curto TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')))`);
-
-const SERVICOS = [
-  url => `https://is.gd/create.php?format=simple&url=${encodeURIComponent(url)}`,
-  url => `https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`,
+// Links curtos para as postagens, SEM serviço de fora (TinyURL e parecidos mudam a cara do link e às vezes
+// mostram tela de "não sou um robô"). O link continua sendo o da própria loja, só sem o nome do produto
+// no meio do endereço; os parâmetros de afiliado (tag, matt_word…) ficam intactos.
+// Com o site público (https), as postagens usam o link curto do próprio site (/o/<id>) — ver social.postLink.
+const REGRAS = [
+  // Magalu (Magazine Você e Magazine Luiza): /<loja>/<nome-do-produto>/p/<código>/<categoria>/<sub>/ → /<loja>/p/<código>/
+  [/^(https:\/\/(?:www\.)?magazinevoce\.com\.br\/[^/?#]+)\/[^?#]*?\/p\/([a-z0-9]+)\/[^?#]*/i, '$1/p/$2/'],
+  [/^(https:\/\/(?:www\.)?magazineluiza\.com\.br)\/[^?#]*?\/p\/([a-z0-9]+)\/[^?#]*/i, '$1/p/$2/'],
+  // KaBuM!: /produto/<id>/<nome-do-produto> → /produto/<id>
+  [/^(https:\/\/(?:www\.)?kabum\.com\.br\/produto\/\d+)\/[^?#]*/i, '$1'],
+  // Amazon: qualquer endereço de produto → /dp/<ASIN>
+  [/^(https:\/\/(?:www\.)?amazon\.com\.br)\/(?:[^?#]*\/)?(?:dp|gp\/product)\/([A-Z0-9]{10})[^?#]*/i, '$1/dp/$2'],
+  // Mercado Livre: /MLB-<id>-<nome-do-produto>-_JM → /MLB-<id>
+  [/^(https:\/\/produto\.mercadolivre\.com\.br\/MLB-?\d+)-[^?#]*/i, '$1'],
+  // AliExpress: só o número do item
+  [/^(https:\/\/(?:pt\.|www\.)?aliexpress\.com\/item\/\d+\.html)[^?#]*/i, '$1'],
 ];
-const emAndamento = new Map();
 
-async function curto(url) {
+function curto(url) {
   url = String(url || '').trim();
-  if (!/^https?:\/\//i.test(url) || url.length <= 32) return url;
-  const salvo = db.get('SELECT curto FROM links_curtos WHERE url = ?', url);
-  if (salvo) return salvo.curto;
-  if (emAndamento.has(url)) return emAndamento.get(url);
-  const p = (async () => {
-    for (const servico of SERVICOS) {
-      try {
-        const r = await axios.get(servico(url), { timeout: 6000, responseType: 'text', validateStatus: () => true });
-        const c = String(r.data || '').trim();
-        if (r.status === 200 && /^https:\/\/\S{5,40}$/.test(c)) {
-          db.run('INSERT OR REPLACE INTO links_curtos (url, curto) VALUES (?, ?)', url, c);
-          return c;
-        }
-      } catch { /* tenta o próximo */ }
-    }
-    return url; // sem internet ou serviços fora: vai o link inteiro
-  })();
-  emAndamento.set(url, p);
-  try { return await p; } finally { emAndamento.delete(url); }
+  for (const [re, troca] of REGRAS) if (re.test(url)) return url.replace(re, troca);
+  return url;
 }
-
-// Vários de uma vez (poucos em paralelo, para não abusar dos serviços)
-async function curtos(urls, paralelo = 6) {
-  const out = new Array(urls.length);
-  let i = 0;
-  await Promise.all(Array.from({ length: Math.min(paralelo, urls.length) }, async () => {
-    while (i < urls.length) { const k = i++; out[k] = await curto(urls[k]); }
-  }));
-  return out;
-}
+const curtos = urls => urls.map(curto);
 
 module.exports = { curto, curtos };

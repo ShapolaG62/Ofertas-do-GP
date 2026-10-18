@@ -92,8 +92,10 @@
       if (t - inicio < duracao + 500) raf = requestAnimationFrame(passo); else fechar();
     };
     raf = requestAnimationFrame(passo);
+    const trava = setTimeout(() => fechar(), duracao + 1500); // sai da tela mesmo se a aba ficar em segundo plano
     function fechar() {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(raf); clearTimeout(trava);
+      if (el.classList.contains("saindo")) return;
       el.classList.add('saindo');
       setTimeout(() => { el.remove(); if (aberto === el) aberto = null; }, 450);
     }

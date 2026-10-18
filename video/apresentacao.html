@@ -18,7 +18,27 @@
 // com música gerada no próprio navegador (Web Audio, sem direitos autorais).
 // Abra a página para assistir; video/gravar.js grava em MP4.
 // ════════════════════════════════════════════════════════════════════════════════════════════
-const W = 1920, H = 1080, DUR = 52;
+const W = 1920, H = 1080, DUR_ORIGINAL = 52;
+// Limites das cenas na composição (segundos) e quanto cada uma dura de verdade no vídeo (esticada para caber a narração)
+const LIMITES = [0, 5, 11, 17, 24, 30, 36, 42, 48, 52];
+let DURACOES = LIMITES.slice(1).map((z, i) => z - LIMITES[i]);
+let DUR = DUR_ORIGINAL;
+let FALAS = null; // [{ arquivo, voz_ini, voz }] de narracao/tempos.json
+function aplicarNarracao(tempos) {
+  FALAS = tempos;
+  DURACOES = DURACOES.map((d, i) => Math.max(d, tempos[i] ? tempos[i].voz + (i === tempos.length - 1 ? 1.6 : .9) : d));
+  DUR = DURACOES.reduce((a, b) => a + b, 0);
+}
+const inicioCena = i => DURACOES.slice(0, i).reduce((a, b) => a + b, 0);
+// Tempo real do vídeo → tempo da composição (as animações foram escritas no tempo original)
+function tempoComposicao(t) {
+  let a = 0;
+  for (let i = 0; i < DURACOES.length; i++) {
+    if (t < a + DURACOES[i] || i === DURACOES.length - 1) return LIMITES[i] + (t - a) * (LIMITES[i + 1] - LIMITES[i]) / DURACOES[i];
+    a += DURACOES[i];
+  }
+  return t;
+}
 const cv = document.getElementById('tela');
 const ctx = cv.getContext('2d');
 const VERDE = '#2bd47d', VERDE_ESC = '#16a35c', OURO = '#f5b942', FUNDO = '#0b0f0d', TXT = '#eef3f0', TXT2 = '#9fb0a7';
@@ -377,11 +397,12 @@ function cenaFinal(t) { // 47.5 – 52
   ctx.restore();
 }
 
-function desenhar(t) {
-  fundo(t);
+function desenhar(tReal) {
+  fundo(tReal);
+  const t = tempoComposicao(tReal);
   cenaAbertura(t); cenaProblema(t); cenaLojas(t); cenaSite(t); cenaGrade(t); cenaBusca(t); cenaCelular(t); cenaRecursos(t); cenaFinal(t);
   // escurece no começo e no fim
-  const preto = Math.max(1 - prog(t, 0, .4), prog(t, DUR - .6, .6));
+  const preto = Math.max(1 - prog(tReal, 0, .4), prog(tReal, DUR - .6, .6));
   if (preto > 0) { ctx.fillStyle = `rgba(0,0,0,${preto})`; ctx.fillRect(0, 0, W, H); }
 }
 
@@ -390,8 +411,9 @@ function desenhar(t) {
 function musica(ac, destino, inicio) {
   const BPM = 110, BEAT = 60 / BPM, COMP = BEAT * 4;
   const master = ac.createGain(); master.gain.value = 0;
-  master.gain.setValueAtTime(0, inicio); master.gain.linearRampToValueAtTime(.8, inicio + 1.5);
-  master.gain.setValueAtTime(.8, inicio + DUR - 3); master.gain.linearRampToValueAtTime(0, inicio + DUR - .2);
+  const nivel = FALAS ? .32 : .8; // com narração, a música fica por baixo da voz
+  master.gain.setValueAtTime(0, inicio); master.gain.linearRampToValueAtTime(nivel, inicio + 1.5);
+  master.gain.setValueAtTime(nivel, inicio + DUR - 3); master.gain.linearRampToValueAtTime(0, inicio + DUR - .2);
   const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(destino);
   const nota = n => 440 * Math.pow(2, (n - 69) / 12);
   const ACORDES = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
@@ -431,8 +453,27 @@ function musica(ac, destino, inicio) {
   }
 }
 
+// ════════════════════════════════ NARRAÇÃO ════════════════════════════════
+async function carregarFalas(ac) {
+  if (!FALAS) return [];
+  return Promise.all(FALAS.map(async x => ac.decodeAudioData(await (await fetch(`narracao/${x.arquivo}`)).arrayBuffer())));
+}
+function narrar(ac, destino, inicio, buffers) {
+  const voz = ac.createGain(); voz.gain.value = 1.15;
+  const comp = ac.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3;
+  // um pouco de "presença" na voz
+  const eq = ac.createBiquadFilter(); eq.type = 'peaking'; eq.frequency.value = 3000; eq.gain.value = 3; eq.Q.value = .9;
+  voz.connect(eq); eq.connect(comp); comp.connect(destino);
+  buffers.forEach((b, i) => {
+    const src = ac.createBufferSource(); src.buffer = b; src.connect(voz);
+    const quando = inicio + inicioCena(i) + (i === 0 ? .7 : .3) - (FALAS[i].voz_ini || 0);
+    src.start(Math.max(inicio, quando), Math.max(0, inicio - quando));
+  });
+}
+
 // ════════════════════════════════ EXECUÇÃO ════════════════════════════════
 async function pronto() {
+  try { const r = await fetch('narracao/tempos.json', { cache: 'no-store' }); if (r.ok) aplicarNarracao(await r.json()); } catch { /* sem narração */ }
   await document.fonts.load('900 100px Figtree'); await document.fonts.load('700 40px Figtree'); await document.fonts.load('800 40px Figtree');
   await Promise.all(Object.values(IMG).map(i => (i.complete ? null : new Promise(r => { i.onload = i.onerror = r; }))));
 }
@@ -451,7 +492,7 @@ window.pedaco = async (ini, fim) => {
 };
 window.gravar = async () => {
   await pronto();
-  const ac = new AudioContext({ sampleRate: 48000 });
+  const ac = new AudioContext({ sampleRate: 48000 }); window.__ac = ac; window.__fase = 'audio';
   await ac.resume();
   const destino = ac.createMediaStreamDestination();
   const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...destino.stream.getAudioTracks()]);
@@ -460,16 +501,23 @@ window.gravar = async () => {
   const partes = [];
   rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
   desenhar(0);
-  const inicioAudio = ac.currentTime + .15;
-  musica(ac, destino, inicioAudio);
+  window.__fase = 'falas'; const falas = await carregarFalas(ac); window.__fase = 'gravando';
+  // O gravador só começa quando já chegam som e imagem: um som silencioso e o primeiro quadro ficam rodando até lá
+  const silencio = ac.createConstantSource(); silencio.offset.value = 0; silencio.connect(destino); silencio.start();
+  let esperando = true; const manter = () => { if (!esperando) return; desenhar(0); requestAnimationFrame(manter); }; requestAnimationFrame(manter);
   let quadros = 0, lentos = 0, ultimo = 0;
   await new Promise(ok => {
     rec.onstart = () => {
-      const t0 = performance.now();
+      esperando = false;
+      const inicioAudio = ac.currentTime + .05;
+      musica(ac, destino, inicioAudio);
+      narrar(ac, destino, inicioAudio, falas);
+      const t0 = performance.now() + 50;
       const quadro = () => {
-        const agora = performance.now(), t = (agora - t0) / 1000;
+        const agora = performance.now(), t = Math.max(0, (agora - t0) / 1000);
         if (ultimo && agora - ultimo > 50) lentos++;
         ultimo = agora; quadros++;
+        window.__progresso = { t: +t.toFixed(1), DUR, quadros, ac: window.__ac?.state };
         desenhar(Math.min(t, DUR));
         if (t < DUR) requestAnimationFrame(quadro); else ok();
       };

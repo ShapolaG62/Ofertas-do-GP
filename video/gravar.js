@@ -6,7 +6,7 @@ const http = require('http');
 const { abrirNavegador } = require('./cdp');
 
 const RAIZ = path.join(__dirname, '..');
-const TIPOS = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.js': 'text/javascript' };
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.js': 'text/javascript', '.wav': 'audio/wav', '.json': 'application/json' };
 
 (async () => {
   // Servidor local só para a página do vídeo e as imagens
@@ -20,7 +20,7 @@ const TIPOS = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.js':
   const b = await abrirNavegador({ largura: 1920, altura: 1080, porta: 9335 });
   try {
     await b.ir(`http://127.0.0.1:${porta}/video/apresentacao.html?gravar`, 1500);
-    console.log('Gravando (≈52 s em tempo real)…');
+    console.log('Gravando em tempo real (≈1 min)…');
     const info = await b.js('window.gravar()');
     console.log(info);
     // Copia o vídeo do navegador em pedaços

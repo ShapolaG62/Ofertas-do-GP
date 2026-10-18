@@ -403,7 +403,8 @@
   }
 
   function render() {
-    $('#q').value = state.q;
+    // Não mexe no campo enquanto a pessoa digita (a resposta do servidor chega depois e apagaria o que foi digitado)
+    if (document.activeElement !== $('#q')) $('#q').value = state.q;
     $('#sort').value = state.ordem;
     renderStoreTabs();
     renderFilters();

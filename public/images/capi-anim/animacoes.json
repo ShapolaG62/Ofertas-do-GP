@@ -1,0 +1,34 @@
+{
+  "capi1": {
+    "arquivo": "capi1.webp",
+    "quadros": 75,
+    "colunas": 10,
+    "lado": 200,
+    "fps": 15,
+    "recorte": true
+  },
+  "capi2": {
+    "arquivo": "capi2.webp",
+    "quadros": 75,
+    "colunas": 10,
+    "lado": 200,
+    "fps": 15,
+    "recorte": true
+  },
+  "capi3": {
+    "arquivo": "capi3.webp",
+    "quadros": 52,
+    "colunas": 10,
+    "lado": 200,
+    "fps": 15,
+    "recorte": false
+  },
+  "capi4": {
+    "arquivo": "capi4.webp",
+    "quadros": 52,
+    "colunas": 10,
+    "lado": 200,
+    "fps": 15,
+    "recorte": false
+  }
+}

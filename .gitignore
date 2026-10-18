@@ -28,3 +28,8 @@ video/*.webm
 video/telas/
 video/quadros/
 video/narracao/
+
+# Capi animada: vídeos originais e quadros de conferência (só local)
+video/capi/fontes/
+video/capi/quadros/
+video/capi/olhar.html

@@ -1,0 +1,100 @@
+// Recorta a Capi dos vídeos (video/capi/fontes/capiN.mp4) e gera "folhas de quadros" WebP para o site:
+//   public/images/capi-anim/capiN.webp  +  public/images/capi-anim/animacoes.json
+// • Vídeos 1 e 2 (fundo branco): o fundo vira transparente (preenchimento a partir das bordas, então
+//   o branco dos olhos e dos dentes continua) e a marca d'água "DeeVid AI" é apagada.
+// • Vídeos 3 e 4 (cenário de caverna): ficam com o cenário, a partir do 1,5 s e sem a borda de cima (onde fica a marca d'água), para mostrar numa janelinha redonda.
+// Uso: node video/capi/recortar.js
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const { abrirNavegador } = require('../cdp');
+const DIR = __dirname;
+const SAIDA = path.join(DIR, '..', '..', 'public', 'images', 'capi-anim');
+const FPS = 15;
+const LADO = 200; // tamanho de cada quadro na folha (px)
+const COLS = 10;
+const VIDEOS = [
+  { n: 1, recorte: true, ini: 0, fim: 5.0 },
+  { n: 2, recorte: true, ini: 0, fim: 5.0 },
+  { n: 3, recorte: false, ini: 1.5, fim: 5.0 },
+  { n: 4, recorte: false, ini: 1.5, fim: 5.0 },
+];
+
+(async () => {
+  const srv = http.createServer((req, res) => {
+    const p = path.normalize(path.join(DIR, decodeURIComponent(req.url.split('?')[0])));
+    if (!p.startsWith(DIR) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'Content-Type': p.endsWith('.mp4') ? 'video/mp4' : 'text/html; charset=utf-8' });
+    fs.createReadStream(p).pipe(res);
+  }).listen(0);
+  fs.writeFileSync(path.join(DIR, 'olhar.html'), '<!doctype html><body style="margin:0"></body>');
+  fs.mkdirSync(SAIDA, { recursive: true });
+  const b = await abrirNavegador({ largura: 800, altura: 600, porta: 9339 });
+  const meta = {};
+  try {
+    await b.ir(`http://127.0.0.1:${srv.address().port}/olhar.html`, 200);
+    for (const vd of VIDEOS) {
+      const r = await b.js(`(async () => {
+        const vd = ${JSON.stringify(vd)}, FPS = ${FPS}, LADO = ${LADO}, COLS = ${COLS};
+        const v = document.createElement('video'); v.muted = true;
+        v.src = URL.createObjectURL(await (await fetch('/fontes/capi' + vd.n + '.mp4')).blob());
+        await new Promise(ok => { v.onloadeddata = ok; });
+        const W = v.videoWidth, H = v.videoHeight;
+        const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d', { willReadFrequently: true });
+        const fim = Math.min(vd.fim, v.duration - 0.05);
+        const total = Math.floor((fim - vd.ini) * FPS);
+        const linhas = Math.ceil(total / COLS);
+        const folha = document.createElement('canvas'); folha.width = COLS * LADO; folha.height = linhas * LADO;
+        const fg = folha.getContext('2d'); fg.imageSmoothingQuality = 'high';
+        const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H; const tg = tmp.getContext('2d');
+
+        // Fundo: pixel claro e sem cor
+        const claro = (d, i) => { const r = d[i], g2 = d[i+1], b = d[i+2]; const mn = Math.min(r, g2, b), mx = Math.max(r, g2, b); return mn > 200 && mx - mn < 28; };
+        function tirarFundo(img) {
+          const d = img.data, N = W * H;
+          const fundo = new Uint8Array(N);
+          const pilha = [];
+          const tenta = p => { if (!fundo[p] && claro(d, p * 4)) { fundo[p] = 1; pilha.push(p); } };
+          for (let x = 0; x < W; x++) { tenta(x); tenta((H - 1) * W + x); }
+          for (let y = 0; y < H; y++) { tenta(y * W); tenta(y * W + W - 1); }
+          while (pilha.length) {
+            const p = pilha.pop(), x = p % W, y = (p / W) | 0;
+            if (x > 0) tenta(p - 1); if (x < W - 1) tenta(p + 1); if (y > 0) tenta(p - W); if (y < H - 1) tenta(p + W);
+          }
+          // Marca d'água (canto superior direito): apaga o que for cinza claro, mantém a picareta (cinza escuro)
+          for (let y = 18; y < 75; y++) for (let x = 420; x < W; x++) {
+            const p = y * W + x, i = p * 4; const mn = Math.min(d[i], d[i+1], d[i+2]), mx = Math.max(d[i], d[i+1], d[i+2]);
+            if (mn > 120 && mx - mn < 30) fundo[p] = 1;
+          }
+          for (let p = 0; p < N; p++) if (fundo[p]) d[p * 4 + 3] = 0;
+          // Borda suave: pixel claro encostado no fundo fica semitransparente e escurece (sem halo branco no fundo escuro)
+          for (let p = 0; p < N; p++) {
+            if (fundo[p]) continue;
+            const x = p % W, y = (p / W) | 0;
+            const viz = (x > 0 && fundo[p-1]) || (x < W-1 && fundo[p+1]) || (y > 0 && fundo[p-W]) || (y < H-1 && fundo[p+W]);
+            if (!viz) continue;
+            const i = p * 4, mn = Math.min(d[i], d[i+1], d[i+2]);
+            if (mn > 120) { const a = Math.max(0, Math.min(1, (255 - mn) / 135)); d[i+3] = Math.round(255 * a); d[i] *= .55; d[i+1] *= .45; d[i+2] *= .35; }
+          }
+          return img;
+        }
+
+        for (let k = 0; k < total; k++) {
+          v.currentTime = vd.ini + k / FPS; await new Promise(ok => { v.onseeked = ok; });
+          g.drawImage(v, 0, 0);
+          const img = g.getImageData(0, 0, W, H);
+          if (vd.recorte) tirarFundo(img);
+          tg.clearRect(0, 0, W, H); tg.putImageData(img, 0, 0);
+          const corte = vd.recorte ? [0, 0, W, H] : [70, 70, W - 70, H - 70]; // cenário: corta a marca d'água do canto
+          fg.drawImage(tmp, ...corte, (k % COLS) * LADO, Math.floor(k / COLS) * LADO, LADO, LADO);
+        }
+        const url = folha.toDataURL('image/webp', vd.recorte ? 0.86 : 0.8);
+        return { url, total, linhas, W, H };
+      })()`);
+      fs.writeFileSync(path.join(SAIDA, `capi${vd.n}.webp`), Buffer.from(r.url.split(',')[1], 'base64'));
+      meta[`capi${vd.n}`] = { arquivo: `capi${vd.n}.webp`, quadros: r.total, colunas: COLS, lado: LADO, fps: FPS, recorte: vd.recorte };
+      console.log(`capi${vd.n}: ${r.total} quadros, ${(fs.statSync(path.join(SAIDA, `capi${vd.n}.webp`)).size / 1024).toFixed(0)} KB`);
+    }
+    fs.writeFileSync(path.join(SAIDA, 'animacoes.json'), JSON.stringify(meta, null, 2));
+  } finally { await b.fechar(); srv.close(); }
+})().catch(e => { console.error(e); process.exit(1); });

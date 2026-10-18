@@ -143,7 +143,30 @@ router.get('/img/recorte/:id.webp', async (req, res) => {
 });
 
 // Link curto das postagens: /o/<id> (vai para /oferta, que conta o clique e manda para a loja)
-router.get('/o/:id', (req, res) => res.redirect(`/oferta/${Number(req.params.id) || 0}`));
+// Para o WhatsApp/Telegram/Facebook (robôs que montam a prévia do link): devolve a foto grande do produto com a
+// marca do Ofertou!, o título e o preço. Pessoas vão direto para a loja (pelo /oferta, que conta o clique).
+const ROBO_PREVIA = /whatsapp|facebookexternalhit|facebot|telegrambot|twitterbot|slackbot|discordbot|linkedinbot|skypeuripreview|googlebot|bingbot|pinterest|vkshare|embedly|iframely|redditbot|applebot/i;
+router.get('/o/:id', (req, res) => {
+  const id = Number(req.params.id) || 0;
+  if (!ROBO_PREVIA.test(String(req.get('user-agent') || ''))) return res.redirect(`/oferta/${id}`);
+  const o = id && offers.isActive(id) ? db.get('SELECT id, produto, preco_atual, preco_anterior, desconto_pct, store_id FROM offers WHERE id = ?', id) : null;
+  if (!o) return res.redirect(`/oferta/${id}`);
+  const site = String(require('../settings').get('site_url') || '').replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`;
+  const social = require('../social');
+  const brl = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const h = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const titulo = social.tituloCurto(o.produto);
+  const desc = `De R$ ${brl(o.preco_anterior)} por R$ ${brl(o.preco_atual)} (${Math.round(o.desconto_pct)}% off) — oferta conferida pelo Ofertou!`;
+  res.set('Cache-Control', 'public, max-age=600');
+  res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>${h(titulo)}</title>
+<meta property="og:type" content="product"><meta property="og:site_name" content="Ofertou!">
+<meta property="og:title" content="${h(titulo)}"><meta property="og:description" content="${h(desc)}">
+<meta property="og:image" content="${h(`${site}/img/marca/${o.id}.jpg`)}"><meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1080"><meta property="og:image:height" content="1080">
+<meta property="og:url" content="${h(`${site}/o/${o.id}`)}"><meta name="twitter:card" content="summary_large_image">
+<meta http-equiv="refresh" content="0;url=/oferta/${o.id}"></head><body><a href="/oferta/${o.id}">${h(titulo)}</a></body></html>`);
+});
 
 // Redireciona para a loja (link de afiliado). Só funciona para ofertas válidas e visíveis.
 router.get('/oferta/:slug', (req, res) => {

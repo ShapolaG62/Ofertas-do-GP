@@ -160,6 +160,17 @@ router.put('/api/conta/perfil', (req, res) => {
 });
 
 // ── Loja (somente empresas) ──────────────────────────────────────────────────
+router.delete('/api/conta/loja', (req, res) => {
+  try {
+    const loja = lojas.getByUser(req.user.id);
+    if (!loja) return res.status(404).json({ error: 'Você não tem loja.' });
+    if (String(req.body?.confirmacao || '').trim().toUpperCase() !== 'EXCLUIR') return res.status(400).json({ error: 'Para confirmar, digite EXCLUIR.' });
+    const r = lojas.excluirLoja(loja.id);
+    users.logAction(req.user, 'loja_excluida', `pelo próprio dono — "${r.loja}", ${r.produtos} produto(s)`);
+    res.json({ ok: true, ...r });
+  } catch (err) { sendError(res, err); }
+});
+
 router.put('/api/conta/loja', (req, res) => {
   try { res.json({ ok: true, loja: lojas.saveLoja(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
 });

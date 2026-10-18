@@ -1926,3 +1926,10 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .eq-cartao small { color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
 .eq-ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--brand-soft); margin-bottom: 4px; }
 .eq-ico svg { width: 24px; height: 24px; fill: none; stroke: var(--brand); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Botão de ação destrutiva (excluir) e área de perigo */
+.btn-danger { background: var(--deal); border-color: var(--deal); color: #fff; }
+.btn-danger:hover { filter: brightness(1.08); }
+.le-perigo { border-color: var(--deal); }
+.le-perigo h2 { color: var(--deal); }
+.le-perigo[hidden] { display: none; }

@@ -340,6 +340,13 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
       db.run('UPDATE users SET pode_sac = 0 WHERE id = ?', id);
       logAction(u, 'atendente_sac_removido', motivo);
       break;
+    case 'excluir_loja': {
+      const loja = db.get('SELECT id FROM lojas WHERE user_id = ?', id);
+      if (!loja) throw Object.assign(new Error('Este usuário não tem loja.'), { status: 400 });
+      const r = require('./lojas').excluirLoja(loja.id);
+      logAction(u, 'loja_excluida', `"${r.loja}", ${r.produtos} produto(s)${motivo ? ` — ${motivo}` : ''}`);
+      break;
+    }
     case 'excluir_publicacoes': {
       const n = db.run('DELETE FROM offers WHERE loja_id IN (SELECT id FROM lojas WHERE user_id = ?)', id).changes;
       logAction(u, 'publicacoes_excluidas', `${n} produto(s)${motivo ? ` — ${motivo}` : ''}`);

@@ -651,6 +651,7 @@
 
   function fillStore() {
     const f = $('#form-loja');
+    $('#le-excluir-card').hidden = !LOJA; // só dá para excluir uma loja que já existe
     f.nome.value = LOJA?.nome || ME.empresa_nome || '';
     f.descricao.value = LOJA?.descricao || '';
     f.logo_url.value = LOJA?.logo_url || '';
@@ -664,6 +665,19 @@
          ${LOJA.feed_tipo ? ` · formato: ${esc(LOJA.feed_tipo)}` : ''} · última sincronização: ${fmtDate(LOJA.feed_ultima_sync)}
          ${LOJA.feed_mensagem ? `<br>${esc(LOJA.feed_mensagem)}` : ''}`;
   }
+
+  // Excluir a própria loja (confirma digitando EXCLUIR)
+  $('#le-excluir')?.addEventListener('click', async () => {
+    if (!LOJA) return;
+    if (!await OfertouUI.confirmar(`Excluir a loja "${LOJA.nome}"? A página, os produtos, os catálogos e as avaliações serão apagados. Não dá para desfazer.`)) return;
+    const conf = await OfertouUI.perguntar('Para confirmar, digite EXCLUIR:', '');
+    if (conf === null) return;
+    try {
+      await api('/api/conta/loja', { method: 'DELETE', body: { confirmacao: conf } });
+      toast('Loja excluída.');
+      setTimeout(() => location.reload(), 800);
+    } catch (err) { OfertouUI.avisar(err.message); }
+  });
 
   bind('#form-loja', async (form, d) => {
     const primeira = !LOJA;

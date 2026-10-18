@@ -44,7 +44,8 @@
   document.body.appendChild(raiz);
   const $ = s => raiz.querySelector(s);
   const painel = $('#chatf-painel'), corpo = $('#chatf-corpo'), form = $('#chatf-form'), banner = $('#chatf-banner');
-  let ATUAL = null, MSGS = [], timer = null, MODO = 'chat', RESUMO = {};
+  let ATUAL = null, MSGS = [], timer = null, MODO = 'chat', RESUMO = {}, contagemAntes = null;
+  const tituloOriginal = document.title.replace(/^\(\d+\+?\)\s*/, '');
 
   // ── Contador ─────────────────────────────────────────────────────────────
   async function atualizarContador() {
@@ -55,6 +56,15 @@
       const n = (r.nao_lidas || 0) + (r.pedidos || 0) + (r.sac || 0) + (r.sac_atendente ? r.sac_atendente.fila + r.sac_atendente.nao_lidas : 0);
       const b = $('.chatf-n');
       b.hidden = !n; b.textContent = n > 99 ? '99+' : n;
+      // Chegou mensagem nova: o número vermelho pulsa e o botão fica destacado até a pessoa abrir
+      if (contagemAntes !== null && n > contagemAntes) {
+        b.classList.remove('chatf-pulso'); void b.offsetWidth; b.classList.add('chatf-pulso');
+        $('#chatf-botao').classList.add('tem-novas');
+      }
+      if (!n) $('#chatf-botao').classList.remove('tem-novas');
+      contagemAntes = n;
+      const base = document.title.replace(/^\(\d+\+?\)\s*/, '') || tituloOriginal;
+      document.title = n ? `(${n > 99 ? '99+' : n}) ${base}` : base;
       $('#chatf-botao').title = r.pedidos ? `${r.pedidos} pedido(s) de mensagem esperando sua resposta` : n ? `${n} mensagem(ns) não lida(s)` : 'Mensagens';
       sino.hidden = !r.logado;
       const sn = sino.querySelector('.sino-n');
@@ -317,6 +327,7 @@
     painel.hidden = false;
     $('#chatf-botao').setAttribute('aria-expanded', 'true');
     raiz.classList.add('is-aberto');
+    $('#chatf-botao').classList.remove('tem-novas');
     if (lista) mostrarLista();
   }
   function fecharPainel() {
@@ -374,6 +385,12 @@
     }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !painel.hidden) fecharPainel(); });
+  document.addEventListener('pointerdown', e => {
+    if (painel.hidden || raiz.contains(e.target)) return;
+    // não fecha ao usar as janelas do site (confirmar, avisar), o sino ou botões que abrem conversas
+    if (e.target.closest('dialog, .oui, .oui-fundo, .sino-pop, .sino-btn, [data-chat-abrir], [data-open-chat]')) return;
+    fecharPainel();
+  });
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const t = form.texto.value.trim();
@@ -414,6 +431,6 @@
   }
 
   atualizarContador();
-  setInterval(() => { if (document.visibilityState === 'visible' && painel.hidden) atualizarContador(); }, 30000);
+  setInterval(() => { if (document.visibilityState === 'visible' && painel.hidden) atualizarContador(); }, 10000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') atualizarContador(); });
 })();

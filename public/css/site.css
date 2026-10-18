@@ -1952,3 +1952,10 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .guia-btn { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
 .guia-btn .ico-btn { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .chatf-sac-novo .guia-btn { margin: 0 0 4px; }
+
+/* Mensagens: aviso de mensagem nova (número vermelho pulsa e o botão fica destacado) */
+.chatf-n { box-shadow: 0 0 0 2px var(--bg); }
+.chatf-botao.tem-novas { border-color: var(--deal) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--deal) 25%, transparent), 0 8px 24px -8px rgba(0,0,0,.4); }
+.chatf-pulso { animation: chatf-pulso 1s ease-out 3; }
+@keyframes chatf-pulso { 0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--deal) 70%, transparent); } 50% { transform: scale(1.25); } 100% { transform: scale(1); box-shadow: 0 0 0 12px transparent; } }
+@media (prefers-reduced-motion: reduce) { .chatf-pulso { animation: none; } }

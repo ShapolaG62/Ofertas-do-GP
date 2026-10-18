@@ -31,6 +31,9 @@ const DEFAULTS = {
   offer_max_age_hours: '24',
   manual_offer_days: '3',
   min_discount_pct: '5',
+  // Capi minerando (animação no site): '1' = só durante a mineração, '0' = o tempo todo; intervalo entre um clipe e outro
+  capi_so_mineracao: '0',
+  capi_intervalo_seg: '10',
   stores_enabled: JSON.stringify({ amazon: true, mercadolivre: true, aliexpress: true, shopee: true, kabum: true }),
 
   // Afiliados

@@ -128,6 +128,15 @@
   .img-pick input[type=text] { flex: 1; }
   #ad-form textarea { min-height: 70px; font-family: inherit; }
   .check { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+  /* Botão liga/desliga */
+  .capi-chave { align-items: flex-start; gap: 12px; font-weight: 400; }
+  .check.capi-chave input { appearance: none; -webkit-appearance: none; flex: none; width: 44px; height: 24px; margin: 2px 0 0; border-radius: 999px;
+    background: #6b7570; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); position: relative; cursor: pointer; transition: background .2s; }
+  .check.capi-chave input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+  .check.capi-chave input:checked { background: var(--green, #2bb673); }
+  .check.capi-chave input:checked::after { transform: translateX(20px); }
+  .check.capi-chave input:focus-visible { outline: 2px solid var(--green, #2bb673); outline-offset: 2px; }
   .check input { width: 18px; height: 18px; accent-color: var(--green); }
   .pl-card { display: flex; flex-direction: column; }
   .pl-card .actions { margin-top: auto !important; padding-top: 10px; }
@@ -234,9 +243,9 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261113"></script>
-<script src="/js/capi-minerando.js?v=20261113" defer></script>
-<script src="/js/cadastro-auto.js?v=20261113" defer></script>
+<script src="/js/dialogo.js?v=20261114"></script>
+<script src="/js/capi-minerando.js?v=20261114" defer></script>
+<script src="/js/cadastro-auto.js?v=20261114" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -452,6 +461,19 @@
           <p class="hint">Intervalos curtos aumentam o risco de as lojas bloquearem seu IP. Recomendado: 120 minutos ou mais.
             Com muitos termos, cada rodada busca só um lote e a seguinte continua de onde parou. Mantenha (termos ÷ termos por rodada) × intervalo abaixo da validade das ofertas, senão elas saem do ar antes de serem conferidas de novo.</p>
           <div class="actions"><button class="btn primary" type="submit">Salvar mineração</button></div>
+        </div>
+      </form>
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Capi minerando</h2>
+          <p class="hint">A animação da Capi com a picareta que aparece no canto das páginas do site.</p>
+          <label class="check capi-chave"><input type="checkbox" name="capi_so_mineracao" data-setting>
+            <span><b>Aparecer só durante a mineração</b><br><small class="hint">Ligado: a Capi só aparece enquanto o site está minerando ofertas. Desligado: aparece o tempo todo.</small></span></label>
+          <div class="grid" style="margin-top:12px">
+            <label class="field">Intervalo entre um clipe e outro (segundos) <input type="number" name="capi_intervalo_seg" min="3" max="3600"></label>
+          </div>
+          <p class="hint">Conta a partir do fim de um clipe até o começo do próximo. As páginas abertas passam a seguir a mudança em até 30 segundos. Para ver a Capi a qualquer momento, acrescente <code>?capi=teste</code> ao endereço de uma página.</p>
+          <div class="actions"><button class="btn primary" type="submit">Salvar Capi</button></div>
         </div>
       </form>
     </div>
@@ -1551,6 +1573,8 @@ async function loadSettings() {
       if (el.dataset.secret !== undefined) {
         el.value = '';
         el.placeholder = SETTINGS[`${el.name}_set`] ? '•••••••• (configurado — deixe vazio para manter)' : 'não configurado';
+      } else if (el.type === 'checkbox' && el.dataset.setting !== undefined) {
+        el.checked = SETTINGS[el.name] === '1';
       } else if (el.name in SETTINGS) {
         el.value = SETTINGS[el.name];
       }
@@ -1565,7 +1589,7 @@ async function loadSettings() {
 $$('.settings-form').forEach(form => form.addEventListener('submit', async e => {
   e.preventDefault();
   const body = {};
-  for (const el of form.elements) if (el.name) body[el.name] = el.value;
+  for (const el of form.elements) if (el.name) body[el.name] = el.type === 'checkbox' && el.dataset.setting !== undefined ? (el.checked ? '1' : '0') : el.value;
   const storeChecks = $$('#enabled-stores input', form);
   if (storeChecks.length) body.stores_enabled = Object.fromEntries(storeChecks.map(c => [c.dataset.store, c.checked]));
   const agendaRedes = $$('[data-agenda-rede]', form);

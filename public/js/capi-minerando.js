@@ -1,16 +1,13 @@
 // A Capi minerando ofertas: animações feitas a partir dos vídeos da Capi (recortados em video/capi/recortar.js)
 // e tocadas quadro a quadro a partir de uma folha WebP (public/images/capi-anim/).
-// MODO_TESTE = true: aparece a cada 10 s em todas as páginas, revezando as animações (para avaliar o visual).
-// MODO_TESTE = false: só aparece em momentos aleatórios enquanto a mineração está rodando (/api/mineracao/status).
-// Para ver na hora: acrescente ?capi=teste ao endereço de qualquer página.
+// Quando aparece é configurado no painel (Mineração → Capi minerando) e chega por /api/mineracao/status:
+//   capi.so_mineracao: só enquanto a mineração está rodando (ou o tempo todo);
+//   capi.intervalo: segundos entre o fim de um clipe e o começo do próximo.
+// Para ver na hora, em qualquer página: acrescente ?capi=teste ao endereço.
 (() => {
   if (window.CapiMinerando) return;
-  const MODO_TESTE = true;
-  const A_CADA_TESTE = 10000;
-  const CONSULTA_MS = 45000;          // modo normal: de quanto em quanto tempo pergunta se está minerando
-  const PRIMEIRA = [4000, 20000];     // modo normal: espera antes da 1ª aparição
-  const ENTRE = [70000, 180000];      // modo normal: espera entre aparições
-  const MAX_POR_MINERACAO = 3;
+  const CONSULTA_MS = 30000;          // de quanto em quanto tempo confere a configuração e se está minerando
+  const TESTE = /[?&]capi=teste\b/.test(location.search);
   const PASTA = '/images/capi-anim/';
   const ORDEM = ['capi1', 'capi3', 'capi2']; // capi1: 1 golpe e comemoração · capi3: sentada cavando
   const reduzido = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -47,11 +44,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261113`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261114`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261113';
+      img.src = PASTA + m.arquivo + '?v=20261114';
       // onload em vez de img.decode(): o decode() pode ficar pendurado em alguns navegadores
       folhas[nome] = new Promise((ok, erro) => {
         img.onload = () => ok(img);
@@ -64,13 +61,13 @@
 
   let aberto = null, vez = 0;
   async function mostrar(nome) {
-    if (aberto || document.hidden) return;
+    if (aberto || document.hidden) return false;
     nome ||= ORDEM[vez++ % ORDEM.length];
     aberto = true;
     let anim;
     try { // se demorar demais para carregar, desiste desta vez (não trava as próximas)
       anim = await Promise.race([carregar(nome), new Promise((_, erro) => setTimeout(() => erro(new Error('demorou')), 15000))]);
-    } catch { aberto = null; return; }
+    } catch { aberto = null; return false; }
     const { m, img } = anim;
     const el = document.createElement('div');
     el.className = `cm ${m.recorte ? 'recorte' : 'cenario'}`;
@@ -100,55 +97,50 @@
     };
     raf = requestAnimationFrame(passo);
     const trava = setTimeout(() => fechar(), duracao + 1500); // sai da tela mesmo se a aba ficar em segundo plano
+    let terminou;
+    const fim = new Promise(ok => { terminou = ok; });
     function fechar() {
       cancelAnimationFrame(raf); clearTimeout(trava);
       if (el.classList.contains("saindo")) return;
       el.classList.add('saindo');
-      setTimeout(() => { el.remove(); if (aberto === el) aberto = null; }, 450);
+      setTimeout(() => { el.remove(); if (aberto === el) aberto = null; terminou(true); }, 450);
     }
+    // × fecha e a Capi não volta mais nesta visita
     el.querySelector('.cm-x').addEventListener('click', () => {
       fechar();
-      if (!MODO_TESTE) try { sessionStorage.setItem('cm-fechou', '1'); } catch { /* só fecha */ }
+      if (!TESTE) try { sessionStorage.setItem('cm-fechou', '1'); } catch { /* só fecha */ }
     });
+    return fim;
   }
 
   window.CapiMinerando = { mostrar };
 
-  if (MODO_TESTE || /[?&]capi=teste\b/.test(location.search)) {
-    setTimeout(() => mostrar(), 1500);
-    setInterval(() => mostrar(), A_CADA_TESTE);
-    return;
-  }
-
-  // ── Modo normal: só durante uma mineração, em momentos aleatórios ──
-  const sorteio = ([a, b]) => a + Math.random() * (b - a);
-  let minerando = false, desde = null, vezes = 0, agendada = null;
+  // ── Quando aparece ──
+  let cfg = { so_mineracao: false, intervalo: 10 }, minerando = false, carregou = false, proxima = null, rodando = false;
   const fechouNaSessao = () => { try { return sessionStorage.getItem('cm-fechou') === '1'; } catch { return false; } };
+  const pode = () => !fechouNaSessao() && (TESTE || !cfg.so_mineracao || minerando);
 
-  function agendar(faixa) {
-    clearTimeout(agendada);
-    agendada = setTimeout(() => {
-      if (!minerando || fechouNaSessao() || vezes >= MAX_POR_MINERACAO) return;
-      if (document.hidden) return agendar([3000, 8000]);
-      mostrar(ORDEM[Math.floor(Math.random() * ORDEM.length)]);
-      vezes++;
-      if (vezes < MAX_POR_MINERACAO) agendar(ENTRE);
-    }, sorteio(faixa));
+  // Um clipe por vez; o intervalo conta do fim de um até o começo do próximo
+  async function ciclo() {
+    if (rodando) return;
+    rodando = true;
+    clearTimeout(proxima);
+    if (pode() && !document.hidden) await mostrar();
+    rodando = false;
+    proxima = setTimeout(ciclo, (document.hidden ? 3 : cfg.intervalo) * 1000);
   }
 
   async function consultar() {
-    if (document.hidden) return;
     try {
       const r = await fetch('/api/mineracao/status', { cache: 'no-store' }).then(x => x.json());
-      if (r.minerando && (!minerando || r.desde !== desde)) {
-        minerando = true; desde = r.desde; vezes = 0;
-        agendar(PRIMEIRA);
-      } else if (!r.minerando && minerando) {
-        minerando = false; clearTimeout(agendada);
-      }
+      if (r.capi) cfg = r.capi;
+      const comecou = r.minerando && !minerando;
+      minerando = r.minerando;
+      if (!carregou) { carregou = true; proxima = setTimeout(ciclo, 1500); }
+      else if (comecou && cfg.so_mineracao && !rodando) { clearTimeout(proxima); proxima = setTimeout(ciclo, 1500); } // mineração começou: aparece logo
     } catch { /* sem conexão: tenta na próxima */ }
   }
   consultar();
-  setInterval(consultar, CONSULTA_MS);
+  setInterval(() => { if (!document.hidden) consultar(); }, CONSULTA_MS);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) consultar(); });
 })();

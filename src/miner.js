@@ -121,7 +121,10 @@ async function runMining(options = {}) {
 }
 
 // Situação resumida e pública: só diz se está minerando agora (usada pela animação da Capi)
-const statusPublico = () => ({ minerando: Boolean(running), desde: runningSince });
+const statusPublico = () => {
+  const intervalo = Math.round(Math.min(3600, Math.max(3, Number(settings.get('capi_intervalo_seg')) || 10)));
+  return { minerando: Boolean(running), desde: runningSince, capi: { so_mineracao: settings.get('capi_so_mineracao') === '1', intervalo } };
+};
 
 function getState() {
   return {

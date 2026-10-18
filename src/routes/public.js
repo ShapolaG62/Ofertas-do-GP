@@ -150,6 +150,7 @@ router.get('/oferta/:slug', (req, res) => {
     : null;
   if (!offer) return res.redirect('/?expirada=1');
   db.run('UPDATE offers SET link_clicks = link_clicks + 1 WHERE id = ?', id);
+  require('../admin-painel').registrarClique();
   // Conquistas: ida à loja pelo link do site (do admin) de quem está logado.
   if (!offer.loja_id) { try { const perfis = require('../perfis'); perfis.incrementar(perfis.donoDe(req), 'idas_loja'); } catch { /* sem perfil */ } }
   res.redirect(offer.affiliate_url || offer.original_url);

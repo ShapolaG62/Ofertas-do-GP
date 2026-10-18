@@ -39,7 +39,6 @@
   .logo { font-weight: 800; font-size: 18px; }
   .logo b { color: var(--green); }
   .top .spacer { flex: 1; }
-  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
   .tab { background: none; border: 1px solid transparent; padding: 8px 14px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 700; }
   .tab:hover { color: var(--text); }
   .tab.active { background: var(--green-soft); border-color: var(--green-line); color: var(--green); }
@@ -150,6 +149,84 @@
   tr[data-tk] { cursor: pointer; }
   tr[data-tk]:hover td { background: var(--surface-2); }
   .pager { display: flex; gap: 10px; align-items: center; justify-content: flex-end; margin-top: 12px; color: var(--muted); }
+  /* ── Layout com menu lateral ── */
+  .wrap { max-width: 1400px; }
+  .layout { display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 22px; align-items: start; }
+  .side { position: sticky; top: 16px; display: grid; gap: 2px; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: none; }
+  .side::-webkit-scrollbar { display: none; }
+  .side-grupo { margin: 12px 10px 4px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+  .side .tab { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border-radius: 10px; border: 1px solid transparent; background: none; color: var(--muted); font-weight: 700; cursor: pointer; }
+  .side .tab span:not(.count-badge) { flex: 1; }
+  .side .tab:hover { background: var(--surface-2); color: var(--text); }
+  .side .tab.active { background: var(--green-soft); border-color: var(--green-line); color: var(--green); }
+  .tab-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .conteudo { min-width: 0; }
+  .page-head { margin: 2px 0 16px; }
+  .page-head h1 { margin: 0; font-size: 22px; }
+  .page-head p { margin: 4px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+  .page-sec { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .page-sec a { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); text-decoration: none; }
+  .page-sec a:hover { color: var(--green); border-color: var(--green-line); }
+  .panel { scroll-margin-top: 16px; }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; gap: 12px; }
+    .side { position: sticky; top: 0; z-index: 5; display: flex; overflow-x: auto; overflow-y: hidden; padding: 6px; gap: 4px; max-height: none; border-radius: 12px; }
+    .side-grupo { display: none; }
+    .side .tab { width: auto; white-space: nowrap; padding: 8px 12px; }
+  }
+  /* ── Dashboard ── */
+  .db-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .db-topo h1 { margin: 0; font-size: 24px; }
+  .db-topo p { margin: 4px 0 0; color: var(--muted); }
+  .db-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .db-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 3px; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+  .db-kpi:hover { border-color: var(--green-line); }
+  .db-kpi .tab-ico { color: var(--green); width: 22px; height: 22px; margin-bottom: 4px; }
+  .db-kpi span { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+  .db-kpi b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .db-kpi small { font-size: 12px; color: var(--dim); line-height: 1.45; }
+  .db-var { display: inline-block; font-weight: 800; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--surface-3); color: var(--muted); }
+  .db-var.sobe { color: var(--green); background: var(--green-soft); }
+  .db-var.desce { color: var(--red); }
+  .db-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .db-grade .panel { margin: 0; display: grid; gap: 12px; align-content: start; min-width: 0; }
+  .db-grade .panel h2 { margin: 0; }
+  .db-larga { grid-column: 1 / -1; }
+  .db-acoes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .db-acoes button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); text-align: left; cursor: pointer; font-size: 13.5px; }
+  .db-acoes button:hover { border-color: var(--green-line); }
+  .db-acoes button.forte { border-color: var(--yellow); }
+  .db-acoes button span { flex: 1; }
+  .db-acoes .tab-ico { color: var(--green); }
+  .db-acoes button.forte .tab-ico { color: var(--yellow); }
+  .db-ok { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--muted); }
+  .db-ok .tab-ico { color: var(--green); }
+  .db-seg { display: inline-flex; flex-wrap: wrap; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+  .db-seg button { border: 0; background: none; padding: 5px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; }
+  .db-seg button[aria-selected="true"] { background: var(--green); color: #fff; }
+  .db-graf { width: 100%; height: 210px; display: block; }
+  .db-graf rect { fill: var(--green); opacity: .85; }
+  .db-graf rect:hover { opacity: 1; }
+  .db-graf text { fill: var(--dim); font-size: 10px; text-anchor: middle; font-family: inherit; }
+  .db-graf text.topo { text-anchor: start; }
+  .db-graf .grade { stroke: var(--border); stroke-dasharray: 3 4; }
+  .db-lojas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .db-loja { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; font-weight: 700; }
+  .db-ponto { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--dim); }
+  .db-ponto.ok { background: var(--green); } .db-ponto.blocked, .db-ponto.error { background: var(--red); } .db-ponto.not_configured { background: var(--yellow); }
+  .db-lista { list-style: none; margin: 0; padding: 0; display: grid; }
+  .db-lista li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; min-width: 0; }
+  .db-lista li:last-child { border-bottom: 0; }
+  .db-lista .db-txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .db-lista small { color: var(--dim); }
+  .db-lista b.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .db-dinheiro { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .db-dinheiro div { padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); display: grid; gap: 2px; }
+  .db-dinheiro span { font-size: 12px; color: var(--muted); font-weight: 700; }
+  .db-dinheiro b { font-size: 18px; }
+  .db-dinheiro small { font-size: 11.5px; color: var(--dim); }
+  @media (max-width: 1000px) { .db-grade { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
 </head>
@@ -195,45 +272,32 @@
       <button class="btn small" id="logout">Sair</button>
     </header>
 
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-tab="dash">Painel</button>
-      <button class="tab" data-tab="offers">Ofertas</button>
-      <button class="tab" data-tab="aff">Afiliados</button>
-      <button class="tab" data-tab="mining">Mineração</button>
-      <button class="tab" data-tab="users">Usuários<span class="count-badge hidden" id="pending-badge">0</span></button>
-      <button class="tab" data-tab="atendimento">Atendimento</button>
-      <button class="tab" data-tab="ads">Publicidade<span class="count-badge hidden" id="leads-badge">0</span></button>
-      <button class="tab" data-tab="planos">Planos<span class="count-badge hidden" id="pedidos-badge">0</span></button>
-      <button class="tab" data-tab="ganhos">Ganhos<span class="count-badge hidden" id="ganhos-badge">0</span></button>
-      <button class="tab" data-tab="clientes">Clientes</button>
-      <button class="tab" data-tab="social">Redes sociais</button>
-      <button class="tab" data-tab="site">Site</button>
-      <button class="tab" data-tab="account">Conta</button>
-    </nav>
-
+    <div class="layout">
+      <nav class="side" id="tabs" aria-label="Seções do painel">
+        <button class="tab active" data-tab="dash"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Painel</span></button>
+        <p class="side-grupo">Conteúdo</p>
+        <button class="tab" data-tab="offers"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></svg><span>Ofertas</span></button>
+        <button class="tab" data-tab="mining"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M4 20l9-9M15 3l6 6-3 1-4-4z"/></svg><span>Mineração</span></button>
+        <button class="tab" data-tab="social"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.5M8.2 13.2l7.6 4.5"/></svg><span>Redes sociais</span></button>
+        <p class="side-grupo">Pessoas</p>
+        <button class="tab" data-tab="users"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg><span>Usuários</span><span class="count-badge hidden" id="pending-badge">0</span></button>
+        <button class="tab" data-tab="atendimento"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg><span>Lojas e pedidos</span></button>
+        <button class="tab" data-tab="clientes"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h3"/></svg><span>Clientes da ferramenta</span></button>
+        <p class="side-grupo">Dinheiro</p>
+        <button class="tab" data-tab="planos"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6 6.5 1-4.7 4.6 1.1 6.4L12 17l-5.9 3 1.1-6.4L2.5 9 9 8z"/></svg><span>Planos e pagamentos</span><span class="count-badge hidden" id="pedidos-badge">0</span></button>
+        <button class="tab" data-tab="ganhos"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/><path d="M15 8h4v4"/></svg><span>Ganhos de afiliados</span><span class="count-badge hidden" id="ganhos-badge">0</span></button>
+        <button class="tab" data-tab="aff"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span>Links de afiliado</span></button>
+        <button class="tab" data-tab="ads"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l6 4V6L7 10z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg><span>Publicidade</span><span class="count-badge hidden" id="leads-badge">0</span></button>
+        <p class="side-grupo">Configurações</p>
+        <button class="tab" data-tab="site"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span>Site</span></button>
+        <button class="tab" data-tab="account"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Conta e senha</span></button>
+      </nav>
+      <main class="conteudo">
     <div id="global-msg"></div>
 
     <!-- PAINEL -->
     <div class="tab-body" data-body="dash">
-      <div class="panel">
-        <div class="row">
-          <div style="flex:1;min-width:220px">
-            <h2>Situação das lojas</h2>
-            <p class="hint" id="last-run">—</p>
-          </div>
-          <button class="btn primary" id="mine-now">⛏️ Minerar agora</button>
-        </div>
-        <div class="grid" id="store-cards" style="margin-top:8px"></div>
-      </div>
-      <div class="panel">
-        <h2>Busca pontual</h2>
-        <p class="hint">Minera um termo específico agora em todas as lojas automáticas (ex.: "fone jbl", "air fryer mondial").</p>
-        <form id="quick-mine" class="row">
-          <input type="text" name="query" placeholder="Termo de busca" style="flex:1;min-width:200px" maxlength="100" required>
-          <button class="btn" type="submit">Buscar ofertas</button>
-        </form>
-        <div id="quick-result" class="hint"></div>
-      </div>
+      <div id="dash-root"><div class="panel"><p class="hint">Carregando o resumo…</p></div></div>
     </div>
 
     <!-- OFERTAS -->
@@ -342,6 +406,25 @@
 
     <!-- MINERAÇÃO -->
     <div class="tab-body hidden" data-body="mining">
+      <div class="panel">
+        <div class="row">
+          <div style="flex:1;min-width:220px">
+            <h2>Situação das lojas</h2>
+            <p class="hint" id="last-run">—</p>
+          </div>
+          <button class="btn primary" id="mine-now">⛏️ Minerar agora</button>
+        </div>
+        <div class="grid" id="store-cards" style="margin-top:8px"></div>
+      </div>
+      <div class="panel">
+        <h2>Busca pontual</h2>
+        <p class="hint">Minera um termo específico agora em todas as lojas automáticas (ex.: "fone jbl", "air fryer mondial").</p>
+        <form id="quick-mine" class="row">
+          <input type="text" name="query" placeholder="Termo de busca" style="flex:1;min-width:200px" maxlength="100" required>
+          <button class="btn" type="submit">Buscar ofertas</button>
+        </form>
+        <div id="quick-result" class="hint"></div>
+      </div>
       <form class="settings-form">
         <div class="panel">
           <h2>Lojas mineradas automaticamente</h2>
@@ -968,6 +1051,8 @@
         </form>
       </div>
     </div>
+      </main>
+    </div>
   </section>
 </div>
 
@@ -1155,13 +1240,47 @@ async function showApp() {
   loadPedidos().catch(() => {});
   $('#manual-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
   $('#cat-list').textContent = CATEGORIES.join(', ');
+  const inicial = location.hash.slice(1);
+  if (inicial && inicial !== 'dash' && document.querySelector(`.tab[data-tab="${inicial}"]`)) abrirAba(inicial); else loadDashboard();
 }
+
+// Cabeçalho de cada página: título, para que serve e atalhos para as seções dela
+const PAGINAS = {
+  offers: ['Ofertas', 'Adicione ofertas à mão e gerencie as que estão no site: buscar, ocultar, editar e ver os cliques.'],
+  mining: ['Mineração', 'Situação de cada loja, busca pontual e as regras da mineração automática (lojas, termos e frequência).'],
+  social: ['Redes sociais', 'Postagem automática das ofertas no WhatsApp, Telegram, Facebook/Instagram e X, com fila e histórico.'],
+  users: ['Usuários', 'Cadastros do site: aprove empresas, modere contas e configure o login com Google.'],
+  atendimento: ['Lojas e pedidos', 'Empresas parceiras, pedidos feitos pelo site, carteiras e saques das lojas, e as conversas de atendimento.'],
+  clientes: ['Clientes da ferramenta', 'Quem comprou acesso à ferramenta de afiliados: validade, bloqueio e links.'],
+  planos: ['Planos e pagamentos', 'Planos à venda, pedidos de assinatura, formas de recebimento (Mercado Pago), app e e-mail de confirmação.'],
+  ganhos: ['Ganhos de afiliados', 'Comissões das plataformas, vendas importadas, saques e avisos de saldo para sacar.'],
+  aff: ['Links de afiliado', 'Suas tags e credenciais de afiliado de cada loja. Ao salvar, todos os links das ofertas são atualizados.'],
+  ads: ['Publicidade', 'Google AdSense, campanhas de anunciantes e pedidos de empresas que querem anunciar.'],
+  site: ['Site', 'Links das redes sociais exibidos no site e o Google Analytics.'],
+  account: ['Conta e senha', 'Troque a senha do painel.'],
+};
+for (const [aba, [titulo, desc]] of Object.entries(PAGINAS)) {
+  const corpo = document.querySelector(`.tab-body[data-body="${aba}"]`);
+  if (!corpo) continue;
+  const secoes = [...corpo.querySelectorAll(':scope > .panel > h2, :scope > form > .panel > h2, :scope > .panel > .row > h2, :scope > .panel > .row > div > h2')];
+  secoes.forEach((h, i) => { h.closest('.panel').id ||= `sec-${aba}-${i}`; });
+  corpo.insertAdjacentHTML('afterbegin', `<header class="page-head"><h1>${titulo}</h1><p>${desc}</p>${secoes.length > 2 ? `<nav class="page-sec">${secoes.map(h => `<a href="#${h.closest('.panel').id}" data-ir-sec>${esc(h.textContent.replace(/[🔔]/gu, '').trim())}</a>`).join('')}</nav>` : ''}</header>`);
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-ir-sec]');
+  if (a) { e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' }); }
+});
+function abrirAba(aba) { const t = document.querySelector(`.tab[data-tab="${aba}"]`); if (t) t.click(); }
 
 $$('.tab').forEach(t => t.addEventListener('click', () => {
   $$('.tab').forEach(x => x.classList.toggle('active', x === t));
   $$('.tab-body').forEach(b => b.classList.toggle('hidden', b.dataset.body !== t.dataset.tab));
+  if (location.hash.slice(1) !== t.dataset.tab) history.replaceState(null, '', `#${t.dataset.tab}`);
+  if (t.closest('.side') && matchMedia('(max-width: 900px)').matches) t.scrollIntoView({ inline: 'center', block: 'nearest' });
+  window.scrollTo({ top: 0 });
   if (t.dataset.tab === 'offers') loadOffers();
-  if (t.dataset.tab === 'dash') loadStores();
+  if (t.dataset.tab === 'dash') loadDashboard();
+  if (t.dataset.tab === 'mining') loadStores();
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
   if (t.dataset.tab === 'ads') loadAds();
   if (t.dataset.tab === 'social') loadSocialLog();
@@ -1170,6 +1289,145 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'atendimento') loadAtendimento().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'planos') { loadPlanos().then(loadPedidos).catch(e => globalMsg(e.message, false)); $('#rc-webhook-url').textContent = `${location.origin}/api/app/webhook/revenuecat`; }
 }));
+
+// ── Dashboard (aba Painel) ────────────────────────────────────────────────────
+const DB_ICO = {
+  ofertas: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/>',
+  clique: '<path d="M9 3v3M3 9h3M4.8 4.8l2.1 2.1M12 12l8 3-3.5 1.5L15 20z"/>',
+  pessoas: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+  dinheiro: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/>',
+  sacola: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/>',
+  alerta: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/>',
+  ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/>',
+  seta: '<path d="M9 6l6 6-6 6"/>',
+  sino: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+};
+const dbIco = n => `<svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true">${DB_ICO[n]}</svg>`;
+const dbNum = v => Number(v || 0).toLocaleString('pt-BR');
+const dbVar = v => (v === null || v === undefined ? '<span class="db-var">novo</span>'
+  : `<span class="db-var ${v > 0 ? 'sobe' : v < 0 ? 'desce' : ''}">${v > 0 ? '▲' : v < 0 ? '▼' : '='} ${Math.abs(v)}%</span>`);
+const dbDia = d => new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+const DB_SERIES = { cliques: ['Cliques', dbNum], ofertas: ['Ofertas novas', dbNum], cadastros: ['Cadastros', dbNum], receita: ['Receita', brl] };
+let DASH = null;
+
+function dbGrafico(serie, chave) {
+  const W = 700, H = 210, P = 24, n = serie.length, bw = (W - P * 2) / n, [nome, fmt] = DB_SERIES[chave];
+  const max = Math.max(1, ...serie.map(d => d[chave]));
+  const barras = serie.map((d, i) => {
+    const h = Math.max(d[chave] ? 3 : 0, (d[chave] / max) * (H - P * 2));
+    return `<rect x="${(P + i * bw + 2).toFixed(1)}" y="${(H - P - h).toFixed(1)}" width="${(bw - 4).toFixed(1)}" height="${h.toFixed(1)}" rx="3"><title>${dbDia(d.dia)}: ${esc(fmt(d[chave]))} — ${nome.toLowerCase()}</title></rect>`;
+  }).join('');
+  const rot = serie.map((d, i) => (i % 5 === 4 || i === n - 1 ? `<text x="${(P + i * bw + bw / 2).toFixed(1)}" y="${H - 6}">${dbDia(d.dia)}</text>` : '')).join('');
+  return `<svg class="db-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${nome} nos últimos 30 dias">
+    <line x1="${P}" x2="${W - P}" y1="${P}" y2="${P}" class="grade"/><line x1="${P}" x2="${W - P}" y1="${H / 2}" y2="${H / 2}" class="grade"/>
+    <text x="${P}" y="${P - 8}" class="topo">${esc(fmt(max))}</text>${barras}${rot}</svg>`;
+}
+
+async function loadDashboard() {
+  const el = $('#dash-root');
+  try { DASH = await api('/api/admin/dashboard'); }
+  catch (err) { el.innerHTML = `<div class="panel"><div class="msg err">${esc(err.message)}</div></div>`; return; }
+  const d = DASH, k = d.kpis, p = d.pendencias, m = d.mineracao;
+  const soma7 = d.serie.slice(-7).reduce((s, x) => s + x.cliques, 0);
+  const serie0 = Object.keys(DB_SERIES).find(c => d.serie.some(x => x[c])) || 'cliques'; // abre numa série com dados
+  // O que precisa de atenção (cada item abre a página certa)
+  const acoes = [];
+  const add = (n, txt, aba, forte, ico = 'alerta') => { if (n) acoes.push({ txt, aba, forte, ico }); };
+  add(p.cadastros, `<b>${p.cadastros} cadastro(s) de empresa</b> esperando aprovação`, 'users', true);
+  add(p.saques, `<b>${p.saques} saque(s) de lojas</b> para pagar (${brl(p.saques_valor)})`, 'atendimento', true, 'dinheiro');
+  add(p.assinaturas, `<b>${p.assinaturas} pedido(s) de assinatura</b> para confirmar o pagamento`, 'planos', true, 'dinheiro');
+  add(p.leads, `<b>${p.leads} empresa(s)</b> querem anunciar no site`, 'ads', false, 'sino');
+  add(p.avisos, `<b>${p.avisos} aviso(s)</b> de saldo de afiliado`, 'ganhos', false, 'sino');
+  add(m.problemas.length, `<b>${m.problemas.length} loja(s) com problema</b> na mineração: ${esc(m.problemas.map(x => x.nome).join(', '))}`, 'mining', false);
+  add(p.postagens_erro, `<b>${p.postagens_erro} postagem(ns)</b> com erro nos últimos 3 dias`, 'social', false);
+  add(p.clientes_vencendo, `<b>${p.clientes_vencendo} cliente(s) da ferramenta</b> vencem em até 5 dias`, 'clientes', false, 'pessoas');
+  const kpi = (aba, ico, rot, val, sub) => `<button class="db-kpi" type="button" data-db-ir="${aba}">${dbIco(ico)}<span>${rot}</span><b>${val}</b><small>${sub}</small></button>`;
+  const statusPedido = { pago: 'Pago', enviado: 'Enviado', concluido: 'Concluído', cancelado: 'Cancelado' };
+  const statusPag = { pendente: 'Aguardando', aprovado: 'Aprovado', recusado: 'Recusado', cancelado: 'Cancelado', expirado: 'Expirado' };
+  const tipo = { empresa: 'Empresa', consumidor: 'Consumidor', afiliado: 'Ferramenta' };
+  const loja = id => STORE_LIST.find(s => s.id === id)?.name || id;
+
+  el.innerHTML = `
+    <div class="db-topo">
+      <div><h1>Painel</h1><p>Resumo do Ofertou! agora · atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p></div>
+      <div class="row"><button class="btn" type="button" id="db-atualizar">Atualizar</button><button class="btn" type="button" data-db-ir="offers">+ Oferta manual</button>
+        <button class="btn primary" type="button" id="db-minerar" ${m.rodando ? 'disabled' : ''}>${m.rodando ? 'Minerando…' : 'Minerar agora'}</button></div>
+    </div>
+
+    <div class="db-kpis">
+      ${kpi('offers', 'ofertas', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbNum(k.ofertas.novas24h)} novas nas últimas 24 h`)}
+      ${kpi('offers', 'clique', 'Cliques (7 dias)', dbNum(k.cliques.d7), `${dbVar(k.cliques.var)} · ${dbNum(k.cliques.total)} no total`)}
+      ${kpi('users', 'pessoas', 'Usuários', dbNum(k.usuarios.total), `${dbNum(k.usuarios.empresas)} empresas · ${dbNum(k.usuarios.novos7)} novos em 7 dias ${dbVar(k.usuarios.var)}`)}
+      ${kpi('planos', 'dinheiro', 'Sua receita (30 dias)', brl(k.receita.total), `${dbVar(k.receita.var)} assinaturas + taxa do site`)}
+      ${kpi('atendimento', 'sacola', 'Pedidos às lojas (30 dias)', dbNum(k.pedidos.n), `${brl(k.pedidos.valor)} vendidos pelas lojas`)}
+    </div>
+
+    <div class="db-grade">
+      <section class="panel">
+        <h2>Precisa da sua atenção</h2>
+        ${acoes.length ? `<ul class="db-acoes">${acoes.map(a => `<li><button type="button" class="${a.forte ? 'forte' : ''}" data-db-ir="${a.aba}">${dbIco(a.ico)}<span>${a.txt}</span>${dbIco('seta')}</button></li>`).join('')}</ul>`
+          : `<p class="db-ok">${dbIco('ok')} Tudo em dia. Nenhuma pendência agora.</p>`}
+      </section>
+
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Últimos 30 dias</h2>
+          <div class="db-seg" role="tablist">${Object.entries(DB_SERIES).map(([c, [nome]]) => `<button type="button" data-serie="${c}" aria-selected="${c === serie0}">${nome}</button>`).join('')}</div></div>
+        <div id="db-graf">${dbGrafico(d.serie, serie0)}</div>
+        ${soma7 === 0 && k.cliques.total ? '<p class="hint" style="margin:0">Os cliques por dia começaram a ser contados agora; o gráfico enche com o uso do site.</p>' : ''}
+      </section>
+
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Mineração</h2><button class="btn small" type="button" data-db-ir="mining">Detalhes</button></div>
+        <p class="hint" style="margin:0">${m.rodando ? 'Mineração em andamento…' : m.ultima ? `Última rodada terminou em ${new Date(m.ultima).toLocaleString('pt-BR')}.` : 'Nenhuma rodada desde que o servidor iniciou.'}
+          <b>${m.ok} de ${m.total}</b> lojas automáticas funcionando.</p>
+        <div class="db-lojas">${m.lojas.map(l => `<div class="db-loja" title="${esc(STATUS_LABEL[l.status] || 'Ainda não rodou')}"><span>${esc(l.nome)}</span><span class="row" style="gap:6px"><small class="hint" style="margin:0">${dbNum(l.saved)}</small><i class="db-ponto ${esc(l.status)}"></i></span></div>`).join('')}</div>
+        ${m.problemas.length ? `<ul class="db-lista">${m.problemas.map(x => `<li><i class="db-ponto ${esc(x.status)}"></i><span class="db-txt"><b>${esc(x.nome)}:</b> ${esc(x.msg || STATUS_LABEL[x.status] || '')}</span></li>`).join('')}</ul>` : ''}
+      </section>
+
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Dinheiro</h2><button class="btn small" type="button" data-db-ir="ganhos">Ganhos</button></div>
+        <div class="db-dinheiro">
+          <div><span>Assinaturas (30 dias)</span><b>${brl(k.receita.assinaturas)}</b><small>${dbNum(k.receita.assinaturas_n)} pagamento(s)</small></div>
+          <div><span>Taxa do site (30 dias)</span><b>${brl(k.receita.taxa_pedidos)}</b><small>sobre pedidos às lojas</small></div>
+          <div><span>Afiliados disponível</span><b>${brl(k.afiliados.disponivel)}</b><small>${brl(k.afiliados.a_liberar)} a liberar</small></div>
+          <div><span>Saldo das lojas</span><b>${brl(k.carteiras.a_pagar)}</b><small>no seu Mercado Pago, a repassar</small></div>
+        </div>
+        ${k.afiliados.pode_sacar?.length ? `<p class="hint" style="margin:0">Pode sacar agora: <b>${esc(k.afiliados.pode_sacar.join(', '))}</b>.</p>` : ''}
+      </section>
+
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Ofertas mais clicadas</h2><button class="btn small" type="button" data-db-ir="offers">Ver ofertas</button></div>
+        ${d.top_ofertas.length ? `<ul class="db-lista">${d.top_ofertas.map(o => `<li><span class="db-txt">${esc(o.produto)}<br><small>${esc(loja(o.store_id))} · ${brl(o.preco_atual)} · -${o.desconto_pct}%</small></span><b class="num">${dbNum(o.link_clicks)} cliques</b></li>`).join('')}</ul>` : '<p class="hint">Nenhuma oferta no ar.</p>'}
+      </section>
+
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Novos cadastros</h2><button class="btn small" type="button" data-db-ir="users">Ver usuários</button></div>
+        ${d.ultimos_cadastros.length ? `<ul class="db-lista">${d.ultimos_cadastros.map(u => `<li><span class="db-txt"><b>${esc(u.empresa_nome || u.nome || u.email)}</b><br><small>${esc(tipo[u.tipo] || 'Sem perfil')} · ${fmtDate(u.created_at)}</small></span><span class="badge b-${esc(u.status)}">${esc({ active: 'Ativo', pending: 'Pendente', onboarding: 'Escolhendo perfil', suspended: 'Suspenso', banned: 'Banido', rejected: 'Recusado' }[u.status] || u.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhum cadastro ainda.</p>'}
+      </section>
+
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Últimos pedidos às lojas</h2><button class="btn small" type="button" data-db-ir="atendimento">Ver pedidos</button></div>
+        ${d.ultimos_pedidos.length ? `<ul class="db-lista">${d.ultimos_pedidos.map(x => `<li><span class="db-txt"><b>PD-${String(x.id).padStart(6, '0')}</b> · ${esc(x.produto)}<br><small>${esc(x.loja)} · pago em ${fmtDate(x.pago_em)}</small></span><b class="num">${brl(x.total)}</b><span class="badge b-${x.status === 'cancelado' ? 'banned' : 'active'}">${esc(statusPedido[x.status] || x.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhum pedido pago ainda.</p>'}
+      </section>
+
+      <section class="panel">
+        <div class="row" style="justify-content:space-between"><h2>Últimas assinaturas</h2><button class="btn small" type="button" data-db-ir="planos">Ver planos</button></div>
+        ${d.ultimos_pagamentos.length ? `<ul class="db-lista">${d.ultimos_pagamentos.map(x => `<li><span class="db-txt"><b>${esc(x.nome || x.email)}</b><br><small>${esc(x.plano)} · ${fmtDate(x.created_at)}</small></span><b class="num">${brl(x.valor)}</b><span class="badge ${(PED_STATUS[x.status] || ['b-none'])[0]}">${esc(statusPag[x.status] || x.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhuma assinatura ainda.</p>'}
+      </section>
+    </div>`;
+
+  el.querySelectorAll('[data-db-ir]').forEach(b => b.addEventListener('click', () => abrirAba(b.dataset.dbIr)));
+  el.querySelectorAll('[data-serie]').forEach(b => b.addEventListener('click', () => {
+    el.querySelectorAll('[data-serie]').forEach(x => x.setAttribute('aria-selected', x === b));
+    $('#db-graf').innerHTML = dbGrafico(DASH.serie, b.dataset.serie);
+  }));
+  $('#db-atualizar').addEventListener('click', loadDashboard);
+  $('#db-minerar').addEventListener('click', async () => {
+    try { await api('/api/admin/mine', { method: 'POST', body: {} }); globalMsg('Mineração iniciada. Acompanhe em Mineração.'); }
+    catch (err) { globalMsg(err.message, false); }
+    setTimeout(loadDashboard, 1000);
+  });
+}
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
 const STATUS_LABEL = {

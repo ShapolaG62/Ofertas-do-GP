@@ -89,6 +89,11 @@ router.put('/api/admin/settings', (req, res) => {
   res.json({ ok: true, changed, refreshed });
 });
 
+// ── Dashboard (resumo do site) ───────────────────────────────────────────────
+router.get('/api/admin/dashboard', (req, res) => {
+  try { res.json(require('../admin-painel').dashboard()); } catch (err) { console.error('[DASH]', err); res.status(500).json({ error: 'Não foi possível montar o resumo.' }); }
+});
+
 // ── Lojas e mineração ─────────────────────────────────────────────────────────
 router.get('/api/admin/stores', (req, res) => {
   res.json({ ...miner.getState(), enabled: settings.getEnabledStores(), categories: CATEGORIES });

@@ -227,7 +227,7 @@ Planos que vêm prontos (dá para editar, excluir e criar outros):
 
 **Excluir:** um plano sem assinantes é apagado de vez. Com assinantes, ele sai da venda e da lista, mas continua valendo (com as mesmas funções) para quem já pagou até o fim do prazo; para renovar, a pessoa escolhe outro plano. Os tipos de acesso de um plano com assinantes não podem ser trocados — crie um plano novo.
 
-**Formas de recebimento** (Painel → Planos → Formas de recebimento). Cada uma tem *Ativo/Desligado*; para trocar uma chave, conta ou link, é só editar e salvar:
+**Formas de recebimento** (Painel → Planos e pagamentos → Formas de recebimento). Cada uma tem *Ativo/Desligado*; para trocar uma chave, conta ou link, é só editar e salvar:
 - **Mercado Pago (recomendado):** cole o *Access Token* de produção (mercadopago.com.br/developers → Suas integrações → Credenciais de produção). Liga **Pix com QR code** e **cartão de crédito/débito** (com parcelas, se quiser). Confirmação automática.
 - **Pix pela sua chave:** tipo e chave Pix, nome do recebedor e banco. Usado quando o Pix do Mercado Pago está desligado.
 - **Transferência bancária:** banco, agência, conta, tipo, titular e CPF/CNPJ.
@@ -331,12 +331,12 @@ Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram 
 
 *(Substitui o que as seções 16 e 17 diziam sobre formas de pagamento das lojas, Mercado Pago da empresa e taxa como débito.)*
 
-**Como o cliente paga:** escolhe **Pix** ou **cartão** (o que a loja aceitar) e paga no **seu Mercado Pago**, o Access Token de Painel → Planos → Formas de recebimento (as parcelas máximas do cartão também vêm de lá). O total já inclui a **taxa de uso do site** (padrão 1%), que fica com você. Tudo acontece na própria janela do pedido:
+**Como o cliente paga:** escolhe **Pix** ou **cartão** (o que a loja aceitar) e paga no **seu Mercado Pago**, o Access Token de Painel → Planos e pagamentos → Formas de recebimento (as parcelas máximas do cartão também vêm de lá). O total já inclui a **taxa de uso do site** (padrão 1%), que fica com você. Tudo acontece na própria janela do pedido:
 - **Pix:** ao clicar em "Confirmar pedido" aparecem o QR code e o copia e cola. A janela confere sozinha e mostra "Pagamento confirmado!". O Pix vale 60 minutos; vencido, o pedido é cancelado. O cliente também encontra o Pix em Minha conta → Meus pedidos.
 - **Cartão:** aparece o formulário do Mercado Pago, onde o cliente digita o cartão e escolhe as **parcelas**. Os dados do cartão vão direto para o Mercado Pago, e o site só recebe um código. Aprovado na hora, já confirma; recusado, mostra o motivo e nada é cobrado.
 
 Configuração:
-- Para o cartão aparecer, cole também a **Public Key** (APP_USR-…, na mesma tela de credenciais do Mercado Pago) em Painel → Planos → Formas de recebimento.
+- Para o cartão aparecer, cole também a **Public Key** (APP_USR-…, na mesma tela de credenciais do Mercado Pago) em Painel → Planos e pagamentos → Formas de recebimento.
 - Sem o Access Token, o botão "Fazer pedido" não aparece.
 
 **O pedido só vai para a loja depois de pago:** antes do pagamento a loja não vê o pedido e nada aparece na conversa. Com o pagamento confirmado, o pedido entra na conversa entre a loja e o cliente, com produto, total, forma de pagamento/parcelas e observações.
@@ -345,8 +345,34 @@ Configuração:
 
 **Carteira da empresa** (Minha conta → **Vendas e pagamentos → Minha carteira**): cada venda entra com o valor dos produtos **menos a tarifa real do Mercado Pago** daquela venda. Fica **a liberar** até 7 dias depois de o pedido ser **concluído** ou 14 dias depois de **pago** (o que vier primeiro) e então vira **disponível**. Com o mínimo (padrão **R$ 50**), a empresa pede o **saque** para a chave Pix cadastrada em "Recebimento dos saques". Extrato e saques ficam na mesma tela.
 
-**Você (Painel → Atendimento):** configure taxa, saque mínimo e prazos de liberação. Em **Carteiras e saques** ficam os saques pedidos: pague pelo app do Mercado Pago (Pix para a chave mostrada) e clique em **Marcar como pago** (ou **Recusar**, e o valor volta ao saldo). A empresa é avisada no site e por e-mail. Também há o saldo e o extrato de cada empresa.
+**Você (Painel → Lojas e pedidos):** configure taxa, saque mínimo e prazos de liberação. Em **Carteiras e saques** ficam os saques pedidos: pague pelo app do Mercado Pago (Pix para a chave mostrada) e clique em **Marcar como pago** (ou **Recusar**, e o valor volta ao saldo). A empresa é avisada no site e por e-mail. Também há o saldo e o extrato de cada empresa.
 
 **Cancelamento depois de pago:** a loja cancela e o dinheiro é devolvido ao cliente pelo Mercado Pago automaticamente; a venda sai da carteira.
 
 **Atenção:** neste modelo o dinheiro das vendas das empresas passa pela sua conta Mercado Pago até o saque. Converse com um contador sobre a declaração desses valores e confira as regras do Mercado Pago para esse uso.
+
+## 19. Painel administrativo (novo layout) e Painel da loja
+
+**Menu lateral por assunto:**
+- Conteúdo: Ofertas, Mineração, Redes sociais.
+- Pessoas: Usuários, Lojas e pedidos (antiga "Atendimento"), Clientes da ferramenta.
+- Dinheiro: Planos e pagamentos, Ganhos de afiliados, Links de afiliado (antiga "Afiliados"), Publicidade.
+- Configurações: Site, Conta e senha.
+
+No celular, o menu vira uma faixa que rola para o lado. Cada página tem um título, uma frase dizendo para que serve e atalhos para as seções dela. O endereço guarda a página aberta (ex.: `/admin#mining`), então recarregar não volta para o início.
+
+**Painel (dashboard):**
+- **Números:** ofertas no ar, cliques em 7 dias, usuários, sua receita em 30 dias (assinaturas + taxa do site) e pedidos às lojas.
+- **Precisa da sua atenção:** cadastros para aprovar, saques de lojas para pagar, assinaturas para confirmar, anunciantes, avisos de afiliado, lojas com problema na mineração, postagens com erro e clientes vencendo. Cada item abre a página certa.
+- **Gráfico de 30 dias:** cliques, ofertas novas, cadastros e receita.
+- **Mineração:** resumo das lojas, com o botão "Minerar agora".
+- **Dinheiro e listas:** resumo do dinheiro, ofertas mais clicadas, novos cadastros, últimos pedidos e últimas assinaturas.
+
+A situação de cada loja e a busca pontual ficam em **Mineração**.
+
+**Painel da loja (empresas):** em Minha conta, a primeira aba das empresas. Mostra:
+- vendas, saldo, ticket médio, acessos e avaliação;
+- pendências;
+- gráfico e funil de vendas;
+- checklist de configuração da loja;
+- mais vendidos, últimos pedidos e avaliações.

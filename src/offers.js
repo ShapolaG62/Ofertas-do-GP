@@ -187,5 +187,5 @@ function reclassifyAll() {
 }
 
 module.exports = {
-  saveDeal, listActive, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld, reclassifyAll, reclassifyOne,
+  activeClause, saveDeal, listActive, stats, isActive, listForAdmin, refreshAffiliateLinks, purgeOld, reclassifyAll, reclassifyOne,
 };

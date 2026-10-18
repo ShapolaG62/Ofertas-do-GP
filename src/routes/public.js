@@ -1,4 +1,3 @@
-const zlib = require('zlib');
 const express = require('express');
 const db = require('../db');
 const auth = require('../auth');
@@ -15,66 +14,15 @@ const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 
 const router = express.Router();
 
-// Lista de todas as ofertas no ar (a página filtra e ordena no navegador). Vai em formato de tabela compacta
-// (sem repetir nomes de campos, lojas, categorias e datas por extenso em cada oferta: ~60% menor) e comprimida
-// (brotli ou gzip). A foto vem por /api/img/:id e o clique passa por /oferta/:slug. A resposta é refeita quando
-// as ofertas mudam (ou a cada minuto) e usa ETag.
-const OFFERS_CACHE_MS = 60 * 1000;
-let offersCache = null; // { at, sig, etag, json, gz, br }
-
-// Tabela compacta: dicionários (lojas, categorias…) + uma linha por oferta. O navegador remonta os objetos.
-function ofertasCompactas(rows) {
-  const dic = () => {
-    const lista = [];
-    const pos = new Map();
-    return { lista, i: v => { if (v == null) return -1; if (!pos.has(v)) { pos.set(v, lista.length); lista.push(v); } return pos.get(v); } };
-  };
-  const lojas = dic(), cats = dic(), subs = dic(), fontes = dic();
-  const plataformas = {};
-  const minutos = s => (s ? Math.round(Date.parse(`${String(s).replace(' ', 'T')}Z`) / 60000) : null);
-  let t0 = Infinity;
-  for (const o of rows) { const m = minutos(o.created_at); if (m !== null && m < t0) t0 = m; }
-  if (!Number.isFinite(t0)) t0 = 0;
-  const rel = s => { const m = minutos(s); return m === null ? null : m - t0; };
-  const linhas = rows.map(o => {
-    plataformas[o.store_id] = o.plataforma;
-    return [o.id, lojas.i(o.store_id), o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct, cats.i(o.categoria),
-      subs.i(o.subcategoria), o.link_clicks || 0, fontes.i(o.fonte), rel(o.created_at), rel(o.last_seen_at), o.loja_slug || 0, o.menor_preco_30d || 0];
-  });
-  return { v: 2, t0, lojas: lojas.lista, plataformas: lojas.lista.map(id => plataformas[id]), cat: cats.lista, sub: subs.lista, fontes: fontes.lista, linhas };
-}
-
-// Assinatura barata do conteúdo: muda quando uma oferta entra, sai, é atualizada ou ocultada.
-const offersSignature = () => {
-  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h FROM offers');
-  return `${r.n}|${r.u}|${r.s}|${r.h}`;
-};
-
-function offersPayload() {
-  const sig = offersSignature();
-  if (offersCache && offersCache.sig === sig && Date.now() - offersCache.at < OFFERS_CACHE_MS) return offersCache;
-  const json = Buffer.from(JSON.stringify(ofertasCompactas(offers.listActive(100000))));
-  const etag = `"v2-${require('crypto').createHash('sha1').update(json).digest('hex').slice(0, 16)}"`;
-  if (offersCache && offersCache.etag === etag) { offersCache.at = Date.now(); offersCache.sig = sig; return offersCache; }
-  offersCache = {
-    at: Date.now(), sig, etag, json,
-    gz: zlib.gzipSync(json, { level: 6 }),
-    br: zlib.brotliCompressSync(json, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 7, [zlib.constants.BROTLI_PARAM_SIZE_HINT]: json.length } }),
-  };
-  return offersCache;
-}
-
-router.get('/api/offers', (req, res) => {
-  const { json, gz, br, etag } = offersPayload();
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'private, no-cache'); // o navegador confere o ETag a cada vez (304 se nada mudou)
-  res.setHeader('ETag', etag);
-  res.setHeader('Vary', 'Accept-Encoding');
-  if (req.headers['if-none-match'] === etag) return res.status(304).end();
-  const aceita = req.headers['accept-encoding'] || '';
-  if (/\bbr\b/.test(aceita)) { res.setHeader('Content-Encoding', 'br'); return res.end(br); }
-  if (/\bgzip\b/.test(aceita)) { res.setHeader('Content-Encoding', 'gzip'); return res.end(gz); }
-  res.end(json);
+// Página de ofertas: o servidor filtra e devolve só a página pedida (24 ofertas) + os números dos filtros
+router.get('/api/offers/busca', (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-cache');
+  res.json(require('../busca-ofertas').buscar(req.query));
+});
+// Postagens: "melhor de cada categoria"
+router.get('/api/offers/mix', (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-cache');
+  res.json({ ids: require('../busca-ofertas').mix(String(req.query.loja || '')) });
 });
 
 router.get('/api/settings/public', (req, res) => res.json(settings.getPublic()));

@@ -49,7 +49,9 @@
 
   // ── Estado (espelhado na URL para links compartilháveis) ─────────────────
   const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, ordem: 'recentes', pagina: 1 };
-  let ALL = [];
+  // Resposta do servidor para os filtros atuais: { total, pagina, paginas, itens, contagens, grupos, resumo }
+  let DATA = { total: 0, pagina: 1, paginas: 1, itens: [], contagens: { lojas: {}, parceiros: 0, categorias: {}, categorias_total: 0, subcategorias: {} }, grupos: null, resumo: null };
+  let carregou = false;
   let isAdmin = false;
   // Produtos escolhidos para postar: guardados no navegador e lidos pela tela /postagens.
   const SEL_KEY = 'gp_postagens';
@@ -86,70 +88,16 @@
     if ('cat' in changes && !('tipo' in changes)) state.tipo = '';
     if (!keepPage) state.pagina = 1;
     writeUrl();
-    render();
+    loadOffers();
   }
 
-  // ── Filtragem e ordenação ────────────────────────────────────────────────
-  // Minúsculas, sem acento e sem hífen ("Micro-ondas" acha "microondas" e vice-versa).
-  const normalize = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/-/g, ' ').replace(/\s+/g, ' ');
-
-  function matches(o, skip = '') {
-    if (skip !== 'loja' && state.loja) {
-      if (state.loja === 'parceiros' ? !o.loja_slug : o.store_id !== state.loja) return false;
-    }
-    if (skip !== 'cat' && state.cat && o.categoria !== state.cat) return false;
-    if (skip !== 'tipo' && state.tipo && o.subcategoria !== state.tipo) return false;
-    if (state.q) {
-      const words = normalize(state.q).split(/\s+/).filter(Boolean);
-      const title = normalize(o.produto);
-      if (!words.every(w => title.includes(w))) return false;
-    }
-    if (state.min != null && o.preco_atual < state.min) return false;
-    if (state.max != null && o.preco_atual > state.max) return false;
-    if (state.desc && o.desconto_pct < state.desc) return false;
-    return true;
-  }
-
-  const SORTS = {
-    recentes: (a, b) => (parseDate(b.created_at) - parseDate(a.created_at)) || b.id - a.id,
-    desconto: (a, b) => b.desconto_pct - a.desconto_pct,
-    'menor-preco': (a, b) => a.preco_atual - b.preco_atual,
-    'maior-preco': (a, b) => b.preco_atual - a.preco_atual,
-    nome: (a, b) => collator.compare(a.produto, b.produto),
-    'nome-desc': (a, b) => collator.compare(b.produto, a.produto),
-    populares: (a, b) => (b.link_clicks || 0) - (a.link_clicks || 0),
-    tipo: (a, b) => collator.compare(CATEGORIES[a.categoria] || '', CATEGORIES[b.categoria] || '')
-      || subOrder(a.subcategoria, b.subcategoria) || collator.compare(a.produto, b.produto),
-  };
+  // ── Filtragem e ordenação: feitas no servidor (/api/offers/busca) ─────────
   function subOrder(a, b) {
     if (a === b) return 0;
     if (a === 'Outros') return 1;
     if (b === 'Outros') return -1;
     return collator.compare(a || '', b || '');
   }
-
-  // Relevância na busca: primeiro o produto cujo nome começa com o termo ("Geladeira Frost Free..."),
-  // depois os que trazem o termo logo no início, e por último acessórios ("Organizador de geladeira").
-  function relevance(o, phrase, words) {
-    const t = normalize(o.produto);
-    const i = t.indexOf(phrase);
-    let score = i === 0 ? 100 : i > 0 && i <= 30 ? 60 : i > 0 ? 30 : 10;
-    if (i > 0 && /\b(para|de|do|da|p\/)\s$/.test(t.slice(Math.max(0, i - 5), i))) score -= 25;
-    if (t.split(' ')[0] === words[0]) score += 20;
-    return score;
-  }
-
-  function filtered() {
-    const list = ALL.filter(o => matches(o));
-    if (state.q && state.ordem === 'recentes') {
-      const phrase = normalize(state.q).trim().replace(/\s+/g, ' ');
-      const words = phrase.split(' ');
-      const score = new Map(list.map(o => [o, relevance(o, phrase, words)]));
-      return list.sort((a, b) => score.get(b) - score.get(a) || SORTS.recentes(a, b));
-    }
-    return list.sort(SORTS[state.ordem] || SORTS.recentes);
-  }
-  const countBy = (list, key) => list.reduce((acc, o) => ((acc[o[key]] = (acc[o[key]] || 0) + 1), acc), {});
 
   // ── Renderização ─────────────────────────────────────────────────────────
   function storeLabel(id, name, lojaSlug) {
@@ -160,10 +108,10 @@
 
   let STORES_EXTRA = '';
   function renderStoreTabs() {
-    const counts = countBy(ALL.filter(o => matches(o, 'loja')), 'store_id');
+    const counts = DATA.contagens.lojas;
     const total = Object.values(counts).reduce((a, b) => a + b, 0);
     const tabs = [`<button class="store-tab" type="button" data-loja="" aria-pressed="${!state.loja}">Todas as lojas <span class="count">${total}</span></button>`];
-    const partners = ALL.filter(o => o.loja_slug && matches(o, 'loja')).length;
+    const partners = DATA.contagens.parceiros;
     // Lojas parceiras não aparecem nesta barra (só as lojas mineradas); o botão só volta se o filtro já estiver ativo
     if (state.loja === 'parceiros') {
       STORES_EXTRA = `<button class="store-tab" type="button" data-loja="parceiros" aria-pressed="${state.loja === 'parceiros'}">
@@ -179,8 +127,7 @@
   }
 
   function filtersHtml() {
-    const base = ALL.filter(o => matches(o, 'cat'));
-    const cats = countBy(base, 'categoria');
+    const cats = DATA.contagens.categorias;
     const catItems = Object.keys(CATEGORIES).filter(c => cats[c] || state.cat === c)
       .sort((a, b) => (cats[b] || 0) - (cats[a] || 0))
       .map(c => `<li><button class="filter-option" type="button" data-cat="${c}" aria-pressed="${state.cat === c}">
@@ -188,7 +135,7 @@
 
     let subGroup = '';
     if (state.cat) {
-      const subs = countBy(ALL.filter(o => matches(o, 'tipo')), 'subcategoria');
+      const subs = DATA.contagens.subcategorias;
       const names = Object.keys(subs).sort(subOrder);
       if (names.length > 1 || state.tipo) {
         subGroup = `<div class="filter-group"><h3 class="filter-title">Tipo de produto</h3><ul class="filter-list">
@@ -209,7 +156,7 @@
 
     return `
       <div class="filter-group"><h3 class="filter-title">Categorias</h3><ul class="filter-list">
-        <li><button class="filter-option" type="button" data-cat="" aria-pressed="${!state.cat}"><span>Todas</span><span class="count">${base.length}</span></button></li>
+        <li><button class="filter-option" type="button" data-cat="" aria-pressed="${!state.cat}"><span>Todas</span><span class="count">${DATA.contagens.categorias_total}</span></button></li>
         ${catItems}</ul></div>
       ${subGroup}
       <div class="filter-group"><h3 class="filter-title">Preço (R$)</h3>
@@ -234,7 +181,7 @@
   function renderSubChips() {
     const box = $('#sub-chips');
     if (!state.cat) { box.hidden = true; return; }
-    const subs = countBy(ALL.filter(o => matches(o, 'tipo')), 'subcategoria');
+    const subs = DATA.contagens.subcategorias;
     const names = Object.keys(subs).sort(subOrder);
     if (names.length < 2 && !state.tipo) { box.hidden = true; return; }
     box.hidden = false;
@@ -281,20 +228,19 @@
   function emptyHtml() {
     const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc;
     return `<div class="empty"><img src="/images/pet-capi.png" alt="" width="120">
-      <h3>${ALL.length ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
-      <p>${ALL.length ? 'Tente outra busca ou remova alguns filtros.' : 'O minerador está procurando descontos reais nas lojas. Volte em alguns minutos.'}</p>
+      <h3>${DATA.resumo?.total ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
+      <p>${DATA.resumo?.total ? 'Tente outra busca ou remova alguns filtros.' : 'O minerador está procurando descontos reais nas lojas. Volte em alguns minutos.'}</p>
       ${hasFilters ? '<button class="btn" type="button" data-clear>Limpar filtros</button>' : ''}</div>`;
   }
 
   function renderGrid() {
-    const list = filtered();
-    const pages = Math.max(1, Math.ceil(list.length / PER_PAGE));
-    state.pagina = Math.min(state.pagina, pages);
-    const pageItems = list.slice((state.pagina - 1) * PER_PAGE, state.pagina * PER_PAGE);
+    const pages = DATA.paginas;
+    state.pagina = DATA.pagina;
+    const pageItems = DATA.itens;
 
     const title = state.tipo || (state.cat ? CATEGORIES[state.cat] : state.loja === 'parceiros' ? 'Lojas parceiras' : state.loja ? STORE_BY_ID[state.loja]?.name : 'Todas as ofertas');
     $('#results-title').textContent = state.q ? `Resultados para “${state.q}”` : title;
-    $('#results-count').textContent = `${list.length.toLocaleString('pt-BR')} oferta${list.length === 1 ? '' : 's'}`;
+    $('#results-count').textContent = `${DATA.total.toLocaleString('pt-BR')} oferta${DATA.total === 1 ? '' : 's'}`;
 
     if (!pageItems.length) {
       $('#grid').innerHTML = emptyHtml();
@@ -302,7 +248,7 @@
       // Agrupa pelo tipo de produto, com título de seção
       const html = [];
       let lastKey = null;
-      const groupCount = countBy(list.map(o => ({ k: `${o.categoria}|${o.subcategoria}` })), 'k');
+      const groupCount = DATA.grupos || {};
       for (const o of pageItems) {
         const key = `${o.categoria}|${o.subcategoria}`;
         if (key !== lastKey) {
@@ -435,16 +381,15 @@
   setInterval(loadVitrine, 10 * 60 * 1000);
 
   function renderHero() {
-    const stores = new Set(ALL.map(o => o.store_id)).size;
-    const maxDisc = ALL.reduce((m, o) => Math.max(m, o.desconto_pct || 0), 0);
-    const last = ALL.reduce((m, o) => (parseDate(o.last_seen_at) > m ? parseDate(o.last_seen_at) : m), new Date(0));
-    $('#updated-at').textContent = ALL.length ? `Preços conferidos ${timeAgo(last.toISOString().replace('T', ' ').slice(0, 19))}` : 'Buscando ofertas nas lojas';
+    const R = DATA.resumo || { total: 0, lojas: 0, maior_desconto: 0, ultima_conferencia: null, destaque: null };
+    const stores = R.lojas, maxDisc = R.maior_desconto;
+    $('#updated-at').textContent = R.total && R.ultima_conferencia ? `Preços conferidos ${timeAgo(R.ultima_conferencia)}` : 'Buscando ofertas nas lojas';
     $('#hero-stats').innerHTML = `
-      <div class="hero-stat"><strong class="num">${ALL.length.toLocaleString('pt-BR')}</strong><span>ofertas no ar</span></div>
+      <div class="hero-stat"><strong class="num">${R.total.toLocaleString('pt-BR')}</strong><span>ofertas no ar</span></div>
       <div class="hero-stat"><strong class="num">${stores}</strong><span>${stores === 1 ? 'loja' : 'lojas'} com ofertas</span></div>
       <div class="hero-stat"><strong class="num">${maxDisc ? `${Math.round(maxDisc)}%` : '—'}</strong><span>maior desconto</span></div>`;
 
-    const best = ALL.filter(o => o.desconto_pct >= 30).sort((a, b) => b.desconto_pct - a.desconto_pct)[0];
+    const best = R.destaque;
     const el = $('#featured');
     if (!best) { el.hidden = true; return; }
     el.href = `/oferta/${slug(best)}`;
@@ -564,7 +509,7 @@
   });
 
   $('#sel-page').addEventListener('click', () => {
-    const page = filtered().slice((state.pagina - 1) * PER_PAGE, state.pagina * PER_PAGE);
+    const page = DATA.itens;
     const antes = selected.size;
     page.forEach(o => selected.add(o.id));
     renderGrid(); updateSelection();
@@ -572,38 +517,13 @@
   });
   $('#sel-clear').addEventListener('click', () => { selected.clear(); renderGrid(); updateSelection(); toast('Seleção limpa.'); });
 
-  // Nota de "chance de venda" usada no "Melhor de cada categoria": desconto real, cliques no site (interesse),
-  // menor preço dos últimos 30 dias, loja conhecida, faixa de preço de compra por impulso, economia em reais
-  // e oferta conferida há pouco. Descontos acima de 85% costumam ser erro de preço e ficam de fora.
-  const LOJA_CONFIANCA = { amazon: 10, mercadolivre: 10, kabum: 9, magalu: 8, shopee: 6, aliexpress: 4, shein: 4, temu: 3 };
-  function salesScore(o) {
-    const d = o.desconto_pct;
-    const p = o.preco_atual;
-    let s = Math.min(d, 70);
-    s += 12 * Math.log2(1 + (o.link_clicks || 0));
-    if (o.menor_preco_30d) s += 15;
-    s += LOJA_CONFIANCA[o.store_id] ?? 2;
-    s += p >= 40 && p <= 800 ? 10 : p > 800 && p <= 2500 ? 5 : p < 15 ? -10 : p > 5000 ? -5 : 0;
-    s += Math.min(15, (o.preco_anterior - p) / 20);
-    const seen = parseDate(o.last_seen_at);
-    if (seen && Date.now() - seen < 6 * 3600 * 1000) s += 5;
-    if (o.subcategoria && o.subcategoria !== 'Outros') s += 3;
-    return s;
-  }
-
-  $('#sel-mix').addEventListener('click', () => {
-    const best = {};
-    for (const o of ALL) {
-      if (o.categoria === 'outros' || o.desconto_pct > 85) continue;
-      if (state.loja && (state.loja === 'parceiros' ? !o.loja_slug : o.store_id !== state.loja)) continue;
-      const sc = salesScore(o);
-      if (!best[o.categoria] || sc > best[o.categoria].sc) best[o.categoria] = { o, sc };
-    }
-    const escolhidos = Object.values(best).map(b => b.o);
-    const novos = escolhidos.filter(o => !selected.has(o.id)).length;
-    escolhidos.forEach(o => selected.add(o.id));
+  $('#sel-mix').addEventListener('click', async () => {
+    let ids = [];
+    try { ids = (await fetch(`/api/offers/mix?loja=${encodeURIComponent(state.loja)}`).then(r => r.json())).ids || []; } catch { return toast('Não foi possível escolher agora.'); }
+    const novos = ids.filter(id => !selected.has(id)).length;
+    ids.forEach(id => selected.add(id));
     renderGrid(); updateSelection();
-    toast(`${novos} produto(s) adicionados: o melhor de cada categoria (${escolhidos.length} categorias).`);
+    toast(`${novos} produto(s) adicionados: o melhor de cada categoria (${ids.length} categorias).`);
   });
 
   // Busca um termo nas lojas na hora (útil para produtos que não estão na lista de mineração automática).
@@ -675,24 +595,31 @@
     }
   }
 
-  // A lista chega como tabela compacta (dicionários + uma linha por oferta); aqui vira a lista de objetos de sempre.
-  function remontarOfertas(d) {
-    if (Array.isArray(d)) return d;
-    const data = m => (m === null ? null : new Date((d.t0 + m) * 60000).toISOString().replace('T', ' ').slice(0, 19));
-    const de = (lista, i) => (i < 0 ? null : lista[i]);
-    return d.linhas.map(l => ({
-      id: l[0], store_id: d.lojas[l[1]], plataforma: d.plataformas[l[1]], produto: l[2], preco_atual: l[3], preco_anterior: l[4],
-      desconto_pct: l[5], categoria: de(d.cat, l[6]), subcategoria: de(d.sub, l[7]), link_clicks: l[8], fonte: de(d.fontes, l[9]),
-      created_at: data(l[10]), last_seen_at: data(l[11]), loja_slug: l[12] || null, menor_preco_30d: l[13],
-    }));
-  }
-
+  // Pede ao servidor só a página atual (com os filtros da URL). Pedidos antigos são cancelados.
+  let pedidoAtual = null;
   async function loadOffers() {
+    pedidoAtual?.abort();
+    const ctrl = pedidoAtual = new AbortController();
+    const p = new URLSearchParams();
+    for (const k of ['loja', 'cat', 'tipo', 'q', 'ordem']) if (state[k]) p.set(k, state[k]);
+    if (state.min != null) p.set('min', state.min);
+    if (state.max != null) p.set('max', state.max);
+    if (state.desc) p.set('desc', state.desc);
+    p.set('pagina', state.pagina);
+    p.set('por', PER_PAGE);
+    if (carregou) $('#grid').classList.add('is-loading');
     try {
-      ALL = remontarOfertas(await fetch('/api/offers').then(r => r.json()));
-    } catch {
-      ALL = [];
+      const r = await fetch(`/api/offers/busca?${p}`, { signal: ctrl.signal });
+      if (!r.ok) throw new Error(String(r.status));
+      DATA = await r.json();
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    } finally {
+      if (pedidoAtual === ctrl) $('#grid').classList.remove('is-loading');
     }
+    if (pedidoAtual !== ctrl) return;
+    carregou = true;
+    if (state.pagina !== DATA.pagina) { state.pagina = DATA.pagina; writeUrl(); }
     renderHero();
     render();
   }

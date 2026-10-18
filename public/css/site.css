@@ -1875,3 +1875,6 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   .sac-lista { max-height: 340px; }
   .sac-conversa { min-height: 520px; }
 }
+
+/* Página de ofertas: enquanto a próxima página/filtro carrega */
+#grid.is-loading { opacity: .55; pointer-events: none; transition: opacity .15s; }

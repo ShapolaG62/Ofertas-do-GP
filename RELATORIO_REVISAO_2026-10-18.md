@@ -34,3 +34,9 @@ A vitrine da página inicial passou a usar o recorte simples, sem perder funçã
 
 ## 4. Sugestão para depois
 A página inicial baixa todas as ~53 mil ofertas de uma vez: cerca de **1,75 MB comprimido** na primeira visita; nas seguintes, só o que mudou. No celular com 4G isso pode levar alguns segundos. Carregar as ofertas aos poucos, conforme a pessoa rola a página, deixaria a primeira abertura bem mais rápida. É uma mudança maior, recomendada antes de divulgar o site em grande escala.
+
+## Atualização: sugestão 4 feita
+- **O que mudou:** a página de ofertas não baixa mais a lista inteira. O servidor filtra, busca, ordena e pagina, e o navegador recebe só as 24 ofertas da página e os números dos filtros.
+- **Resultado:** cerca de **2 a 3 KB por página** (antes eram ~1,75 MB na primeira visita). Cada troca de filtro ou de página leva ~20 a 60 ms.
+- **Conferência:** em 17 combinações de filtros e ordens, o resultado foi idêntico ao da versão anterior: mesmas ofertas, mesma ordem e mesmos números.
+- **Rota antiga:** a que entregava a lista inteira (`/api/offers`) foi removida.

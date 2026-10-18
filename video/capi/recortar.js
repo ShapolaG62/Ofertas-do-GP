@@ -23,6 +23,8 @@ const VIDEOS = [
     [2.1, 3.033], [2.967, 2.4], [2.433, 3.033], // comemoração (o braço vai e volta)
   ] },
   { n: 2, recorte: true, ini: 0, fim: 5.0 },
+  // Clipe separado (sai como capi4): o mesmo golpe do capi1, do jeito natural do vídeo (1 golpe, velocidade normal) e a comemoração
+  { n: 1, nome: 'capi4', recorte: true, trechos: [[0, 3.033]] },
   // Clipe separado (sai como capi3): a Capi sentada cavando o monte de terra, do fim do vídeo 1
   { n: 1, nome: 'capi3', recorte: true, trechos: [
     [3.117, 4.117, 0.8],            // ergue e golpeia o monte de terra

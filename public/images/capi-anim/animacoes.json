@@ -15,6 +15,14 @@
     "fps": 15,
     "recorte": true
   },
+  "capi4": {
+    "arquivo": "capi4.webp",
+    "quadros": 46,
+    "colunas": 10,
+    "lado": 200,
+    "fps": 15,
+    "recorte": true
+  },
   "capi3": {
     "arquivo": "capi3.webp",
     "quadros": 65,

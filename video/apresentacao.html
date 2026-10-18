@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ofertou! — vídeo de apresentação</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #0b0f0d; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; object-fit: contain; }
+</style>
+</head>
+<body>
+<canvas id="tela" width="1920" height="1080"></canvas>
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════════════════════════════════════
+// Vídeo de apresentação do Ofertou! — motion graphics desenhados num canvas 1920×1080 a 30 fps,
+// com música gerada no próprio navegador (Web Audio, sem direitos autorais).
+// Abra a página para assistir; video/gravar.js grava em MP4.
+// ════════════════════════════════════════════════════════════════════════════════════════════
+const W = 1920, H = 1080, DUR = 52;
+const cv = document.getElementById('tela');
+const ctx = cv.getContext('2d');
+const VERDE = '#2bd47d', VERDE_ESC = '#16a35c', OURO = '#f5b942', FUNDO = '#0b0f0d', TXT = '#eef3f0', TXT2 = '#9fb0a7';
+
+// ── Utilidades de animação ──
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const prog = (t, ini, dur) => clamp((t - ini) / dur);
+const E = {
+  out: t => 1 - Math.pow(1 - t, 3),
+  inOut: t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  back: t => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+  elastic: t => (t === 0 || t === 1 ? t : Math.pow(2, -10 * t) * Math.sin((t * 10 - .75) * (2 * Math.PI) / 3) + 1),
+};
+// Entrada e saída de uma cena: 0→1 no começo, 1→0 no fim
+const cena = (t, ini, fim, ent = .6, sai = .5) => Math.min(E.out(prog(t, ini, ent)), 1 - E.inOut(prog(t, fim - sai, sai)));
+
+function img(src) { const i = new Image(); i.src = src; return i; }
+const IMG = {
+  capi: img('../public/images/pet-capi.png'), cabeca: img('../public/images/pet-capi-head.png'),
+  entrada: img('telas/entrada.png'), inicio: img('telas/inicio.png'), grade: img('telas/grade.png'),
+  busca: img('telas/busca.png'), categoria: img('telas/categoria.png'), suporte: img('telas/suporte.png'),
+  celular: img('telas/celular.png'), celularGrade: img('telas/celular-grade.png'),
+};
+
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function texto(s, x, y, { tam = 64, peso = 800, cor = TXT, alinhar = 'center', alpha = 1, sombra = 0, espaco = 0 } = {}) {
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.font = `${peso} ${tam}px Figtree, sans-serif`;
+  ctx.textAlign = alinhar; ctx.textBaseline = 'middle';
+  if (espaco) ctx.letterSpacing = `${espaco}px`;
+  if (sombra) { ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = sombra; ctx.shadowOffsetY = sombra / 4; }
+  ctx.fillStyle = cor; ctx.fillText(s, x, y);
+  ctx.restore();
+}
+// Texto com palavras entrando uma a uma (de baixo para cima)
+function textoPalavras(partes, x, y, t, ini, { tam = 72, intervalo = .09, alinhar = 'center' } = {}) {
+  ctx.save();
+  ctx.font = `800 ${tam}px Figtree, sans-serif`;
+  const palavras = [];
+  for (const [s, cor] of partes) for (const w of s.split(' ').filter(Boolean)) palavras.push([w, cor]);
+  const esp = ctx.measureText(' ').width;
+  const larg = palavras.reduce((a, [w]) => a + ctx.measureText(w).width, 0) + esp * (palavras.length - 1);
+  let cx = alinhar === 'center' ? x - larg / 2 : x;
+  palavras.forEach(([w, cor], i) => {
+    const p = E.back(prog(t, ini + i * intervalo, .5));
+    ctx.save();
+    ctx.globalAlpha = clamp(p);
+    ctx.translate(0, (1 - p) * tam * .8);
+    ctx.fillStyle = cor || TXT; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.fillText(w, cx, y);
+    ctx.restore();
+    cx += ctx.measureText(w).width + esp;
+  });
+  ctx.restore();
+}
+// Ícones (mesmos traços do site), desenhados com Path2D
+const ICONES = {
+  pessoas: 'M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6',
+  loja: 'M3 9h18l-1.5-5h-15zM5 9v11h14V9M9 20v-6h6v6',
+  pix: 'M12 3l3.5 3.5L12 10 8.5 6.5zM12 14l3.5 3.5L12 21l-3.5-3.5zM3 12l3.5-3.5L10 12l-3.5 3.5zM14 12l3.5-3.5L21 12l-3.5 3.5z',
+  suporte: 'M4 14v-2a8 8 0 0 1 16 0v2M3 13h4v6H3zM17 13h4v6h-4zM19 19a3 3 0 0 1-3 3h-3',
+  enviar: 'M3 11l18-8-8 18-2-8z',
+  escudo: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM8.5 12l2.5 2.5 4.5-5',
+  busca: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
+  sino: 'M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+};
+const P2D = Object.fromEntries(Object.entries(ICONES).map(([k, d]) => [k, new Path2D(d)]));
+function icone(nome, x, y, tam, cor = VERDE, linha = 1.9) {
+  ctx.save(); ctx.translate(x - tam / 2, y - tam / 2); ctx.scale(tam / 24, tam / 24);
+  ctx.strokeStyle = cor; ctx.lineWidth = linha; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.stroke(P2D[nome]); ctx.restore();
+}
+
+// ── Fundo: brilhos verde e dourado que se movem devagar + partículas ──
+const PARTICULAS = Array.from({ length: 70 }, (_, i) => ({ x: (i * 977) % W, y: (i * 613) % H, r: 1 + (i % 4), v: 8 + (i % 7) * 4, f: i * .7 }));
+function fundo(t) {
+  ctx.fillStyle = FUNDO; ctx.fillRect(0, 0, W, H);
+  const brilho = (x, y, r, cor, a) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, cor.replace('A', a)); g.addColorStop(1, cor.replace('A', 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  };
+  brilho(W * .78 + Math.sin(t * .35) * 160, H * .22 + Math.cos(t * .27) * 90, 900, 'rgba(43,212,125,A)', .22);
+  brilho(W * .12 + Math.cos(t * .3) * 140, H * .85 + Math.sin(t * .22) * 80, 800, 'rgba(245,185,66,A)', .16);
+  ctx.save();
+  for (const p of PARTICULAS) {
+    const y = (p.y - t * p.v) % H, yy = y < 0 ? y + H : y;
+    ctx.globalAlpha = .18 + .14 * Math.sin(t * 1.5 + p.f);
+    ctx.fillStyle = p.r > 3 ? OURO : VERDE;
+    ctx.beginPath(); ctx.arc(p.x + Math.sin(t * .6 + p.f) * 20, yy, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── Molduras: navegador e celular ──
+function navegador(imagem, x, y, w, { recorte = null, alpha = 1, inclina = 0, escala = 1 } = {}) {
+  const barra = 46, h = w * (recorte ? recorte.h / recorte.w : imagem.height / imagem.width) + barra;
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.translate(x + w / 2, y + h / 2); ctx.scale(escala, escala);
+  if (inclina) ctx.transform(1, 0, Math.tan(inclina), 1, 0, 0);
+  ctx.translate(-w / 2, -h / 2);
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 30;
+  rr(0, 0, w, h, 18); ctx.fillStyle = '#1a201d'; ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 2; ctx.stroke();
+  ['#ff5f57', '#febc2e', '#28c840'].forEach((c, i) => { ctx.beginPath(); ctx.arc(26 + i * 22, barra / 2, 7, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); });
+  rr(110, 11, w - 220, barra - 22, 12); ctx.fillStyle = '#0f1412'; ctx.fill();
+  texto('ofertou', w / 2, barra / 2 + 1, { tam: 16, peso: 700, cor: TXT2 });
+  ctx.save(); rr(0, barra, w, h - barra, [0, 0, 18, 18]); ctx.clip();
+  if (imagem.complete && imagem.naturalWidth) {
+    const r = recorte || { x: 0, y: 0, w: imagem.width, h: imagem.height };
+    ctx.drawImage(imagem, r.x, r.y, r.w, r.h, 0, barra, w, h - barra);
+  }
+  ctx.restore();
+  ctx.restore();
+  return h;
+}
+function celular(imagem, x, y, w, { alpha = 1, rot = 0, rolar = 0 } = {}) {
+  const h = w * 2.05, borda = w * .045;
+  ctx.save(); ctx.globalAlpha *= alpha;
+  ctx.translate(x + w / 2, y + h / 2); ctx.rotate(rot); ctx.translate(-w / 2, -h / 2);
+  ctx.shadowColor = 'rgba(0,0,0,.65)'; ctx.shadowBlur = 70; ctx.shadowOffsetY = 34;
+  rr(0, 0, w, h, w * .13); ctx.fillStyle = '#05070a'; ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.save(); rr(borda, borda, w - borda * 2, h - borda * 2, w * .1); ctx.clip();
+  if (imagem.complete && imagem.naturalWidth) {
+    const iw = w - borda * 2, ih = iw * imagem.height / imagem.width;
+    ctx.drawImage(imagem, borda, borda - rolar * Math.max(0, ih - (h - borda * 2)), iw, ih);
+  }
+  ctx.restore();
+  rr(w / 2 - w * .16, borda + 10, w * .32, w * .07, w * .035); ctx.fillStyle = '#05070a'; ctx.fill();
+  ctx.restore();
+}
+function etiqueta(s, x, y, a, { icone: ic = null, cor = VERDE } = {}) {
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.font = '800 30px Figtree, sans-serif';
+  const w = ctx.measureText(s).width + (ic ? 92 : 56), h = 66;
+  ctx.translate(x, y + (1 - a) * 30);
+  ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 12;
+  rr(-w / 2, -h / 2, w, h, 33); ctx.fillStyle = 'rgba(14,20,17,.94)'; ctx.fill();
+  ctx.shadowColor = 'transparent'; ctx.strokeStyle = cor; ctx.lineWidth = 2.5; ctx.stroke();
+  if (ic) icone(ic, -w / 2 + 44, 0, 30, cor, 2.2);
+  texto(s, ic ? 18 : 0, 1, { tam: 30, cor: TXT });
+  ctx.restore();
+}
+
+// ════════════════════════════════ CENAS ════════════════════════════════
+function cenaAbertura(t) { // 0 – 5.2
+  const a = cena(t, 0, 5.2, .3, .6);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  // anel verde que se expande
+  const pa = E.out(prog(t, .1, 1.3));
+  ctx.beginPath(); ctx.arc(W / 2, H / 2 - 70, 120 + pa * 260, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(43,212,125,${.5 * (1 - pa)})`; ctx.lineWidth = 6; ctx.stroke();
+  // mascote com efeito elástico
+  const pe = E.elastic(prog(t, .15, 1.4));
+  const tam = 300 * pe;
+  if (IMG.capi.complete && tam > 1) {
+    ctx.save(); ctx.translate(W / 2, H / 2 - 90 + Math.sin(t * 2.2) * 6); ctx.rotate(Math.sin(t * 1.4) * .03);
+    ctx.drawImage(IMG.capi, -tam / 2, -tam / 2, tam, tam); ctx.restore();
+  }
+  // nome letra por letra
+  const nome = 'Ofertou!';
+  ctx.font = '900 150px Figtree, sans-serif';
+  const larg = ctx.measureText(nome).width;
+  let x = W / 2 - larg / 2;
+  [...nome].forEach((l, i) => {
+    const p = E.back(prog(t, .9 + i * .06, .55));
+    ctx.save(); ctx.globalAlpha = clamp(p); ctx.translate(0, (1 - p) * 80);
+    ctx.fillStyle = l === '!' ? VERDE : TXT; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.fillText(l, x, H / 2 + 170); ctx.restore();
+    x += ctx.measureText(l).width;
+  });
+  texto('Ofertas reais. Conferidas. Num só lugar.', W / 2, H / 2 + 285, { tam: 44, peso: 700, cor: TXT2, alpha: E.out(prog(t, 2, .8)) });
+  ctx.restore();
+}
+
+function cenaProblema(t) { // 5 – 11.2
+  const a = cena(t, 5, 11.2);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  textoPalavras([['Cansou de', TXT], ['desconto falso?', OURO]], W / 2, 250, t, 5.2, { tam: 92 });
+  // cartão de preço "inflado" que leva um X
+  const pc = E.back(prog(t, 6, .7));
+  ctx.save(); ctx.translate(W / 2, 560); ctx.scale(pc, pc);
+  rr(-360, -150, 720, 300, 30); ctx.fillStyle = '#151b18'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 2; ctx.stroke();
+  texto('De R$ 899,00', 0, -55, { tam: 52, peso: 700, cor: TXT2 });
+  texto('Por R$ 849,00', 0, 40, { tam: 76, peso: 900, cor: TXT });
+  rr(160, -125, 170, 60, 30); ctx.fillStyle = '#e5484d'; ctx.fill(); texto('-6%', 245, -95, { tam: 34, peso: 900 });
+  // risco vermelho
+  const pr = E.inOut(prog(t, 7.4, .5));
+  if (pr > 0) {
+    ctx.strokeStyle = '#ff4d4f'; ctx.lineWidth = 16; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-300, -110); ctx.lineTo(-300 + 600 * pr, -110 + 220 * pr); ctx.stroke();
+  }
+  ctx.restore();
+  textoPalavras([['Aqui só entra', TXT], ['desconto de verdade.', VERDE]], W / 2, 860, t, 8.2, { tam: 80 });
+  ctx.restore();
+}
+
+const LOJAS = [['Mercado Livre', '#ffe600'], ['Amazon', '#ff9900'], ['Magalu', '#0086ff'], ['AliExpress', '#e62e04'], ['KaBuM!', '#ff6500'], ['Lojas parceiras', VERDE]];
+function cenaLojas(t) { // 11 – 17.2
+  const a = cena(t, 11, 17.2);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  textoPalavras([['Garimpamos as', TXT], ['maiores lojas', VERDE], ['do Brasil', TXT]], W / 2, 230, t, 11.1, { tam: 84 });
+  LOJAS.forEach(([nome, cor], i) => {
+    const col = i % 3, lin = Math.floor(i / 3);
+    const x = W / 2 + (col - 1) * 520, y = 470 + lin * 170;
+    const p = E.back(prog(t, 11.8 + i * .14, .6));
+    if (p <= 0) return;
+    ctx.save(); ctx.translate(x, y + (1 - p) * 120); ctx.globalAlpha *= clamp(p); ctx.scale(.85 + .15 * p, .85 + .15 * p);
+    rr(-230, -60, 460, 120, 60); ctx.fillStyle = '#141a17'; ctx.fill();
+    ctx.strokeStyle = cor; ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(-170, 0, 16, 0, Math.PI * 2); ctx.fillStyle = cor; ctx.fill();
+    texto(nome, 20, 2, { tam: 42, peso: 800 });
+    ctx.restore();
+  });
+  // contador de ofertas
+  const pn = E.out(prog(t, 13.2, 2.2));
+  const n = Math.round(54542 * pn);
+  texto(`${n.toLocaleString('pt-BR')}`, W / 2 - 40, 900, { tam: 120, peso: 900, cor: VERDE, alpha: clamp(prog(t, 13.1, .3)), alinhar: 'right' });
+  texto('ofertas no ar agora', W / 2, 905, { tam: 48, peso: 700, cor: TXT, alpha: clamp(prog(t, 13.4, .4)), alinhar: 'left' });
+  ctx.restore();
+}
+
+function cenaSite(t) { // 17 – 24.2 : página inicial no navegador, com zoom nos números
+  const a = cena(t, 17, 24.2, .8);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const pe = E.out(prog(t, 17, 1.2));
+  const pz = E.inOut(prog(t, 20, 2.6));
+  const zoom = 1 + pz * .2;
+  ctx.save();
+  ctx.translate(W / 2 + 120 * pz, 560 + 40 * pz);
+  ctx.scale(zoom, zoom); ctx.translate(-W / 2, -560);
+  navegador(IMG.inicio, 300, 190 + (1 - pe) * 260, 1320, { alpha: pe, inclina: (1 - pe) * -.08 });
+  ctx.restore();
+  texto('Tudo num lugar só, atualizado sozinho', W / 2, 95, { tam: 58, alpha: E.out(prog(t, 17.2, .6)), sombra: 30 });
+  etiqueta('Preços conferidos várias vezes por dia', 600, 930, E.out(prog(t, 18.6, .5)), { icone: 'check' });
+  etiqueta('A oferta sai do ar quando acaba', 1360, 930, E.out(prog(t, 19.3, .5)), { icone: 'sino', cor: OURO });
+  ctx.restore();
+}
+
+function cenaGrade(t) { // 24 – 30.2 : grade de ofertas e filtros
+  const a = cena(t, 24, 30.2, .7);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const p = E.out(prog(t, 24, 1));
+  const rolar = E.inOut(prog(t, 25, 4.5));
+  const g = IMG.grade, rh = g.height ? g.height * .78 : 700;
+  const ry = g.height ? (g.height - rh) * rolar : 0;
+  navegador(g, 90 + (1 - p) * -300, 150, 1180, { alpha: p, recorte: { x: 0, y: ry, w: g.width || 1600, h: rh } });
+  const itens = [['Filtre por loja e categoria', 'loja'], ['Faixa de preço e desconto', 'pix'], ['Menor preço em 30 dias', 'check']];
+  textoPalavras([['Encontre o', TXT]], 1350, 250, t, 24.4, { tam: 64, alinhar: 'left' });
+  textoPalavras([['desconto', TXT], ['certo', VERDE]], 1350, 330, t, 24.6, { tam: 64, alinhar: 'left' });
+  itens.forEach(([s, ic], i) => {
+    const pi = E.back(prog(t, 25.2 + i * .35, .55));
+    if (pi <= 0) return;
+    ctx.save(); ctx.globalAlpha *= clamp(pi); ctx.translate((1 - pi) * 80, 0);
+    rr(1350, 420 + i * 130, 500, 100, 24); ctx.fillStyle = '#141a17'; ctx.fill(); ctx.strokeStyle = 'rgba(43,212,125,.35)'; ctx.lineWidth = 2; ctx.stroke();
+    icone(ic, 1402, 470 + i * 130, 38);
+    texto(s, 1444, 472 + i * 130, { tam: 29, peso: 700, alinhar: 'left' });
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+function cenaBusca(t) { // 30 – 35.7 : busca inteligente
+  const a = cena(t, 30, 35.7, .6);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const p = E.out(prog(t, 30.6, 1));
+  navegador(IMG.busca, 260, 250 + (1 - p) * 200, 1400, { alpha: p, recorte: { x: 0, y: 0, w: IMG.busca.width || 1600, h: (IMG.busca.height || 900) * .82 } });
+  // campo de busca com digitação
+  const frase = 'air fryer';
+  const n = Math.floor(clamp(prog(t, 30.3, 1.2)) * frase.length);
+  const pc = E.back(prog(t, 30, .5));
+  ctx.save(); ctx.translate(W / 2, 140); ctx.scale(pc, pc);
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 40;
+  rr(-430, -55, 860, 110, 55); ctx.fillStyle = '#121815'; ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = VERDE; ctx.lineWidth = 3; ctx.stroke();
+  icone('busca', -360, 0, 44, VERDE, 2.4);
+  texto(frase.slice(0, n) + (Math.floor(t * 2.5) % 2 && n < frase.length + 1 ? '|' : ''), -310, 2, { tam: 48, peso: 700, alinhar: 'left' });
+  ctx.restore();
+  etiqueta('183 resultados em um instante', W / 2, 985, E.out(prog(t, 31.8, .5)), { icone: 'check' });
+  ctx.restore();
+}
+
+function cenaCelular(t) { // 35.5 – 41.7 : celular
+  const a = cena(t, 35.5, 41.7, .7);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  textoPalavras([['No celular', TXT], ['também', VERDE]], 200, 470, t, 35.7, { tam: 96, alinhar: 'left' });
+  texto('Site e aplicativo, com as mesmas ofertas', 200, 580, { tam: 42, peso: 700, cor: TXT2, alinhar: 'left', alpha: E.out(prog(t, 36.4, .6)) });
+  const p1 = E.out(prog(t, 35.6, 1.1)), p2 = E.out(prog(t, 36, 1.1));
+  celular(IMG.celular, 1150, 150 + (1 - p1) * 700, 340, { rot: -.06, alpha: p1 });
+  celular(IMG.celularGrade, 1430, 210 + (1 - p2) * 700, 340, { rot: .05, alpha: p2, rolar: E.inOut(prog(t, 37.5, 3)) * .5 });
+  ctx.restore();
+}
+
+const RECURSOS = [
+  ['pessoas', 'Comunidade', 'Perfis, conquistas e seguidores'],
+  ['loja', 'Lojas parceiras', 'Catálogo, pedidos e conversa'],
+  ['pix', 'Pix e cartão', 'Pagamento seguro pelo Mercado Pago'],
+  ['suporte', 'Suporte humano', 'Fila de atendimento (SAC)'],
+  ['enviar', 'Para afiliados', 'Postagem nos grupos e redes'],
+  ['escudo', 'Seus dados protegidos', 'Em conformidade com a LGPD'],
+];
+function cenaRecursos(t) { // 41.5 – 47.7
+  const a = cena(t, 41.5, 47.7, .6);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  textoPalavras([['E muito', TXT], ['mais', VERDE]], W / 2, 170, t, 41.6, { tam: 88 });
+  RECURSOS.forEach(([ic, tit, sub], i) => {
+    const col = i % 3, lin = Math.floor(i / 3);
+    const x = W / 2 + (col - 1) * 560, y = 470 + lin * 300;
+    const p = E.back(prog(t, 42.1 + i * .16, .6));
+    if (p <= 0) return;
+    ctx.save(); ctx.globalAlpha *= clamp(p); ctx.translate(x, y + (1 - p) * 90);
+    rr(-250, -120, 500, 240, 30); ctx.fillStyle = '#131916'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, -45, 46, 0, Math.PI * 2); ctx.fillStyle = 'rgba(43,212,125,.14)'; ctx.fill();
+    icone(ic, 0, -45, 48, VERDE, 2);
+    texto(tit, 0, 38, { tam: 38, peso: 800 });
+    texto(sub, 0, 85, { tam: 26, peso: 600, cor: TXT2 });
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+function cenaFinal(t) { // 47.5 – 52
+  const a = Math.min(E.out(prog(t, 47.5, .7)), 1 - E.inOut(prog(t, 51.2, .8)));
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const pe = E.elastic(prog(t, 47.6, 1.3));
+  const tam = 230 * pe;
+  if (IMG.capi.complete && tam > 1) ctx.drawImage(IMG.capi, W / 2 - tam / 2, 300 - tam / 2 + Math.sin(t * 2.2) * 6, tam, tam);
+  texto('Ofertou!', W / 2, 520, { tam: 130, peso: 900, alpha: E.out(prog(t, 48, .6)) });
+  texto('Ofertas reais das maiores lojas do Brasil', W / 2, 625, { tam: 44, peso: 700, cor: TXT2, alpha: E.out(prog(t, 48.4, .6)) });
+  const pb = E.back(prog(t, 48.9, .6));
+  if (pb > 0) {
+    const pulso = 1 + Math.sin(t * 5) * .02;
+    ctx.save(); ctx.translate(W / 2, 770); ctx.scale(pb * pulso, pb * pulso);
+    ctx.shadowColor = 'rgba(43,212,125,.55)'; ctx.shadowBlur = 50;
+    rr(-330, -62, 660, 124, 62); ctx.fillStyle = VERDE_ESC; ctx.fill(); ctx.shadowColor = 'transparent';
+    texto('Crie sua conta grátis', 0, 2, { tam: 48, peso: 900, cor: '#fff' });
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function desenhar(t) {
+  fundo(t);
+  cenaAbertura(t); cenaProblema(t); cenaLojas(t); cenaSite(t); cenaGrade(t); cenaBusca(t); cenaCelular(t); cenaRecursos(t); cenaFinal(t);
+  // escurece no começo e no fim
+  const preto = Math.max(1 - prog(t, 0, .4), prog(t, DUR - .6, .6));
+  if (preto > 0) { ctx.fillStyle = `rgba(0,0,0,${preto})`; ctx.fillRect(0, 0, W, H); }
+}
+
+// ════════════════════════════════ MÚSICA ════════════════════════════════
+// Trilha eletrônica leve (110 bpm): pad, baixo, arpejo e batida. Acordes: Lá menor – Fá – Dó – Sol.
+function musica(ac, destino, inicio) {
+  const BPM = 110, BEAT = 60 / BPM, COMP = BEAT * 4;
+  const master = ac.createGain(); master.gain.value = 0;
+  master.gain.setValueAtTime(0, inicio); master.gain.linearRampToValueAtTime(.8, inicio + 1.5);
+  master.gain.setValueAtTime(.8, inicio + DUR - 3); master.gain.linearRampToValueAtTime(0, inicio + DUR - .2);
+  const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(destino);
+  const nota = n => 440 * Math.pow(2, (n - 69) / 12);
+  const ACORDES = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
+  const BAIXO = [45, 41, 48, 43];
+  function voz(freq, t0, dur, { tipo = 'sawtooth', vol = .05, ataque = .02, solta = .3, filtro = 1800 } = {}) {
+    const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+    o.type = tipo; o.frequency.value = freq; f.type = 'lowpass'; f.frequency.value = filtro;
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + ataque); g.gain.setValueAtTime(vol, t0 + Math.max(ataque, dur - solta));
+    g.gain.linearRampToValueAtTime(0, t0 + dur);
+    o.connect(f); f.connect(g); g.connect(master); o.start(t0); o.stop(t0 + dur + .05);
+  }
+  function bumbo(t0) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(140, t0); o.frequency.exponentialRampToValueAtTime(42, t0 + .18);
+    g.gain.setValueAtTime(.9, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + .28);
+    o.connect(g); g.connect(master); o.start(t0); o.stop(t0 + .3);
+  }
+  const ruido = ac.createBuffer(1, ac.sampleRate * .2, ac.sampleRate);
+  const d = ruido.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  function chimbal(t0, vol = .12) {
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = ruido; f.type = 'highpass'; f.frequency.value = 7000;
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + .07);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t0); s.stop(t0 + .1);
+  }
+  const compassos = Math.ceil(DUR / COMP);
+  for (let c = 0; c < compassos; c++) {
+    const t0 = inicio + c * COMP, i = c % 4, cheio = c >= 2 && c < compassos - 1;
+    for (const n of ACORDES[i]) voz(nota(n), t0, COMP, { vol: .035, ataque: .4, solta: .6, filtro: 1200 });
+    voz(nota(BAIXO[i]), t0, COMP * .95, { tipo: 'triangle', vol: cheio ? .22 : .12, filtro: 600 });
+    for (let s = 0; s < 8; s++) { // arpejo em colcheias
+      const n = ACORDES[i][s % 3] + 12 + (s >= 6 ? 12 : 0);
+      voz(nota(n), t0 + s * BEAT / 2, BEAT / 2 * .9, { tipo: 'square', vol: cheio ? .022 : .014, ataque: .005, solta: .12, filtro: 2600 });
+    }
+    if (cheio) for (let b = 0; b < 4; b++) { bumbo(t0 + b * BEAT); chimbal(t0 + b * BEAT + BEAT / 2); }
+    else if (c > 0) for (let b = 0; b < 4; b++) chimbal(t0 + b * BEAT + BEAT / 2, .06);
+  }
+}
+
+// ════════════════════════════════ EXECUÇÃO ════════════════════════════════
+async function pronto() {
+  await document.fonts.load('900 100px Figtree'); await document.fonts.load('700 40px Figtree'); await document.fonts.load('800 40px Figtree');
+  await Promise.all(Object.values(IMG).map(i => (i.complete ? null : new Promise(r => { i.onload = i.onerror = r; }))));
+}
+// Prévia: abre a página e assiste (clique para ouvir a música)
+function assistir() {
+  const t0 = performance.now();
+  const quadro = () => { const t = ((performance.now() - t0) / 1000) % DUR; desenhar(t); requestAnimationFrame(quadro); };
+  requestAnimationFrame(quadro);
+}
+// Gravação em MP4 (usada por video/gravar.js)
+// Um pedaço do vídeo gravado, em base64
+window.pedaco = async (ini, fim) => {
+  const b = new Uint8Array(await window.__video.slice(ini, fim).arrayBuffer());
+  let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s);
+};
+window.gravar = async () => {
+  await pronto();
+  const ac = new AudioContext({ sampleRate: 48000 });
+  await ac.resume();
+  const destino = ac.createMediaStreamDestination();
+  const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...destino.stream.getAudioTracks()]);
+  const tipo = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus'].find(m => MediaRecorder.isTypeSupported(m));
+  const rec = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 });
+  const partes = [];
+  rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
+  desenhar(0);
+  const inicioAudio = ac.currentTime + .15;
+  musica(ac, destino, inicioAudio);
+  let quadros = 0, lentos = 0, ultimo = 0;
+  await new Promise(ok => {
+    rec.onstart = () => {
+      const t0 = performance.now();
+      const quadro = () => {
+        const agora = performance.now(), t = (agora - t0) / 1000;
+        if (ultimo && agora - ultimo > 50) lentos++;
+        ultimo = agora; quadros++;
+        desenhar(Math.min(t, DUR));
+        if (t < DUR) requestAnimationFrame(quadro); else ok();
+      };
+      requestAnimationFrame(quadro);
+    };
+    rec.start(1000);
+  });
+  await new Promise(r => { rec.onstop = r; rec.stop(); });
+  const blob = new Blob(partes, { type: tipo });
+  window.__video = blob; // video/gravar.js copia em pedaços (pedaco)
+  return { tipo, tamanho: blob.size, quadros, lentos };
+};
+// ?t=12.5 mostra só aquele instante (para conferir o visual)
+const tFixo = new URLSearchParams(location.search).get('t');
+if (tFixo !== null) pronto().then(() => { desenhar(Number(tFixo)); document.title = 'pronto'; });
+else if (!/[?&]gravar/.test(location.search)) pronto().then(assistir);
+</script>
+</body>
+</html>

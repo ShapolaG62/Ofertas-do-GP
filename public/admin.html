@@ -101,6 +101,10 @@
   .count-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; }
   dialog { border: 0; padding: 0; border-radius: 16px; background: var(--surface); color: var(--text); width: min(860px, calc(100vw - 24px)); max-height: calc(100vh - 32px); }
   dialog::backdrop { background: rgba(0,0,0,.5); }
+  /* Janelas: rolagem invisível e botões de salvar sempre visíveis no rodapé */
+  dialog { overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+  dialog::-webkit-scrollbar { display: none; }
+  .dlg-body > .actions:last-child { position: sticky; bottom: 0; z-index: 1; margin: 4px -20px -20px !important; padding: 12px 20px 16px; background: var(--surface); border-top: 1px solid var(--border); }
   .dlg-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 1; }
   .dlg-head h3 { margin: 0; flex: 1; font-size: 17px; }
   .dlg-body { padding: 16px 20px 20px; display: grid; gap: 16px; }
@@ -1133,7 +1137,7 @@
     </div>
 
     <div id="pl-msg"></div>
-    <div class="actions" style="margin-top:0"><button class="btn primary" type="submit">Salvar plano</button></div>
+    <div class="actions"><button class="btn" type="button" data-close>Cancelar</button><button class="btn primary" type="submit">Salvar plano</button></div>
   </form>
 </dialog>
 

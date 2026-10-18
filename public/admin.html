@@ -128,6 +128,7 @@
   .img-pick input[type=text] { flex: 1; }
   #ad-form textarea { min-height: 70px; font-family: inherit; }
   .check { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+  .db-dinheiro .db-total b { color: var(--green, #2bb673); }
   /* SAC dentro do painel */
   .sac-quadro { display: block; width: 100%; height: calc(100vh - 190px); min-height: 560px; border: 0; border-radius: 14px; background: transparent; }
   /* Botão liga/desliga */
@@ -195,6 +196,7 @@
   .db-topo h1 { margin: 0; font-size: 24px; }
   .db-topo p { margin: 4px 0 0; color: var(--muted); }
   .db-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  @media (min-width: 900px) { .db-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } } /* 6 cards: 2 linhas de 3 */
   .db-kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 3px; cursor: pointer; text-align: left; color: inherit; font: inherit; }
   .db-kpi:hover { border-color: var(--green-line); }
   .db-kpi .tab-ico { color: var(--green); width: 22px; height: 22px; margin-bottom: 4px; }
@@ -1449,7 +1451,8 @@ async function loadDashboard() {
       ${kpi('offers', 'ofertas', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbNum(k.ofertas.novas24h)} novas nas últimas 24 h`)}
       ${kpi('offers', 'clique', 'Cliques (7 dias)', dbNum(k.cliques.d7), `${dbVar(k.cliques.var)} · ${dbNum(k.cliques.total)} no total`)}
       ${kpi('users', 'pessoas', 'Usuários', dbNum(k.usuarios.total), `${dbNum(k.usuarios.empresas)} empresas · ${dbNum(k.usuarios.novos7)} novos em 7 dias ${dbVar(k.usuarios.var)}`)}
-      ${kpi('planos', 'dinheiro', 'Sua receita (30 dias)', brl(k.receita.total), `${dbVar(k.receita.var)} assinaturas + taxa do site`)}
+      ${kpi('planos', 'dinheiro', 'Receita bruta (30 dias)', brl(k.receita.total), `${dbVar(k.receita.var)} assinaturas + taxa do site + afiliados`)}
+      ${kpi('ganhos', 'dinheiro', 'Ganhos de afiliado (30 dias)', brl(k.receita.afiliados), `${dbVar(k.receita.afiliados_var)} ${dbNum(k.receita.afiliados_n)} venda(s)${k.receita.afiliados_usd ? ` · + US$ ${k.receita.afiliados_usd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}`)}
       ${kpi('atendimento', 'sacola', 'Pedidos às lojas (30 dias)', dbNum(k.pedidos.n), `${brl(k.pedidos.valor)} vendidos pelas lojas`)}
     </div>
 
@@ -1480,6 +1483,8 @@ async function loadDashboard() {
         <div class="db-dinheiro">
           <div><span>Assinaturas (30 dias)</span><b>${brl(k.receita.assinaturas)}</b><small>${dbNum(k.receita.assinaturas_n)} pagamento(s)</small></div>
           <div><span>Taxa do site (30 dias)</span><b>${brl(k.receita.taxa_pedidos)}</b><small>sobre pedidos às lojas</small></div>
+          <div><span>Afiliados (30 dias)</span><b>${brl(k.receita.afiliados)}</b><small>comissões das vendas${k.receita.afiliados_usd ? ` + US$ ${k.receita.afiliados_usd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}</small></div>
+          <div class="db-total"><span>Receita bruta (30 dias)</span><b>${brl(k.receita.total)}</b><small>soma de todas as receitas do site</small></div>
           <div><span>Afiliados disponível</span><b>${brl(k.afiliados.disponivel)}</b><small>${brl(k.afiliados.a_liberar)} a liberar</small></div>
           <div><span>Saldo das lojas</span><b>${brl(k.carteiras.a_pagar)}</b><small>no seu Mercado Pago, a repassar</small></div>
         </div>

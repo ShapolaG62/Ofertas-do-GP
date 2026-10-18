@@ -38,6 +38,19 @@ function dashboard() {
   const assinAnt = um(`SELECT COALESCE(SUM(valor), 0) v FROM pagamentos WHERE status = 'aprovado' AND aprovado_em >= datetime('now', '-60 days') AND aprovado_em < datetime('now', '-30 days') AND valor > 0`);
   const pedidos30 = um(`SELECT COUNT(*) n, COALESCE(SUM(total), 0) v, COALESCE(SUM(taxa_valor), 0) taxa FROM pedidos_loja
     WHERE status IN ('pago', 'enviado', 'concluido') AND pago_em >= datetime('now', '-30 days')`);
+  const pedidosAnt = um(`SELECT COALESCE(SUM(taxa_valor), 0) taxa FROM pedidos_loja
+    WHERE status IN ('pago', 'enviado', 'concluido') AND pago_em >= datetime('now', '-60 days') AND pago_em < datetime('now', '-30 days')`);
+  // Comissões de afiliado pela data da venda (sem as canceladas), por moeda: só o real entra na soma da receita bruta
+  const comissoes = (de, ate) => {
+    const out = { BRL: 0, USD: 0, n: 0 };
+    for (const r of todos(`SELECT p.moeda, COUNT(*) n, COALESCE(SUM(v.comissao), 0) v FROM ganhos_vendas v JOIN ganhos_plataformas p ON p.id = v.plataforma
+      WHERE v.status <> 'cancelada' AND date(v.data_venda) >= date('now', ?) AND date(v.data_venda) < date('now', ?) GROUP BY p.moeda`, de, ate)) {
+      out[r.moeda] = r2((out[r.moeda] || 0) + r.v); out.n += r.n;
+    }
+    return out;
+  };
+  const afil30 = comissoes('-29 days', '+1 day'), afilAnt = comissoes('-59 days', '-29 days');
+  const bruta = r2(assin30.v + pedidos30.taxa + afil30.BRL), brutaAnt = r2(assinAnt.v + pedidosAnt.taxa + afilAnt.BRL);
   let carteiras = { a_pagar: 0, saques: 0, saques_valor: 0 };
   try {
     const c = require('./carteira');
@@ -82,6 +95,8 @@ function dashboard() {
   const rcDia = {};
   for (const r of todos(`SELECT date(aprovado_em) dia, SUM(valor) v FROM pagamentos WHERE status = 'aprovado' AND valor > 0 AND aprovado_em >= date('now', '-29 days') GROUP BY dia`)) rcDia[r.dia] = (rcDia[r.dia] || 0) + r.v;
   for (const r of todos(`SELECT date(pago_em) dia, SUM(taxa_valor) v FROM pedidos_loja WHERE status IN ('pago', 'enviado', 'concluido') AND pago_em >= date('now', '-29 days') GROUP BY dia`)) rcDia[r.dia] = (rcDia[r.dia] || 0) + r.v;
+  for (const r of todos(`SELECT date(v.data_venda) dia, SUM(v.comissao) v FROM ganhos_vendas v JOIN ganhos_plataformas p ON p.id = v.plataforma
+    WHERE v.status <> 'cancelada' AND p.moeda = 'BRL' AND date(v.data_venda) >= date('now', '-29 days') GROUP BY dia`)) rcDia[r.dia] = (rcDia[r.dia] || 0) + r.v;
   const serie = [];
   for (let i = 29; i >= 0; i--) {
     const dia = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
@@ -100,7 +115,11 @@ function dashboard() {
       ofertas: { no_ar: ofertasNoAr, novas24h: ofertasNovas.d1 || 0, novas7d: ofertasNovas.d7 || 0 },
       cliques: { d7: cliques7, var: variacao(cliques7, cliquesAnt), total: cliquesTotal },
       usuarios: { total: usuarios.total || 0, empresas: usuarios.empresas || 0, consumidores: usuarios.consumidores || 0, novos7: usuarios.novos7 || 0, var: variacao(usuarios.novos7 || 0, usuarios.novosAnt || 0), clientes: clientesAtivos },
-      receita: { assinaturas: r2(assin30.v), assinaturas_n: assin30.n || 0, taxa_pedidos: r2(pedidos30.taxa), total: r2(assin30.v + pedidos30.taxa), var: variacao(assin30.v + pedidos30.taxa, assinAnt.v) },
+      receita: {
+        assinaturas: r2(assin30.v), assinaturas_n: assin30.n || 0, taxa_pedidos: r2(pedidos30.taxa),
+        afiliados: afil30.BRL, afiliados_usd: afil30.USD, afiliados_n: afil30.n, afiliados_var: variacao(afil30.BRL, afilAnt.BRL),
+        total: bruta, var: variacao(bruta, brutaAnt), // receita bruta: assinaturas + taxa do site + comissões de afiliado (R$)
+      },
       pedidos: { n: pedidos30.n || 0, valor: r2(pedidos30.v) },
       carteiras, afiliados,
     },

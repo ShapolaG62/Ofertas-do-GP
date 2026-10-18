@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261102">
-<script src="/js/app-nativo.js?v=20261102"></script>
-<script src="/js/dialogo.js?v=20261102"></script>
-<script src="/js/cadastro-auto.js?v=20261102" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261103">
+<script src="/js/app-nativo.js?v=20261103"></script>
+<script src="/js/dialogo.js?v=20261103"></script>
+<script src="/js/cadastro-auto.js?v=20261103" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -57,8 +57,10 @@
           <legend>Acesso</legend>
           <div class="cli-grid2">
             <label class="field">E-mail <input name="email" type="email" autocomplete="email" maxlength="120" required></label>
-            <label class="field">Senha <input name="senha" type="password" autocomplete="new-password" minlength="8" required></label>
-            <label class="field so-novo">Confirme a senha <input name="senha_confirmacao" type="password" autocomplete="new-password" minlength="8"></label>
+            <div class="senha-par">
+              <label class="field">Senha <input name="senha" type="password" autocomplete="new-password" minlength="8" required></label>
+              <label class="field so-novo">Confirme a senha <input name="senha_confirmacao" type="password" autocomplete="new-password" minlength="8"></label>
+            </div>
           </div>
         </fieldset>
 
@@ -146,6 +148,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261102" defer></script>
+<script src="/js/assinar.js?v=20261103" defer></script>
 </body>
 </html>

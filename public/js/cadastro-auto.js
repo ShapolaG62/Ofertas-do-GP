@@ -8,6 +8,10 @@
   const css = document.createElement('style');
   css.textContent = `
     [data-so-pj][hidden], [data-so-pf][hidden], .auto-aviso[hidden], .senha-regras[hidden] { display: none !important; }
+    .senha-par { display: grid; grid-template-columns: 1fr 1fr !important; gap: 12px; grid-column: 1 / -1; }
+    .senha-par > .field { min-width: 0; }
+    .senha-par > [hidden] { display: none !important; }
+    .senha-par:has(> .field[hidden]) { grid-template-columns: 1fr !important; }
     .tipo-loja { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 12px; }
     @media (max-width: 480px) { .tipo-loja { grid-template-columns: 1fr; } }
     .auto-aviso { display: block; margin: -4px 0 10px; font-size: 12.5px; color: var(--muted, #6b7280); grid-column: 1 / -1; }
@@ -141,7 +145,8 @@
   const ehSenhaNova = el => el.type === 'password' && el.autocomplete === 'new-password' && !/confirm/i.test(el.name) && !el.classList.contains('oui-campo');
 
   function listaSenha(input) {
-    const label = input.closest('label') || input.parentElement;
+    // Senha e confirmação lado a lado (.senha-par): a lista vai embaixo das duas
+    const label = input.closest('.senha-par') || input.closest('label') || input.parentElement;
     let ul = label.parentElement.querySelector(`.senha-regras[data-de="${input.name}"]`);
     if (!ul) {
       ul = document.createElement('ul');
@@ -175,7 +180,12 @@
     else if (el.name === 'cnpj') aoDigitarCnpj(el);
     else if (el.type === 'password') conferirSenha(el);
   });
-  document.addEventListener('focusin', e => { if (e.target.type === 'password') conferirSenha(e.target); });
+  document.addEventListener('focusin', e => {
+    if (e.target.type !== 'password') return;
+    // Clicar na confirmação também mostra as regras da senha do mesmo par
+    const principal = [...(e.target.closest('.senha-par')?.querySelectorAll('input[type=password]') || [])].find(ehSenhaNova);
+    conferirSenha(principal || e.target);
+  });
   document.addEventListener('change', e => { if (e.target.name === 'empresa_tipo') aplicarTipo(e.target.form); });
 
   window.OfertouCadastro = { aplicarTipo, buscarCep };

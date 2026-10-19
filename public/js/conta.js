@@ -421,7 +421,7 @@
     if (equipe) {
       $('#eq-sac').hidden = !ME.pode_sac;
       $('#eq-moderar').hidden = !ME.pode_moderar;
-      $('#eq-trabalho').hidden = !ME.staff;
+      $('#eq-equipe').hidden = !ME.pode_equipe;
       $('#eq-postar').hidden = !ME.pode_postar;
     }
     if (empresa && !LOJA && currentTab === null) currentTab = 'loja';

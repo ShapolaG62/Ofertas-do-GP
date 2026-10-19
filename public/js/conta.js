@@ -722,7 +722,7 @@
     vermelho: ['#c62f2f', '#ff6464'], grafite: ['#3b4047', '#7d858f'], rosa: ['#cf3a85', '#ff7bbd'], dourado: ['#a77a0c', '#f2c94c'],
     ciano: ['#0b8f9c', '#41d9e6'], vinho: ['#6e1c38', '#b8456c'] };
   let ED = null; // dados do editor
-  const okImgLoja = s => /^(https:\/\/|\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$)/i.test(s || '');
+  const okImgLoja = s => /^(https:\/\/|\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$|\/uploads\/perfis\/[\w.-]+\.webp$)/i.test(s || '');
   function previewImg(campo) {
     const f = $('#form-loja'), v = f[campo].value;
     const el = $(campo === 'logo_url' ? '#le-logo-prev' : '#le-capa-prev');

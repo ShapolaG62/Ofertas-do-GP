@@ -196,6 +196,8 @@ if (process.env.VERCEL) {
     // Conexões das lojas com o Mercado Pago (valem 180 dias): renova as que estão perto de vencer
     const mpLojas = require('./src/mp-lojas');
     mpLojas.renovarTodas(); setInterval(() => mpLojas.renovarTodas(), 24 * 3600 * 1000);
+    // Empresas: foto do perfil = logo da loja (alinha as contas antigas que estavam diferentes)
+    try { require('./src/foto-loja').alinharTudo(); } catch (err) { console.error('[FOTO LOJA]', err.message); }
     const limparVitrine = () => {
       try { require('./src/vitrine').limparCache(); } catch (err) { console.error('[VITRINE]', err.message); }
     };

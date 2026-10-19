@@ -129,7 +129,8 @@ function garantir(ctx) {
     slug = `${slug}-${sufixo}`.slice(0, 30);
   }
   while (db.get('SELECT 1 FROM perfis WHERE slug = ?', slug)) slug = `${slug.slice(0, 24)}-${crypto.randomBytes(2).toString('hex')}`;
-  const avatar = ctx.tipo === 'admin' ? '/images/pet-capi-head.png' : ctx.user?.avatar_url || null;
+  // Empresa com loja: a foto do perfil é o logo da loja (ver foto-loja.js)
+  const avatar = ctx.tipo === 'admin' ? '/images/pet-capi-head.png' : (ctx.user && require('./foto-loja').logoDaConta(ctx.user.id)) || ctx.user?.avatar_url || null;
   db.run('INSERT INTO perfis (dono, slug, nome, avatar, cor, moldura) VALUES (?, ?, ?, ?, ?, ?)',
     ctx.dono, slug, nome, avatar, ctx.tipo === 'admin' ? 'dourado' : 'verde', ctx.tipo === 'admin' ? 'coroa' : 'nenhuma');
   return db.get('SELECT * FROM perfis WHERE dono = ?', ctx.dono);
@@ -379,6 +380,7 @@ async function salvarImagem(dono, tipo, buffer) {
   fs.writeFileSync(path.join(DIR, nome), img);
   apagarArquivo(perfil[tipo]);
   db.run(`UPDATE perfis SET ${tipo} = ?, updated_at = ? WHERE dono = ?`, `/uploads/perfis/${nome}`, nowSql(), dono);
+  if (tipo === 'avatar') require('./foto-loja').doPerfil(dono, `/uploads/perfis/${nome}`); // o logo da loja acompanha
   return meu(dono);
 }
 
@@ -388,6 +390,7 @@ function removerImagem(dono, tipo) {
   const perfil = garantir(ctx);
   apagarArquivo(perfil[tipo]);
   db.run(`UPDATE perfis SET ${tipo} = NULL, updated_at = ? WHERE dono = ?`, nowSql(), dono);
+  if (tipo === 'avatar') require('./foto-loja').doPerfil(dono, null);
   return meu(dono);
 }
 
@@ -425,6 +428,7 @@ function moderar(dono, { oculto, limpar } = {}) {
   if (limpar) {
     apagarArquivo(perfil.avatar); apagarArquivo(perfil.capa);
     db.run(`UPDATE perfis SET titulo = NULL, bio = NULL, avatar = NULL, capa = NULL, links = NULL WHERE dono = ?`, dono);
+    require('./foto-loja').doPerfil(dono, null); // o logo da loja era a mesma foto
   }
   return resumoAdmin(dono);
 }
@@ -511,7 +515,7 @@ function listar({ q = '', filtro = 'todos', pagina = 1, visitante = null, grupo 
     // Parceiros: dados da loja para o cartão (logo, produtos vendidos, entrega, atendimento e reputação)
     if (papel(ctx) === 'empresa' && ctx.user) {
       const l = db.get('SELECT id, nome, slug, logo_url, oculta FROM lojas WHERE user_id = ?', ctx.user.id);
-      if (l && !l.oculta) card.loja = { id: l.id, nome: l.nome, slug: l.slug, logo: /^https:\/\//i.test(l.logo_url || '') ? l.logo_url : null, ...require('./pedidos-loja').reputacao(l.id), avaliacoes: require('./loja-perfil').resumoAvaliacoes(l.id) };
+      if (l && !l.oculta) card.loja = { id: l.id, nome: l.nome, slug: l.slug, logo: require('./foto-loja').valida(l.logo_url), ...require('./pedidos-loja').reputacao(l.id), avaliacoes: require('./loja-perfil').resumoAvaliacoes(l.id) };
     }
     cards.push(card);
   }

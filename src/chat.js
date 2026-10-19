@@ -52,7 +52,7 @@ const texto = v => String(v ?? '').replace(/\r\n/g, '\n').trim().slice(0, MAX_TE
 function pessoa(dono, conv = null) {
   if (conv && conv.tipo === 'loja' && dono === conv.b && conv.loja_id) {
     const l = db.get('SELECT nome, slug, logo_url FROM lojas WHERE id = ?', conv.loja_id);
-    if (l) return { dono, nome: l.nome, avatar: /^https:\/\//i.test(l.logo_url || '') ? l.logo_url : null, slug: null, loja_slug: l.slug, loja: true };
+    if (l) return { dono, nome: l.nome, avatar: require('./foto-loja').valida(l.logo_url), slug: null, loja_slug: l.slug, loja: true };
   }
   const p = db.get('SELECT nome, avatar, slug FROM perfis WHERE dono = ?', dono);
   if (p) return { dono, nome: p.nome || 'Usuário', avatar: p.avatar || null, slug: p.slug };

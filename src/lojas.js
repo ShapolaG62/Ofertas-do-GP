@@ -49,17 +49,22 @@ function saveLoja(user, body) {
   const descricao = String(body.descricao || '').trim().slice(0, 500) || null;
   const existente = getByUser(user.id);
   const logoBruto = String(body.logo_url ?? existente?.logo_url ?? '').trim();
-  const logo = /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(logoBruto) ? logoBruto : httpsUrlOrNull(logoBruto, 'Logo');
+  const logo = /^\/uploads\/([a-f0-9]{32}\.(jpg|png|webp)|perfis\/[\w.-]+\.webp)$/.test(logoBruto) ? logoBruto : httpsUrlOrNull(logoBruto, 'Logo');
   const site = httpsUrlOrNull(body.site_url, 'Site');
   const existing = existente;
   if (existing) {
     db.run('UPDATE lojas SET nome = ?, descricao = ?, logo_url = ?, site_url = ? WHERE id = ?',
       nome, descricao, logo, site, existing.id);
+    if ((logo || null) !== (existing.logo_url || null)) require('./foto-loja').daLoja(user.id, logo); // a foto do perfil acompanha
     db.run('UPDATE offers SET plataforma = ? WHERE loja_id = ?', nome, existing.id);
     return getByUser(user.id);
   }
+  // Loja nova: sem logo, usa a foto do perfil; com logo, ele vira a foto do perfil
+  const fotoPerfil = db.get('SELECT avatar FROM perfis WHERE dono = ?', `u:${user.id}`)?.avatar;
+  const logoFinal = logo || require('./foto-loja').valida(fotoPerfil);
   db.run('INSERT INTO lojas (user_id, nome, slug, descricao, logo_url, site_url) VALUES (?, ?, ?, ?, ?, ?)',
-    user.id, nome, uniqueSlug(slugify(nome)), descricao, logo, site);
+    user.id, nome, uniqueSlug(slugify(nome)), descricao, logoFinal, site);
+  if (logo) require('./foto-loja').daLoja(user.id, logo);
   return getByUser(user.id);
 }
 

@@ -49,7 +49,10 @@
   const vendidosTxt = n => (n >= 1000 ? `+${num(Math.floor(n / 1000))}mil` : n > 0 ? `+${num(n)}` : '0');
   const parceiro = p => {
     const l = p.loja;
-    const logo = l?.logo ? `<img src="${esc(l.logo)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : avatar(p, 52);
+    // A foto da loja (que é a mesma do perfil), preenchendo o quadro e centralizada
+    const foto = l?.logo || p.avatar;
+    const logo = foto ? `<img src="${esc(foto)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
+      : `<span class="parc-letra">${esc((l?.nome || p.nome || '?').trim()[0] || '?').toUpperCase()}</span>`;
     const seguir = p.eu ? '<span class="comu-eu">Sua loja</span>'
       : `<button class="parc-btn comu-seguir${p.eu_sigo ? ' is-on' : ''}" type="button" data-seguir="${esc(p.slug)}">${p.eu_sigo ? 'Seguindo' : '+ Seguir'}</button>`;
     return `<li class="parc">

@@ -6,7 +6,7 @@ const db = require('./db');
 
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 const txt = (v, max) => String(v ?? '').replace(/\r\n/g, '\n').trim().slice(0, max);
-const IMG = /^(https:\/\/[^\s]+|\/uploads\/[a-f0-9]{32}\.(jpg|png|webp))$/i;
+const IMG = /^(https:\/\/[^\s]+|\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|\/uploads\/perfis\/[\w.-]+\.webp)$/i;
 const CORES_LOJA = ['verde', 'azul', 'roxo', 'laranja', 'vermelho', 'grafite', 'rosa', 'dourado', 'ciano', 'vinho'];
 
 for (const col of ['capa_url TEXT', 'cor TEXT', 'slogan TEXT', 'whatsapp TEXT', 'instagram TEXT', 'telefone TEXT', 'email_contato TEXT',
@@ -66,6 +66,8 @@ function salvarAparencia(user, b) {
   imagem(b.logo_url, 'Logo'), imagem(b.capa_url, 'Banner'), CORES_LOJA.includes(b.cor) ? b.cor : 'verde', txt(b.slogan, 90) || null,
   whats || null, insta || null, txt(b.telefone, 20) || null, email || null, txt(b.endereco, 200) || null, txt(b.horario, 120) || null,
   txt(b.politica_entrega, 600) || null, txt(b.politica_troca, 600) || null, b.mostrar_avaliacoes === false || b.mostrar_avaliacoes === '0' ? 0 : 1, l.id);
+  const novoLogo = lojaDoUsuario(user.id).logo_url || null;
+  if (novoLogo !== (l.logo_url || null)) require('./foto-loja').daLoja(user.id, novoLogo); // a foto do perfil acompanha
   return aparencia(lojaDoUsuario(user.id));
 }
 

@@ -1439,7 +1439,8 @@ body.pf-body {
 .parc { list-style: none; border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--surface-2); display: grid; gap: 10px; }
 .parc-topo { display: flex; gap: 10px; align-items: center; color: inherit; text-decoration: none; min-width: 0; }
 .parc-logo { width: 52px; height: 52px; flex: none; border-radius: 10px; overflow: hidden; background: #fff; display: grid; place-items: center; border: 1px solid var(--line); }
-.parc-logo img { width: 100%; height: 100%; object-fit: contain; }
+.parc-logo img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.parc-letra { font-size: 22px; font-weight: 800; color: #161b18; }
 .parc-logo .pf-avatar { --tam: 52px; }
 .parc-nome { display: grid; min-width: 0; gap: 2px; }
 .parc-nome b { font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

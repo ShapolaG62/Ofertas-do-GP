@@ -77,6 +77,7 @@ function validStatelessToken(token, key) {
 }
 
 function createSession(req, res) {
+  try { require('./registro-acesso').gravar(req, 'admin', 'login'); } catch { /* registro opcional */ }
   const key = sessionKey();
   if (key) {
     const exp = Date.now() + SESSION_DAYS * 86400000;

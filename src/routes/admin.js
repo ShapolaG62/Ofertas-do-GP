@@ -331,6 +331,9 @@ router.post('/api/admin/pagamentos/:id/confirmar', (req, res) => {
   try { res.json({ ok: true, pedido: pagamentos.confirmarManual(Number(req.params.id)) }); } catch (err) { sendError(res, err); }
 });
 
+router.post('/api/admin/pagamentos/:id/reembolsado', (req, res) => {
+  try { res.json({ ok: true, pedido: require('../arrependimento').marcarReembolsado(req.params.id, req.body?.obs) }); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
 router.post('/api/admin/pagamentos/:id/cancelar', (req, res) => {
   pagamentos.cancelar(Number(req.params.id));
   res.json({ ok: true });

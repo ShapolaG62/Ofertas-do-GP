@@ -26,6 +26,7 @@
       s.legal_endereco && esc(s.legal_endereco),
       s.legal_email && `<a href="mailto:${esc(s.legal_email)}">${esc(s.legal_email)}</a>`,
       '<a href="/privacidade">Termos de Uso e Privacidade</a>',
+      '<a href="#" data-cookies-preferencias>Preferências de cookies</a>',
     ].filter(Boolean);
     const el = document.createElement('div');
     el.className = 'rodape-legal';

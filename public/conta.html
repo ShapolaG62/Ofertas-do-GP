@@ -12,13 +12,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261132">
-<script src="/js/app-nativo.js?v=20261132"></script>
-<script src="/js/dialogo.js?v=20261132"></script>
-<script src="/js/cartoes.js?v=20261132" defer></script>
-<script src="/js/capi-minerando.js?v=20261132" defer></script>
-<script src="/js/cadastro-auto.js?v=20261132" defer></script>
-<script src="/js/rodape-legal.js?v=20261132" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261133">
+<script src="/js/app-nativo.js?v=20261133"></script>
+<script src="/js/dialogo.js?v=20261133"></script>
+<script src="/js/cartoes.js?v=20261133" defer></script>
+<script src="/js/capi-minerando.js?v=20261133" defer></script>
+<script src="/js/cadastro-auto.js?v=20261133" defer></script>
+<script src="/js/rodape-legal.js?v=20261133" defer></script>
+<script src="/js/cookies.js?v=20261133"></script>
 </head>
 <body>
 <header class="site-header">
@@ -621,6 +622,11 @@
           </div>
 
           <div class="tab-pane" data-pane="seguranca" hidden>
+            <div class="panel-card" id="arrep-card" hidden>
+              <h2>Desistir do plano (direito de arrependimento)</h2>
+              <p class="muted" id="arrep-texto"></p>
+              <div class="row-actions"><button class="btn btn-danger" type="button" id="arrep-btn">Cancelar o plano e pedir reembolso</button></div>
+            </div>
             <div class="panel-card">
               <h2 id="senha-title">Trocar senha</h2>
               <p class="muted" id="senha-note" hidden>Sua conta entra pelo Google. Se quiser, defina uma senha para entrar também com e-mail.</p>
@@ -662,8 +668,8 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/loja-painel.js?v=20261132" defer></script>
-<script src="/js/conta.js?v=20261132" defer></script>
-<script src="/js/chat-topo.js?v=20261132" defer></script>
+<script src="/js/loja-painel.js?v=20261133" defer></script>
+<script src="/js/conta.js?v=20261133" defer></script>
+<script src="/js/chat-topo.js?v=20261133" defer></script>
 </body>
 </html>

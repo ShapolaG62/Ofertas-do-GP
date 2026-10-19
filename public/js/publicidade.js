@@ -57,6 +57,8 @@
     const g = cache.google;
     const slot = g && g.slots && g.slots[espaco];
     if (!slot || noApp()) return '';
+    // Anúncio do Google (usa cookies) só com o aceite no aviso de cookies
+    if (!window.OfertouCookies || window.OfertouCookies.aceitou() !== true) return '';
     return `<div class="ad-google"><span class="ad-tag ad-tag-google">Publicidade</span>
       <ins class="adsbygoogle" style="display:block" data-ad-client="${esc(g.client)}" data-ad-slot="${esc(slot)}"
         data-ad-format="${espaco === 'lateral' ? 'rectangle' : 'auto'}" data-full-width-responsive="true"></ins></div>`;
@@ -100,4 +102,6 @@
   window.GPAds = { fill };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => fill());
   else fill();
+  // Aceitou os cookies depois: os espaços passam a mostrar os anúncios do Google
+  window.addEventListener('ofertou:cookies', () => fill());
 })();

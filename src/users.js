@@ -188,6 +188,7 @@ function erroPlanoVencido(u) {
 }
 
 function createSession(req, res, userId) {
+  try { require('./registro-acesso').gravar(req, `u:${userId}`, 'login'); } catch { /* registro opcional */ }
   const token = crypto.randomBytes(32).toString('hex');
   const fim = fimSessao(getById(userId));
   db.run('INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)', tokenHash(token), userId, sqlMs(fim));

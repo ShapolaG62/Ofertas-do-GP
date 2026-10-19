@@ -428,8 +428,9 @@ async function webhook(body, query) {
 
 // ── Painel do admin ──────────────────────────────────────────────────────────
 function listar(limit = 200) {
+  require('./arrependimento'); // colunas do reembolso (direito de arrependimento)
   return db.all(`SELECT id, plano, valor, dias, metodo, status, email, nome, mp_payment_id, conta_tipo, conta_id, validade_ate,
-                 email_enviado, observacao, created_at, aprovado_em FROM pagamentos ORDER BY id DESC LIMIT ?`, limit);
+                 email_enviado, observacao, created_at, aprovado_em, reembolso_status, reembolso_em, reembolso_obs FROM pagamentos ORDER BY id DESC LIMIT ?`, limit);
 }
 
 function confirmarManual(id) {
@@ -458,5 +459,5 @@ const assinaturaVencida = u => Boolean(u && u.assinatura_ate && u.assinatura_ate
 
 module.exports = {
   metodosDisponiveis, criarPedido, verificar, aprovar, entregarLogin, publico, porToken, webhook,
-  listar, confirmarManual, cancelar, reenviarEmail, assinaturaVencida, enviarConfirmacao,
+  listar, confirmarManual, cancelar, reenviarEmail, assinaturaVencida, enviarConfirmacao, mp,
 };

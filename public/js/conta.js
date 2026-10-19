@@ -489,6 +489,7 @@
     }
     if (tab === 'loja' && LOJA) loadEditorLoja().catch(err => toast(err.message));
     if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
+    if (tab === 'seguranca') loadArrependimento();
     if (tab === 'cartoes') window.OfertouCartoes?.gerenciar($('#meus-cartoes'));
     else window.OfertouCartoes?.desmontar();
   }
@@ -669,6 +670,30 @@
          ${LOJA.feed_tipo ? ` · formato: ${esc(LOJA.feed_tipo)}` : ''} · última sincronização: ${fmtDate(LOJA.feed_ultima_sync)}
          ${LOJA.feed_mensagem ? `<br>${esc(LOJA.feed_mensagem)}` : ''}`;
   }
+
+  // Direito de arrependimento: cancelar o plano em até 7 dias da compra (CDC, art. 49)
+  let ARREP = null;
+  async function loadArrependimento() {
+    try { ARREP = await api('/api/conta/arrependimento'); } catch { ARREP = null; }
+    $('#arrep-card').hidden = !ARREP?.pode;
+    if (!ARREP?.pode) return;
+    const ate = new Date(ARREP.ate.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const valor = Number(ARREP.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    $('#arrep-texto').innerHTML = `Você comprou o plano <b>${esc(ARREP.plano)}</b> (${valor}) há menos de ${ARREP.prazo_dias} dias. Pelo Código de Defesa do Consumidor, você pode desistir até <b>${ate}</b> e receber o valor de volta.
+      ${ARREP.automatico ? 'Como o pagamento foi pelo Mercado Pago, a devolução é feita na hora, no mesmo meio de pagamento.' : 'A devolução é feita pela nossa equipe, no mesmo meio de pagamento, e você recebe um aviso.'}
+      Os dias do plano comprado são retirados da sua conta.`;
+  }
+  $('#arrep-btn')?.addEventListener('click', async () => {
+    if (!ARREP?.pode) return;
+    if (!await OfertouUI.confirmar(`Cancelar o plano ${ARREP.plano} e pedir o reembolso? Os dias desse plano serão retirados da sua conta.`)) return;
+    const motivo = await OfertouUI.perguntar('Quer contar o motivo? (opcional)', '');
+    if (motivo === null) return;
+    try {
+      const r = await api('/api/conta/arrependimento', { method: 'POST', body: { motivo } });
+      await OfertouUI.avisar(r.status === 'reembolsado' ? 'Plano cancelado e valor devolvido pelo Mercado Pago. O estorno aparece no seu extrato em alguns dias.' : 'Plano cancelado. Seu reembolso foi pedido e a nossa equipe vai devolver o valor no mesmo meio de pagamento.');
+      location.reload();
+    } catch (err) { OfertouUI.avisar(err.message); }
+  });
 
   // Excluir a própria loja (confirma digitando EXCLUIR)
   $('#le-excluir')?.addEventListener('click', async () => {

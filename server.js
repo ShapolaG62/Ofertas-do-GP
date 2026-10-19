@@ -51,6 +51,8 @@ app.use((req, res, next) => {
   } catch (err) { console.error('[SESSAO]', err.message); }
   next();
 });
+// Registros de acesso (IP, data e hora) por 6 meses — Marco Civil da Internet, art. 15
+app.use(require('./src/registro-acesso').middleware);
 app.use(access.guard);
 
 // O painel só abre para quem entrou como "admin". Exceção: antes da senha existir, /admin mostra a criação de senha
@@ -106,8 +108,8 @@ app.use((req, res, next) => {
   const chave = `${arquivo}|${st.mtimeMs}|${client}`;
   let html = paginaCache.get(chave);
   if (!html) {
+    // Só a etiqueta de verificação do AdSense; o script dos anúncios (que usa cookies) carrega depois do aceite (cookies.js)
     html = fs.readFileSync(arquivo, 'utf8').replace('</head>', `<meta name="google-adsense-account" content="${client}">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}" crossorigin="anonymous"></script>
 </head>`);
     paginaCache.set(chave, html);
   }
@@ -189,6 +191,8 @@ if (process.env.VERCEL) {
     if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar();
     require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)
     require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
+    const acessos = require('./src/registro-acesso');
+    acessos.limpar(); setInterval(acessos.limpar, 24 * 3600 * 1000); // registros de acesso com mais de 6 meses
     const limparMarcas = () => {
       try { require('./src/watermark').limparCache(); require('./src/vitrine').limparCache(); } catch (err) { console.error('[MARCA]', err.message); }
     };

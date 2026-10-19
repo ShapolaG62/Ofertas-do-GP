@@ -252,9 +252,9 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261132"></script>
-<script src="/js/capi-minerando.js?v=20261132" defer></script>
-<script src="/js/cadastro-auto.js?v=20261132" defer></script>
+<script src="/js/dialogo.js?v=20261133"></script>
+<script src="/js/capi-minerando.js?v=20261133" defer></script>
+<script src="/js/cadastro-auto.js?v=20261133" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -2251,11 +2251,13 @@ async function loadPedidos() {
       <td>${esc(PLANO_NOME[p.plano] || p.plano)}<br><span class="hint" style="margin:0">${p.dias ? `${p.dias} dias` : 'sem vencimento'}</span></td>
       <td class="num">${brl(p.valor)}</td>
       <td>${esc(PED_METODO[p.metodo] || p.metodo)}${p.mp_payment_id ? `<br><span class="hint" style="margin:0">MP ${esc(p.mp_payment_id)}</span>` : ''}</td>
-      <td><span class="badge ${cls}">${txt}</span>${p.status === 'aprovado' ? `<br><span class="hint" style="margin:0">até ${fmtDia(p.validade_ate)}${p.email_enviado ? ' · e-mail enviado' : ''}</span>` : ''}</td>
+      <td><span class="badge ${cls}">${txt}</span>${p.status === 'aprovado' ? `<br><span class="hint" style="margin:0">até ${fmtDia(p.validade_ate)}${p.email_enviado ? ' · e-mail enviado' : ''}</span>` : ''}
+        ${p.reembolso_status ? `<br><span class="badge" style="color:var(--red)">${p.reembolso_status === 'reembolsado' ? 'Reembolsado' : 'Reembolso a fazer'}</span>${p.reembolso_obs ? `<br><span class="hint" style="margin:0">${esc(p.reembolso_obs)}</span>` : ''}` : ''}</td>
       <td class="num">
         ${['pendente', 'expirado'].includes(p.status) ? `<button class="btn small primary" data-ped="confirmar" data-id="${p.id}">Confirmar pagamento</button>
           <button class="btn small danger" data-ped="cancelar" data-id="${p.id}">Cancelar</button>` : ''}
         ${p.status === 'aprovado' ? `<button class="btn small" data-ped="email" data-id="${p.id}">Reenviar e-mail</button>` : ''}
+        ${p.reembolso_status === 'solicitado' ? `<button class="btn small primary" data-ped="reembolsado" data-id="${p.id}">Marcar reembolso feito</button>` : ''}
       </td></tr>`;
   }).join('') : '<tr><td colspan="7" class="hint">Nenhum pedido ainda.</td></tr>';
 }
@@ -2264,6 +2266,11 @@ $('#pedidos-body').addEventListener('click', async e => {
   if (!b) return;
   const id = b.dataset.id;
   try {
+    if (b.dataset.ped === 'reembolsado') {
+      if (!await OfertouUI.confirmar('Confirmar que você já devolveu o valor desta compra para o cliente?')) return;
+      await api(`/api/admin/pagamentos/${id}/reembolsado`, { method: 'POST', body: {} });
+      globalMsg('Reembolso marcado como feito.'); loadPedidos(); return;
+    }
     if (b.dataset.ped === 'confirmar') {
       if (!await OfertouUI.confirmar('Confirmar que o pagamento deste pedido foi recebido? A conta será liberada na hora.')) return;
       await api(`/api/admin/pagamentos/${id}/confirmar`, { method: 'POST', body: {} });

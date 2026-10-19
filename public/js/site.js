@@ -586,14 +586,18 @@
     if (ig) links.push(`<a href="https://instagram.com/${esc(ig)}" target="_blank" rel="noopener">Instagram</a>`);
     $('#footer-links').innerHTML = links.join('');
 
-    if (/^G-[A-Z0-9]{4,20}$/.test(s.ga_id || '')) {
+    // Google Analytics só com o aceite no aviso de cookies (agora ou quando a pessoa aceitar)
+    const ligarGA = () => {
+      if (!/^G-[A-Z0-9]{4,20}$/.test(s.ga_id || '') || window.gtag || window.OfertouCookies?.aceitou() !== true) return;
       const sc = document.createElement('script');
       sc.async = true; sc.src = `https://www.googletagmanager.com/gtag/js?id=${s.ga_id}`;
       document.head.appendChild(sc);
       window.dataLayer = window.dataLayer || [];
       window.gtag = function () { window.dataLayer.push(arguments); };
       window.gtag('js', new Date()); window.gtag('config', s.ga_id);
-    }
+    };
+    ligarGA();
+    window.addEventListener('ofertou:cookies', ligarGA);
   }
 
   // Pede ao servidor só a página atual (com os filtros da URL). Pedidos antigos são cancelados.

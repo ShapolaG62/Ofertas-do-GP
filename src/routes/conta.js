@@ -160,6 +160,12 @@ router.put('/api/conta/perfil', (req, res) => {
 });
 
 // ── Loja (somente empresas) ──────────────────────────────────────────────────
+// Direito de arrependimento: cancelar o plano em até 7 dias da compra e receber o valor de volta (CDC, art. 49)
+router.get('/api/conta/arrependimento', (req, res) => res.json(require('../arrependimento').situacao(req.user)));
+router.post('/api/conta/arrependimento', async (req, res) => {
+  try { res.json({ ok: true, ...(await require('../arrependimento').pedir(req.user, req.body?.motivo)) }); } catch (err) { sendError(res, err); }
+});
+
 // Cartões salvos no Mercado Pago (o site não guarda os dados do cartão)
 const cartoes = require('../cartoes');
 const pedidosLoja = require('../pedidos-loja');

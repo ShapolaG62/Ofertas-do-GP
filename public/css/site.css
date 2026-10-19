@@ -2206,7 +2206,7 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 @media (prefers-reduced-motion: reduce) { .pf-efeito, .pf-efeito::before, .pf-efeito::after, [class*="pf-nome-"], [class*="pf-nome-"]::before, [class*="pf-nome-"]::after { animation: none !important; } }
 
 /* Loja de cosméticos: abas, prévias de efeitos, missões e vídeos patrocinados */
-.cos-abas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.cos-abas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 3px 2px 5px; margin: -3px -2px -5px; }
 .cos-abas::-webkit-scrollbar { display: none; }
 .cos-abas button { flex: none; font: inherit; font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 999px; cursor: pointer;
   background: var(--surface); color: var(--ink-2); border: 1px solid var(--line-strong); }
@@ -2295,3 +2295,24 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .cos-abas .ico-btn { width: 16px !important; height: 16px !important; }
 .cos-h1-ico { width: 22px !important; height: 22px !important; vertical-align: -3px; margin-right: 8px; color: var(--brand); }
 .cos-dlg .cos-h1-ico { width: 19px !important; height: 19px !important; }
+
+/* Molduras animadas, segunda leva (video/molduras/animadas.js) */
+.pf-moldura-anim-gelo, .pf-moldura-anim-oceano, .pf-moldura-anim-sakura, .pf-moldura-anim-matrix, .pf-moldura-anim-aurora, .pf-moldura-anim-ouro { padding: 0; }
+.pf-moldura-anim-gelo::after, .pf-moldura-anim-oceano::after, .pf-moldura-anim-sakura::after, .pf-moldura-anim-matrix::after, .pf-moldura-anim-aurora::after, .pf-moldura-anim-ouro::after {
+  content: ""; position: absolute; inset: calc(var(--tam) * -.2); pointer-events: none; background: center / 100% 100% no-repeat; }
+.pf-moldura-anim-gelo { background: #0b2a3d; }
+.pf-moldura-anim-gelo::after { background-image: url("/images/molduras/anim-gelo.svg?v=1"); }
+.pf-moldura-anim-oceano { background: #012a4a; }
+.pf-moldura-anim-oceano::after { background-image: url("/images/molduras/anim-oceano.svg?v=1"); }
+.pf-moldura-anim-sakura { background: #2a1712; }
+.pf-moldura-anim-sakura::after { background-image: url("/images/molduras/anim-sakura.svg?v=1"); }
+.pf-moldura-anim-matrix { background: #020a04; }
+.pf-moldura-anim-matrix::after { background-image: url("/images/molduras/anim-matrix.svg?v=1"); }
+.pf-moldura-anim-aurora { background: #071321; }
+.pf-moldura-anim-aurora::after { background-image: url("/images/molduras/anim-aurora.svg?v=1"); }
+.pf-moldura-anim-ouro { background: #3d2900; }
+.pf-moldura-anim-ouro::after { background-image: url("/images/molduras/anim-ouro.svg?v=1"); }
+/* Cartões da loja: título e descrição no alto, botão sempre embaixo (alinhados entre si) */
+.cos-item { grid-template-rows: auto 1fr; }
+.cos-info { display: flex; flex-direction: column; }
+.cos-info > .btn { margin-top: auto; }

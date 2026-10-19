@@ -53,6 +53,12 @@ const MOLDURAS = [
   { id: 'anim-raios', nome: 'Raios', preco: 900, animada: true, desc: 'Aro elétrico e raios estalando nos cantos.' },
   { id: 'anim-espinhos', nome: 'Espinhos', preco: 1200, animada: true, desc: 'Galho de espinhos com brilho vermelho pulsando.' },
   { id: 'anim-galaxia', nome: 'Galáxia', preco: 1600, animada: true, desc: 'Nebulosa com estrelas cintilando e planetas em órbita.' },
+  { id: 'anim-gelo', nome: 'Gelo', preco: 450, animada: true, desc: 'Aro de cristal com reflexo correndo, flocos girando e neve caindo.' },
+  { id: 'anim-oceano', nome: 'Oceano', preco: 500, animada: true, desc: 'Ondas correndo pelo aro, espuma no alto e bolhas subindo.' },
+  { id: 'anim-sakura', nome: 'Sakura', preco: 600, animada: true, desc: 'Galho de cerejeira com flores balançando e pétalas voando.' },
+  { id: 'anim-matrix', nome: 'Matrix', preco: 750, animada: true, desc: 'Código verde correndo pelo aro e colunas de caracteres caindo.' },
+  { id: 'anim-aurora', nome: 'Aurora', preco: 1000, animada: true, desc: 'Aro com as cores da aurora boreal, luzes flutuando e estrelas.' },
+  { id: 'anim-ouro', nome: 'Ouro real', preco: 2000, animada: true, desc: 'Ouro trabalhado com reflexo passando, joias brilhando e coroa.' },
   // Temporada e datas comemorativas de 2027 (horário de Brasília): quem entra no site durante o período ganha a
   // moldura e fica com ela para sempre. Depois do fim, quem não ganhou não consegue mais.
   { id: 'temporada-1', nome: '1ª Temporada', evento: true, de: '2026-10-01', ate: '2027-03-31' },
@@ -528,7 +534,7 @@ function lojaCosmeticos(dono) {
   const admin = ctx.tipo === 'admin';
   return {
     moedas: moedasDe(dono), xp: xpDe(dono), nome: perfil.nome, avatar: perfil.avatar || null, cor: perfil.cor, moldura: perfil.moldura || 'nenhuma',
-    itens: [...MOLDURAS.filter(mo => mo.animada).map(mo => ({ id: mo.id, nome: mo.nome, desc: mo.desc, preco: mo.preco, tipo: 'moldura',
+    itens: [...MOLDURAS.filter(mo => mo.animada).sort((a, b) => a.preco - b.preco).map(mo => ({ id: mo.id, nome: mo.nome, desc: mo.desc, preco: mo.preco, tipo: 'moldura',
       possui: admin || tem.has(mo.id), equipada: perfil.moldura === mo.id })), ...require('./cosmeticos').itensDe(dono, admin)],
   };
 }

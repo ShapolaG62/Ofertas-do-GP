@@ -524,7 +524,7 @@ Em **Editar perfil → Moldura da foto** há um grupo novo. Quem **entra no site
 
 ## 31. Loja de cosméticos e molduras animadas
 
-As 6 molduras animadas (estilo decoração de avatar do Discord) são compradas na **Loja de cosméticos** (`/cosmeticos`). O botão **Loja de cosméticos** fica no topo de **Editar perfil** (e em "Abrir a loja", nas molduras do editor); ele abre a loja numa janela por cima da tela, sem sair da página (ao fechar, o perfil e as molduras do editor já mostram o que foi comprado ou trocado).
+As 12 molduras animadas (estilo decoração de avatar do Discord) são compradas na **Loja de cosméticos** (`/cosmeticos`). O botão **Loja de cosméticos** fica no topo de **Editar perfil** (e em "Abrir a loja", nas molduras do editor); ele abre a loja numa janela por cima da tela, sem sair da página (ao fechar, o perfil e as molduras do editor já mostram o que foi comprado ou trocado).
 
 **Moedas:** cada XP ganho com as conquistas vira uma moeda. Saldo = XP total − o que já foi gasto. Gastar moedas **não tira** o XP nem o nível. Não há dinheiro real envolvido.
 
@@ -536,6 +536,12 @@ As 6 molduras animadas (estilo decoração de avatar do Discord) são compradas 
 | Raios | 900 | aro elétrico e raios estalando nos cantos |
 | Espinhos | 1.200 | galho de espinhos com brilho vermelho pulsando e gotas caindo |
 | Galáxia | 1.600 | nebulosa com estrelas cintilando e planetas em órbita |
+| Gelo | 450 | aro de cristal com reflexo correndo, flocos girando e neve caindo |
+| Oceano | 500 | ondas correndo pelo aro, espuma no alto e bolhas subindo |
+| Sakura | 600 | galho de cerejeira com flores balançando e pétalas voando |
+| Matrix | 750 | código verde correndo pelo aro e colunas de caracteres caindo |
+| Aurora | 1.000 | cores da aurora boreal, luzes flutuando e estrelas |
+| Ouro real | 2.000 | ouro trabalhado com reflexo passando, joias brilhando e coroa |
 
 Na loja, cada moldura aparece com a foto da própria pessoa; depois de comprar, dá para usar na hora. Em **Editar perfil → Moldura da foto**, as comuns e as de temporada ficam juntas, e as compradas aparecem em "Da Loja de cosméticos". O admin tem todas.
 

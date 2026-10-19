@@ -45,7 +45,13 @@ router.post('/api/moderacao/:origem/:id/acao', exigir('moderar'), (req, res) => 
 // Equipe: pessoas, cargos e permissões
 router.get('/api/equipe', exigir('equipe'), (req, res) => {
   const eu = cargos.de(req.dono);
-  res.json({ equipe: equipe.listar(req.dono), matriz: cargos.matriz(), cargos_permitidos: equipe.cargosPermitidos(req.dono), dono_site: eu.dono_site, meu_nivel: eu.nivel });
+  // Cargos e permissões: só o dono do site, Proprietários e Gerentes veem (só o dono muda)
+  const verCargos = eu.dono_site || ['proprietario', 'gerente'].includes(eu.cargo);
+  res.json({
+    equipe: equipe.listar(req.dono), cargos_permitidos: equipe.cargosPermitidos(req.dono), dono_site: eu.dono_site, meu_nivel: eu.nivel,
+    nomes: { cargos: cargos.CARGOS.map(c => ({ id: c.id, nome: c.nome })), permissoes: cargos.PERMISSOES.map(p => ({ id: p.id, nome: p.nome })) },
+    ver_cargos: verCargos, matriz: verCargos ? cargos.matriz() : null,
+  });
 });
 router.post('/api/equipe', exigir('equipe'), (req, res) => { try { res.json({ pessoa: equipe.adicionar(req.body || {}, req.dono) }); } catch (err) { sendError(res, err); } });
 router.post('/api/equipe/:id/cargo', exigir('equipe'), (req, res) => { try { res.json({ pessoa: equipe.atualizar(req.params.id, req.body || {}, req.dono) }); } catch (err) { sendError(res, err); } });

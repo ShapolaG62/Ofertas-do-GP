@@ -23,12 +23,15 @@
       if (err.status === 401 || err.status === 403) { document.querySelectorAll('[data-painel], .eqp-abas').forEach(e => { e.hidden = true; }); $('#eqp-sem-acesso').hidden = false; return; }
       $('#eqp-lista').innerHTML = `<p class="form-msg err">${esc(err.message)}</p>`; return;
     }
-    const nomeCargo = id => D.matriz.cargos.find(c => c.id === id)?.nome || id;
+    const nomeCargo = id => D.nomes.cargos.find(c => c.id === id)?.nome || id;
+    // Cargos e permissões: só aparece para o dono do site, Proprietários e Gerentes
+    document.querySelector('[data-aba="cargos"]').hidden = !D.ver_cargos;
+    if (!D.ver_cargos) document.querySelector('[data-painel="cargos"]').hidden = true;
     $('#eqp-cargo-novo').innerHTML = D.cargos_permitidos.slice().reverse().map(c => `<option value="${c}">${esc(nomeCargo(c))}</option>`).join('');
     // Pessoas
     $('#eqp-lista').innerHTML = D.equipe.length ? D.equipe.map(p => `<div class="eqp-pessoa">
       <div class="eqp-quem"><b>${esc(p.nome || '—')}</b><small>${esc(p.email)} · último acesso: ${quando(p.last_login_at)}${p.status !== 'active' ? ` · conta: ${esc(p.status)}` : ''}</small>
-        <small class="eqp-faz">${p.permissoes.length ? p.permissoes.map(id => esc(D.matriz.permissoes.find(x => x.id === id)?.nome || id)).join(' · ') : 'sem funções'}</small></div>
+        <small class="eqp-faz">${p.permissoes.length ? p.permissoes.map(id => esc(D.nomes.permissoes.find(x => x.id === id)?.nome || id)).join(' · ') : 'sem funções'}</small></div>
       <div class="eqp-ctrl">
         ${p.pode_gerenciar
           ? `<select data-cargo="${p.id}" aria-label="Cargo de ${esc(p.nome)}">${[...new Set([...D.cargos_permitidos, p.cargo].filter(Boolean))].map(c => `<option value="${c}" ${c === p.cargo ? 'selected' : ''}>${esc(nomeCargo(c))}</option>`).join('')}</select>
@@ -39,6 +42,7 @@
       : '<p class="muted">Ninguém na equipe ainda. Adicione a primeira pessoa acima.</p>';
     // Cargos e permissões
     const m = D.matriz;
+    if (!m) return;
     $('#eqp-matriz').innerHTML = `<thead><tr><th>Função</th>${m.cargos.map(c => `<th>${esc(c.nome)}</th>`).join('')}</tr></thead>
       <tbody>${m.permissoes.map(p => `<tr><td><b>${esc(p.nome)}</b><small>${esc(p.desc)}</small></td>${m.cargos.map(c => `<td>
         <input type="checkbox" data-mc="${c.id}" data-mp="${p.id}" ${c.permissoes.includes(p.id) ? 'checked' : ''} ${c.fixo || !D.dono_site ? 'disabled' : ''} aria-label="${esc(c.nome)}: ${esc(p.nome)}"></td>`).join('')}</tr>`).join('')}</tbody>`;

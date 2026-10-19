@@ -493,7 +493,7 @@ A **Área de trabalho** junta o **SAC** e a **Moderação do chat** num lugar s�
 
 **Funções que cada cargo pode ter:** SAC · Moderação do chat (advertir e bloquear mensagens) · Suspender e banir · Postar anúncios · Gerenciar a equipe.
 
-**Onde mudar:** Painel → Área de trabalho (equipe) → **Equipe (staff)** → aba **Cargos e permissões**. Marque, uma a uma, o que cada cargo pode fazer e clique em **Salvar permissões**. Só o Proprietário (dono do site) muda essa tabela; quem gerencia a equipe só consegue ver.
+**Onde mudar:** Painel → Área de trabalho (equipe) → **Equipe (staff)** → aba **Cargos e permissões**. Marque, uma a uma, o que cada cargo pode fazer e clique em **Salvar permissões**. Só o Proprietário (dono do site) muda essa tabela. A aba só aparece para o dono, para Proprietários e para Gerentes (que só conseguem ver); os outros cargos não a veem.
 
 Padrão inicial: Gerente (tudo), Admin (tudo menos gerenciar a equipe), Moderador (Moderação do chat), Suporte (SAC).
 

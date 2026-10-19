@@ -995,7 +995,7 @@ body.pf-body {
 .pf-moldura-anim-neon { background: #0c2a33; }
 .pf-moldura-anim-neon::after { background-image: url("/images/molduras/anim-neon.svg?v=2"); }
 .pf-moldura-anim-chamas { background: #3b0a00; }
-.pf-moldura-anim-chamas::after { background-image: url("/images/molduras/anim-chamas.svg?v=2"); }
+.pf-moldura-anim-chamas::after { background-image: url("/images/molduras/anim-chamas.svg?v=3"); }
 .pf-moldura-anim-raios { background: #2b0a5c; }
 .pf-moldura-anim-raios::after { background-image: url("/images/molduras/anim-raios.svg?v=2"); }
 .pf-moldura-anim-espinhos { background: #1a0006; }
@@ -2268,3 +2268,30 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 /* Efeitos da Loja de cosméticos na miniatura da Comunidade: o efeito fica por baixo do conteúdo do cartão */
 .comu-pop .pf-efeito { z-index: 0; }
 .comu-pop-corpo { position: relative; z-index: 1; }
+
+/* Loja de cosméticos: janela mais compacta, sem barra de rolagem visível (continua rolando) e ícones de linha */
+.cos-dlg { width: min(940px, calc(100% - 20px)); max-height: calc(100dvh - 40px); scrollbar-width: none; }
+.cos-dlg::-webkit-scrollbar { display: none; }
+.cos-dlg .cos-page { padding: 18px 18px 22px; gap: 14px; }
+.cos-dlg .cos-topo h1 { font-size: 20px; margin-bottom: 4px; }
+.cos-dlg .cos-topo p { font-size: 13px; max-width: 560px; }
+.cos-dlg .cos-saldo { padding: 8px 12px; }
+.cos-dlg .cos-saldo b { font-size: 18px; }
+.cos-dlg .cos-saldo .cos-moeda { width: 22px; height: 22px; }
+.cos-dlg .cos-abas button { font-size: 13px; padding: 7px 13px; }
+.cos-dlg .cos-grade { grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 12px; }
+.cos-dlg .cos-palco { height: 132px; }
+.cos-dlg .cos-palco .pf-avatar[style*="--tam:96px"] { --tam: 76px !important; }
+.cos-dlg .cos-palco-topo .pf-avatar { --tam: 46px !important; }
+.cos-dlg .cos-palco-nome { font-size: 15px; }
+.cos-dlg .cos-nome-grande { font-size: 21px; }
+.cos-dlg .cos-info { padding: 11px 12px 12px; gap: 6px; }
+.cos-dlg .cos-info h2 { font-size: 15px; }
+.cos-dlg .cos-info p { font-size: 12.5px; line-height: 1.4; }
+.cos-dlg .cos-info .btn { padding-top: 8px; padding-bottom: 8px; font-size: 13.5px; }
+.cos-dlg .cos-missoes, .cos-dlg .cos-videos { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); }
+.cos-dlg-fechar { width: 34px; height: 34px; margin: 10px 10px -44px 0; }
+.cos-abas button, .cos-video .btn, .pf-loja-btn, .pf-loja-chamada .btn { display: inline-flex; align-items: center; gap: 6px; }
+.cos-abas .ico-btn { width: 16px !important; height: 16px !important; }
+.cos-h1-ico { width: 22px !important; height: 22px !important; vertical-align: -3px; margin-right: 8px; color: var(--brand); }
+.cos-dlg .cos-h1-ico { width: 19px !important; height: 19px !important; }

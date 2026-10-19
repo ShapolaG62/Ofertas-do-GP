@@ -74,33 +74,49 @@ MOLDURAS['anim-neon'] = svg(`
  <rect class="corre" ${ARO} stroke="#fff" stroke-width="3.4" stroke-linecap="round" pathLength="100" stroke-dasharray="9 41" filter="url(#neon)"/>
  <rect class="corre" ${ARO} stroke="#fff" stroke-width="1.8" stroke-linecap="round" pathLength="100" stroke-dasharray="9 41"/>`);
 
-// 3) Chamas: brasa no aro e labaredas tremulando por fora (mais fortes embaixo), com fagulhas subindo
+// 3) Chamas: aro de brasa incandescente com calor pulsando; labaredas em duas camadas (fora vermelho-alaranjado,
+//    miolo amarelo) subindo pelas laterais e pelo alto, mais altas embaixo, e fagulhas subindo por fora da foto.
 semente = 23;
-const labareda = 'M0 0 C-5 -2 -6 -9 -3 -14 C-2 -10 0 -9 0 -9 C-1 -14 1 -19 4 -22 C3 -16 7 -12 6 -6 C6 -2 3 0 0 0Z';
+const labareda = 'M0 0 C-6 -2 -7.5 -10 -3.5 -16 C-3.2 -11.5 -1.2 -10.5 0 -12.5 C-1.2 -18.5 2 -25 5.5 -29 C4.2 -21 9.5 -16.5 8.4 -8.5 C7.8 -3.2 4.2 0 0 0Z';
+const miolo = 'M0.6 0 C-3 -1.5 -3.6 -6.5 -1.2 -10.5 C-0.8 -7.5 0.6 -7 1.4 -8.6 C0.8 -12.5 2.6 -16 4.6 -18 C4 -12.5 6.6 -9.5 5.8 -5 C5.4 -1.8 3.2 0 0.6 0Z';
+function chama(p, ang, s, cor) {
+  const dur = f(.55 + rnd() * .5), atraso = f(rnd());
+  return `<g transform="translate(${p.x} ${p.y}) rotate(${f(ang)}) scale(${s})">
+    <path class="chama" style="animation-delay:-${atraso}s;animation-duration:${dur}s" d="${labareda}" fill="url(#${cor})"/>
+    <path class="chama miolo" style="animation-delay:-${f(atraso + .2)}s;animation-duration:${f(dur * .8)}s" d="${miolo}" fill="url(#nucleo)"/></g>`;
+}
 MOLDURAS['anim-chamas'] = svg(`
-  .chama { animation: chama .9s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
-  .brasa { animation: brasa 1.6s ease-in-out infinite; }
-  .fagulha { animation: sobe 2.4s linear infinite; }
-  @keyframes chama { 0% { transform: scale(.85, .75) skewX(-4deg); } 50% { transform: scale(1.05, 1.15) skewX(3deg); } 100% { transform: scale(.95, 1.3) skewX(-2deg); } }
-  @keyframes brasa { 0%, 100% { opacity: .7; } 50% { opacity: 1; } }
-  @keyframes sobe { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-34px); opacity: 0; } }`,
-`<linearGradient id="fogo" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff3d00"/><stop offset=".5" stop-color="#ff9100"/><stop offset="1" stop-color="#ffe082"/></linearGradient>
- <linearGradient id="carvao" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b0a00"/><stop offset=".5" stop-color="#b33000"/><stop offset="1" stop-color="#3b0a00"/></linearGradient>
- <filter id="calor" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>`,
-`<rect ${ARO} stroke="#1a0500" stroke-width="10"/>
- <g class="brasa"><rect ${ARO} stroke="#ff6d00" stroke-width="8" filter="url(#calor)"/></g>
- <rect ${ARO} stroke="url(#carvao)" stroke-width="5"/>
- ${Array.from({ length: 34 }, (_, i) => {
-    // Fogo nas laterais e embaixo, subindo: nas laterais a chama se inclina para cima; no alto, só pontinhas
-    const p = ponto(i / 34, 2.5);
-    if (p.y < 32) return '';
-    const lado = p.x < 70 ? -1 : 1, ang = p.y > 112 ? lado * 25 : p.ang === 180 ? 0 : lado * (90 - Math.min(55, (p.y - 30) * .8));
-    const s = f((.55 + rnd() * .35) * (p.y > 112 ? .8 : .6 + (p.y - 30) / 160));
-    return `<g transform="translate(${p.x} ${p.y}) rotate(${f(ang)}) scale(${s})"><path class="chama" style="animation-delay:-${f(rnd())}s;animation-duration:${f(.6 + rnd() * .6)}s" d="${labareda}" fill="url(#fogo)" opacity=".92"/></g>`;
+  .chama { animation: chama .8s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+  .miolo { opacity: .95; }
+  .calor { animation: calor 1.4s ease-in-out infinite; }
+  .brasa { animation: brasa 2.2s linear infinite; }
+  .fagulha { animation: sobe 2.6s linear infinite; }
+  @keyframes chama { 0% { transform: scale(.82, .7) skewX(-6deg); } 40% { transform: scale(1.04, 1.08) skewX(4deg); } 100% { transform: scale(.94, 1.28) skewX(-3deg); } }
+  @keyframes calor { 0%, 100% { opacity: .55; } 50% { opacity: .95; } }
+  @keyframes brasa { to { stroke-dashoffset: -60; } }
+  @keyframes sobe { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translate(4px, -38px); opacity: 0; } }`,
+`<linearGradient id="fogo" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#c41d00"/><stop offset=".45" stop-color="#ff4d00"/><stop offset=".85" stop-color="#ff9800"/><stop offset="1" stop-color="#ffcc66" stop-opacity=".9"/></linearGradient>
+ <linearGradient id="fogo2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#e53900"/><stop offset=".6" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd54f"/></linearGradient>
+ <linearGradient id="nucleo" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff3c4"/><stop offset=".5" stop-color="#ffd54f"/><stop offset="1" stop-color="#ffab00" stop-opacity=".2"/></linearGradient>
+ <linearGradient id="carvao" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a0600"/><stop offset=".3" stop-color="#8a1c00"/><stop offset=".5" stop-color="#ff5a00"/><stop offset=".7" stop-color="#8a1c00"/><stop offset="1" stop-color="#2a0600"/></linearGradient>
+ <filter id="calor" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>`,
+`<g class="calor"><rect ${ARO} stroke="#ff5a00" stroke-width="15" filter="url(#calor)"/></g>
+ <rect ${ARO} stroke="#140300" stroke-width="10"/>
+ <rect ${ARO} stroke="url(#carvao)" stroke-width="6"/>
+ <rect class="brasa" ${ARO} stroke="#ffd180" stroke-width="1" stroke-dasharray="2 6 1 8 3 5" stroke-linecap="round" opacity=".5"/>
+ ${Array.from({ length: 30 }, (_, i) => {
+    // Camada de trás: labaredas maiores em volta (para cima no alto, inclinadas para cima nas laterais, curtas embaixo)
+    const p = ponto(i / 30 + .008, 3);
+    const lado = p.x < 70 ? -1 : 1;
+    let ang, s;
+    if (p.y < 26) { ang = (p.x - 70) * .3; s = .4 + rnd() * .2; }                         // alto: para cima
+    else if (p.y > 116) { ang = lado * (150 - rnd() * 20); s = .32 + rnd() * .14; }           // baixo: lambidas curtas
+    else { ang = lado * (46 - (p.y - 26) * .18); s = .55 + (p.y - 26) / 210 + rnd() * .2; }    // laterais: sobem
+    return chama(p, ang, f(s), rnd() < .5 ? 'fogo' : 'fogo2');
   }).join('')}
- ${Array.from({ length: 10 }, () => {
-    const lado = rnd() < .5, x = f(lado ? 4 + rnd() * 12 : 124 + rnd() * 12), y = f(90 + rnd() * 40); // nas laterais, por fora da foto
-    return `<circle class="fagulha" style="animation-delay:-${f(rnd() * 2.4)}s" cx="${x}" cy="${y}" r="${f(.6 + rnd() * .9)}" fill="#ffd54f"/>`;
+ ${Array.from({ length: 12 }, () => {
+    const lado = rnd() < .5, x = f(lado ? 3 + rnd() * 13 : 124 + rnd() * 13), y = f(70 + rnd() * 60);
+    return `<circle class="fagulha" style="animation-delay:-${f(rnd() * 2.6)}s" cx="${x}" cy="${y}" r="${f(.6 + rnd() * .9)}" fill="${rnd() < .5 ? '#ffd54f' : '#ff9100'}"/>`;
   }).join('')}`);
 
 // 4) Raios: aro roxo elétrico e raios que estalam nos cantos, um de cada vez

@@ -289,7 +289,7 @@
       <p class="pf-molduras-dica">As de temporada e datas comemorativas de 2027 são ganhas entrando no site durante o período; depois ficam suas para sempre.</p>
       <div class="pf-loja-chamada">
         <p class="pf-molduras-tit">Da Loja de cosméticos <small>molduras animadas compradas com moedas · você tem <b>${Number(P.moedas || 0).toLocaleString('pt-BR')}</b> moedas</small></p>
-        <a class="btn btn-sm btn-primary" href="/cosmeticos" data-abrir-loja>🛒 Abrir a loja</a>
+        <a class="btn btn-sm btn-primary" href="/cosmeticos" data-abrir-loja><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1 12h-11z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>Abrir a loja</a>
       </div>
       ${daLoja.length ? `<div class="pf-molduras-grupo">${daLoja.map(opMoldura).join('')}</div>` : '<p class="pf-vazio">Você ainda não comprou molduras animadas.</p>'}`;
   }

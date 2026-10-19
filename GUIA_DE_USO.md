@@ -522,17 +522,21 @@ Em **Editar perfil → Moldura da foto** há um grupo novo. Quem **entra no site
 | Black Friday 2027 | 22/11 a 29/11 | 🏷️ |
 | Natal 2027 | 15/12 a 26/12 | 🎄 |
 
-## 31. Molduras animadas
+## 31. Loja de cosméticos e molduras animadas
 
-Em **Editar perfil → Moldura da foto → Animadas** há 6 molduras com animação (estilo decoração de avatar do Discord), liberadas pelo nível do perfil:
+As 6 molduras animadas (estilo decoração de avatar do Discord) são compradas na **Loja de cosméticos** (`/cosmeticos`). Ela abre pelo botão **🛒 Loja de cosméticos** no menu de Minha conta, no topo do perfil e em Editar perfil → Abrir a loja.
 
-| Moldura | Nível | Animação |
+**Moedas:** cada XP ganho com as conquistas vira uma moeda. Saldo = XP total − o que já foi gasto. Gastar moedas **não tira** o XP nem o nível. Não há dinheiro real envolvido.
+
+| Moldura | Preço | Animação |
 |---|---|---|
-| Brilhos | 5 | aro arco-íris mudando de cor e estrelinhas piscando |
-| Neon | 10 | aro ciano pulsando e duas luzes correndo em volta |
-| Chamas | 18 | labaredas tremulando nas laterais e embaixo, fagulhas subindo |
-| Raios | 22 | aro elétrico e raios estalando nos cantos |
-| Espinhos | 30 | galho de espinhos com brilho vermelho pulsando e gotas caindo |
-| Galáxia | 40 | nebulosa com estrelas cintilando e planetas em órbita |
+| Brilhos | 250 | aro arco-íris mudando de cor e estrelinhas piscando |
+| Neon | 400 | aro ciano pulsando e duas luzes correndo em volta |
+| Chamas | 700 | labaredas tremulando nas laterais e embaixo, fagulhas subindo |
+| Raios | 900 | aro elétrico e raios estalando nos cantos |
+| Espinhos | 1.200 | galho de espinhos com brilho vermelho pulsando e gotas caindo |
+| Galáxia | 1.600 | nebulosa com estrelas cintilando e planetas em órbita |
 
-São SVGs com a animação dentro (`public/images/molduras/anim-*.svg`, gerados por `node video/molduras/animadas.js`). Para quem ativou "reduzir movimento" no sistema, as animações param. Os níveis ficam em `src/perfis.js` (lista `MOLDURAS`).
+Na loja, cada moldura aparece com a foto da própria pessoa; depois de comprar, dá para usar na hora. Em **Editar perfil → Moldura da foto**, as comuns e as de temporada ficam juntas, e as compradas aparecem em "Da Loja de cosméticos". O admin tem todas.
+
+Preços em `src/perfis.js` (lista `MOLDURAS`); as compras ficam na tabela `cosmeticos_compras`. Desenhos: `node video/molduras/animadas.js`. Para quem ativou "reduzir movimento" no sistema, as animações param.

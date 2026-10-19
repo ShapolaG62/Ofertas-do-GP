@@ -22,6 +22,21 @@ function exigirDono(req, res, next) {
 
 router.get(['/perfil', '/perfil/:slug'], (req, res) => res.sendFile(PAGINA)); // (o próprio perfil de conta do site vai para Minha conta: ver server.js)
 
+// Loja de cosméticos (molduras animadas compradas com moedas)
+router.get(['/cosmeticos', '/cosmeticos.html'], (req, res) => res.sendFile(path.join(__dirname, '..', '..', 'public', 'cosmeticos.html')));
+const compraLimiter = createLimiter(30, 60);
+router.get('/api/cosmeticos', exigirDono, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try { res.json(perfis.lojaCosmeticos(req.dono)); } catch (err) { sendError(res, err); }
+});
+router.post('/api/cosmeticos/:id/comprar', exigirDono, (req, res) => {
+  if (compraLimiter.hit(req.dono)) return res.status(429).json({ error: 'Muitas tentativas. Aguarde um pouco.' });
+  try { res.json(perfis.comprarCosmetico(req.dono, String(req.params.id))); } catch (err) { sendError(res, err); }
+});
+router.post('/api/cosmeticos/:id/equipar', exigirDono, (req, res) => {
+  try { res.json(perfis.equiparMoldura(req.dono, String(req.params.id))); } catch (err) { sendError(res, err); }
+});
+
 router.get('/api/perfil', exigirDono, (req, res) => {
   try { res.json(perfis.meu(req.dono)); } catch (err) { sendError(res, err); }
 });

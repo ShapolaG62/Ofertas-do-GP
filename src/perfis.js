@@ -46,13 +46,13 @@ const MOLDURAS = [
   { id: 'diamante', nome: 'Diamante', nivel: 25 },
   { id: 'pro', nome: 'Moldura do plano', especial: true }, // planos com "moldura exclusiva"
   { id: 'coroa', nome: 'Coroa do admin', plano: 'admin' },
-  // Animadas (estilo decoração do Discord), liberadas pelo nível
-  { id: 'anim-brilhos', nome: 'Brilhos', nivel: 5, animada: true },
-  { id: 'anim-neon', nome: 'Neon', nivel: 10, animada: true },
-  { id: 'anim-chamas', nome: 'Chamas', nivel: 18, animada: true },
-  { id: 'anim-raios', nome: 'Raios', nivel: 22, animada: true },
-  { id: 'anim-espinhos', nome: 'Espinhos', nivel: 30, animada: true },
-  { id: 'anim-galaxia', nome: 'Galáxia', nivel: 40, animada: true },
+  // Animadas (estilo decoração do Discord): compradas com moedas na Loja de cosméticos (/cosmeticos)
+  { id: 'anim-brilhos', nome: 'Brilhos', preco: 250, animada: true, desc: 'Aro arco-íris mudando de cor e estrelinhas piscando.' },
+  { id: 'anim-neon', nome: 'Neon', preco: 400, animada: true, desc: 'Aro ciano pulsando e duas luzes correndo em volta.' },
+  { id: 'anim-chamas', nome: 'Chamas', preco: 700, animada: true, desc: 'Labaredas tremulando nas laterais e fagulhas subindo.' },
+  { id: 'anim-raios', nome: 'Raios', preco: 900, animada: true, desc: 'Aro elétrico e raios estalando nos cantos.' },
+  { id: 'anim-espinhos', nome: 'Espinhos', preco: 1200, animada: true, desc: 'Galho de espinhos com brilho vermelho pulsando.' },
+  { id: 'anim-galaxia', nome: 'Galáxia', preco: 1600, animada: true, desc: 'Nebulosa com estrelas cintilando e planetas em órbita.' },
   // Temporada e datas comemorativas de 2027 (horário de Brasília): quem entra no site durante o período ganha a
   // moldura e fica com ela para sempre. Depois do fim, quem não ganhou não consegue mais.
   { id: 'temporada-1', nome: '1ª Temporada', evento: true, de: '2026-10-01', ate: '2027-03-31' },
@@ -66,6 +66,10 @@ const MOLDURAS = [
   { id: 'black-friday-2027', nome: 'Black Friday 2027', evento: true, de: '2027-11-22', ate: '2027-11-29' },
   { id: 'natal-2027', nome: 'Natal 2027', evento: true, de: '2027-12-15', ate: '2027-12-26' },
 ];
+// Loja de cosméticos: as moedas são o XP das conquistas menos o que já foi gasto (o XP e o nível não diminuem)
+db.db.exec(`CREATE TABLE IF NOT EXISTS cosmeticos_compras (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, dono TEXT NOT NULL, item TEXT NOT NULL, preco INTEGER NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE (dono, item))`);
 db.db.exec(`CREATE TABLE IF NOT EXISTS molduras_ganhas (
   dono TEXT NOT NULL, moldura TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (dono, moldura))`);
 const hojeBrasilia = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); // AAAA-MM-DD
@@ -84,13 +88,14 @@ function catalogoMolduras(pl, lim, nivelAtual, ganhas) {
   return MOLDURAS.filter(mo => mo.id !== 'coroa' || pl === 'admin').map(mo => {
     const livre = molduraLiberada(mo, pl, lim, nivelAtual, ganhas);
     let req = mo.especial ? 'planos com moldura' : mo.plano ? 'admin' : mo.nivel ? `nível ${mo.nivel}` : 'livre';
+    if (mo.animada) req = `${mo.preco} moedas na loja`;
     if (mo.evento) req = hoje > mo.ate ? 'evento encerrado' : hoje < mo.de ? `entre no site de ${diaMes(mo.de)} a ${diaMes(mo.ate)}` : 'disponível agora';
     return { id: mo.id, nome: mo.nome, livre, req, evento: Boolean(mo.evento), animada: Boolean(mo.animada), ...(mo.evento ? { de: mo.de, ate: mo.ate, ganha: ganhas.has(mo.id) } : {}) };
   });
 }
 function molduraLiberada(mo, pl, lim, nivelAtual, ganhas = new Set()) {
   if (pl === 'admin') return true;
-  if (mo.evento) return ganhas.has(mo.id);
+  if (mo.evento || mo.animada) return ganhas.has(mo.id); // de evento ou comprada na loja
   if (mo.plano) return mo.plano === pl;
   if (mo.especial) return Boolean(lim.moldura);
   return nivelAtual >= mo.nivel;
@@ -293,6 +298,7 @@ function montar(perfil, ctx, { proprio = false, admin = false, visitante = null 
   };
   if (proprio || admin) {
     out.limites = lim;
+    out.moedas = moedasDe(ctx.dono);
     out.opcoes = { cores: lim.cores, gradientes: GRADIENTES, molduras, catalogo_molduras: catalogoMolduras(pl, lim, av.nivel.nivel, ganhas), tipos_link: TIPOS_LINK, todos_planos: todosLimites() };
     out.vitrine_ids = json(perfil.vitrine, []);
   }
@@ -508,6 +514,48 @@ function visivel(ctx) {
   return ctx.user.status === 'active';
 }
 
+// ── Loja de cosméticos ───────────────────────────────────────────────────────
+function moedasDe(dono) {
+  const gasto = db.get('SELECT COALESCE(SUM(preco), 0) g FROM cosmeticos_compras WHERE dono = ?', dono).g;
+  return Math.max(0, xpDe(dono) - gasto);
+}
+function lojaCosmeticos(dono) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  const perfil = garantir(ctx);
+  const tem = molduraGanhas(dono);
+  const admin = ctx.tipo === 'admin';
+  return {
+    moedas: moedasDe(dono), xp: xpDe(dono), nome: perfil.nome, avatar: perfil.avatar || null, cor: perfil.cor, moldura: perfil.moldura || 'nenhuma',
+    itens: MOLDURAS.filter(mo => mo.animada).map(mo => ({ id: mo.id, nome: mo.nome, desc: mo.desc, preco: mo.preco, tipo: 'moldura',
+      possui: admin || tem.has(mo.id), equipada: perfil.moldura === mo.id })),
+  };
+}
+function comprarCosmetico(dono, itemId) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  const mo = MOLDURAS.find(m => m.id === itemId && m.animada);
+  if (!mo) throw fail('Item não encontrado.', 404);
+  if (ctx.tipo === 'admin' || molduraGanhas(dono).has(mo.id)) throw fail('Você já tem esta moldura.');
+  db.transaction(() => {
+    const saldo = moedasDe(dono);
+    if (saldo < mo.preco) throw fail(`Moedas insuficientes: faltam ${mo.preco - saldo}. Ganhe mais conquistas usando o site.`);
+    db.run('INSERT INTO cosmeticos_compras (dono, item, preco) VALUES (?, ?, ?)', dono, mo.id, mo.preco);
+    db.run('INSERT OR IGNORE INTO molduras_ganhas (dono, moldura) VALUES (?, ?)', dono, mo.id);
+  });
+  return lojaCosmeticos(dono);
+}
+function equiparMoldura(dono, itemId) {
+  const ctx = contexto(dono);
+  if (!ctx) throw fail('Perfil não encontrado.', 404);
+  const mo = MOLDURAS.find(m => m.id === itemId);
+  const perfil = garantir(ctx);
+  const pl = plano(ctx);
+  if (!mo || !molduraLiberada(mo, pl, limitesDe(pl), avaliar(ctx, perfil).nivel.nivel, molduraGanhas(dono))) throw fail('Esta moldura ainda não é sua.');
+  db.run('UPDATE perfis SET moldura = ?, updated_at = ? WHERE dono = ?', mo.id, nowSql(), dono);
+  return lojaCosmeticos(dono);
+}
+
 function xpDe(dono) {
   return db.all('SELECT conquista FROM conquistas_obtidas WHERE dono = ?', dono).reduce((t, r) => t + (POR_ID[r.conquista]?.xp || 0), 0);
 }
@@ -606,5 +654,5 @@ function garantirPerfil(dono) {
 
 module.exports = {
   garantirPerfil, donoDe, contexto, meu, porSlug, salvar, salvarImagem, removerImagem, incrementar,
-  registrarVenda, resumoAdmin, moderar, excluir, limitesDe, listar, mini, seguir,
+  registrarVenda, resumoAdmin, moderar, excluir, limitesDe, listar, mini, seguir, lojaCosmeticos, comprarCosmetico, equiparMoldura, moedasDe,
 };

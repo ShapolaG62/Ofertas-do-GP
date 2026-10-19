@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loja de cosméticos — Ofertou!</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0e1210">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261150">
+<script src="/js/app-nativo.js?v=20261150"></script>
+<script src="/js/dialogo.js?v=20261150"></script>
+<script src="/js/voltar.js?v=20261150" data-padrao="/perfil" defer></script>
+<script src="/js/rodape-legal.js?v=20261150" defer></script>
+<script src="/js/cookies.js?v=20261150"></script>
+</head>
+<body class="pf-body">
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/" aria-label="Ofertou! — ofertas">
+      <img src="/images/capi-76.png" alt="" width="38" height="38">
+      <span class="brand-name">Ofertou<b>!</b></span>
+    </a>
+    <div class="header-actions">
+      <a class="btn btn-sm" href="/">Ver ofertas</a>
+      <a class="btn btn-sm" href="/perfil">Meu perfil</a>
+    </div>
+  </div>
+</header>
+
+<main class="container cos-page">
+  <section class="cos-topo">
+    <div>
+      <h1>Loja de cosméticos</h1>
+      <p class="muted">Molduras animadas para a sua foto. Compre com <b>moedas</b>: cada XP que você ganha com as conquistas vira uma moeda. Gastar moedas não tira o seu nível.</p>
+    </div>
+    <div class="cos-saldo" aria-live="polite"><span class="cos-moeda" aria-hidden="true"></span><div><b id="cos-moedas">—</b><small>moedas</small></div></div>
+  </section>
+  <div class="cos-grade" id="cos-grade"><p class="muted">Carregando…</p></div>
+  <p class="cos-nota muted">Como ganhar moedas: use o site e desbloqueie conquistas (veja em <a href="/perfil">Meu perfil → Conquistas</a>). As molduras compradas aparecem também em <b>Editar perfil → Moldura da foto</b>.</p>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/js/cosmeticos.js?v=20261150" defer></script>
+</body>
+</html>

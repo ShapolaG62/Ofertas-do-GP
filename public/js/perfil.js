@@ -271,17 +271,21 @@
     }).join('');
     // Molduras liberadas
     escolhaMoldura = P.moldura;
-    // Molduras: as de nível e plano, e as da temporada e das datas comemorativas (ganhas entrando no site no período)
+    // Molduras: comuns (nível e plano) junto com as da temporada e das datas comemorativas (ganhas entrando no site no
+    // período); as animadas são compradas com moedas na Loja de cosméticos e aparecem aqui depois de compradas.
     const catalogo = P.opcoes.catalogo_molduras || [];
+    const daLoja = catalogo.filter(m => m.animada && m.livre);
     const opMoldura = m => `<button type="button" class="pf-mold-op${m.id === escolhaMoldura ? ' is-sel' : ''}" data-moldura="${esc(m.id)}" ${m.livre ? '' : 'disabled'}
         title="${esc(m.nome)}${m.evento ? ` — ${m.livre ? 'ganha' : esc(m.req)}` : ''}">
         <span class="pf-avatar pf-moldura-${esc(m.id)}"><span class="pf-avatar-letra">${esc(P.nome[0] || '?')}</span></span>
         <small>${esc(m.nome)}${m.livre ? (m.evento ? (m.ganha ? '<br>✓ ganha' : '<br>liberada') : '') : `<br>🔒 ${esc(m.req)}`}</small></button>`;
-    $('#pf-molduras').innerHTML = `<div class="pf-molduras-grupo">${catalogo.filter(m => !m.evento && !m.animada).map(opMoldura).join('')}</div>
-      <p class="pf-molduras-tit">Animadas <small>liberadas conforme o seu nível sobe</small></p>
-      <div class="pf-molduras-grupo">${catalogo.filter(m => m.animada).map(opMoldura).join('')}</div>
-      <p class="pf-molduras-tit">Temporada e datas comemorativas de 2027 <small>entre no site durante o período para ganhar; depois ela é sua para sempre</small></p>
-      <div class="pf-molduras-grupo">${catalogo.filter(m => m.evento).map(opMoldura).join('')}</div>`;
+    $('#pf-molduras').innerHTML = `<div class="pf-molduras-grupo">${catalogo.filter(m => !m.animada).map(opMoldura).join('')}</div>
+      <p class="pf-molduras-dica">As de temporada e datas comemorativas de 2027 são ganhas entrando no site durante o período; depois ficam suas para sempre.</p>
+      <div class="pf-loja-chamada">
+        <p class="pf-molduras-tit">Da Loja de cosméticos <small>molduras animadas compradas com moedas · você tem <b>${Number(P.moedas || 0).toLocaleString('pt-BR')}</b> moedas</small></p>
+        <a class="btn btn-sm btn-primary" href="/cosmeticos">🛒 Abrir a loja</a>
+      </div>
+      ${daLoja.length ? `<div class="pf-molduras-grupo">${daLoja.map(opMoldura).join('')}</div>` : '<p class="pf-vazio">Você ainda não comprou molduras animadas.</p>'}`;
 
     // Vitrine
     const obtidas = P.conquistas.familias.flatMap(fm => fm.itens).filter(c => c.obtida);

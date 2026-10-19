@@ -12,7 +12,6 @@
 //  • Cada pedido é um ticket (PD-000123) com todos os eventos e as mensagens automáticas na conversa com a loja.
 //  • "Finalização de compra" = pedido com pagamento confirmado. Aparece para o dono da loja e no painel.
 //  • Contadores por dia: acessos à página da loja, produtos abertos no catálogo, cliques no site oficial e nos links.
-const crypto = require('crypto');
 const axios = require('axios');
 const db = require('./db');
 const chat = require('./chat');
@@ -87,14 +86,6 @@ db.db.exec(`${SQL_PEDIDOS};
     quem TEXT,
     evento TEXT NOT NULL,
     detalhe TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-  CREATE TABLE IF NOT EXISTS taxa_quitacoes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    loja_id INTEGER NOT NULL,
-    valor REAL NOT NULL,
-    pedidos INTEGER NOT NULL,
-    observacao TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS loja_metricas (
@@ -176,26 +167,6 @@ function metodosDaLoja(l) {
 }
 const publicoLoja = l => ({ aceita_pedidos: Boolean(l.aceita_pedidos) && metodosDaLoja(l).length > 0, metodos: metodosDaLoja(l), instrucoes: l.pedido_instrucoes || '',
   taxa_pct: taxaPct(), mp_public_key: l.mp_public_key || null, parcelas: parcelas() });
-
-// ── Pix "copia e cola" estático (usado no Pix da taxa de pedidos antigos) ────
-function crc16(s) {
-  let crc = 0xffff;
-  for (let i = 0; i < s.length; i++) {
-    crc ^= s.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
-  }
-  return crc.toString(16).toUpperCase().padStart(4, '0');
-}
-const campo = (id, v) => `${id}${String(v.length).padStart(2, '0')}${v}`;
-const semAcento = t => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9 .-]/g, '').toUpperCase();
-function pixCopiaECola({ chave, nome, cidade, valor, txid }) {
-  const conta = campo('00', 'br.gov.bcb.pix') + campo('01', chave);
-  const corpo = campo('00', '01') + campo('26', conta) + campo('52', '0000') + campo('53', '986')
-    + campo('54', Number(valor).toFixed(2)) + campo('58', 'BR') + campo('59', semAcento(nome).slice(0, 25) || 'LOJA')
-    + campo('60', semAcento(cidade).slice(0, 15) || 'BRASIL') + campo('62', campo('05', String(txid).replace(/[^A-Za-z0-9]/g, '').slice(0, 25) || '***'));
-  const semCrc = `${corpo}6304`;
-  return semCrc + crc16(semCrc);
-}
 
 // ── Pedidos ─────────────────────────────────────────────────────────────────
 function evento(pedidoId, quem, ev, detalhe = null) {
@@ -288,10 +259,9 @@ const RECUSAS = {
 };
 const motivoRecusa = d => `Pagamento recusado. ${RECUSAS[d] || 'Tente outro cartão ou pague com Pix.'}`;
 
-// Quem pode fazer o quê (e para qual situação vai). Pagamentos pelo Mercado Pago do site são confirmados sozinhos;
-// "informar"/"confirmar pagamento" ficam só para pedidos antigos (de antes da confirmação automática).
+// Quem pode fazer o quê (e para qual situação vai). O pagamento é confirmado sozinho pelo Mercado Pago
+// ("confirmar_pagamento" é a mudança que a conferência automática faz; a loja não usa à mão).
 const ACOES = {
-  informar_pagamento: { quem: 'comprador', de: ['aguardando_pagamento'], para: 'pagamento_informado', msg: 'O cliente informou que pagou o pedido', antigo: true },
   confirmar_pagamento: { quem: 'loja', de: ['aguardando_pagamento', 'pagamento_informado'], para: 'pago', msg: 'A loja confirmou o pagamento do pedido', antigo: true },
   enviado: { quem: 'loja', de: ['pago'], para: 'enviado', msg: 'A loja marcou como enviado o pedido' },
   concluido: { quem: 'loja', de: ['pago', 'enviado'], para: 'concluido', msg: 'A loja concluiu o pedido' },
@@ -335,10 +305,6 @@ function mudar(p, nome, quem, eu, motivo = '') {
     chat.avisarPorEmail(donoLoja, `Pedido ${codigo(p.id)} pago — ${loja.nome} — Ofertou!`, `O pagamento do pedido ${codigo(p.id)} foi confirmado.\n\n${texto}`);
     notificacoes.criar(p.comprador, { tipo: 'pedido_pago', titulo: `Pagamento do pedido ${codigo(p.id)} confirmado`, texto: `${p.produto} — ${loja.nome}`, link: `/mensagens?c=${p.conversa_id}&pedido=${p.id}` });
     chat.avisarPorEmail(p.comprador, `Pagamento confirmado — pedido ${codigo(p.id)} — Ofertou!`, `O pagamento do seu pedido ${codigo(p.id)} (${p.produto}) foi confirmado. A loja ${loja.nome} vai preparar o envio.`);
-  }
-  if (nome === 'informar_pagamento') {
-    const l = db.get('SELECT user_id FROM lojas WHERE id = ?', p.loja_id);
-    chat.avisarPorEmail(`u:${l.user_id}`, `Pagamento informado — pedido ${codigo(p.id)} — Ofertou!`, `O cliente informou que pagou o pedido ${codigo(p.id)} (${p.produto}, ${brl(p.total)}). Confira e confirme no site.`);
   }
 }
 
@@ -468,27 +434,9 @@ function pedidosDaLoja(user) {
 // ── Taxa de uso do site: quanto cada loja gerou (pedidos novos: separada pelo Mercado Pago na hora) ──
 const FIN_SQL = `status IN ('pago', 'enviado', 'concluido')`;
 function taxas(lojaId) {
-  const q = (where, ...p) => db.get(`SELECT COUNT(*) n, COALESCE(SUM(taxa_valor), 0) v FROM pedidos_loja WHERE loja_id = ? AND ${FIN_SQL} AND taxa_valor > 0 AND ${where}`, lojaId, ...p);
-  const auto = q(`taxa_modo IN ('site', 'split')`), quitadas = q(`taxa_modo = 'debito' AND taxa_quitada = 1`), pendentes = q(`taxa_modo = 'debito' AND taxa_quitada = 0`);
-  const loja = db.get('SELECT taxa_aviso_em FROM lojas WHERE id = ?', lojaId) || {};
-  return {
-    pct: taxaPct(), total: r2(auto.v + quitadas.v + pendentes.v),
-    automaticas: { n: auto.n, valor: r2(auto.v) }, quitadas: { n: quitadas.n, valor: r2(quitadas.v) }, a_pagar: { n: pendentes.n, valor: r2(pendentes.v) },
-    aviso_pagamento_em: loja.taxa_aviso_em || null,
-  };
+  const t = db.get(`SELECT COUNT(*) n, COALESCE(SUM(taxa_valor), 0) v FROM pedidos_loja WHERE loja_id = ? AND ${FIN_SQL} AND taxa_valor > 0`, lojaId);
+  return { pct: taxaPct(), total: r2(t.v), pedidos: t.n };
 }
-// Admin: dá baixa em taxas de pedidos antigos (de antes do pagamento pelo site) recebidas por Pix
-function quitarTaxas(lojaId, observacao = '') {
-  const t = taxas(Number(lojaId));
-  if (!(t.a_pagar.valor > 0)) throw fail('Esta loja não tem taxa pendente.');
-  db.transaction(() => {
-    db.run(`UPDATE pedidos_loja SET taxa_quitada = 1, taxa_quitada_em = datetime('now') WHERE loja_id = ? AND ${FIN_SQL} AND taxa_modo = 'debito' AND taxa_quitada = 0 AND taxa_valor > 0`, Number(lojaId));
-    db.run('INSERT INTO taxa_quitacoes (loja_id, valor, pedidos, observacao) VALUES (?, ?, ?, ?)', Number(lojaId), t.a_pagar.valor, t.a_pagar.n, txt(observacao, 200) || null);
-    db.run('UPDATE lojas SET taxa_aviso_em = NULL WHERE id = ?', Number(lojaId));
-  });
-  return taxas(Number(lojaId));
-}
-
 // ── Contadores de acesso ────────────────────────────────────────────────────
 const TIPOS_METRICA = ['pagina', 'produto', 'site', 'link'];
 const vistos = new Map(); // ip|loja|tipo|oferta → quando (conta uma vez a cada 30 min por visitante)
@@ -591,6 +539,6 @@ function detalheAdmin(id) {
 }
 
 module.exports = {
-  mp, parcelas, chavePublica, codigo, STATUS, METODOS, FINALIZADOS, taxaPct, gatewayPronto, salvarPagamento, configPagamento, publicoLoja, pixCopiaECola, criar, acao, detalhe,
-  verificarMP, iniciar, reputacao, meusPedidos, pedidosDaLoja, registrarVisita, metricas, taxas, quitarTaxas, listarAdmin, detalheAdmin, motivoRecusa,
+  mp, parcelas, chavePublica, codigo, STATUS, METODOS, FINALIZADOS, taxaPct, gatewayPronto, salvarPagamento, configPagamento, publicoLoja, criar, acao, detalhe,
+  verificarMP, iniciar, reputacao, meusPedidos, pedidosDaLoja, registrarVisita, metricas, taxas, listarAdmin, detalheAdmin, motivoRecusa,
 };

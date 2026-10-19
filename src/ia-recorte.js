@@ -119,31 +119,6 @@ function temTextoSolto(rgba, w, h) {
   return pedacinhos > 6 || seloSolto || maior / total < 0.45;
 }
 
-// Recorta o produto: devolve PNG/WebP com fundo transparente, ou lança erro se o recorte não for confiável.
-async function recortarIA(foto) {
-  const { data: rgb, info } = await sharp(foto, { failOn: 'none' }).rotate().flatten({ background: '#ffffff' })
-    .resize(900, 900, { fit: 'inside' }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const { width: w, height: h } = info;
-  const m = await mascara(rgb, w, h);
-  if (!m) throw new Error('IA indisponível');
-  // Limpa o "véu" fraco em volta e deixa a borda nítida, mas suave (sem serrilhado).
-  const rgba = Buffer.alloc(w * h * 4);
-  let produto = 0, incerto = 0;
-  for (let i = 0; i < w * h; i++) {
-    const a = Math.max(0, Math.min(255, Math.round((m[i] - 25) * 255 / 205)));
-    rgba[i * 4] = rgb[i * 3]; rgba[i * 4 + 1] = rgb[i * 3 + 1]; rgba[i * 4 + 2] = rgb[i * 3 + 2]; rgba[i * 4 + 3] = a;
-    if (a > 128) produto++;
-    if (a > 40 && a < 215) incerto++;
-  }
-  const area = produto / (w * h);
-  // Recorte confiável: o produto ocupa uma parte razoável da foto e a borda da máscara é bem definida.
-  if (area < 0.05 || area > 0.95) throw new Error('recorte ruim');
-  if (incerto / Math.max(produto, 1) > 0.25) throw new Error('recorte incerto');
-  if (temTextoSolto(rgba, w, h)) throw new Error('foto com textos ou selos');
-  return sharp(rgba, { raw: { width: w, height: h, channels: 4 } }).trim({ threshold: 8 })
-    .resize(560, 560, { fit: 'inside' }).webp({ quality: 86, alphaQuality: 92, effort: 5 }).toBuffer();
-}
-
 // Fotos de estúdio (fundo branco ou quase branco, o caso da maioria das lojas): recorte "à prova de cortes".
 // A IA sozinha às vezes apaga partes do produto (ex.: a pulseira escura atrás de um relógio). Aqui, o que tem cor
 // claramente diferente do fundo NUNCA é removido; a IA só decide os pixels parecidos com o fundo (vãos fechados,
@@ -254,4 +229,4 @@ async function recortarEstudio(foto) {
     .resize(560, 560, { fit: 'inside' }).webp({ quality: 86, alphaQuality: 92, effort: 5 }).toBuffer();
 }
 
-module.exports = { disponivel, recortarIA, recortarEstudio, garantirModelo, ARQUIVO };
+module.exports = { disponivel, recortarEstudio, garantirModelo, ARQUIVO };

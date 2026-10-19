@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const db = require('./db');
-const settings = require('./settings');
 const offers = require('./offers');
 const lojas = require('./lojas');
 const { assertPublicUrl } = require('./net');

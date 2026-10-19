@@ -504,7 +504,7 @@
 
   // ── Vendas e pagamentos da loja / Meus pedidos ───────────────────────────
   const ROTULO_ACAO = {
-    informar_pagamento: 'Já paguei', confirmar_pagamento: 'Confirmar pagamento', enviado: 'Marcar como enviado',
+    confirmar_pagamento: 'Confirmar pagamento', enviado: 'Marcar como enviado',
     concluido: 'Concluir', recebido: 'Recebi o pedido', cancelar: 'Cancelar',
   };
   const linhaPedido = p => `<div class="vendas-pedido">

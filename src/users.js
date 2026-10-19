@@ -19,7 +19,6 @@ const NOME_TIPO = { consumidor: 'consumidores', empresa: 'empresas', afiliado: '
 const SIGNUP_MODES = ['aberto', 'aprovacao', 'fechado'];
 
 // SQL reutilizado: conta liberada (ativa ou com suspensão já vencida)
-const ACTIVE_SQL = alias => `(${alias}.status = 'active' OR (${alias}.status = 'suspended' AND ${alias}.suspenso_ate <= datetime('now')))`;
 
 const normalizeEmail = e => String(e || '').trim().toLowerCase();
 const fmtDate = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '');
@@ -415,7 +414,7 @@ function detailForAdmin(id) {
 module.exports = {
   planoVencido, erroPlanoVencido,
   renovarSessao,
-  ACTIVE_SQL, TIPOS, SIGNUP_MODES, signupMode, register, login, createSession, destroySession, currentUser,
+  TIPOS, SIGNUP_MODES, signupMode, register, login, createSession, destroySession, currentUser,
   requireUser, requireActive, loginWithGoogle, completeProfile, publicUser, updateProfile, changePassword, deleteOwnAccount, moderate, listForAdmin, detailForAdmin,
   getById, logAction,
 };

@@ -176,10 +176,9 @@
   .side { position: sticky; top: 16px; display: grid; gap: 2px; padding: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); max-height: calc(100vh - 32px); overflow-y: auto; scrollbar-width: none; }
   .side::-webkit-scrollbar { display: none; }
   .side-grupo { margin: 12px 10px 4px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
-  .side .tab, .side .side-link { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border-radius: 10px; border: 1px solid transparent; background: none; color: var(--muted); font-weight: 700; cursor: pointer; }
-  .side .tab span:not(.count-badge), .side .side-link span:not(.count-badge) { flex: 1; }
-  .side .side-link { text-decoration: none; }
-  .side .tab:hover, .side .side-link:hover { background: var(--surface-2); color: var(--text); }
+  .side .tab { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; border-radius: 10px; border: 1px solid transparent; background: none; color: var(--muted); font-weight: 700; cursor: pointer; }
+  .side .tab span:not(.count-badge) { flex: 1; }
+  .side .tab:hover { background: var(--surface-2); color: var(--text); }
   .side .tab.active { background: var(--green-soft); border-color: var(--green-line); color: var(--green); }
   .tab-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
   .conteudo { min-width: 0; }
@@ -194,7 +193,7 @@
     .layout { grid-template-columns: 1fr; gap: 12px; }
     .side { position: sticky; top: 0; z-index: 5; display: flex; overflow-x: auto; overflow-y: hidden; padding: 6px; gap: 4px; max-height: none; border-radius: 12px; }
     .side-grupo { display: none; }
-    .side .tab, .side .side-link { width: auto; white-space: nowrap; padding: 8px 12px; }
+    .side .tab { width: auto; white-space: nowrap; padding: 8px 12px; }
   }
   /* ── Dashboard ── */
   .db-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -214,7 +213,6 @@
   .db-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .db-grade .panel { margin: 0; display: grid; gap: 12px; align-content: start; min-width: 0; }
   .db-grade .panel h2 { margin: 0; }
-  .db-larga { grid-column: 1 / -1; }
   .db-acoes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .db-acoes button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); text-align: left; cursor: pointer; font-size: 13.5px; }
   .db-acoes button:hover { border-color: var(--green-line); }
@@ -1999,9 +1997,7 @@ async function loadAtendimento() {
     <td class="num">${brl(l.finalizacoes.valor)}</td><td class="num">${l.pedidos}</td><td class="num">${l.conversas}</td>
     <td class="num">${l.acessos30} / ${l.acessos}</td><td class="num">${l.produtos30}</td><td class="num">${l.site30}</td>
     <td>${l.mp_conectado ? `<span class="badge b-active">Conectado</span>${l.mp_erro ? '<br><span class="hint" style="margin:0">renovação falhou</span>' : ''}` : '<span class="badge b-pending">Não conectado</span>'}</td>
-    <td class="num">${l.taxas.total ? `total ${brl(l.taxas.total)}<br><span class="hint" style="margin:0">automática ${brl(l.taxas.automaticas.valor)} · repassada ${brl(l.taxas.quitadas.valor)}</span>` : '—'}
-      ${l.taxas.a_pagar.valor > 0 ? `<br><b style="color:var(--yellow)">a receber ${brl(l.taxas.a_pagar.valor)}</b>${l.taxas.aviso_pagamento_em ? ' <span class="tag">loja avisou que pagou</span>' : ''}
-        <br><button class="btn small primary" type="button" data-quitar="${l.id}" data-valor="${l.taxas.a_pagar.valor}">Recebi</button>` : ''}</td></tr>`).join('')
+    <td class="num">${l.taxas.total ? `${brl(l.taxas.total)}<br><span class="hint" style="margin:0">${l.taxas.pedidos} pedido(s)</span>` : '—'}</td></tr>`).join('')
     : '<tr><td colspan="10" class="hint">Nenhuma loja cadastrada.</td></tr>';
   const tx = d.taxa;
   $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(tx.pct).replace('.', ',')}%</b> · Endereço de retorno para cadastrar na aplicação: <code>${esc(tx.retorno)}</code><br>`
@@ -2013,17 +2009,6 @@ async function loadAtendimento() {
 $('#at-form').addEventListener('submit', e => { e.preventDefault(); buscarTicket().catch(err => globalMsg(err.message, false)); });
 $('#at-limpar').addEventListener('click', () => { $('#at-busca').value = ''; buscarTicket(); $('#at-busca').focus(); });
 $('#at-busca').addEventListener('search', () => { if (!$('#at-busca').value) buscarTicket(); });
-$('#at-lojas').addEventListener('click', async e => {
-  const b = e.target.closest('[data-quitar]');
-  if (!b) return;
-  if (!await OfertouUI.confirmar(`Confirmar que você recebeu ${brl(Number(b.dataset.valor))} de taxa desta loja?`)) return;
-  try {
-    await api(`/api/admin/taxas/${b.dataset.quitar}/quitar`, { method: 'POST', body: {} });
-    globalMsg('Baixa registrada.');
-    loadAtendimento();
-  } catch (err) { globalMsg(err.message, false); }
-});
-
 async function abrirTicket(tipo, id) {
   const body = $('#tk-body');
   if (tipo === 'conversa') {

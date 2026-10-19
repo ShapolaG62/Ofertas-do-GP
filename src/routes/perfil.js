@@ -6,7 +6,6 @@ const perfis = require('../perfis');
 const auth = require('../auth');
 const db = require('../db');
 const clientes = require('../clientes');
-const settings = require('../settings');
 const { createLimiter } = require('../ratelimit');
 
 const router = express.Router();

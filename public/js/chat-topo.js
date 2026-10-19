@@ -179,7 +179,7 @@
   // Pedidos: a última mensagem de cada pedido mostra o cartão (situação, valores, Pix/pagamento e ações)
   const PEDIDOS = {};
   const ROTULO = {
-    informar_pagamento: ['Já paguei', 'btn-primary'], confirmar_pagamento: ['Confirmar pagamento recebido', 'btn-primary'],
+    confirmar_pagamento: ['Confirmar pagamento recebido', 'btn-primary'],
     enviado: ['Marcar como enviado', ''], concluido: ['Concluir pedido', ''], recebido: ['Recebi o pedido', 'btn-primary'], cancelar: ['Cancelar pedido', 'danger-txt'],
   };
   function cartaoPedido(p) {

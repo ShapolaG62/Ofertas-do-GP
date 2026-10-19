@@ -15,9 +15,8 @@ db.db.exec(`
 
 const MAX_CARTOES = 5;
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
-let mpChamada = null; // permite trocar a chamada ao Mercado Pago nos testes
-const mp = (method, path, data, headers = {}) => (mpChamada
-  || ((m, p, d, h) => require('./pagamentos').mp(m, p, d, require('./settings').getAll(), h)))(method, path, data, headers);
+// Chamada ao Mercado Pago do site (os cartões ficam guardados nele)
+const mp = (method, path, data, headers = {}) => require('./pagamentos').mp(method, path, data, require('./settings').getAll(), headers);
 
 function resumo(c) {
   return {
@@ -89,4 +88,4 @@ async function paraPagamento(dono, cardId) {
   return { customer_id: clienteSalvo(dono), payment_method_id: c.payment_method_id, issuer_id: c.issuer_id, cartao: c };
 }
 
-module.exports = { listar, adicionar, remover, paraPagamento, MAX_CARTOES, _trocarMp: f => { mpChamada = f; } };
+module.exports = { listar, adicionar, remover, paraPagamento, MAX_CARTOES };

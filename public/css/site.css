@@ -390,11 +390,6 @@ dialog::backdrop { background: rgba(10, 14, 12, .5); }
 .account-nav button[aria-current="true"] { background: var(--brand-soft); color: var(--brand-strong); }
 .account-nav button:hover { background: var(--surface-3); }
 
-.store-hero { display: flex; gap: 20px; align-items: center; padding: 28px 0 8px; }
-.store-logo { width: 88px; height: 88px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); object-fit: contain; display: grid; place-items: center; font-size: 34px; font-weight: 800; color: var(--brand); flex-shrink: 0; overflow: hidden; }
-.store-hero h1 { margin: 0 0 4px; font-size: 30px; letter-spacing: -.02em; }
-.store-hero p { margin: 0; color: var(--ink-2); max-width: 70ch; }
-.partner-note { font-size: 13px; color: var(--ink-3); margin: 6px 0 0; }
 
 @media (max-width: 860px) {
   .account-grid { grid-template-columns: 1fr; }
@@ -1161,7 +1156,6 @@ body.pf-body {
   .pf-link-row { grid-template-columns: 1fr auto; }
   .pf-link-row select { grid-column: 1 / -1; }
 }
-.pf-nav-link { display: block; margin-top: 8px; padding: 10px 12px; border-radius: 8px; font-weight: 700; color: var(--brand-strong); background: var(--brand-soft); }
 .cli-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 .form-msg .form-reativar { margin-top: 10px; color: #fff; }
@@ -1254,15 +1248,10 @@ body.pf-body {
 /* ── Mensagens no topo ─────────────────────────────────────────────── */
 .chat-topo { position: relative; gap: 6px; }
 .chat-topo[hidden] { display: none; }
-.chat-topo-n { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; }
-.chat-topo-n[hidden] { display: none; }
-@media (max-width: 720px) { .chat-topo-txt { display: none; } }
 .danger-txt { color: var(--deal); }
 
 /* ── Catálogo da loja e prévia do produto ─────────────────────────────── */
 .card-btn { text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0; }
-.store-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.store-pag { margin: 8px 0 0; font-size: 13px; }
 .prod-dlg { width: min(920px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); }
 .prod-dlg::backdrop { background: rgba(0, 0, 0, .6); }
 .prod-fechar { position: sticky; top: 10px; float: right; margin: 10px 10px 0 0; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; z-index: 2; font-size: 16px; }
@@ -1293,7 +1282,6 @@ body.pf-body {
 .prod-resumo div { display: grid; gap: 2px; font-size: 14px; }
 .prod-metodos { border: 0; padding: 0; margin: 0; }
 .prod-metodos legend { font-size: 13px; font-weight: 600; color: var(--ink-2); }
-.prod-total { margin: 0; font-size: 15px; }
 @media (max-width: 720px) { .prod-grid { grid-template-columns: 1fr; } .prod-corpo { padding: 16px; } }
 
 /* ── Página de mensagens ─────────────────────────────────────────────── */
@@ -1375,8 +1363,6 @@ body.pf-body {
 .vendas-pedido { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .vendas-pedido > div { flex: 1; min-width: 200px; display: grid; gap: 2px; font-size: 13.5px; }
 .pf-catalogo .grid { margin-top: 10px; }
-.vendas-bloco { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px 14px; display: grid; gap: 10px; }
-.vendas-bloco legend { padding: 0 6px; }
 
 .prod-conta { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; font-size: 14px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
 .prod-conta dt { color: var(--ink-2); }
@@ -1490,8 +1476,6 @@ body.pf-body {
 .parc-nome { display: grid; min-width: 0; gap: 2px; }
 .parc-nome b { font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .parc-nome small { display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
-.parc-ok svg { width: 16px; height: 16px; fill: #2f80ed; stroke: #2f80ed; }
-.parc-ok svg path:last-child { stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .parc-acoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
 .parc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 10px; border-radius: 10px; border: 1.5px solid var(--brand); background: transparent; color: var(--brand); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
 .parc-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -1546,8 +1530,6 @@ body.pf-body {
 .lj-logo img { width: 100%; height: 100%; object-fit: contain; }
 .lj-logo span { font-size: 46px; font-weight: 800; color: var(--lj-a); }
 .lj-ident h1 { margin: 0; font-size: 28px; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; }
-.lj-ok { width: 24px; height: 24px; fill: #2f80ed; stroke: #2f80ed; flex: none; }
-.lj-ok path:last-child { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .lj-slogan { margin: 4px 0 0; color: var(--ink-2); font-size: 15px; }
 .lj-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 13.5px; color: var(--ink-2); }
 .lj-meta > * { display: inline-flex; align-items: center; gap: 6px; }
@@ -1699,16 +1681,6 @@ body.pf-body {
 .pix-aguarde { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-3); font-size: 12px; }
 
 /* Carteira da empresa */
-.cart-saque { margin-top: 14px; display: grid; gap: 6px; }
-.cart-saque-linha { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
-.cart-saque-linha .field { min-width: 180px; }
-.cart-sub { margin: 18px 0 8px; font-size: 15px; }
-.cart-extrato { max-height: 340px; overflow: auto; scrollbar-width: thin; }
-.cart-tabela { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.cart-tabela th { text-align: left; font-size: 12px; color: var(--ink-3); font-weight: 700; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-.cart-tabela td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-.cart-tabela .pos { color: var(--brand); font-weight: 700; white-space: nowrap; }
-.cart-tabela .neg { color: var(--deal); font-weight: 700; white-space: nowrap; }
 .pag-opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
 .pag-opcao { display: flex; gap: 10px; align-items: center; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: 12px; cursor: pointer; }
 .pag-opcao:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
@@ -2088,7 +2060,6 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   .trab-quadro { height: calc(100vh - var(--header-h) - 150px); }
 }
 
-.eq-cartao.eq-destaque { border-color: var(--brand); background: var(--brand-soft); }
 
 /* ── Equipe (/equipe): pessoas, cargos e permissões ─────────────────────── */
 .eqp-page { padding-top: 16px; padding-bottom: 40px; display: grid; gap: 14px; }
@@ -2143,7 +2114,6 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .cos-info p { margin: 0; font-size: 13.5px; }
 .cos-tag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); }
 .cos-falta { color: var(--ink-3); font-size: 12px; text-align: center; }
-.cos-nota { font-size: 13px; margin: 0; }
 .pf-molduras-dica { margin: 0; color: var(--ink-3); font-size: 12px; }
 .pf-loja-chamada { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .pf-loja-chamada .pf-molduras-tit { margin: 0; }

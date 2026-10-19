@@ -474,10 +474,8 @@ async function reenviarEmail(id) {
   await enviarConfirmacao(p);
 }
 
-// Assinatura vencida de uma conta do site (consumidor/empresa que comprou plano).
-const assinaturaVencida = u => Boolean(u && u.assinatura_ate && u.assinatura_ate < nowSql());
 
 module.exports = {
   metodosDisponiveis, criarPedido, verificar, aprovar, entregarLogin, publico, porToken, webhook,
-  listar, confirmarManual, cancelar, reenviarEmail, assinaturaVencida, enviarConfirmacao, mp,
+  listar, confirmarManual, cancelar, reenviarEmail, enviarConfirmacao, mp,
 };

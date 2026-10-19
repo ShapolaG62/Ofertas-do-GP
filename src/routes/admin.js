@@ -240,29 +240,8 @@ router.post('/api/admin/lojas/:id/sincronizar', async (req, res) => {
   res.json(await lojas.syncFeed(Number(req.params.id)));
 });
 
-// Moderação do chat: conversas com xingamentos, histórico e punições
-router.get('/api/admin/chat-moderacao', (req, res) => {
-  const m = require('../moderacao-chat');
-  res.json({ conversas: m.listar({ status: String(req.query.status || '') }), novos: m.novos() });
-});
-router.get('/api/admin/chat-moderacao/:origem/:id', (req, res) => {
-  try { res.json(require('../moderacao-chat').detalhe(req.params.origem, req.params.id)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
-});
-router.post('/api/admin/chat-moderacao/:origem/:id/acao', (req, res) => {
-  try { res.json(require('../moderacao-chat').punir(req.params.origem, req.params.id, req.body || {})); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
-});
-
 router.get('/api/admin/moderacao', (req, res) => {
   res.json(db.all('SELECT * FROM moderation_log ORDER BY id DESC LIMIT 200'));
-});
-
-router.get('/api/admin/emails-bloqueados', (req, res) => {
-  res.json(db.all('SELECT * FROM blocked_emails ORDER BY created_at DESC'));
-});
-
-router.delete('/api/admin/emails-bloqueados', (req, res) => {
-  db.run('DELETE FROM blocked_emails WHERE email = ?', String(req.body?.email || '').toLowerCase());
-  res.json({ ok: true });
 });
 
 router.get('/api/admin/store-list', (req, res) => {
@@ -281,9 +260,6 @@ router.get('/api/admin/atendimento', (req, res) => {
   res.json({ conversas: chat.listarAdmin({ q }), pedidos: pedidosLoja.listarAdmin({ q }), lojas: lojasLista,
     taxa: { pct: pedidosLoja.taxaPct(), gateway_ok: pedidosLoja.gatewayPronto(), retorno: require('../mp-lojas').retornoUrl(), site_https: /^https:\/\//i.test(String(require('../settings').get('site_url') || '')),
       app_ok: Boolean(String(require('../settings').get('mp_mkt_client_id') || '').trim() && require('../settings').get('mp_mkt_client_secret')) } });
-});
-router.post('/api/admin/taxas/:lojaId/quitar', (req, res) => {
-  try { res.json(require('../pedidos-loja').quitarTaxas(req.params.lojaId, req.body?.observacao)); } catch (err) { sendError(res, err); }
 });
 // Vídeos patrocinados (as pessoas assistem e ganham moedas para a Loja de cosméticos)
 router.get('/api/admin/videos-patrocinados', (req, res) => res.json(require('../cosmeticos').listarVideosAdmin()));

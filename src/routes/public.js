@@ -1,6 +1,5 @@
 const express = require('express');
 const db = require('../db');
-const auth = require('../auth');
 const settings = require('../settings');
 const offers = require('../offers');
 const { safeGet } = require('../net');
@@ -39,8 +38,6 @@ router.get('/api/mineracao/status', (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json(require('../miner').statusPublico());
 });
-router.get('/api/senha/regras', (req, res) => res.json({ regras: require('../senha').REGRAS }));
-
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.
 router.get('/api/img/:id', async (req, res) => {
   const row = db.get('SELECT imagem FROM offers WHERE id = ?', Number(req.params.id));

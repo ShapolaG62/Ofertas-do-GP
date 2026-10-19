@@ -1,15 +1,10 @@
 // Lojas de empresas dentro do site: dados da loja, produtos cadastrados à mão e importação pelo link.
-const crypto = require('crypto');
 const db = require('./db');
-const settings = require('./settings');
 const offers = require('./offers');
 const { fetchStoreFeed } = require('./feeds');
 const { assertPublicUrl } = require('./net');
-const { parseBRL } = require('./util');
-const { CATEGORIES } = require('./categorize');
 
 const FEED_VALIDITY_HOURS = 72;   // produto importado sai do ar se sumir do feed por 3 dias
-const MAX_MANUAL_DAYS = 30;
 
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 
@@ -68,10 +63,6 @@ function saveLoja(user, body) {
   return getByUser(user.id);
 }
 
-function countProducts(lojaId) {
-  return db.get('SELECT COUNT(*) AS n FROM offers WHERE loja_id = ?', lojaId).n;
-}
-
 function listProducts(lojaId) {
   return db.all(
     `SELECT id, produto, preco_atual, preco_anterior, desconto_pct, categoria, imagem, original_url, fonte, oculto,
@@ -80,35 +71,6 @@ function listProducts(lojaId) {
   );
 }
 
-function addProduct(user, body) {
-  assertCanPublish(user);
-  const loja = getByUser(user.id);
-  if (!loja) throw fail('Crie sua loja antes de cadastrar produtos.');
-  const max = require('./planos').maxProdutos(user.id); // o do plano da empresa, ou o geral do painel
-  if (countProducts(loja.id) >= max) throw fail(`Limite de ${max} produtos atingido. Exclua produtos antigos.`);
-
-  const url = httpsUrlOrNull(body.url, 'Link do produto');
-  if (!url) throw fail('Informe o link do produto na sua loja.');
-  const imagem = httpsUrlOrNull(body.imagem, 'Imagem');
-  const atual = parseBRL(body.preco_atual);
-  const anterior = parseBRL(body.preco_anterior);
-  if (!atual || !anterior || anterior <= atual) throw fail('O preço anterior precisa ser maior que o preço com desconto.');
-  const dias = Math.min(Math.max(parseInt(body.dias, 10) || 7, 1), MAX_MANUAL_DAYS);
-  const expires = new Date(Date.now() + dias * 86400000).toISOString().replace('T', ' ').slice(0, 19);
-
-  const id = offers.saveDeal(pseudoStore(loja), {
-    store_product_id: crypto.createHash('sha1').update(url).digest('hex').slice(0, 16),
-    produto: String(body.produto || '').slice(0, 200),
-    preco_atual: atual,
-    preco_anterior: anterior,
-    imagem,
-    original_url: url,
-    affiliate_url: url,
-    categoria: CATEGORIES.includes(body.categoria) ? body.categoria : null,
-  }, { fonte: 'empresa', expiresAt: expires, lojaId: loja.id });
-  if (!id) throw fail('Produto recusado: confira o título e os preços (desconto entre 1% e 95%).');
-  return id;
-}
 
 function deleteProduct(user, offerId) {
   const loja = getByUser(user.id);
@@ -206,5 +168,5 @@ function setHidden(lojaId, oculta) {
 }
 
 module.exports = {
-  getByUser, pseudoStore, assertCanPublishUser: assertCanPublish, saveLoja, listProducts, addProduct, deleteProduct, setFeed, syncFeed, syncAllFeeds, publicStore, setHidden, excluirLoja,
+  getByUser, pseudoStore, assertCanPublishUser: assertCanPublish, saveLoja, listProducts, deleteProduct, setFeed, syncFeed, syncAllFeeds, publicStore, setHidden, excluirLoja,
 };

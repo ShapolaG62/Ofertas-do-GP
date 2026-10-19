@@ -43,6 +43,12 @@ const ITENS = [
   { id: 'efeito-vagalumes', tipo: 'efeito', nome: 'Vaga-lumes', preco: 350, desc: 'Luzinhas amarelas flutuando e piscando.' },
   { id: 'efeito-sakura', tipo: 'efeito', nome: 'Pétalas de sakura', preco: 400, desc: 'Pétalas de cerejeira caindo com o vento.' },
   { id: 'efeito-matrix', tipo: 'efeito', nome: 'Código Matrix', preco: 500, desc: 'Colunas de código verde caindo.' },
+  { id: 'efeito-pontilhado', tipo: 'efeito', nome: 'Retícula', preco: 300, desc: 'Grade de pontos com uma onda de luz passando.' },
+  { id: 'efeito-padrao', tipo: 'efeito', nome: 'Padrão geométrico', preco: 350, desc: 'Losangos e triângulos em linhas finas deslizando.' },
+  { id: 'efeito-y2k', tipo: 'efeito', nome: 'Brilhos Y2K', preco: 450, desc: 'Estrelas de quatro pontas e cruzinhas cromadas flutuando.' },
+  { id: 'efeito-neon-ondas', tipo: 'efeito', nome: 'Ondas de neon', preco: 550, desc: 'Fitas de neon onduladas correndo pelo topo.' },
+  { id: 'efeito-gradiente', tipo: 'efeito', nome: 'Gradiente líquido', preco: 650, desc: 'Manchas de cor se misturando devagar, como tinta.' },
+  { id: 'efeito-holografico', tipo: 'efeito', nome: 'Holográfico', preco: 700, desc: 'Brilho furta-cor mudando de tom com reflexo passando.' },
   { id: 'efeito-aurora', tipo: 'efeito', nome: 'Aurora boreal', preco: 600, desc: 'Faixas de luz verde e roxa ondulando no céu.' },
   // Efeitos de nome: o nome de exibição animado
   { id: 'nome-arcoiris', tipo: 'nome', nome: 'Arco-íris', preco: 250, desc: 'O nome passa por todas as cores.' },

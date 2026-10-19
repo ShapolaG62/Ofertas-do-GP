@@ -63,5 +63,31 @@ EFEITOS.matrix = svg(160, 240, Array.from({ length: 10 }, (_, col) => {
   }).join('');
 }).join(''));
 
+// ── Segunda leva (temas de "pacote de efeitos" e "fundo animado": neon, Y2K, geométrico, retícula) ──
+// Ondas de neon: três fitas onduladas que emendam na horizontal (a onda fecha um ciclo inteiro em 240)
+const onda = (y, amp, cor, larg) => {
+  let d = `M-10 ${y}`;
+  for (let x = -10; x <= 250; x += 5) d += ` L${x} ${f(y + Math.sin((x / 240) * Math.PI * 2) * amp)}`;
+  return `<path d="${d}" stroke="${cor}" stroke-width="${larg}" fill="none" stroke-linecap="round"/>`;
+};
+EFEITOS['neon-ondas'] = svg(240, 120, `<g filter="url(#brilho)">${onda(30, 12, '#2bf0ff', 2.2)}${onda(62, 16, '#ff3df2', 2.2)}${onda(92, 10, '#8b5cf6', 2)}</g>
+  ${onda(30, 12, '#e6fdff', .8)}${onda(62, 16, '#ffe1fd', .8)}${onda(92, 10, '#ede4ff', .8)}`, '<filter id="brilho" x="-10%" y="-50%" width="120%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter>');
+
+// Brilhos Y2K: estrelas de 4 pontas e "+" espalhados, em cores de cromo e rosa/azul
+semente = 37;
+const estrela4 = (x, y, r, cor) => `<path transform="translate(${x} ${y})" d="M0 ${-r} C${f(r * .15)} ${f(-r * .15)} ${f(r * .15)} ${f(-r * .15)} ${r} 0 C${f(r * .15)} ${f(r * .15)} ${f(r * .15)} ${f(r * .15)} 0 ${r} C${f(-r * .15)} ${f(r * .15)} ${f(-r * .15)} ${f(r * .15)} ${-r} 0 C${f(-r * .15)} ${f(-r * .15)} ${f(-r * .15)} ${f(-r * .15)} 0 ${-r}Z" fill="${cor}"/>`;
+EFEITOS.y2k = svg(220, 220, emenda(220, 220, Array.from({ length: 16 }, () => {
+  const x = f(rnd() * 220), y = f(rnd() * 220), cores = ['#ffffff', '#ffb3f5', '#a5f3ff', '#d9c2ff', '#fff3a6'], c = cores[Math.floor(rnd() * cores.length)];
+  return rnd() < .75 ? estrela4(x, y, f(3 + rnd() * 6), c) : `<path d="M${x - 3} ${y} h6 M${x} ${y - 3} v6" stroke="${c}" stroke-width="1.4" stroke-linecap="round"/>`;
+}).join('')));
+
+// Padrão geométrico: losangos e triângulos em linhas finas (tile 80×80, emenda sozinho)
+EFEITOS.padrao = svg(80, 80, `<g fill="none" stroke-width="1.4" stroke-linejoin="round">
+  <path d="M40 8 L56 24 L40 40 L24 24Z" stroke="#7c5cff" opacity=".8"/><path d="M0 48 L16 64 L0 80 M80 48 L64 64 L80 80" stroke="#22d3ee" opacity=".7"/>
+  <path d="M8 8 L18 8 L13 17Z M62 52 L72 52 L67 61Z" stroke="#ff4fd8" opacity=".75"/><circle cx="40" cy="64" r="5" stroke="#f2c94c" opacity=".7"/></g>`);
+
+// Retícula (halftone): grade de pontos; o CSS faz uma onda de luz passar por cima
+EFEITOS.pontilhado = svg(24, 24, '<circle cx="12" cy="12" r="2.1" fill="#ffffff"/>');
+
 for (const [id, conteudo] of Object.entries(EFEITOS)) fs.writeFileSync(path.join(DESTINO, `${id}.svg`), conteudo);
 console.log(`${Object.keys(EFEITOS).length} texturas em ${DESTINO}`);

@@ -542,6 +542,10 @@ As 12 molduras animadas (estilo decoração de avatar do Discord) são compradas
 | Matrix | 750 | código verde correndo pelo aro e colunas de caracteres caindo |
 | Aurora | 1.000 | cores da aurora boreal, luzes flutuando e estrelas |
 | Ouro real | 2.000 | ouro trabalhado com reflexo passando, joias brilhando e coroa |
+| Fita de luz | 550 | três fitas de luz neon correndo em volta (light painting) |
+| Líquida | 650 | cores escorrendo pelo aro e gotas de tinta surgindo |
+| Y2K cromada | 850 | cromo espelhado com reflexo passando e estrelas piscando |
+| Holográfica | 1.100 | aro furta-cor mudando de tom, com reflexo e brilhos |
 
 Na loja, cada moldura aparece com a foto da própria pessoa; depois de comprar, dá para usar na hora. Em **Editar perfil → Moldura da foto**, as comuns e as de temporada ficam juntas, e as compradas aparecem em "Da Loja de cosméticos". O admin tem todas.
 
@@ -570,7 +574,7 @@ As diárias renovam à meia-noite (Brasília) e as semanais toda segunda-feira. 
 
 **Vídeos patrocinados:** cadastre em **Painel → Publicidade → Vídeos patrocinados** (título, anunciante, link do YouTube ou .mp4/.webm, tempo mínimo e moedas). A pessoa assiste numa janela com o selo **Patrocinado**; o tempo só conta com a página visível (e com o vídeo tocando, no caso de arquivo), e o servidor confere que o tempo mínimo passou. Vale uma vez por vídeo por dia e no máximo 5 vídeos por dia por pessoa. O painel mostra quantas vezes cada vídeo foi assistido até o fim (bom para mostrar ao anunciante).
 
-**Efeitos de perfil** (animação de fundo no topo do perfil): Neve 200, Bolhas 200, Confete 250, Estrelas cadentes 300, Vaga-lumes 350, Pétalas de sakura 400, Código Matrix 500, Aurora boreal 600.
+**Efeitos de perfil** (animação de fundo no topo do perfil): Neve 200, Bolhas 200, Confete 250, Estrelas cadentes 300, Vaga-lumes 350, Pétalas de sakura 400, Retícula 300, Padrão geométrico 350, Brilhos Y2K 450, Código Matrix 500, Ondas de neon 550, Aurora boreal 600, Gradiente líquido 650, Holográfico 700. Todos os desenhos são originais (feitos aqui), sem uso de imagens de bancos pagos.
 
 **Efeitos de nome** (o nome de exibição animado): Arco-íris 250, Neon 300, Gelo 300, Ouro brilhante 350, Fogo 400, Glitch 450.
 

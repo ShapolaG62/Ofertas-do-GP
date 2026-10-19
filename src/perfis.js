@@ -59,6 +59,10 @@ const MOLDURAS = [
   { id: 'anim-matrix', nome: 'Matrix', preco: 750, animada: true, desc: 'Código verde correndo pelo aro e colunas de caracteres caindo.' },
   { id: 'anim-aurora', nome: 'Aurora', preco: 1000, animada: true, desc: 'Aro com as cores da aurora boreal, luzes flutuando e estrelas.' },
   { id: 'anim-ouro', nome: 'Ouro real', preco: 2000, animada: true, desc: 'Ouro trabalhado com reflexo passando, joias brilhando e coroa.' },
+  { id: 'anim-fita', nome: 'Fita de luz', preco: 550, animada: true, desc: 'Três fitas de luz neon correndo em volta, como light painting.' },
+  { id: 'anim-liquida', nome: 'Líquida', preco: 650, animada: true, desc: 'Cores escorrendo pelo aro e gotas de tinta surgindo.' },
+  { id: 'anim-y2k', nome: 'Y2K cromada', preco: 850, animada: true, desc: 'Cromo espelhado com reflexo passando e estrelas piscando.' },
+  { id: 'anim-holografica', nome: 'Holográfica', preco: 1100, animada: true, desc: 'Aro furta-cor mudando de tom, com reflexo e brilhos.' },
   // Temporada e datas comemorativas de 2027 (horário de Brasília): quem entra no site durante o período ganha a
   // moldura e fica com ela para sempre. Depois do fim, quem não ganhou não consegue mais.
   { id: 'temporada-1', nome: '1ª Temporada', evento: true, de: '2026-10-01', ate: '2027-03-31' },

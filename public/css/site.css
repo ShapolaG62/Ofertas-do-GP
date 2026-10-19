@@ -2153,6 +2153,34 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   background-size: 250% 100%; animation: ef-aurora 17s ease-in-out infinite alternate-reverse; }
 @keyframes ef-aurora { 0% { background-position: 0% 0; transform: skewY(-4deg); } 100% { background-position: 100% 0; transform: skewY(3deg); } }
 
+/* Efeitos, segunda leva: gradiente líquido, ondas de neon, holográfico, brilhos Y2K, padrão geométrico e retícula */
+.pf-efeito-gradiente::before, .pf-efeito-gradiente::after { inset: -35%; filter: blur(26px); opacity: .7; }
+.pf-efeito-gradiente::before { background: radial-gradient(circle at 30% 40%, #ff5fa2 0 18%, transparent 38%), radial-gradient(circle at 70% 60%, #7b61ff 0 20%, transparent 40%);
+  animation: ef-liquido 11s ease-in-out infinite alternate; }
+.pf-efeito-gradiente::after { background: radial-gradient(circle at 60% 30%, #ffb24d 0 14%, transparent 34%), radial-gradient(circle at 25% 75%, #22d3ee 0 16%, transparent 36%);
+  animation: ef-liquido 14s ease-in-out infinite alternate-reverse; }
+@keyframes ef-liquido { 0% { transform: translate(-8%, -4%) rotate(0deg) scale(1); } 50% { transform: translate(6%, 5%) rotate(120deg) scale(1.15); } 100% { transform: translate(-4%, 8%) rotate(240deg) scale(.95); } }
+.pf-efeito-neon-ondas { background: url("/images/efeitos/neon-ondas.svg") 0 50% / 240px 120px repeat-x; opacity: .8; animation: ef-ondas 6s linear infinite; }
+.pf-efeito-neon-ondas::before { background: url("/images/efeitos/neon-ondas.svg") 60px 10% / 180px 90px repeat-x; opacity: .45; animation: ef-ondas2 9s linear infinite reverse; }
+@keyframes ef-ondas { to { background-position: 480px 50%; } }
+@keyframes ef-ondas2 { to { background-position: 420px 10%; } }
+.pf-efeito-holografico { background: linear-gradient(115deg, rgba(255,154,213,.38), rgba(165,180,255,.38), rgba(126,240,255,.38), rgba(184,255,207,.38), rgba(255,243,166,.38), rgba(255,154,213,.38));
+  background-size: 300% 100%; animation: ef-holo 8s linear infinite; }
+.pf-efeito-holografico::before { background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.45) 50%, transparent 65%); background-size: 250% 100%; animation: ef-reflexo 3.5s ease-in-out infinite; }
+@keyframes ef-holo { to { background-position: 300% 0; } }
+@keyframes ef-reflexo { 0% { background-position: 150% 0; } 60%, 100% { background-position: -100% 0; } }
+.pf-efeito-y2k { background: url("/images/efeitos/y2k.svg") 0 0 / 220px, url("/images/efeitos/y2k.svg") 110px 70px / 140px; animation: ef-y2k 22s linear infinite; }
+.pf-efeito-y2k::before { background: url("/images/efeitos/y2k.svg") 40px 120px / 180px; animation: ef-y2k2 15s linear infinite, ef-pisca 1.8s ease-in-out infinite; }
+@keyframes ef-y2k { to { background-position: 220px 220px, -30px 210px; } }
+@keyframes ef-y2k2 { to { background-position: -320px 120px; } }
+.pf-efeito-padrao { background: url("/images/efeitos/padrao.svg") 0 0 / 80px; opacity: .55; animation: ef-padrao 10s linear infinite;
+  -webkit-mask: linear-gradient(to bottom, #000, transparent 95%); mask: linear-gradient(to bottom, #000, transparent 95%); }
+@keyframes ef-padrao { to { background-position: 160px 80px; } }
+.pf-efeito-pontilhado { background: url("/images/efeitos/pontilhado.svg") 0 0 / 14px; opacity: .55;
+  -webkit-mask: radial-gradient(circle, #000 0, rgba(0,0,0,.15) 45%, transparent 70%) 0 0 / 60% 160% no-repeat;
+  mask: radial-gradient(circle, #000 0, rgba(0,0,0,.15) 45%, transparent 70%) 0 0 / 60% 160% no-repeat; animation: ef-varre 5s ease-in-out infinite alternate; }
+@keyframes ef-varre { from { -webkit-mask-position: -40% 50%; mask-position: -40% 50%; } to { -webkit-mask-position: 140% 50%; mask-position: 140% 50%; } }
+
 /* ── Efeitos de nome ── */
 .pf-nome-arcoiris, .pf-nome-ouro, .pf-nome-fogo, .pf-nome-gelo { -webkit-background-clip: text; background-clip: text; color: transparent !important; }
 .pf-nome-arcoiris { background-image: linear-gradient(90deg, #ff5fd2, #ffd84d, #5cf2a8, #58b4ff, #b47bff, #ff5fd2); background-size: 200% 100%; animation: nm-desliza 4s linear infinite; }
@@ -2282,6 +2310,18 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .pf-moldura-anim-aurora::after { background-image: url("/images/molduras/anim-aurora.svg?v=1"); }
 .pf-moldura-anim-ouro { background: #3d2900; }
 .pf-moldura-anim-ouro::after { background-image: url("/images/molduras/anim-ouro.svg?v=1"); }
+/* Molduras animadas, terceira leva */
+.pf-moldura-anim-holografica, .pf-moldura-anim-fita, .pf-moldura-anim-liquida, .pf-moldura-anim-y2k { padding: 0; }
+.pf-moldura-anim-holografica::after, .pf-moldura-anim-fita::after, .pf-moldura-anim-liquida::after, .pf-moldura-anim-y2k::after {
+  content: ""; position: absolute; inset: calc(var(--tam) * -.2); pointer-events: none; background: center / 100% 100% no-repeat; }
+.pf-moldura-anim-holografica { background: #1a1430; }
+.pf-moldura-anim-holografica::after { background-image: url("/images/molduras/anim-holografica.svg?v=1"); }
+.pf-moldura-anim-fita { background: #0b0f1a; }
+.pf-moldura-anim-fita::after { background-image: url("/images/molduras/anim-fita.svg?v=1"); }
+.pf-moldura-anim-liquida { background: #1a0f24; }
+.pf-moldura-anim-liquida::after { background-image: url("/images/molduras/anim-liquida.svg?v=1"); }
+.pf-moldura-anim-y2k { background: #1c2230; }
+.pf-moldura-anim-y2k::after { background-image: url("/images/molduras/anim-y2k.svg?v=1"); }
 /* Cartões da loja: título e descrição no alto, botão sempre embaixo (alinhados entre si) */
 .cos-item { grid-template-rows: auto 1fr; }
 .cos-info { display: flex; flex-direction: column; }

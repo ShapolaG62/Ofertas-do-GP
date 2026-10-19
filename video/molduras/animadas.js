@@ -308,5 +308,72 @@ MOLDURAS['anim-ouro'] = svg(`
    <circle cx="-14" cy="-4.5" r="1.6" fill="#fff1b8"/><circle cx="0" cy="-8.5" r="1.9" fill="#fff1b8"/><circle cx="14" cy="-4.5" r="1.6" fill="#fff1b8"/>${joia(0, 2, '#e53935', '#ffcdd2').replace('translate(0 2)', 'translate(0 2) scale(.55)')}</g>
  ${[[30, 13], [112, 128], [128, 40], [12, 100], [96, 12], [44, 128]].map(([x, y], i) => `<g transform="translate(${x} ${y})"><path class="brilho" style="animation-delay:-${f(i * .4)}s" d="M0 -4 C.4 -.4 .4 -.4 4 0 C.4 .4 .4 .4 0 4 C-.4 .4 -.4 .4 -4 0 C-.4 -.4 -.4 -.4 0 -4Z" fill="#fffbe6"/></g>`).join('')}`);
 
+
+// ── Terceira leva (temas de "pacote de efeitos" e "fundo animado") ──
+// 13) Holográfica: aro furta-cor que muda de tom, com um reflexo de luz passando e brilhos de 4 pontas
+semente = 131;
+MOLDURAS['anim-holografica'] = svg(`
+  .tom { animation: tom 6s linear infinite; }
+  .reflexo { animation: corre 2.6s linear infinite; }
+  .brilho { animation: brilho 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes tom { to { filter: hue-rotate(360deg); } }
+  @keyframes corre { to { stroke-dashoffset: -100; } }
+  @keyframes brilho { 0%, 100% { transform: scale(.2); opacity: 0; } 50% { transform: scale(1) rotate(45deg); opacity: 1; } }`,
+`<linearGradient id="holo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff9ad5"/><stop offset=".2" stop-color="#a5b4ff"/><stop offset=".4" stop-color="#7ef0ff"/><stop offset=".6" stop-color="#b8ffcf"/><stop offset=".8" stop-color="#fff3a6"/><stop offset="1" stop-color="#ff9ad5"/></linearGradient>
+ <filter id="halo" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.6"/></filter>`,
+`<g class="tom"><rect ${ARO} stroke="url(#holo)" stroke-width="13" filter="url(#halo)" opacity=".6"/>
+   <rect ${ARO} stroke="#1a1430" stroke-width="10"/>
+   <rect ${ARO} stroke="url(#holo)" stroke-width="7"/>
+   <rect x="22.5" y="22.5" width="95" height="95" rx="18" fill="none" stroke="#ffffff" stroke-width=".7" opacity=".7"/></g>
+ <rect class="reflexo" ${ARO} stroke="#ffffff" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="5 45" opacity=".75"/>
+ ${[[12, 30, 5], [128, 22, 4], [126, 112, 5.5], [16, 118, 4], [70, 132, 3.5], [132, 70, 3.5]].map(([x, y, r], i) => `<g transform="translate(${x} ${y})"><path class="brilho" style="animation-delay:-${f(i * .37)}s" d="${estrela4(r)}" fill="#ffffff"/></g>`).join('')}`);
+
+// 14) Fita de luz: aro escuro com três fitas de luz coloridas (rosa, ciano, roxo) correndo em volta, como "light painting"
+MOLDURAS['anim-fita'] = svg(`
+  .fita { animation: corre 3s linear infinite; }
+  .fita2 { animation: corre 3.8s linear infinite reverse; }
+  .fita3 { animation: corre 5s linear infinite; }
+  @keyframes corre { to { stroke-dashoffset: -100; } }`,
+`<filter id="luz" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2"/></filter>`,
+`<rect ${ARO} stroke="#0b0f1a" stroke-width="10"/>
+ ${[['fita', '#ff3df2', 0], ['fita2', '#2bf0ff', 2.4], ['fita3', '#8b5cf6', -2.4]].map(([c, cor, d]) => `
+   <rect class="${c}" x="${18 + d}" y="${18 + d}" width="${104 - d * 2}" height="${104 - d * 2}" rx="${22 - d}" fill="none" stroke="${cor}" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="22 78" filter="url(#luz)"/>
+   <rect class="${c}" x="${18 + d}" y="${18 + d}" width="${104 - d * 2}" height="${104 - d * 2}" rx="${22 - d}" fill="none" stroke="#ffffff" stroke-width="1.4" stroke-linecap="round" pathLength="100" stroke-dasharray="22 78" opacity=".9"/>`).join('')}`);
+
+// 15) Líquida: aro de gradiente que escorre (cores se movendo) com bolhas de tinta crescendo e sumindo nas bordas
+semente = 149;
+MOLDURAS['anim-liquida'] = svg(`
+  .escorre { animation: corre 4.5s linear infinite; }
+  .gota { animation: gota 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes corre { to { stroke-dashoffset: -100; } }
+  @keyframes gota { 0%, 100% { transform: scale(.3); opacity: 0; } 40%, 60% { transform: scale(1); opacity: .95; } }`,
+`<linearGradient id="tinta" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff5fa2"/><stop offset=".5" stop-color="#ffb24d"/><stop offset="1" stop-color="#7b61ff"/></linearGradient>
+ <filter id="gosma" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2"/></filter>`,
+`<rect ${ARO} stroke="#1a0f24" stroke-width="11"/>
+ <rect class="escorre" ${ARO} stroke="#ff5fa2" stroke-width="8" pathLength="100" stroke-dasharray="34 66"/>
+ <rect class="escorre" ${ARO} stroke="#ffb24d" stroke-width="8" pathLength="100" stroke-dasharray="33 67" stroke-dashoffset="-33"/>
+ <rect class="escorre" ${ARO} stroke="#7b61ff" stroke-width="8" pathLength="100" stroke-dasharray="33 67" stroke-dashoffset="-66"/>
+ <rect ${ARO} stroke="#ffffff" stroke-width="1" opacity=".35"/>
+ ${Array.from({ length: 10 }, (_, i) => { const p = ponto(i / 10 + rnd() * .04, 6 + rnd() * 4), cores = ['#ff5fa2', '#ffb24d', '#7b61ff'];
+    return `<circle class="gota" style="animation-delay:-${f(rnd() * 3.4)}s" cx="${p.x}" cy="${p.y}" r="${f(3 + rnd() * 3.5)}" fill="${cores[i % 3]}" filter="url(#gosma)"/>`; }).join('')}`);
+
+// 16) Y2K cromada: aro de cromo espelhado com reflexo passando, estrelas de 4 pontas piscando e "+" girando
+semente = 157;
+MOLDURAS['anim-y2k'] = svg(`
+  .reflexo { animation: corre 2.4s linear infinite; }
+  .pisca { animation: pisca 1.9s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .gira { animation: gira 4s linear infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes corre { to { stroke-dashoffset: -100; } }
+  @keyframes pisca { 0%, 100% { transform: scale(.35); opacity: .3; } 50% { transform: scale(1); opacity: 1; } }
+  @keyframes gira { to { transform: rotate(360deg); } }`,
+`<linearGradient id="cromo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#9aa6b8"/><stop offset=".5" stop-color="#e9eef6"/><stop offset=".65" stop-color="#6c778a"/><stop offset="1" stop-color="#dfe6f0"/></linearGradient>`,
+`<rect ${ARO} stroke="#1c2230" stroke-width="11"/>
+ <rect ${ARO} stroke="url(#cromo)" stroke-width="7.5"/>
+ <rect x="22.5" y="22.5" width="95" height="95" rx="18" fill="none" stroke="#ffffff" stroke-width=".8" opacity=".8"/>
+ <rect class="reflexo" ${ARO} stroke="#ffffff" stroke-width="4" stroke-linecap="round" pathLength="100" stroke-dasharray="3 47"/>
+ ${[[14, 14, 7, '#ffb3f5'], [128, 24, 5, '#a5f3ff'], [126, 126, 7.5, '#d9c2ff'], [12, 112, 5, '#ffffff'], [70, 6, 4.5, '#fff3a6'], [134, 76, 4, '#ffb3f5']].map(([x, y, r, c], i) =>
+    `<g transform="translate(${x} ${y})"><path class="pisca" style="animation-delay:-${f(i * .33)}s" d="${estrela4(r)}" fill="${c}"/></g>`).join('')}
+ ${[[34, 132], [106, 8], [4, 60]].map(([x, y], i) => `<g transform="translate(${x} ${y})"><path class="gira" style="animation-delay:-${i}s" d="M-3.5 0 H3.5 M0 -3.5 V3.5" stroke="#e9eef6" stroke-width="1.6" stroke-linecap="round"/></g>`).join('')}`);
+
 for (const [id, conteudo] of Object.entries(MOLDURAS)) fs.writeFileSync(path.join(DESTINO, `${id}.svg`), conteudo);
 console.log(`${Object.keys(MOLDURAS).length} molduras animadas em ${DESTINO}`);

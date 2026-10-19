@@ -481,9 +481,12 @@
       previa.showPopover();
       previaSobre = dlg;
     }
+    // No meio do espaço livre à direita da janela, centralizada na altura da tela
     const r = dlg.getBoundingClientRect();
-    previa.style.left = `${Math.round(r.right + 20)}px`;
-    previa.style.top = `${Math.round(r.top)}px`;
+    const w = previa.offsetWidth, h = previa.offsetHeight;
+    const livre = window.innerWidth - r.right;
+    previa.style.left = `${Math.round(r.right + Math.max(16, (livre - w) / 2))}px`;
+    previa.style.top = `${Math.round(Math.max(16, (window.innerHeight - h) / 2))}px`;
   }
   // Várias mudanças seguidas (digitação) viram uma atualização só
   const pedirPrevia = () => { clearTimeout(previaQuadro); previaQuadro = setTimeout(atualizarPrevia, 30); };

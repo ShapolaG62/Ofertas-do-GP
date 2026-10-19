@@ -2290,14 +2290,14 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 /* Prévia ao vivo do perfil, ao lado do editor e da Loja de cosméticos (perfil.js). Só em telas largas:
    as janelas vão para a esquerda e a prévia (popover, por cima do fundo escuro) fica à direita delas. */
 @media (min-width: 1200px) {
-  body.pf-com-previa .pf-dialog { --dw: min(720px, calc(100vw - 440px)); }
-  body.pf-com-previa .cos-dlg { --dw: min(940px, calc(100vw - 440px)); }
-  body.pf-com-previa .pf-dialog, body.pf-com-previa .cos-dlg { width: var(--dw); margin-left: calc((100vw - var(--dw) - 380px) / 2); margin-right: auto; }
+  body.pf-com-previa .pf-dialog { --dw: min(720px, calc(100vw - 500px)); }
+  body.pf-com-previa .cos-dlg { --dw: min(940px, calc(100vw - 500px)); }
+  body.pf-com-previa .pf-dialog, body.pf-com-previa .cos-dlg { width: var(--dw); margin-left: calc((100vw - var(--dw) - 450px) / 2); margin-right: auto; }
 }
 .pf-previa {
   --bg: #0d1116; --surface: #161c23; --surface-2: #1c232c; --surface-3: #232c36; --ink: #eef2f6; --ink-2: #b4bfca; --ink-3: #7f8b97;
   --line: #26303b; --line-strong: #344150; --brand: #2bb673;
-  position: fixed; inset: auto; margin: 0; width: 360px; max-height: calc(100dvh - 32px); overflow: hidden; padding: 14px; box-sizing: border-box;
+  position: fixed; inset: auto; margin: 0; width: 420px; max-height: calc(100dvh - 32px); overflow: hidden; padding: 14px; box-sizing: border-box;
   display: grid; gap: 10px; align-content: start; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--bg); color: var(--ink);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8); color-scheme: dark; font-family: inherit;
 }
@@ -2333,3 +2333,17 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .pv-links span { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink-2); }
 .pv-dica, .pv-provando { margin: 0; font-size: 12px; color: var(--ink-3); text-align: center; }
 .pv-provando { color: #f2c94c; padding: 6px 10px; border-radius: 10px; background: #2a2208; border: 1px solid #5c4710; }
+
+/* Prévia do perfil um pouco maior */
+.pf-previa { padding: 16px; gap: 12px; }
+.pf-previa .pv-cab { font-size: 15px; }
+.pf-previa .pv-capa { height: 116px; }
+.pf-previa .pv-topo { margin: -38px 12px 0; padding: 14px; }
+.pf-previa .pv-foto { --tam: 86px; }
+.pf-previa .pv-ident h3 { font-size: 21px; }
+.pf-previa .pv-linha .pf-nivel-selo.is-pequeno { width: 44px; height: 44px; }
+.pf-previa .pv-linha .pf-nivel-selo.is-pequeno b { font-size: 17px; }
+.pf-previa .pv-bloco { padding: 12px 16px 0; }
+.pf-previa .pv-bloco:last-child { padding-bottom: 16px; }
+.pf-previa .pv-bio { font-size: 13.5px; }
+.pf-previa .pv-vitrine .vit-emoji { width: 44px; height: 44px; font-size: 22px; }

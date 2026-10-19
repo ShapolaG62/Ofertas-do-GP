@@ -20,7 +20,7 @@ const DEFAULTS = {
   // Responsável pelo site (aparece nos Termos de Uso e na Política de Privacidade — LGPD)
   legal_nome: '',               // nome completo ou razão social do responsável (controlador dos dados)
   legal_documento: '',          // CPF ou CNPJ
-  legal_endereco: '',           // cidade/UF ou endereço para correspondência
+  legal_endereco: '',           // endereço físico completo (Decreto 7.962/2013)
   legal_email: '',              // e-mail de contato e do encarregado de dados (DPO)
   legal_encarregado: '',        // nome do encarregado pelo tratamento de dados (DPO)
 

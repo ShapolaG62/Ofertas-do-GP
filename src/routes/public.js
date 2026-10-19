@@ -92,7 +92,7 @@ router.get('/img/recorte/:id.webp', async (req, res) => {
 
 // Link curto das postagens: /o/<id> (vai para /oferta, que conta o clique e manda para a loja)
 // Para o WhatsApp/Telegram/Facebook (robôs que montam a prévia do link): devolve a foto grande do produto com a
-// marca do Ofertou!, o título e o preço. Pessoas vão direto para a loja (pelo /oferta, que conta o clique).
+// o título e o preço. Pessoas vão direto para a loja (pelo /oferta, que conta o clique).
 const ROBO_PREVIA = /whatsapp|facebookexternalhit|facebot|telegrambot|twitterbot|slackbot|discordbot|linkedinbot|skypeuripreview|googlebot|bingbot|pinterest|vkshare|embedly|iframely|redditbot|applebot/i;
 router.get('/o/:id', (req, res) => {
   const id = Number(req.params.id) || 0;

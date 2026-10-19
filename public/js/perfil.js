@@ -318,6 +318,7 @@
     $('#pf-msg').hidden = true;
     $('#pf-editor').showModal();
     $('#pf-editor').scrollTop = 0; // abre no topo (o navegador rola até o primeiro campo)
+    atualizarPrevia();
   }
 
   function addLink(l = { tipo: 'instagram', url: '' }) {
@@ -380,6 +381,7 @@
       render();
       $('#pf-avatar-prev').innerHTML = avatarHtml(P);
       $('#pf-capa-prev').style.backgroundImage = P.capa ? `url("${P.capa}")` : '';
+      pedirPrevia();
       toast('Imagem atualizada!');
     } catch (err) { toast(err.message); }
   }));
@@ -389,8 +391,110 @@
       render();
       $('#pf-avatar-prev').innerHTML = avatarHtml(P);
       $('#pf-capa-prev').style.backgroundImage = P.capa ? `url("${P.capa}")` : '';
+      pedirPrevia();
     } catch (err) { toast(err.message); }
   }));
+
+  // ── Prévia ao vivo: ao lado do editor e da Loja de cosméticos (telas largas) ──
+  // Fica num popover para aparecer por cima do fundo escuro das janelas; acompanha os campos ainda não salvos,
+  // o que está equipado na loja e o item em que o mouse está na loja ("provar").
+  const TELA_LARGA = window.matchMedia('(min-width: 1200px)');
+  let previa = null, previaSobre = null, daLoja = null, previaQuadro = 0;
+  function dialogoAtivo() {
+    const loja = document.querySelector('dialog.cos-dlg[open]');
+    if (loja) return loja;
+    return $('#pf-editor').open ? $('#pf-editor') : null;
+  }
+  function estadoPrevia() {
+    const f = $('#pf-form'), ed = $('#pf-editor').open;
+    const prova = daLoja?.provando;
+    const todas = P.conquistas.familias.flatMap(fm => fm.itens);
+    let vitrine = P.vitrine;
+    if (ed) {
+      const ids = $$('#pf-escolha-vitrine input:checked').map(i => i.value);
+      vitrine = ids.length ? ids.map(id => todas.find(c => c.id === id)).filter(Boolean)
+        : todas.filter(c => c.obtida).sort((a, b) => b.xp - a.xp).slice(0, P.limites.vitrine);
+    }
+    // A loja salva na hora: uma moldura equipada lá vale mais que a escolhida (e não salva) no editor
+    const moldura = prova?.tipo === 'moldura' ? prova.id : daLoja && daLoja.moldura !== P.moldura ? daLoja.moldura : (ed ? escolhaMoldura : P.moldura);
+    return {
+      nome: (ed ? f.nome.value.trim() : '') || P.nome, titulo: ed ? f.titulo.value.trim() : P.titulo, cidade: ed ? f.cidade.value.trim() : P.cidade,
+      bio: ed ? f.bio.value.trim() : P.bio, cor: ed ? escolhaCor : P.cor, moldura, vitrine,
+      efeito: prova?.tipo === 'efeito' ? prova.id : daLoja ? daLoja.efeito : P.efeito,
+      efeito_nome: prova?.tipo === 'nome' ? prova.id : daLoja ? daLoja.nome : P.efeito_nome,
+      links: ed ? $$('.pf-link-row').map(r => ({ tipo: r.querySelector('select').value, url: r.querySelector('input').value.trim() })).filter(l => l.url) : P.links,
+      mudou: ed && (f.nome.value.trim() !== P.nome || f.titulo.value.trim() !== (P.titulo || '') || f.cidade.value.trim() !== (P.cidade || '')
+        || f.bio.value.trim() !== (P.bio || '') || escolhaCor !== P.cor || escolhaMoldura !== P.moldura),
+      prova,
+    };
+  }
+  function htmlPrevia() {
+    const s = estadoPrevia();
+    const c = CORES[s.cor] || CORES.verde;
+    const nomesLink = P.opcoes?.tipos_link || {};
+    return `
+      <div class="pv-cab"><b>Prévia do perfil</b><span class="pv-estado${s.mudou ? ' is-mudou' : ''}">${s.mudou ? 'Não salvo' : 'Salvo'}</span></div>
+      <div class="pv-perfil" style="--pf-a:${c[0]};--pf-b:${c[1]};--pf-grad:linear-gradient(120deg, ${c.join(', ')})">
+        <div class="pv-capa${P.capa ? ' tem-imagem' : ''}"${P.capa ? ` style="background-image:url(&quot;${esc(P.capa)}&quot;)"` : ''}></div>
+        <div class="pv-topo">
+          ${s.efeito ? `<div class="pf-efeito pf-${esc(s.efeito)}" aria-hidden="true"></div>` : ''}
+          <div class="pv-linha">
+            ${avatarHtml({ ...P, nome: s.nome, moldura: s.moldura }, 'pv-foto')}
+            <div class="pv-ident">
+              <h3${s.efeito_nome ? ` class="pf-${esc(s.efeito_nome)}" data-texto="${esc(s.nome)}"` : ''}>${esc(s.nome)}</h3>
+              ${s.titulo ? `<p class="pv-titulo">${esc(s.titulo)}</p>` : ''}
+              <div class="pf-selos"><span class="pf-papel">${esc(P.papel_rotulo)}</span>${P.selos.map(x => `<span class="pf-selo">${esc(x.nome)}</span>`).join('')}</div>
+            </div>
+            <div class="pf-nivel-selo is-pequeno" title="Nível"><b>${P.nivel.nivel}</b></div>
+          </div>
+          <p class="pv-meta">${s.cidade ? `📍 ${esc(s.cidade)} · ` : ''}${num(P.seguidores)} seguidores</p>
+        </div>
+        <div class="pv-bloco"><small>Resumo</small>${s.bio ? `<p class="pv-bio">${esc(s.bio)}</p>` : '<p class="pv-vazio">Sem resumo ainda.</p>'}</div>
+        <div class="pv-bloco"><small>Vitrine de conquistas</small>${s.vitrine.length
+    ? `<div class="pv-vitrine">${s.vitrine.map(v => `<span class="vit-emoji pf-tier-${esc(v.tier)}" title="${esc(v.nome)}">${v.icone}</span>`).join('')}</div>`
+    : '<p class="pv-vazio">Nenhuma conquista na vitrine.</p>'}</div>
+        ${s.links.length ? `<div class="pv-bloco"><small>Links</small><div class="pv-links">${s.links.map(l => `<span>${ICONE_LINK[l.tipo] || '🔗'} ${esc(nomesLink[l.tipo] || l.tipo)}</span>`).join('')}</div></div>` : ''}
+      </div>
+      ${s.prova ? `<p class="pv-provando">Provando <b>${esc(s.prova.nome)}</b>${s.prova.possui ? '' : ' · ainda não é seu'}</p>`
+    : '<p class="pv-dica">Assim os outros vão ver o seu perfil.</p>'}`;
+  }
+  function atualizarPrevia() {
+    const dlg = P?.proprio && TELA_LARGA.matches && HTMLElement.prototype.showPopover ? dialogoAtivo() : null;
+    document.body.classList.toggle('pf-com-previa', Boolean(dlg));
+    if (!dlg) {
+      if (previa?.matches(':popover-open')) previa.hidePopover();
+      previaSobre = null;
+      return;
+    }
+    if (!previa) {
+      previa = document.createElement('aside');
+      previa.className = 'pf-previa';
+      previa.setAttribute('popover', 'manual');
+      previa.setAttribute('aria-label', 'Prévia do perfil');
+      previa.dataset.previaPerfil = '';
+      document.body.appendChild(previa);
+    }
+    previa.innerHTML = htmlPrevia();
+    // A janela que abriu por último fica por cima: mostra a prévia de novo para ela ficar acima dessa janela
+    if (previaSobre !== dlg) {
+      if (previa.matches(':popover-open')) previa.hidePopover();
+      previa.showPopover();
+      previaSobre = dlg;
+    }
+    const r = dlg.getBoundingClientRect();
+    previa.style.left = `${Math.round(r.right + 20)}px`;
+    previa.style.top = `${Math.round(r.top)}px`;
+  }
+  // Várias mudanças seguidas (digitação) viram uma atualização só
+  const pedirPrevia = () => { clearTimeout(previaQuadro); previaQuadro = setTimeout(atualizarPrevia, 30); };
+  $('#pf-form').addEventListener('input', pedirPrevia);
+  $('#pf-form').addEventListener('change', pedirPrevia);
+  $('#pf-form').addEventListener('click', e => { if (e.target.closest('[data-cor], [data-moldura], .pf-link-row button, #pf-add-link')) pedirPrevia(); });
+  $('#pf-editor').addEventListener('close', () => { daLoja = null; pedirPrevia(); });
+  TELA_LARGA.addEventListener('change', pedirPrevia);
+  window.addEventListener('resize', pedirPrevia);
+  window.addEventListener('ofertou:loja-abriu', () => { daLoja = null; pedirPrevia(); });
+  window.addEventListener('ofertou:loja-previa', e => { daLoja = e.detail; pedirPrevia(); });
 
   // ── Avisos do admin (saldo disponível para sacar nas plataformas de afiliados) ──
   async function renderAvisosAdmin() {
@@ -450,11 +554,14 @@
   }
 
   window.addEventListener('ofertou:loja-fechou', async e => {
+    daLoja = null;
+    pedirPrevia();
     if (!e.detail?.mudou || !P || !P.proprio) return;
     try {
       P = await api('/api/perfil');
       render();
       if ($('#pf-editor').open) { escolhaMoldura = P.moldura; renderMolduras(); }
+      pedirPrevia();
     } catch { /* fica como estava */ }
   });
 

@@ -77,10 +77,27 @@
             : `<button class="btn btn-primary btn-block cos-comprar" type="button" data-comprar="${esc(it.id)}" ${falta > 0 ? 'disabled' : ''}>
                 <span class="cos-moeda" aria-hidden="true"></span> Comprar por ${num(it.preco)}</button>
               ${falta > 0 ? `<small class="cos-falta">faltam ${num(falta)} moedas · <a href="#ganhar" data-ir-ganhar>ganhar moedas</a></small>` : ''}`;
-        return `<article class="cos-item${it.possui ? ' is-sua' : ''}">${previa(it)}
+        return `<article class="cos-item${it.possui ? ' is-sua' : ''}" data-provar="${esc(it.id)}">${previa(it)}
           <div class="cos-info"><h2>${esc(it.nome)} ${it.possui ? '<span class="cos-tag">Sua</span>' : ''}</h2><p class="muted">${esc(it.desc)}</p>${acao}</div></article>`;
       }).join('');
+      avisarPrevia();
     }
+
+    // Prévia do perfil (perfil.js): avisa o que está equipado e o item em que o mouse está ("provar" antes de comprar)
+    let provando = null;
+    function avisarPrevia() {
+      if (!L) return;
+      const eq = t => L.itens.find(i => i.tipo === t && i.equipada)?.id || null;
+      const it = provando && L.itens.find(i => i.id === provando);
+      window.dispatchEvent(new CustomEvent('ofertou:loja-previa', { detail: {
+        moldura: eq('moldura') || L.moldura || 'nenhuma', efeito: eq('efeito'), nome: eq('nome'),
+        provando: it && !it.equipada ? { id: it.id, tipo: it.tipo, nome: it.nome, possui: it.possui } : null,
+      } }));
+    }
+    const provar = id => { if (id === provando) return; provando = id; avisarPrevia(); };
+    raiz.addEventListener('mouseover', e => provar(aba === 'ganhar' ? null : e.target.closest('[data-provar]')?.dataset.provar || null));
+    raiz.addEventListener('mouseleave', () => provar(null));
+    raiz.addEventListener('focusin', e => provar(e.target.closest('[data-provar]')?.dataset.provar || null));
 
     // ── Ganhar moedas ──
     function renderGanhar() {
@@ -181,7 +198,7 @@
     });
     carregar();
     return {
-      recarregar(novaAba) { if (novaAba && ABAS.includes(novaAba)) aba = novaAba; mudou = false; carregar(); },
+      recarregar(novaAba) { if (novaAba && ABAS.includes(novaAba)) aba = novaAba; mudou = false; provando = null; carregar(); },
       mudou: () => mudou,
     };
   }
@@ -204,7 +221,12 @@
       document.body.appendChild(janela);
       loja = montar(janela.querySelector('.cos-page'), { abaInicial: aba });
       janela.querySelector('.cos-dlg-fechar').addEventListener('click', fechar);
-      janela.addEventListener('click', e => { if (e.target === janela) fechar(); }); // clique fora fecha
+      janela.addEventListener('click', e => { // clique fora fecha (menos em cima da prévia do perfil, ao lado)
+        if (e.target !== janela) return;
+        const pv = document.querySelector('[data-previa-perfil]:popover-open')?.getBoundingClientRect();
+        if (pv && e.clientX >= pv.left && e.clientX <= pv.right && e.clientY >= pv.top && e.clientY <= pv.bottom) return;
+        fechar();
+      });
       janela.addEventListener('cancel', e => { e.preventDefault(); fechar(); }); // Esc
       janela.addEventListener('close', avisarFechou);
     } else {
@@ -213,6 +235,7 @@
     aberta = true;
     janela.showModal();
     janela.scrollTop = 0;
+    window.dispatchEvent(new CustomEvent('ofertou:loja-abriu'));
   }
   // Qualquer botão/link com data-abrir-loja abre a loja por cima (sem sair da página)
   document.addEventListener('click', e => {

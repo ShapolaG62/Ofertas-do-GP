@@ -2316,3 +2316,50 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .cos-item { grid-template-rows: auto 1fr; }
 .cos-info { display: flex; flex-direction: column; }
 .cos-info > .btn { margin-top: auto; }
+
+/* Prévia ao vivo do perfil, ao lado do editor e da Loja de cosméticos (perfil.js). Só em telas largas:
+   as janelas vão para a esquerda e a prévia (popover, por cima do fundo escuro) fica à direita delas. */
+@media (min-width: 1200px) {
+  body.pf-com-previa .pf-dialog { --dw: min(720px, calc(100vw - 440px)); }
+  body.pf-com-previa .cos-dlg { --dw: min(940px, calc(100vw - 440px)); }
+  body.pf-com-previa .pf-dialog, body.pf-com-previa .cos-dlg { width: var(--dw); margin-left: calc((100vw - var(--dw) - 380px) / 2); margin-right: auto; }
+}
+.pf-previa {
+  --bg: #0d1116; --surface: #161c23; --surface-2: #1c232c; --surface-3: #232c36; --ink: #eef2f6; --ink-2: #b4bfca; --ink-3: #7f8b97;
+  --line: #26303b; --line-strong: #344150; --brand: #2bb673;
+  position: fixed; inset: auto; margin: 0; width: 360px; max-height: calc(100dvh - 32px); overflow: hidden; padding: 14px; box-sizing: border-box;
+  display: grid; gap: 10px; align-content: start; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--bg); color: var(--ink);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8); color-scheme: dark; font-family: inherit;
+}
+.pf-previa:not(:popover-open) { display: none; }
+.pv-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
+.pv-estado { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #16301f; color: #49c98a; }
+.pv-estado.is-mudou { background: #3a2c08; color: #f2c94c; }
+.pv-perfil { border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); display: grid; }
+.pv-capa { height: 96px; background: var(--pf-grad); background-size: cover; background-position: center; position: relative; }
+.pv-capa::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(22, 28, 35, .9) 100%); }
+.pv-topo { position: relative; margin: -34px 10px 0; padding: 12px; border-radius: 12px; background: rgba(22, 28, 35, .88); border: 1px solid var(--line);
+  border-top: 3px solid var(--pf-a); box-shadow: 0 14px 30px -18px rgba(0, 0, 0, .9); }
+.pv-topo > :not(.pf-efeito) { position: relative; z-index: 1; }
+.pv-linha { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.pv-foto { --tam: 72px; border-radius: 14px; padding: 4px; }
+.pv-ident { min-width: 0; }
+.pv-ident h3 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -.01em; overflow-wrap: anywhere; line-height: 1.2; }
+.pv-titulo { margin: 2px 0 0; color: var(--ink-2); font-size: 12.5px; overflow-wrap: anywhere; }
+.pv-ident .pf-selos { margin-top: 6px; gap: 4px; }
+.pv-ident .pf-papel, .pv-ident .pf-selo { padding: 2px 8px; font-size: 10.5px; }
+.pv-linha .pf-nivel-selo.is-pequeno { width: 38px; height: 38px; }
+.pv-linha .pf-nivel-selo.is-pequeno b { font-size: 15px; }
+.pv-meta { margin: 8px 0 0; font-size: 12px; color: var(--ink-3); }
+.pv-bloco { padding: 10px 14px 0; display: grid; gap: 6px; }
+.pv-bloco:last-child { padding-bottom: 14px; }
+.pv-bloco > small { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.pv-bio { margin: 0; font-size: 13px; color: var(--ink-2); line-height: 1.45; white-space: pre-line; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.pv-vazio { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+.pv-vitrine { display: flex; flex-wrap: wrap; gap: 6px; }
+.pv-vitrine .vit-emoji { width: 38px; height: 38px; border-radius: 11px; font-size: 19px; cursor: default; }
+.pv-links { display: flex; flex-wrap: wrap; gap: 5px; }
+.pv-links span { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--ink-2); }
+.pv-dica, .pv-provando { margin: 0; font-size: 12px; color: var(--ink-3); text-align: center; }
+.pv-provando { color: #f2c94c; padding: 6px 10px; border-radius: 10px; background: #2a2208; border: 1px solid #5c4710; }

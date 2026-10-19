@@ -489,7 +489,7 @@ A **Área de trabalho** junta o **SAC** e a **Moderação do chat** num lugar s�
 
 **Cargos, do maior para o menor:** Proprietário > Gerente > Admin > Moderador > Suporte.
 - **Proprietário:** você (login "admin" do painel), com **acesso total**. Você também pode dar esse cargo a alguém da equipe: a pessoa ganha todas as funções da Área de trabalho, mas **nunca** o painel administrativo.
-- **Ninguém da equipe entra no painel admin.** A equipe usa só a **Área de trabalho** (/trabalho), pelo botão **Área de trabalho (equipe)** em Minha conta, junto do perfil.
+- **Ninguém da equipe entra no painel admin.** A equipe usa só a **Área de trabalho** (/trabalho), pelo cartão **Área de trabalho** na aba **Área da equipe** de Minha conta.
 
 **Funções que cada cargo pode ter:** SAC · Moderação do chat (advertir e bloquear mensagens) · Suspender e banir · Postar anúncios · Gerenciar a equipe.
 

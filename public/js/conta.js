@@ -417,7 +417,6 @@
     if (ME.avatar_url) $('#who-avatar').src = ME.avatar_url;
     // Empresa ainda sem loja: o "Painel da loja" fica escondido e a conta abre em "Minha loja" para criar a loja
     const equipe = ME.staff || ME.pode_sac || ME.pode_postar || ME.pode_moderar;
-    $('#btn-trabalho').hidden = !ME.staff; // equipe: Área de trabalho junto do perfil (nunca o painel admin)
     const tabs = [...(equipe ? [['equipe', 'Área da equipe']] : []), ...(empresa ? TABS_EMPRESA.filter(([k]) => k !== 'painel' || LOJA) : TABS_CONSUMIDOR)];
     if (equipe) {
       $('#eq-sac').hidden = !ME.pode_sac;

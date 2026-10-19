@@ -12,14 +12,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261133">
-<script src="/js/app-nativo.js?v=20261133"></script>
-<script src="/js/dialogo.js?v=20261133"></script>
-<script src="/js/cartoes.js?v=20261133" defer></script>
-<script src="/js/capi-minerando.js?v=20261133" defer></script>
-<script src="/js/cadastro-auto.js?v=20261133" defer></script>
-<script src="/js/rodape-legal.js?v=20261133" defer></script>
-<script src="/js/cookies.js?v=20261133"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261135">
+<script src="/js/app-nativo.js?v=20261135"></script>
+<script src="/js/dialogo.js?v=20261135"></script>
+<script src="/js/cartoes.js?v=20261135" defer></script>
+<script src="/js/capi-minerando.js?v=20261135" defer></script>
+<script src="/js/cadastro-auto.js?v=20261135" defer></script>
+<script src="/js/rodape-legal.js?v=20261135" defer></script>
+<script src="/js/cookies.js?v=20261135"></script>
 </head>
 <body>
 <header class="site-header">
@@ -356,7 +356,7 @@
             <div class="panel-card loja-boas-vindas" id="loja-boas-vindas" hidden>
               <span class="loja-bv-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg></span>
               <div><h2>Bem-vindo! Vamos criar a sua loja</h2>
-                <p class="muted">Preencha o nome, a apresentação e o logo da sua loja e clique em <b>Salvar loja</b>, no fim da página. Assim que a loja for salva, o <b>Painel da loja</b> é liberado, com vendas, carteira, acessos e pedidos.</p></div>
+                <p class="muted">Preencha o nome, a apresentação e o logo da sua loja e clique em <b>Salvar loja</b>, no fim da página. Assim que a loja for salva, o <b>Painel da loja</b> é liberado, com vendas, recebimento, acessos e pedidos.</p></div>
             </div>
             <form class="form" id="form-loja">
               <div class="panel-card le-secao">
@@ -426,7 +426,7 @@
 
             <div class="panel-card le-secao le-perigo" id="le-excluir-card" hidden>
               <h2>Excluir loja</h2>
-              <p class="muted" style="margin:0">Apaga a página da loja, todos os produtos e anúncios, os catálogos e as avaliações. Sua conta continua e você pode criar outra loja depois. Pedidos e o extrato da carteira ficam guardados. Não é possível excluir com pedidos em andamento ou dinheiro na carteira.</p>
+              <p class="muted" style="margin:0">Apaga a página da loja, todos os produtos e anúncios, os catálogos e as avaliações. Sua conta continua e você pode criar outra loja depois. Os pedidos ficam guardados como histórico. Não é possível excluir com pedidos em andamento.</p>
               <div class="row-actions"><button class="btn btn-danger" type="button" id="le-excluir">Excluir minha loja</button></div>
             </div>
           </div>
@@ -564,24 +564,19 @@
 
             <div class="panel-card">
               <h2>Pedidos recebidos</h2>
-              <p class="muted">Cada pedido tem um número (ticket) e uma conversa com o cliente. Confirme o pagamento quando o valor cair na sua conta.</p>
+              <p class="muted">Cada pedido tem um número (ticket) e uma conversa com o cliente. Ele aparece aqui depois que o Mercado Pago confirma o pagamento.</p>
               <div id="vendas-pedidos"><p class="muted">Carregando…</p></div>
             </div>
 
-            <div class="panel-card">
-              <div class="row-between"><h2>Minha carteira</h2><small class="muted" id="cart-regras"></small></div>
-              <p class="muted">Os pagamentos dos seus pedidos caem no Mercado Pago do Ofertou! e o valor dos produtos (menos a tarifa do Mercado Pago de cada venda) entra aqui. A taxa de uso do site é paga pelo cliente, à parte.</p>
-              <div class="vendas-numeros" id="cart-numeros"></div>
-              <div class="cart-saque" id="cart-saque"></div>
-              <h3 class="cart-sub">Extrato</h3>
-              <div class="cart-extrato" id="cart-extrato"></div>
-              <h3 class="cart-sub">Saques</h3>
-              <div class="cart-extrato" id="cart-saques"></div>
+            <div class="panel-card" id="mp-loja">
+              <h2>Receber pelo Mercado Pago</h2>
+              <p class="muted">Os pedidos feitos pelo site são pagos <b>direto na conta do Mercado Pago da sua loja</b>: o dinheiro cai com você, sem passar pelo Ofertou!. A taxa de uso do site é paga pelo cliente e separada pelo próprio Mercado Pago na hora do pagamento. Devoluções e prazos de liberação seguem as regras da sua conta do Mercado Pago.</p>
+              <div id="mp-loja-situacao"><p class="muted">Carregando…</p></div>
             </div>
 
             <div class="panel-card">
               <h2>Como seus clientes pagam</h2>
-              <p class="muted" id="pag-explica">O cliente escolhe Pix ou cartão e paga pelo Mercado Pago na hora do pedido. A confirmação é automática: você recebe o aviso no site (🔔), na conversa e no seu e-mail, e o valor entra na sua carteira.</p>
+              <p class="muted" id="pag-explica">O cliente escolhe Pix ou cartão e paga pelo Mercado Pago da sua loja na hora do pedido. A confirmação é automática: você recebe o aviso no site (🔔), na conversa e no seu e-mail.</p>
               <form class="form" id="form-pagloja">
                 <label class="check-line"><input type="checkbox" name="aceita_pedidos"> <span><b>Receber pedidos pelo site</b> (botão "Fazer pedido" nos seus produtos)</span></label>
                 <div class="pag-opcoes">
@@ -589,14 +584,6 @@
                   <label class="pag-opcao"><input type="checkbox" name="aceita_cartao"><span><b>Cartão de crédito ou débito</b><small id="pag-parcelas">Pelo Mercado Pago</small></span></label>
                 </div>
                 <label class="field"><span>Recado no pedido <small>(prazo de envio, retirada, frete…)</small></span><textarea name="pedido_instrucoes" maxlength="400" rows="2"></textarea></label>
-                <fieldset class="vendas-bloco">
-                  <legend><b>Recebimento dos saques</b> <small class="muted">(sua chave Pix)</small></legend>
-                  <div class="form-row">
-                    <label class="field"><span>Tipo de chave</span><select name="pag_pix_tipo"><option value="">—</option><option value="cpf">CPF</option><option value="cnpj">CNPJ</option><option value="email">E-mail</option><option value="telefone">Telefone</option><option value="aleatoria">Chave aleatória</option></select></label>
-                    <label class="field"><span>Chave Pix</span><input name="pag_pix_chave" maxlength="80" autocomplete="off"></label>
-                  </div>
-                  <label class="field"><span>Nome do titular</span><input name="pag_pix_nome" maxlength="60"></label>
-                </fieldset>
                 <div class="form-msg" hidden></div>
                 <div class="row-actions"><button class="btn btn-primary" type="submit">Salvar</button></div>
               </form>
@@ -616,7 +603,7 @@
           <div class="tab-pane" data-pane="cartoes" hidden>
             <div class="panel-card">
               <h2>Meus cartões</h2>
-              <p class="muted">Salve seus cartões para pagar os pedidos às lojas parceiras mais rápido: na compra, você escolhe o cartão e digita só o código de segurança. Os cartões ficam guardados com segurança no Mercado Pago; o Ofertou! não guarda os dados do cartão.</p>
+              <p class="muted">Salve seus cartões para pagar os planos do Ofertou! mais rápido: na compra, você escolhe o cartão e digita só o código de segurança. (Os pedidos às lojas parceiras são pagos no Mercado Pago de cada loja, com o formulário de cartão na hora.) Os cartões ficam guardados com segurança no Mercado Pago; o Ofertou! não guarda os dados do cartão.</p>
               <div id="meus-cartoes"><p class="muted">Carregando…</p></div>
             </div>
           </div>
@@ -668,8 +655,8 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/loja-painel.js?v=20261133" defer></script>
-<script src="/js/conta.js?v=20261133" defer></script>
-<script src="/js/chat-topo.js?v=20261133" defer></script>
+<script src="/js/loja-painel.js?v=20261135" defer></script>
+<script src="/js/conta.js?v=20261135" defer></script>
+<script src="/js/chat-topo.js?v=20261135" defer></script>
 </body>
 </html>

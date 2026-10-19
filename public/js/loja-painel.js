@@ -1,4 +1,4 @@
-/* Ofertou! — Painel da loja (Minha conta → Painel da loja): resumo de vendas, carteira, pendências, acessos,
+/* Ofertou! — Painel da loja (Minha conta → Painel da loja): resumo de vendas, recebimento, pendências, acessos,
    funil, produtos, avaliações e o que falta configurar. OfertouPainelLoja.carregar(elemento, abrirAba) */
 (() => {
   'use strict';
@@ -44,7 +44,7 @@
 
   function render(el, d, abrirAba) {
     if (!d.loja) {
-      el.innerHTML = `<div class="panel-card"><h2>Painel da loja</h2><p class="muted">Crie sua loja para ver aqui as vendas, a carteira e os acessos.</p>
+      el.innerHTML = `<div class="panel-card"><h2>Painel da loja</h2><p class="muted">Crie sua loja para ver aqui as vendas, os pedidos e os acessos.</p>
         <button class="btn btn-primary" type="button" data-ir="loja">Criar minha loja</button></div>`;
       return;
     }
@@ -54,8 +54,8 @@
     if (p.a_enviar.length) acoes.push({ ico: 'caixa', forte: true, txt: `<b>${p.a_enviar.length} pedido(s) pago(s) para enviar</b>${p.a_enviar.some(x => x.atrasado) ? ' — há pedidos pagos há mais de 3 dias' : ''}`, ir: 'vendas' });
     if (p.pedidos_mensagem) acoes.push({ ico: 'chat', forte: true, txt: `<b>${p.pedidos_mensagem} pedido(s) de mensagem</b> esperando sua resposta`, ir: 'mensagens' });
     if (p.mensagens) acoes.push({ ico: 'chat', txt: `<b>${p.mensagens} mensagem(ns) não lida(s)</b> de clientes`, ir: 'mensagens' });
-    if (k.saldo.pode_sacar) acoes.push({ ico: 'saldo', txt: `<b>${brl(k.saldo.disponivel)} disponível</b> para saque`, ir: 'vendas' });
-    if (p.saque) acoes.push({ ico: 'relogio', txt: `Saque de <b>${brl(p.saque.valor)}</b> em análise pelo Ofertou!`, ir: 'vendas' });
+    if (k.mp.disponivel && !k.mp.conectado) acoes.push({ ico: 'saldo', forte: true, txt: '<b>Conecte o Mercado Pago da loja</b> para receber os pedidos pelo site', ir: 'vendas' });
+    if (k.mp.erro) acoes.push({ ico: 'saldo', forte: true, txt: '<b>A conexão com o Mercado Pago falhou</b>: conecte de novo', ir: 'vendas' });
     if (p.avaliacoes_sem_resposta) acoes.push({ ico: 'estrela', txt: `<b>${p.avaliacoes_sem_resposta} avaliação(ões)</b> sem resposta`, link: `/loja/${d.loja.slug}#avaliacoes` });
     if (p.anuncios_expirando) acoes.push({ ico: 'relogio', txt: `<b>${p.anuncios_expirando} anúncio(s)</b> vencem nos próximos 3 dias`, ir: 'anuncios' });
     if (p.anuncios_vencidos) acoes.push({ ico: 'relogio', txt: `<b>${p.anuncios_vencidos} anúncio(s)</b> venceram nos últimos 15 dias`, ir: 'anuncios' });
@@ -75,7 +75,7 @@
 
       <div class="dash-kpis">
         <div class="dash-kpi">${ico('vendas')}<span>Vendas (30 dias)</span><b>${brl(k.vendas.valor)}</b><small>${num(k.vendas.n)} pedido(s) · ${num(k.vendas.itens)} item(ns) ${varTxt(k.vendas.var_valor)}</small></div>
-        <div class="dash-kpi">${ico('saldo')}<span>Saldo disponível</span><b>${brl(k.saldo.disponivel)}</b><small>${brl(k.saldo.a_liberar)} a liberar${k.saldo.proxima ? ` · próxima em ${diaMes(k.saldo.proxima)}` : ''}</small></div>
+        <div class="dash-kpi">${ico('saldo')}<span>Recebimento</span><b>${k.mp.conectado ? 'Mercado Pago' : 'Não conectado'}</b><small>${k.mp.conectado ? 'os pagamentos caem direto na sua conta' : 'conecte em Vendas e pagamentos'}</small></div>
         <div class="dash-kpi">${ico('ticket')}<span>Ticket médio</span><b>${brl(k.ticket_medio)}</b><small>por pedido pago</small></div>
         <div class="dash-kpi">${ico('olho')}<span>Acessos à loja</span><b>${num(k.acessos.n)}</b><small>${k.conversao === null ? 'sem dados de conversão' : `${String(k.conversao).replace('.', ',')}% dos produtos abertos viram venda`} ${varTxt(k.acessos.var)}</small></div>
         <div class="dash-kpi">${ico('estrela')}<span>Avaliação</span><b>${k.avaliacao.media === null ? '—' : `${String(k.avaliacao.media).replace('.', ',')} ★`}</b><small>${num(k.avaliacao.total)} avaliação(ões)</small></div>

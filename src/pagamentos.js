@@ -212,6 +212,26 @@ async function criarPedido(b, req) {
         String(pay.id), td.qr_code || null, td.qr_code_base64 || null, sqlDe(expira), id);
       return { token };
     }
+    // Cartão salvo (Minha conta → Meus cartões): cobrado aqui mesmo, sem sair do site; a pessoa digita só o código de segurança
+    if (metodo === 'mercadopago' && b.cartao?.card_id) {
+      const dono = require('./perfis').donoDe(req);
+      if (!dono) throw fail('Entre na sua conta para pagar com um cartão salvo.', 401);
+      if (!b.cartao.token) throw fail('Digite o código de segurança do cartão.');
+      const salvo = await require('./cartoes').paraPagamento(dono, b.cartao.card_id);
+      const maxParc = Math.min(Math.max(parseInt(s.pag_mp_parcelas, 10) || 1, 1), 12);
+      const parc = Math.min(Math.max(parseInt(b.cartao.installments, 10) || 1, 1), maxParc);
+      const pay = await mp('post', '/v1/payments', {
+        transaction_amount: p.preco, token: String(b.cartao.token), installments: parc, payment_method_id: String(salvo.payment_method_id),
+        ...(salvo.issuer_id ? { issuer_id: String(salvo.issuer_id) } : {}),
+        description: descricao, external_reference: token, statement_descriptor: 'OFERTOU',
+        payer: { type: 'customer', id: salvo.customer_id, email: dados.email },
+        ...(publico ? { notification_url: `${base}/api/pagamentos/webhook` } : {}),
+      }, s, { 'X-Idempotency-Key': token });
+      db.run('UPDATE pagamentos SET mp_payment_id = ?, observacao = ? WHERE id = ?', String(pay.id), `Cartão salvo ${salvo.cartao.bandeira || ''} final ${salvo.cartao.final || ''} em ${parc}x`.slice(0, 300), id);
+      if (pay.status === 'approved') aprovar(id, 'Mercado Pago (cartão salvo)');
+      else if (['rejected', 'cancelled'].includes(pay.status)) throw fail(require('./pedidos-loja').motivoRecusa(pay.status_detail), 402);
+      return { token }; // em análise: a página acompanha até o Mercado Pago decidir
+    }
     if (metodo === 'mercadopago') {
       const pref = await mp('post', '/checkout/preferences', {
         items: [{ id: p.id, title: descricao, quantity: 1, unit_price: p.preco, currency_id: 'BRL' }],

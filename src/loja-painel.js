@@ -1,8 +1,8 @@
-// Painel da loja (dashboard da empresa em Minha conta): resumo de vendas, carteira, pendências, acessos,
+// Painel da loja (dashboard da empresa em Minha conta): resumo de vendas, recebimento, pendências, acessos,
 // funil de conversão, produtos, avaliações e o que falta configurar — tudo de uma vez.
 const db = require('./db');
 const pedidos = require('./pedidos-loja');
-const carteira = require('./carteira');
+const mpLojas = require('./mp-lojas');
 const chat = require('./chat');
 
 const r2 = v => Math.round((Number(v) || 0) * 100) / 100;
@@ -48,10 +48,6 @@ function painel(user) {
       SUM(oculto = 0 AND expires_at <= datetime('now') AND expires_at > datetime('now', '-15 days')) vencidos
     FROM offers WHERE loja_id = ?`, L);
 
-  // Carteira
-  const sd = carteira.saldo(L);
-  const saquePend = db.get(`SELECT valor, solicitado_em FROM carteira_saques WHERE loja_id = ? AND status = 'solicitado' ORDER BY id DESC LIMIT 1`, L) || null;
-
   // Avaliações
   const av = db.get(`SELECT COUNT(*) n, AVG(nota) media FROM loja_avaliacoes WHERE loja_id = ? AND oculta = 0`, L);
   const estrelas = Object.fromEntries(db.all(`SELECT nota, COUNT(*) n FROM loja_avaliacoes WHERE loja_id = ? AND oculta = 0 GROUP BY nota`, L).map(r => [r.nota, r.n]));
@@ -78,7 +74,7 @@ function painel(user) {
     { id: 'entrega', ok: Boolean(loja.politica_entrega), texto: 'Explicar como funciona a entrega', aba: 'loja' },
     { id: 'anuncios', ok: (anuncios.ativos || 0) > 0, texto: 'Ter pelo menos um anúncio ativo', aba: 'anuncios' },
     { id: 'pedidos', ok: pub.aceita_pedidos, texto: 'Receber pedidos pelo site (Pix e cartão)', aba: 'vendas' },
-    { id: 'saque', ok: Boolean(loja.pag_pix_chave), texto: 'Cadastrar a chave Pix para receber os saques', aba: 'vendas' },
+    { id: 'mercadopago', ok: mpLojas.conectada(loja), texto: 'Conectar a conta do Mercado Pago da loja para receber os pagamentos', aba: 'vendas' },
   ];
 
   return {
@@ -88,12 +84,12 @@ function painel(user) {
       ticket_medio: v30.n ? r2(v30.v / v30.n) : 0,
       acessos: { n: acessos30, var: variacao(acessos30, acessosAnt) },
       conversao: produtos30 ? Math.round((v30.n / produtos30) * 1000) / 10 : null,
-      saldo: { disponivel: sd.disponivel, a_liberar: sd.a_liberar, proxima: sd.proxima_liberacao, minimo: sd.minimo, pode_sacar: sd.disponivel >= sd.minimo && !saquePend },
+      mp: mpLojas.situacao(loja),
       avaliacao: { media: av.n ? Math.round(av.media * 10) / 10 : null, total: av.n, estrelas },
     },
     pendencias: {
       a_enviar: aEnviar, mensagens: conversas.nao_lidas, pedidos_mensagem: conversas.pedidos, avaliacoes_sem_resposta: semResposta,
-      anuncios_expirando: anuncios.expirando || 0, anuncios_vencidos: anuncios.vencidos || 0, saque: saquePend,
+      anuncios_expirando: anuncios.expirando || 0, anuncios_vencidos: anuncios.vencidos || 0,
     },
     funil: { pagina: acessos30, produto: produtos30, pedidos: pedidosCriados30, pagos: v30.n },
     serie, mais_vistos: maisVistos, mais_vendidos: maisVendidos, ultimos, avaliacoes: recentes,

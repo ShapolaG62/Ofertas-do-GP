@@ -1,5 +1,6 @@
 // Identificação de quem mantém o site, no rodapé de todas as páginas (Decreto 7.962/2013, comércio eletrônico):
 // nome ou razão social, CPF ou CNPJ, endereço e e-mail de contato — preenchidos em Painel → Site → Responsável pelo site.
+// Também põe no topo o link "Pular para o conteúdo" (acessibilidade: quem usa teclado ou leitor de tela vai direto ao principal).
 (() => {
   if (window.top !== window) return; // dentro de quadros (SAC, Moderação, Equipe no painel) não repete
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -8,8 +9,24 @@
   .rodape-legal { border-top: 1px solid var(--line, #e2e6e1); margin-top: 28px; padding: 14px max(16px, env(safe-area-inset-left, 0px)) calc(14px + env(safe-area-inset-bottom, 0px));
     font-size: 12.5px; line-height: 1.6; color: var(--ink-3, #6f7873); text-align: center; }
   .rodape-legal a { color: inherit; text-decoration: underline; }
-  .rodape-legal span + span::before { content: " · "; }`;
+  .rodape-legal span + span::before { content: " · "; }
+  .pular-conteudo { position: fixed; left: 12px; top: -60px; z-index: 2147483200; padding: 10px 16px; border-radius: 10px;
+    background: var(--brand, #0c8f4f); color: #fff; font-weight: 700; text-decoration: none; transition: top .15s; }
+  .pular-conteudo:focus { top: 12px; outline: 3px solid #fff; outline-offset: 2px; }
+  main[tabindex="-1"]:focus { outline: none; }`;
   document.head.appendChild(css);
+  function pularConteudo() {
+    const main = document.querySelector('main');
+    if (!main || document.querySelector('.pular-conteudo')) return;
+    if (!main.id) main.id = 'conteudo';
+    if (!main.hasAttribute('tabindex')) main.setAttribute('tabindex', '-1');
+    const a = document.createElement('a');
+    a.className = 'pular-conteudo';
+    a.href = `#${main.id}`;
+    a.textContent = 'Pular para o conteúdo';
+    a.addEventListener('click', e => { e.preventDefault(); main.focus(); main.scrollIntoView(); });
+    document.body.prepend(a);
+  }
   function formatarDoc(d) {
     const n = String(d || '').replace(/\D/g, '');
     if (n.length === 11) return `CPF ${n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}`;
@@ -35,5 +52,6 @@
     // Fica dentro do rodapé da página, quando existe; senão, no fim da página
     (document.querySelector('body > footer, .site-footer') || document.body).appendChild(el);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
+  const iniciar = () => { pularConteudo(); montar(); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();

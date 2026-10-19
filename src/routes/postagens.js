@@ -80,26 +80,14 @@ router.get('/api/postagens/ofertas', async (req, res) => {
       id: o.id, store_id: o.store_id, plataforma: o.plataforma, produto: o.produto, preco_atual: o.preco_atual,
       preco_anterior: o.preco_anterior, desconto_pct: o.desconto_pct, categoria: o.categoria, last_seen_at: o.last_seen_at,
       link, imagem_publica: Boolean(social.postImage(o, req.cfg)), postado_em: hist[o.id] || {},
-      imagem_url: cid ? `/api/postagens/imagem/${o.id}.jpg` : `/img/marca/${o.id}.jpg`,
+      imagem_url: `/api/img/${o.id}`,
     });
   }
   res.json(out);
 });
 
-// Imagem para baixar/visualizar com a marca d'água de quem está usando (cliente: a dele, sem a Capi).
-router.get('/api/postagens/imagem/:id.jpg', async (req, res) => {
-  const o = db.get('SELECT id, imagem FROM offers WHERE id = ?', Number(req.params.id));
-  if (!o) return res.status(404).send('Não encontrado');
-  const watermark = require('../watermark');
-  if (!watermark.ativa(req.cfg)) return res.redirect(`/api/img/${o.id}`);
-  try {
-    res.setHeader('Content-Type', 'image/jpeg');
-    res.setHeader('Cache-Control', 'private, max-age=600');
-    res.send(await watermark.paraOferta(o, req.cfg));
-  } catch {
-    res.redirect(`/api/img/${o.id}`);
-  }
-});
+// Endereço antigo da imagem com marca d'água (recurso retirado): leva para a foto original da oferta.
+router.get('/api/postagens/imagem/:id.jpg', (req, res) => res.redirect(301, `/api/img/${Number(req.params.id) || 0}`));
 
 router.post('/api/postagens/publicar', async (req, res) => {
   const wait = postLimiter.hit(req.poster.key);

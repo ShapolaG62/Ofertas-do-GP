@@ -1,4 +1,5 @@
-// Cartões salvos dos clientes, guardados no Mercado Pago do Ofertou! (Customers & Cards).
+// Cartões salvos dos clientes, guardados no Mercado Pago do Ofertou! (Customers & Cards). Servem para pagar os planos
+// do Ofertou! (os pedidos às lojas são cobrados no Mercado Pago de cada loja, onde estes cartões não existem).
 // O site NÃO guarda nada do cartão: só o código do cliente no Mercado Pago (para listar, salvar e usar os cartões).
 // Número, validade e código de segurança são digitados nos campos seguros do Mercado Pago e nunca passam pelo site.
 const db = require('./db');
@@ -15,7 +16,8 @@ db.db.exec(`
 const MAX_CARTOES = 5;
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 let mpChamada = null; // permite trocar a chamada ao Mercado Pago nos testes
-const mp = (...a) => (mpChamada || require('./pedidos-loja').mp)(...a);
+const mp = (method, path, data, headers = {}) => (mpChamada
+  || ((m, p, d, h) => require('./pagamentos').mp(m, p, d, require('./settings').getAll(), h)))(method, path, data, headers);
 
 function resumo(c) {
   return {

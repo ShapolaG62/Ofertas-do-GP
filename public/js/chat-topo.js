@@ -72,7 +72,7 @@
     } catch { /* sem conexão */ }
   }
 
-  // ── Sino de notificações (no topo, ao lado dos botões): pedido pago, saque pago… ──
+  // ── Sino de notificações (no topo, ao lado dos botões): pedido pago, avisos do site… ──
   const sino = document.createElement('button');
   sino.type = 'button';
   sino.className = 'btn btn-sm sino-btn';
@@ -196,7 +196,7 @@
         <small class="pix-aguarde"><span class="live-dot"></span> Aguardando o pagamento — a confirmação é automática${pg.expira ? `. O Pix vale até ${new Date(String(pg.expira).replace(' ', 'T') + 'Z').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}.</small></div>` : ''}
       ${pg && pg.cartao ? `<div class="chatf-pix"><a class="btn btn-primary btn-sm" href="${esc(pg.cartao)}" target="_blank" rel="noopener">Pagar ${brl(p.total)} com cartão ↗</a>
         <small class="pix-aguarde"><span class="live-dot"></span> Pagamento seguro pelo Mercado Pago. A confirmação é automática.</small></div>` : ''}
-      ${p.eu === 'loja' && p.gateway === 'mp' && p.valor_loja !== undefined && p.status !== 'cancelado' ? `<small class="muted">Na sua carteira: <b>${brl(p.valor_loja)}</b>${p.tarifa_mp ? ` (produtos menos a tarifa do Mercado Pago de ${brl(p.tarifa_mp)})` : ''}${p.libera_em ? ` · disponível a partir de ${new Date(String(p.libera_em).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}` : p.status === 'aguardando_pagamento' ? ' depois do pagamento' : ''}.</small>` : ''}
+      ${p.eu === 'loja' && p.gateway === 'mp' && p.valor_loja !== undefined && p.status !== 'cancelado' ? `<small class="muted">Você recebe no seu Mercado Pago: <b>${brl(p.valor_loja)}</b>${p.tarifa_mp ? ` (produtos menos a tarifa do Mercado Pago de ${brl(p.tarifa_mp)})` : ''}</small>` : ''}
       ${p.instrucoes ? `<small class="muted">${esc(p.instrucoes)}</small>` : ''}
       <small class="aviso-resp-mini">O Ofertou! não se responsabiliza pela venda, entrega, troca ou garantia: é com a loja parceira.</small>
       ${p.acoes.length ? `<div class="chatf-acoes">${p.acoes.map(a => `<button class="btn btn-sm ${ROTULO[a][1]}" type="button" data-pacao="${a}" data-pid="${p.id}">${ROTULO[a][0]}</button>`).join('')}</div>` : ''}

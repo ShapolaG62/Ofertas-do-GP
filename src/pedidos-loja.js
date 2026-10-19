@@ -1,13 +1,14 @@
 // Pedidos feitos às lojas parceiras pelo site, formas de pagamento, taxa de uso do site e contadores de acesso.
-//  • O cliente paga por Pix ou cartão no MERCADO PAGO DO DONO DO OFERTOU! (o mesmo de Painel → Planos → Formas de
-//    recebimento). A empresa escolhe se aceita Pix, cartão ou os dois (Minha conta → Vendas e pagamentos).
-//  • Taxa de uso do site (padrão 1%, Painel → Atendimento): somada ao valor dos produtos na finalização; fica com o site.
+//  • Modelo marketplace: o cliente paga por Pix ou cartão NO MERCADO PAGO DA PRÓPRIA LOJA, que a empresa conecta em
+//    Minha conta → Vendas e pagamentos (ver mp-lojas.js). O dinheiro cai direto na conta da loja; o Ofertou! não
+//    recebe nem repassa o valor dos produtos. A empresa escolhe se aceita Pix, cartão ou os dois.
+//  • Taxa de uso do site (padrão 1%, Painel → Atendimento): somada ao valor dos produtos na finalização e separada pelo
+//    próprio Mercado Pago na hora do pagamento (application_fee), indo para o Mercado Pago do Ofertou!.
 //  • Pix: o QR code aparece na própria janela do pedido. Cartão: formulário do Mercado Pago dentro do site (Card
-//    Payment Brick, com as parcelas); os dados do cartão vão direto ao Mercado Pago (o site só recebe um token).
+//    Payment Brick, com a chave pública da loja); os dados do cartão vão direto ao Mercado Pago (o site só recebe um token).
 //  • O pedido só aparece para a loja (e só entra na conversa entre os dois) depois do pagamento confirmado.
 //  • A confirmação é automática (consulta à API do Mercado Pago: na tela do pedido, pelo aviso do Mercado Pago e a
-//    cada 2 minutos no servidor). Pago → a empresa é avisada no site (🔔), na conversa e por e-mail, e o valor dos
-//    produtos, menos a tarifa do Mercado Pago daquela venda, entra na carteira dela (ver carteira.js).
+//    cada 2 minutos no servidor). Pago → a empresa é avisada no site (🔔), na conversa e por e-mail.
 //  • Cada pedido é um ticket (PD-000123) com todos os eventos e as mensagens automáticas na conversa com a loja.
 //  • "Finalização de compra" = pedido com pagamento confirmado. Aparece para o dono da loja e no painel.
 //  • Contadores por dia: acessos à página da loja, produtos abertos no catálogo, cliques no site oficial e nos links.
@@ -16,7 +17,7 @@ const axios = require('axios');
 const db = require('./db');
 const chat = require('./chat');
 const settings = require('./settings');
-const carteira = require('./carteira');
+const mpLojas = require('./mp-lojas');
 const notificacoes = require('./notificacoes');
 
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
@@ -27,7 +28,7 @@ for (const col of ['pag_pix_ativo INTEGER NOT NULL DEFAULT 0', 'pag_pix_tipo TEX
   'pag_cartao_ativo INTEGER NOT NULL DEFAULT 0', 'pag_cartao_link TEXT', 'pag_combinar INTEGER NOT NULL DEFAULT 1',
   'aceita_pedidos INTEGER NOT NULL DEFAULT 1', 'pedido_instrucoes TEXT',
   'mp_access_token TEXT', 'mp_refresh_token TEXT', 'mp_user_id TEXT', 'mp_conectado_em TEXT', 'mp_expira TEXT', 'taxa_aviso_em TEXT',
-  // Formas que a loja aceita (pagas no Mercado Pago do Ofertou!) — Pix e cartão ligados por padrão
+  // Formas que a loja aceita (pagas no Mercado Pago da loja) — Pix e cartão ligados por padrão
   'aceita_pix INTEGER NOT NULL DEFAULT 1', 'aceita_cartao INTEGER NOT NULL DEFAULT 1']) {
   try { db.db.exec(`ALTER TABLE lojas ADD COLUMN ${col}`); } catch { /* já existe */ }
 }
@@ -131,75 +132,50 @@ const siteUrl = () => String(settings.get('site_url') || '').replace(/\/+$/, '')
 const sitePublico = () => /^https:\/\//i.test(siteUrl());
 const parcelas = () => Math.min(Math.max(parseInt(settings.get('pag_mp_parcelas'), 10) || 1, 1), 12);
 
-// ── Mercado Pago do Ofertou! ────────────────────────────────────────────────
-const gatewayPronto = () => Boolean(settings.get('mp_access_token'));
+// ── Mercado Pago ────────────────────────────────────────────────────────────
+// Os pedidos são cobrados no Mercado Pago da loja (marketplace). A chave pública do site (Painel → Planos → Formas de
+// recebimento) continua sendo usada para os cartões salvos, que pagam os planos do Ofertou!.
+const gatewayPronto = () => mpLojas.configurado();
 const chavePublica = () => String(settings.get('mp_public_key') || '').trim();
-async function mp(method, path, data, extraHeaders = {}) {
-  const token = settings.get('mp_access_token');
-  if (!token) throw fail('Os pagamentos ainda não foram configurados pelo administrador do site.', 503);
+async function mp(method, path, data, extraHeaders = {}, loja = null) {
+  if (!loja) throw fail('Loja não informada para o pagamento.', 500);
+  const token = await mpLojas.tokenDaLoja(loja);
   const r = await axios({ method, url: `${MP}${path}`, data, timeout: 20000, validateStatus: () => true,
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...extraHeaders } });
   if (r.status >= 400) {
     const m = r.data?.message || r.data?.error || `HTTP ${r.status}`;
-    throw fail(r.status === 401 ? 'O Mercado Pago recusou o Access Token (confira no painel).' : `Mercado Pago: ${m}`, 502);
+    throw fail(r.status === 401 ? 'O Mercado Pago recusou a conexão da loja (ela precisa conectar de novo).' : `Mercado Pago: ${m}`, 502);
   }
   return r.data;
 }
 
-// ── Formas de pagamento e chave para saques ─────────────────────────────────
-const TIPOS_CHAVE = ['cpf', 'cnpj', 'email', 'telefone', 'aleatoria'];
-function normalizarChave(tipo, chave) {
-  const c = String(chave || '').trim();
-  const dig = c.replace(/\D/g, '');
-  if (tipo === 'cpf') { if (dig.length !== 11) throw fail('Chave Pix (CPF) inválida.'); return dig; }
-  if (tipo === 'cnpj') { if (dig.length !== 14) throw fail('Chave Pix (CNPJ) inválida.'); return dig; }
-  if (tipo === 'email') { if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c) || c.length > 77) throw fail('Chave Pix (e-mail) inválida.'); return c.toLowerCase(); }
-  if (tipo === 'telefone') {
-    const n = dig.startsWith('55') && dig.length >= 12 ? dig : `55${dig}`;
-    if (n.length < 12 || n.length > 13) throw fail('Chave Pix (telefone) inválida: use DDD + número.');
-    return `+${n}`;
-  }
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c)) throw fail('Chave aleatória inválida (formato 0000aaaa-00aa-…).');
-  return c.toLowerCase();
-}
-
+// ── Formas de pagamento ─────────────────────────────────────────────────────
 function salvarPagamento(user, b) {
   const loja = db.get('SELECT * FROM lojas WHERE user_id = ?', user.id);
   if (!loja) throw fail('Crie sua loja antes de configurar os pagamentos.');
   const sim = v => v === true || v === 1 || v === '1' || v === 'on';
   const pix = sim(b.aceita_pix), cartao = sim(b.aceita_cartao), aceita = sim(b.aceita_pedidos);
   if (aceita && !pix && !cartao) throw fail('Escolha pelo menos uma forma: Pix ou cartão.');
-  // Chave Pix da empresa: é para onde vão os saques da carteira
-  const tipo = TIPOS_CHAVE.includes(b.pag_pix_tipo) ? b.pag_pix_tipo : null;
-  let chave = null;
-  if (String(b.pag_pix_chave || '').trim()) {
-    if (!tipo) throw fail('Escolha o tipo da chave Pix.');
-    chave = normalizarChave(tipo, b.pag_pix_chave);
-  }
-  const nome = txt(b.pag_pix_nome, 60);
-  if (chave && nome.length < 3) throw fail('Informe o nome do titular da chave Pix.');
-  db.run(`UPDATE lojas SET aceita_pix = ?, aceita_cartao = ?, aceita_pedidos = ?, pedido_instrucoes = ?,
-          pag_pix_tipo = ?, pag_pix_chave = ?, pag_pix_nome = ? WHERE id = ?`,
-  pix ? 1 : 0, cartao ? 1 : 0, aceita ? 1 : 0, txt(b.pedido_instrucoes, 400) || null, chave ? tipo : null, chave, chave ? nome : null, loja.id);
+  db.run('UPDATE lojas SET aceita_pix = ?, aceita_cartao = ?, aceita_pedidos = ?, pedido_instrucoes = ? WHERE id = ?',
+    pix ? 1 : 0, cartao ? 1 : 0, aceita ? 1 : 0, txt(b.pedido_instrucoes, 400) || null, loja.id);
   return configPagamento(db.get('SELECT * FROM lojas WHERE id = ?', loja.id));
 }
 
 const configPagamento = l => ({
   aceita_pedidos: Boolean(l.aceita_pedidos), aceita_pix: Boolean(l.aceita_pix), aceita_cartao: Boolean(l.aceita_cartao),
-  pedido_instrucoes: l.pedido_instrucoes || '', pag_pix_tipo: l.pag_pix_tipo || '', pag_pix_chave: l.pag_pix_chave || '', pag_pix_nome: l.pag_pix_nome || '',
-  gateway_ok: gatewayPronto(), parcelas: parcelas(), taxa_pct: taxaPct(),
+  pedido_instrucoes: l.pedido_instrucoes || '', gateway_ok: gatewayPronto(), mp: mpLojas.situacao(l), parcelas: parcelas(), taxa_pct: taxaPct(),
 });
 
-// O que o cliente pode escolher (só com o Mercado Pago do site configurado)
+// O que o cliente pode escolher (só com o Mercado Pago da loja conectado)
 function metodosDaLoja(l) {
-  if (!gatewayPronto()) return [];
+  if (!gatewayPronto() || !mpLojas.conectada(l)) return [];
   const m = [];
   if (l.aceita_pix) m.push({ id: 'pix', nome: 'Pix', desc: 'QR code e copia e cola na hora, confirmação automática' });
-  if (l.aceita_cartao && chavePublica()) m.push({ id: 'cartao', nome: 'Cartão de crédito ou débito', desc: `Pelo Mercado Pago${parcelas() > 1 ? `, em até ${parcelas()}x` : ''}, confirmação automática` });
+  if (l.aceita_cartao && l.mp_public_key) m.push({ id: 'cartao', nome: 'Cartão de crédito ou débito', desc: `Pelo Mercado Pago${parcelas() > 1 ? `, em até ${parcelas()}x` : ''}, confirmação automática` });
   return m;
 }
 const publicoLoja = l => ({ aceita_pedidos: Boolean(l.aceita_pedidos) && metodosDaLoja(l).length > 0, metodos: metodosDaLoja(l), instrucoes: l.pedido_instrucoes || '',
-  taxa_pct: taxaPct(), mp_public_key: chavePublica() || null, parcelas: parcelas() });
+  taxa_pct: taxaPct(), mp_public_key: l.mp_public_key || null, parcelas: parcelas() });
 
 // ── Pix "copia e cola" estático (usado no Pix da taxa de pedidos antigos) ────
 function crc16(s) {
@@ -245,22 +221,21 @@ async function criar(dono, b) {
   const abertos = db.get(`SELECT COUNT(*) n FROM pedidos_loja WHERE comprador = ? AND status = 'aguardando_pagamento' AND created_at > datetime('now', '-1 day')`, dono).n;
   if (abertos >= 10) throw fail('Você tem muitos pedidos aguardando pagamento. Pague ou cancele os anteriores.', 429);
   const cartao = metodo === 'cartao' ? (b.cartao || {}) : null;
-  // Cartão salvo (Minha conta → Meus cartões): o token vem do código de segurança + id do cartão; o resto vem do Mercado Pago
-  const salvo = cartao?.card_id ? await require('./cartoes').paraPagamento(dono, cartao.card_id) : null;
-  if (cartao && (!cartao.token || !(salvo || cartao.payment_method_id))) throw fail('Preencha os dados do cartão.');
+  if (cartao && (!cartao.token || !cartao.payment_method_id)) throw fail('Preencha os dados do cartão.');
   const resumoValor = taxa ? `${brl(subtotal)} + taxa do site ${brl(taxa)} = ${brl(total)}` : brl(total);
   let id;
   db.transaction(() => {
     id = Number(db.run(`INSERT INTO pedidos_loja (loja_id, comprador, oferta_id, produto, imagem, preco_unit, quantidade, subtotal,
                           taxa_pct, taxa_valor, total, taxa_modo, metodo, observacao, gateway)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'site', ?, ?, 'mp')`,
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'split', ?, ?, 'mp')`,
     loja.id, dono, o.id, o.produto, o.imagem, o.preco_atual, qtd, subtotal, pct, taxa, total, metodo, txt(b.observacao, 600) || null).lastInsertRowid);
     evento(id, dono, 'criado', `${qtd}x ${o.produto} — ${resumoValor} — ${METODOS[metodo]}`);
   });
-  // Pagamento no Mercado Pago do Ofertou!
+  // Pagamento no Mercado Pago da loja; a taxa do site é separada pelo Mercado Pago (application_fee)
   const descricao = `${qtd}x ${o.produto}`.slice(0, 200);
   const ref = `ofertou-pd-${id}`;
   const notif = sitePublico() ? { notification_url: `${siteUrl()}/api/pedidos/mp-webhook?pedido=${id}` } : {};
+  const taxaSite = taxa > 0 ? { application_fee: taxa } : {};
   const email = chat.emailDe(dono) || `cliente${id}@ofertou.app`;
   const [primeiro, ...resto] = (chat.pessoa(dono).nome || 'Cliente').split(' ');
   let pay;
@@ -269,25 +244,23 @@ async function criar(dono, b) {
       const expira = new Date(Date.now() + PIX_MINUTOS * 60000);
       pay = await mp('post', '/v1/payments', {
         transaction_amount: total, description: `${descricao} — pedido ${codigo(id)} (Ofertou!)`, payment_method_id: 'pix', external_reference: ref,
-        date_of_expiration: expira.toISOString().replace('Z', '+00:00'),
+        date_of_expiration: expira.toISOString().replace('Z', '+00:00'), ...taxaSite,
         payer: { email, first_name: primeiro, last_name: resto.join(' ') || primeiro }, ...notif,
-      }, { 'X-Idempotency-Key': ref });
+      }, { 'X-Idempotency-Key': ref }, loja);
       const td = pay.point_of_interaction?.transaction_data || {};
       db.run('UPDATE pedidos_loja SET mp_payment_id = ?, pix_qr = ?, pix_qr_base64 = ?, pix_expira = ? WHERE id = ?',
         String(pay.id), td.qr_code || null, td.qr_code_base64 || null, expira.toISOString().replace('T', ' ').slice(0, 19), id);
     } else {
       const parc = Math.min(Math.max(parseInt(cartao.installments, 10) || 1, 1), parcelas());
       const doc = cartao.payer?.identification;
-      const issuer = salvo ? salvo.issuer_id : cartao.issuer_id;
       pay = await mp('post', '/v1/payments', {
-        transaction_amount: total, token: String(cartao.token), installments: parc, payment_method_id: String(salvo ? salvo.payment_method_id : cartao.payment_method_id),
-        ...(issuer ? { issuer_id: String(issuer) } : {}),
-        description: `${descricao} — pedido ${codigo(id)} (Ofertou!)`, external_reference: ref, statement_descriptor: 'OFERTOU',
-        payer: salvo ? { type: 'customer', id: salvo.customer_id, email }
-          : { email: String(cartao.payer?.email || email), ...(doc?.number ? { identification: { type: String(doc.type || 'CPF'), number: String(doc.number) } } : {}) }, ...notif,
-      }, { 'X-Idempotency-Key': ref });
+        transaction_amount: total, token: String(cartao.token), installments: parc, payment_method_id: String(cartao.payment_method_id),
+        ...(cartao.issuer_id ? { issuer_id: String(cartao.issuer_id) } : {}), ...taxaSite,
+        description: `${descricao} — pedido ${codigo(id)} (Ofertou!)`, external_reference: ref,
+        payer: { email: String(cartao.payer?.email || email), ...(doc?.number ? { identification: { type: String(doc.type || 'CPF'), number: String(doc.number) } } : {}) }, ...notif,
+      }, { 'X-Idempotency-Key': ref }, loja);
       db.run('UPDATE pedidos_loja SET mp_payment_id = ? WHERE id = ?', String(pay.id), id);
-      evento(id, dono, 'cartao', `${salvo ? `Cartão salvo ${salvo.cartao.bandeira} final ${salvo.cartao.final}` : 'Cartão'} em ${parc}x — situação no Mercado Pago: ${pay.status}`);
+      evento(id, dono, 'cartao', `Cartão em ${parc}x — situação no Mercado Pago: ${pay.status}`);
     }
   } catch (err) {
     db.run(`UPDATE pedidos_loja SET status = 'cancelado', cancelado_por = 'sistema' WHERE id = ?`, id);
@@ -369,7 +342,7 @@ function mudar(p, nome, quem, eu, motivo = '') {
   }
 }
 
-// Confere no Mercado Pago se o pedido foi pago. Aprovado → pago, carteira da loja e avisos. Pix vencido → cancelado.
+// Confere no Mercado Pago da loja se o pedido foi pago. Aprovado → pago e avisos. Pix vencido → cancelado.
 const conferidos = new Map();
 async function verificarMP(pedidoId, forcar = false) {
   let p = db.get('SELECT * FROM pedidos_loja WHERE id = ?', Number(pedidoId));
@@ -377,9 +350,12 @@ async function verificarMP(pedidoId, forcar = false) {
   if (!forcar && Date.now() - (conferidos.get(p.id) || 0) < 10000) return p;
   conferidos.set(p.id, Date.now());
   const ref = `ofertou-pd-${p.id}`;
+  const loja = db.get('SELECT * FROM lojas WHERE id = ?', p.loja_id);
   let pago = null;
-  if (p.mp_payment_id) {
-    const pay = await mp('get', `/v1/payments/${p.mp_payment_id}`).catch(() => null);
+  if (!mpLojas.conectada(loja)) {
+    // Loja desconectou: não há como conferir; o Pix vence normalmente abaixo
+  } else if (p.mp_payment_id) {
+    const pay = await mp('get', `/v1/payments/${p.mp_payment_id}`, null, {}, loja).catch(() => null);
     if (pay && pay.status === 'approved' && pay.external_reference === ref) pago = pay;
     if (pay && ['rejected', 'cancelled'].includes(pay.status) && p.metodo === 'cartao') {
       db.run(`UPDATE pedidos_loja SET status = 'cancelado', cancelado_por = 'sistema' WHERE id = ? AND status = 'aguardando_pagamento'`, p.id);
@@ -387,13 +363,14 @@ async function verificarMP(pedidoId, forcar = false) {
       return db.get('SELECT * FROM pedidos_loja WHERE id = ?', p.id);
     }
   } else {
-    const r = await mp('get', `/v1/payments/search?external_reference=${ref}&sort=date_created&criteria=desc`).catch(() => null);
+    const r = await mp('get', `/v1/payments/search?external_reference=${ref}&sort=date_created&criteria=desc`, null, {}, loja).catch(() => null);
     pago = (r?.results || []).find(x => x.status === 'approved' && x.external_reference === ref) || null;
   }
   p = db.get('SELECT * FROM pedidos_loja WHERE id = ?', p.id);
   if (p.status !== 'aguardando_pagamento') return p; // outra conferência já resolveu
   if (pago && Math.abs(Number(pago.transaction_amount) - p.total) < 0.01) {
-    const tarifa = r2((pago.fee_details || []).reduce((s, f) => s + (Number(f.amount) || 0), 0));
+    // Tarifa do Mercado Pago cobrada da loja (a taxa do site, application_fee, fica de fora)
+    const tarifa = r2((pago.fee_details || []).filter(f => f.type !== 'application_fee').reduce((s, f) => s + (Number(f.amount) || 0), 0));
     db.run('UPDATE pedidos_loja SET mp_payment_id = ?, tarifa_mp = ?, taxa_quitada = 1, taxa_quitada_em = datetime(\'now\') WHERE id = ?', String(pago.id), tarifa, p.id);
     p = db.get('SELECT * FROM pedidos_loja WHERE id = ?', p.id);
     if (!p.conversa_id) {
@@ -408,8 +385,6 @@ async function verificarMP(pedidoId, forcar = false) {
       }
     }
     mudar(p, 'confirmar_pagamento', 'mercadopago', 'sistema', `Pagamento ${pago.id} aprovado (${METODOS[p.metodo]}).`);
-    p = db.get('SELECT * FROM pedidos_loja WHERE id = ?', p.id);
-    carteira.creditarVenda(p, tarifa);
   } else if (p.metodo === 'pix' && p.pix_expira && p.pix_expira < nowSql()) {
     mudar(p, 'cancelar', null, 'sistema', 'O Pix venceu sem pagamento. Faça um novo pedido para gerar outro Pix.');
   }
@@ -440,11 +415,10 @@ async function acao(dono, pedidoId, nome, motivo = '') {
     throw fail('O pagamento já foi confirmado: peça o cancelamento à loja pelo chat.');
   }
   if (!disponivel(p, nome, eu)) throw fail(`Não dá para fazer isso com o pedido ${STATUS[p.status].toLowerCase()}.`);
-  // Cancelar depois de pago (pelo Mercado Pago do site): devolve o dinheiro ao cliente e tira a venda da carteira
+  // Cancelar depois de pago: devolve o dinheiro ao cliente pelo Mercado Pago da loja (a taxa do site volta junto)
   if (nome === 'cancelar' && p.gateway === 'mp' && FINALIZADOS.includes(p.status) && p.mp_payment_id) {
-    await mp('post', `/v1/payments/${p.mp_payment_id}/refunds`, {}, { 'X-Idempotency-Key': `estorno-${p.id}` })
-      .catch(err => { throw fail(`Não foi possível devolver o pagamento pelo Mercado Pago (${err.message}). Fale com o administrador.`, 502); });
-    carteira.estornarVenda(p);
+    await mp('post', `/v1/payments/${p.mp_payment_id}/refunds`, {}, { 'X-Idempotency-Key': `estorno-${p.id}` }, db.get('SELECT * FROM lojas WHERE id = ?', p.loja_id))
+      .catch(err => { throw fail(`Não foi possível devolver o pagamento pelo Mercado Pago (${err.message}). Faça a devolução pelo app do Mercado Pago da loja.`, 502); });
     motivo = `${txt(motivo, 250) ? `${txt(motivo, 250)} — ` : ''}valor devolvido ao cliente pelo Mercado Pago`;
   }
   mudar(p, nome, dono, eu, motivo);
@@ -462,12 +436,8 @@ function montar(p, eu = null) {
     loja: { id: loja.id, nome: loja.nome, slug: loja.slug }, comprador: chat.pessoa(p.comprador), eu,
     acoes: eu ? Object.keys(ACOES).filter(n => disponivel(p, n, eu)) : [],
   };
-  // Valor que vai para a carteira da loja (produtos menos a tarifa do Mercado Pago)
+  // Valor que fica no Mercado Pago da loja (produtos menos a tarifa do Mercado Pago)
   if (eu === 'loja' || eu === null) out.valor_loja = r2((p.subtotal ?? p.total) - (p.tarifa_mp || 0));
-  if (eu === 'loja' && p.pago_em && p.gateway === 'mp') {
-    const libera = carteira.liberaEm(p);
-    out.libera_em = libera ? new Date(libera).toISOString().replace('T', ' ').slice(0, 19) : null;
-  }
   // Como pagar (só para quem comprou, enquanto não foi pago)
   if (eu === 'comprador' && p.status === 'aguardando_pagamento' && p.gateway === 'mp') {
     if (p.metodo === 'pix' && p.pix_qr) out.pagamento = { pix: p.pix_qr, qr: p.pix_qr_base64, expira: p.pix_expira };
@@ -495,7 +465,7 @@ function pedidosDaLoja(user) {
   return loja ? db.all('SELECT * FROM pedidos_loja WHERE loja_id = ? AND (pago_em IS NOT NULL OR gateway IS NULL) ORDER BY id DESC LIMIT 300', loja.id).map(p => montar(p, 'loja')) : [];
 }
 
-// ── Taxa de uso do site: quanto cada loja gerou (pedidos novos: já recebida no Mercado Pago do site) ──
+// ── Taxa de uso do site: quanto cada loja gerou (pedidos novos: separada pelo Mercado Pago na hora) ──
 const FIN_SQL = `status IN ('pago', 'enviado', 'concluido')`;
 function taxas(lojaId) {
   const q = (where, ...p) => db.get(`SELECT COUNT(*) n, COALESCE(SUM(taxa_valor), 0) v FROM pedidos_loja WHERE loja_id = ? AND ${FIN_SQL} AND taxa_valor > 0 AND ${where}`, lojaId, ...p);
@@ -622,5 +592,5 @@ function detalheAdmin(id) {
 
 module.exports = {
   mp, parcelas, chavePublica, codigo, STATUS, METODOS, FINALIZADOS, taxaPct, gatewayPronto, salvarPagamento, configPagamento, publicoLoja, pixCopiaECola, criar, acao, detalhe,
-  verificarMP, iniciar, reputacao, meusPedidos, pedidosDaLoja, registrarVisita, metricas, taxas, quitarTaxas, listarAdmin, detalheAdmin,
+  verificarMP, iniciar, reputacao, meusPedidos, pedidosDaLoja, registrarVisita, metricas, taxas, quitarTaxas, listarAdmin, detalheAdmin, motivoRecusa,
 };

@@ -162,21 +162,11 @@
     const areaCartao = corpo().querySelector('#prod-cartao');
     const btnConfirmar = f.querySelector('[type=submit]');
     const msgErro = t => { const m = corpo().querySelector('#prod-msg'); if (!m) return; m.textContent = t || ''; m.hidden = !t; };
-    let brick = null, recriar = null, salvos = null, outroCartao = false;
+    let brick = null, recriar = null;
     const metodoAtual = () => f.querySelector('[name=metodo]:checked')?.value || '';
     async function montarCartao() {
       if (brick) { try { await brick.unmount(); } catch { /* já removido */ } brick = null; }
       if (metodoAtual() !== 'cartao' || !dlg.open || !areaCartao.isConnected) return;
-      // Cartões salvos em Minha conta → Meus cartões: escolhe um e digita só o código de segurança
-      if (!outroCartao && window.OfertouCartoes) {
-        areaCartao.innerHTML = '<p class="muted prod-nota" data-carregando>Carregando seus cartões…</p>';
-        salvos = await OfertouCartoes.escolherNoPedido(areaCartao, {
-          publicKey: ped.mp_public_key, total, maxParcelas: Number(ped.parcelas) || 1,
-          aoPagar: dados => api('/api/pedidos', { oferta_id: o.id, quantidade: f.quantidade.value, metodo: 'cartao', observacao: f.observacao.value, cartao: dados }).then(p => acompanhar(p)),
-          outroCartao: () => { outroCartao = true; salvos = null; montarCartao(); },
-        });
-        if (salvos) return;
-      }
       areaCartao.innerHTML = '<div id="prod-brick"></div><p class="muted prod-nota" data-carregando>Carregando o formulário do cartão…</p>';
       try {
         await sdkMP();
@@ -220,13 +210,13 @@
     f.querySelectorAll('[name=metodo]').forEach(r => r.addEventListener('change', trocarMetodo));
     f.quantidade.addEventListener('input', () => {
       f.quantidade.value = f.quantidade.value.replace(/\D/g, '').slice(0, 2); conta();
-      if (metodoAtual() === 'cartao') { // valor novo: parcelas do cartão salvo ou formulário do cartão novo
-        clearTimeout(recriar); recriar = setTimeout(() => (salvos ? salvos.atualizarParcelas() : montarCartao()), 700);
+      if (metodoAtual() === 'cartao') { // valor novo: refaz o formulário do cartão com o total certo
+        clearTimeout(recriar); recriar = setTimeout(montarCartao, 700);
       }
     });
     conta();
     trocarMetodo();
-    dlg.addEventListener('close', () => { clearTimeout(timerPedido); salvos?.desmontar(); if (brick) { try { brick.unmount(); } catch { /* ok */ } brick = null; } }, { once: true });
+    dlg.addEventListener('close', () => { clearTimeout(timerPedido); if (brick) { try { brick.unmount(); } catch { /* ok */ } brick = null; } }, { once: true });
     corpo().querySelector('[data-voltar]').onclick = () => abrir(o, loja);
     // Pix: gera o QR code aqui mesmo
     f.addEventListener('submit', async e => {

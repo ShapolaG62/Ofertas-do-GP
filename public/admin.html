@@ -252,9 +252,9 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261133"></script>
-<script src="/js/capi-minerando.js?v=20261133" defer></script>
-<script src="/js/cadastro-auto.js?v=20261133" defer></script>
+<script src="/js/dialogo.js?v=20261135"></script>
+<script src="/js/capi-minerando.js?v=20261135" defer></script>
+<script src="/js/cadastro-auto.js?v=20261135" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -650,7 +650,7 @@
               <h4>Mercado Pago <span class="hint" style="margin:0;font-weight:500">· confirmação automática</span></h4>
               <p class="hint" style="margin-top:4px">Em <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener">mercadopago.com.br/developers</a> → Suas integrações → crie uma aplicação → <b>Credenciais de produção</b> → copie o <b>Access Token</b>.</p>
               <label class="field">Access Token <input type="password" name="mp_access_token" autocomplete="off" data-secret></label>
-              <label class="field" style="margin-top:8px">Public Key <small style="font-weight:400">(APP_USR-…; mesma tela das credenciais — usada no formulário de cartão dos pedidos das lojas)</small> <input type="text" name="mp_public_key" autocomplete="off" placeholder="APP_USR-..."></label>
+              <label class="field" style="margin-top:8px">Public Key <small style="font-weight:400">(APP_USR-…; mesma tela das credenciais — usada nos cartões salvos dos clientes, para pagar os planos)</small> <input type="text" name="mp_public_key" autocomplete="off" placeholder="APP_USR-..."></label>
               <label class="field" style="margin-top:8px">Pix com QR code <select name="pag_mp_pix"><option value="1">Ativo</option><option value="0">Desligado</option></select></label>
               <label class="field" style="margin-top:8px">Cartão de crédito / débito <select name="pag_mp_cartao"><option value="1">Ativo</option><option value="0">Desligado</option></select></label>
               <label class="field" style="margin-top:8px">Parcelas no cartão (máx.) <select name="pag_mp_parcelas">
@@ -819,13 +819,13 @@
       </div>
       <form class="settings-form">
         <div class="panel">
-          <h2>Pedidos às lojas parceiras: pagamentos, taxa e carteiras</h2>
-          <p class="hint">O cliente paga o pedido por <b>Pix</b> ou <b>cartão</b> no <b>seu Mercado Pago</b> (o Access Token de Planos → Formas de recebimento; parcelas máximas no cartão também vêm de lá). A confirmação é automática. A <b>taxa de uso do site</b> é somada ao valor dos produtos e fica com você. O valor dos produtos, menos a tarifa do Mercado Pago de cada venda, entra na <b>carteira da empresa</b>; depois do prazo de liberação, a empresa pede o saque e você paga pelo app do Mercado Pago (Pix para a chave dela) e marca como pago abaixo.</p>
+          <h2>Pedidos às lojas parceiras: Mercado Pago das lojas e taxa do site</h2>
+          <p class="hint">Modelo <b>marketplace</b>: cada empresa conecta a <b>própria conta do Mercado Pago</b> (Minha conta → Vendas e pagamentos) e o cliente paga o pedido por <b>Pix</b> ou <b>cartão</b> direto nela — o dinheiro dos produtos não passa por você. A <b>taxa de uso do site</b> é somada ao total e o Mercado Pago a separa na hora para a sua conta (a conta dona da aplicação abaixo). Parcelas máximas no cartão vêm de Planos → Formas de recebimento.</p>
+          <p class="hint"><b>Como ativar:</b> no <a href="https://www.mercadopago.com.br/developers/panel/app" target="_blank" rel="noopener">Mercado Pago Developers</a>, crie uma aplicação (Pagamentos online → Checkout Transparente, modelo marketplace), cadastre o <b>endereço de retorno</b> mostrado abaixo e cole aqui o <b>Client ID</b> e o <b>Client Secret</b>. O site precisa estar publicado com https.</p>
           <div class="grid">
             <label class="field">Taxa de uso do site (%) <input type="text" name="taxa_site_pct" inputmode="decimal" placeholder="1"></label>
-            <label class="field">Saque mínimo (R$) <input type="text" name="saque_minimo" inputmode="decimal" placeholder="50"></label>
-            <label class="field">Liberar após concluir o pedido (dias) <input type="number" name="liberar_dias_concluido" min="0" max="60" placeholder="7"></label>
-            <label class="field">Liberar após o pagamento, se não concluir (dias) <input type="number" name="liberar_dias_pago" min="1" max="90" placeholder="14"></label>
+            <label class="field">Client ID (aplicação do Mercado Pago) <input type="text" name="mp_mkt_client_id" autocomplete="off" inputmode="numeric"></label>
+            <label class="field">Client Secret <input type="password" name="mp_mkt_client_secret" autocomplete="off" data-secret></label>
           </div>
           <p class="hint" id="taxa-situacao"></p>
           <div class="actions"><button class="btn primary" type="submit">Salvar</button></div>
@@ -833,17 +833,9 @@
       </form>
 
       <div class="panel">
-        <h2>Carteiras e saques</h2>
-        <p class="hint">Saques pedidos pelas empresas: pague pelo app do Mercado Pago (Pix para a chave mostrada) e clique em <b>Marcar como pago</b>. Se recusar, o valor volta ao saldo da empresa. A empresa é avisada no site e por e-mail.</p>
-        <div class="table-wrap"><table><thead><tr><th>Pedido em</th><th>Loja</th><th>Valor</th><th>Chave Pix</th><th>Situação</th><th></th></tr></thead><tbody id="at-saques"></tbody></table></div>
-        <h3 style="margin:18px 0 8px">Saldo das empresas</h3>
-        <div class="table-wrap"><table><thead><tr><th>Loja</th><th>Disponível</th><th>A liberar</th><th>Vendido</th><th>Tarifas MP</th><th>Sacado</th><th></th></tr></thead><tbody id="at-carteiras"></tbody></table></div>
-      </div>
-
-      <div class="panel">
         <h2>Empresas</h2>
         <p class="hint">Compras finalizadas = pedidos com pagamento confirmado pela loja. Acessos: página da loja e perfil; produtos: aberturas no catálogo; site: cliques no site oficial (30 dias).</p>
-        <div class="table-wrap"><table><thead><tr><th>Loja</th><th>Compras finalizadas</th><th>Valor</th><th>Pedidos</th><th>Conversas</th><th>Acessos (30d / total)</th><th>Produtos vistos (30d)</th><th>Cliques no site (30d)</th><th>Taxa do site</th></tr></thead>
+        <div class="table-wrap"><table><thead><tr><th>Loja</th><th>Compras finalizadas</th><th>Valor</th><th>Pedidos</th><th>Conversas</th><th>Acessos (30d / total)</th><th>Produtos vistos (30d)</th><th>Cliques no site (30d)</th><th>Mercado Pago</th><th>Taxa do site</th></tr></thead>
           <tbody id="at-lojas"></tbody></table></div>
       </div>
       <div class="panel">
@@ -890,34 +882,6 @@
         <p class="hint">Na página de ofertas, toque no ✓ de um produto para levá-lo à tela <a href="/postagens" target="_blank">Postagens</a>. Lá você edita os textos, publica manualmente ou clica em <b>Postar automaticamente</b> nas redes marcadas. Usuários do site só usam essa tela se você liberar em <b>Usuários → Gerenciar → Permitir postagens nas redes</b>; eles publicam nas contas configuradas aqui.</p>
         <p class="hint">O <b>WhatsApp</b> não tem API oficial para grupos: a postagem automática usa um número separado conectado pela Z-API ou pela Evolution API (configure abaixo). O botão manual de WhatsApp continua disponível em cada produto.</p>
       </div>
-
-      <form class="settings-form">
-        <div class="panel">
-          <h2>Marca d'água nas imagens</h2>
-          <p class="hint">As fotos das postagens vão num quadrado 1080×1080 com o selo do site (a Capi + o nome e, se houver, o endereço público do site). Vale para WhatsApp, Telegram, Facebook e para o "Baixar imagem" da tela de postagens. No Instagram, só depois que o site tiver endereço público (VPS), porque ele baixa a foto pelo endereço.</p>
-          <div class="row" style="align-items:flex-start;gap:20px">
-            <div class="grid" style="flex:1;min-width:260px">
-              <label class="field">Marca d'água
-                <select name="marca_ativa"><option value="1">Ligada</option><option value="0">Desligada (usa a foto da loja)</option></select></label>
-              <label class="field">Texto <input type="text" name="marca_texto" maxlength="40" placeholder="Ofertou!"></label>
-              <label class="field">Posição
-                <select name="marca_posicao">
-                  <option value="inferior-direito">Canto inferior direito</option>
-                  <option value="inferior-esquerdo">Canto inferior esquerdo</option>
-                  <option value="superior-direito">Canto superior direito</option>
-                  <option value="superior-esquerdo">Canto superior esquerdo</option>
-                  <option value="centro">Centro</option>
-                </select></label>
-              <label class="field">Opacidade (%) <input type="number" name="marca_opacidade" min="30" max="100"></label>
-            </div>
-            <figure style="margin:0;width:260px">
-              <img id="marca-prev" alt="Prévia da marca d'água" style="width:260px;height:260px;border-radius:12px;border:1px solid var(--border);background:#fff;object-fit:contain">
-              <figcaption class="hint" style="margin:6px 0 0">Prévia com uma oferta real. <button class="btn small" type="button" id="marca-refresh">Outra oferta</button></figcaption>
-            </figure>
-          </div>
-          <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Salvar marca d'água</button></div>
-        </div>
-      </form>
 
       <form class="settings-form">
         <div class="panel">
@@ -1326,7 +1290,7 @@ const PAGINAS = {
   sac: ['SAC (fila de atendimento)', 'Chamados do Suporte Ofertou!: assuma um chamado da fila, converse com o cliente e marque como resolvido.'],
   equipe: ['Equipe (staff)', 'Pessoas da equipe com os cargos (Proprietário, Gerente, Admin, Moderador e Suporte) e, na aba Cargos e permissões, o que cada cargo pode fazer na Área de trabalho.'],
   users: ['Usuários', 'Cadastros do site: aprove empresas, modere contas e configure o login com Google.'],
-  atendimento: ['Lojas e pedidos', 'Empresas parceiras, pedidos feitos pelo site, carteiras e saques das lojas, e as conversas de atendimento.'],
+  atendimento: ['Lojas e pedidos', 'Empresas parceiras, o Mercado Pago das lojas, pedidos feitos pelo site e as conversas de atendimento.'],
   clientes: ['Clientes da ferramenta', 'Quem comprou acesso à ferramenta de afiliados: validade, bloqueio e links.'],
   planos: ['Planos e pagamentos', 'Planos à venda, pedidos de assinatura, formas de recebimento (Mercado Pago), app e e-mail de confirmação.'],
   ganhos: ['Ganhos de afiliados', 'Comissões das plataformas, vendas importadas, saques e avisos de saldo para sacar.'],
@@ -1430,11 +1394,10 @@ async function loadDashboard() {
   // O que precisa de atenção (cada item abre a página certa)
   const acoes = [];
   const add = (n, txt, aba, forte, ico = 'alerta') => { if (n) acoes.push({ txt, aba, forte, ico }); };
-  add(p.cartao_sem_chave, '<b>Cartão desligado nos pedidos às lojas:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro');
+  add(p.cartao_sem_chave, '<b>Cartões salvos desligados:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro');
   add(p.sac_fila, `<b>${p.sac_fila} chamado(s) no SAC</b> esperando atendimento`, 'sac', true, 'sino');
   add(p.xingamentos, `<b>${p.xingamentos} conversa(s) com xingamentos</b> para revisar`, 'chatmod', true);
   add(p.cadastros, `<b>${p.cadastros} cadastro(s) de empresa</b> esperando aprovação`, 'users', true);
-  add(p.saques, `<b>${p.saques} saque(s) de lojas</b> para pagar (${brl(p.saques_valor)})`, 'atendimento', true, 'dinheiro');
   add(p.assinaturas, `<b>${p.assinaturas} pedido(s) de assinatura</b> para confirmar o pagamento`, 'planos', true, 'dinheiro');
   add(p.leads, `<b>${p.leads} empresa(s)</b> querem anunciar no site`, 'ads', false, 'sino');
   add(p.avisos, `<b>${p.avisos} aviso(s)</b> de saldo de afiliado`, 'ganhos', false, 'sino');
@@ -1493,7 +1456,6 @@ async function loadDashboard() {
           <div><span>Afiliados (30 dias)</span><b>${brl(k.receita.afiliados)}</b><small>comissões das vendas${k.receita.afiliados_usd ? ` + US$ ${k.receita.afiliados_usd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}</small></div>
           <div class="db-total"><span>Receita bruta (30 dias)</span><b>${brl(k.receita.total)}</b><small>soma de todas as receitas do site</small></div>
           <div><span>Afiliados disponível</span><b>${brl(k.afiliados.disponivel)}</b><small>${brl(k.afiliados.a_liberar)} a liberar</small></div>
-          <div><span>Saldo das lojas</span><b>${brl(k.carteiras.a_pagar)}</b><small>no seu Mercado Pago, a repassar</small></div>
         </div>
         ${k.afiliados.pode_sacar?.length ? `<p class="hint" style="margin:0">Pode sacar agora: <b>${esc(k.afiliados.pode_sacar.join(', '))}</b>.</p>` : ''}
       </section>
@@ -2014,58 +1976,21 @@ async function loadAtendimento() {
     <td class="num"><b>${l.finalizacoes.total}</b> <span class="hint" style="margin:0">(${l.finalizacoes.d30} em 30d)</span></td>
     <td class="num">${brl(l.finalizacoes.valor)}</td><td class="num">${l.pedidos}</td><td class="num">${l.conversas}</td>
     <td class="num">${l.acessos30} / ${l.acessos}</td><td class="num">${l.produtos30}</td><td class="num">${l.site30}</td>
+    <td>${l.mp_conectado ? `<span class="badge b-active">Conectado</span>${l.mp_erro ? '<br><span class="hint" style="margin:0">renovação falhou</span>' : ''}` : '<span class="badge b-pending">Não conectado</span>'}</td>
     <td class="num">${l.taxas.total ? `total ${brl(l.taxas.total)}<br><span class="hint" style="margin:0">automática ${brl(l.taxas.automaticas.valor)} · repassada ${brl(l.taxas.quitadas.valor)}</span>` : '—'}
       ${l.taxas.a_pagar.valor > 0 ? `<br><b style="color:var(--yellow)">a receber ${brl(l.taxas.a_pagar.valor)}</b>${l.taxas.aviso_pagamento_em ? ' <span class="tag">loja avisou que pagou</span>' : ''}
         <br><button class="btn small primary" type="button" data-quitar="${l.id}" data-valor="${l.taxas.a_pagar.valor}">Recebi</button>` : ''}</td></tr>`).join('')
-    : '<tr><td colspan="9" class="hint">Nenhuma loja cadastrada.</td></tr>';
-  $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(d.taxa.pct).replace('.', ',')}%</b> · Mercado Pago do site: ${d.taxa.gateway_ok ? `<b>configurado</b> (pedidos liberados)${d.taxa.cartao_ok ? '' : ' · <b style="color:var(--yellow)">cartão desligado: falta a Public Key em Planos e pagamentos → Formas de recebimento</b>'}` : '<b style="color:var(--yellow)">não configurado — cole o Access Token em Planos → Formas de recebimento; até lá o botão Fazer pedido não aparece</b>'}`;
-  const cw = d.carteiras;
-  const ST_SQ = { solicitado: ['b-pending', 'Aguardando pagamento'], pago: ['b-active', 'Pago'], recusado: ['b-banned', 'Recusado'] };
-  $('#at-saques').innerHTML = cw.saques.length ? cw.saques.map(q => `<tr>
-    <td class="num">${fmtDate(q.solicitado_em)}</td><td>${esc(q.loja_nome)}</td><td class="num"><b>${brl(q.valor)}</b></td>
-    <td>${esc(q.pix_chave || '—')}<br><span class="hint" style="margin:0">${esc(q.pix_tipo || '')} · ${esc(q.pix_nome || '')}</span></td>
-    <td><span class="badge ${ST_SQ[q.status][0]}">${ST_SQ[q.status][1]}</span>${q.observacao ? `<br><span class="hint" style="margin:0">${esc(q.observacao)}</span>` : ''}</td>
-    <td class="num">${q.status === 'solicitado' ? `<button class="btn small primary" type="button" data-saque-pagar="${q.id}" data-valor="${q.valor}">Marcar como pago</button>
-      <button class="btn small danger" type="button" data-saque-recusar="${q.id}">Recusar</button>` : ''}</td></tr>`).join('')
-    : '<tr><td colspan="6" class="hint">Nenhum saque pedido ainda.</td></tr>';
-  $('#at-carteiras').innerHTML = cw.lojas.length ? cw.lojas.map(l => `<tr>
-    <td>${esc(l.nome)}</td><td class="num"><b>${brl(l.saldo.disponivel)}</b></td><td class="num">${brl(l.saldo.a_liberar)}</td>
-    <td class="num">${brl(l.saldo.vendido)}</td><td class="num">${brl(l.saldo.tarifas)}</td><td class="num">${brl(l.saldo.sacado)}</td>
-    <td class="num"><button class="btn small" type="button" data-extrato="${l.id}" data-nome="${esc(l.nome)}">Extrato</button></td></tr>`).join('')
-    : '<tr><td colspan="7" class="hint">Nenhuma venda pelo site ainda.</td></tr>';
+    : '<tr><td colspan="10" class="hint">Nenhuma loja cadastrada.</td></tr>';
+  const tx = d.taxa;
+  $('#taxa-situacao').innerHTML = `Taxa atual: <b>${String(tx.pct).replace('.', ',')}%</b> · Endereço de retorno para cadastrar na aplicação: <code>${esc(tx.retorno)}</code><br>`
+    + (tx.gateway_ok ? '<b>Ativo</b>: as lojas já podem conectar o Mercado Pago.'
+      : `<b style="color:var(--yellow)">Inativo</b> — ${[!tx.app_ok && 'cole o Client ID e o Client Secret', !tx.site_https && 'publique o site com https (Site → Endereço do site)'].filter(Boolean).join(' e ')}; até lá o botão Fazer pedido não aparece.`);
   $('#at-pedidos').innerHTML = linhasPedidos(d.pedidos);
   $('#at-conversas').innerHTML = linhasConversas(d.conversas);
 }
 $('#at-form').addEventListener('submit', e => { e.preventDefault(); buscarTicket().catch(err => globalMsg(err.message, false)); });
 $('#at-limpar').addEventListener('click', () => { $('#at-busca').value = ''; buscarTicket(); $('#at-busca').focus(); });
 $('#at-busca').addEventListener('search', () => { if (!$('#at-busca').value) buscarTicket(); });
-// Saques: pagar / recusar; extrato da carteira
-document.addEventListener('click', async e => {
-  const pg = e.target.closest('[data-saque-pagar]'), rc = e.target.closest('[data-saque-recusar]'), ex = e.target.closest('[data-extrato]');
-  if (!pg && !rc && !ex) return;
-  try {
-    if (pg) {
-      if (!await OfertouUI.confirmar(`Você já enviou ${brl(Number(pg.dataset.valor))} pelo Pix para a chave da empresa?`)) return;
-      const obs = await OfertouUI.perguntar('Observação para a empresa (opcional, ex.: ID da transferência):') ?? '';
-      await api(`/api/admin/saques/${pg.dataset.saquePagar}/pagar`, { method: 'POST', body: { observacao: obs } });
-      globalMsg('Saque marcado como pago. A empresa foi avisada.');
-    } else if (rc) {
-      const motivo = await OfertouUI.perguntar('Motivo da recusa (a empresa verá):');
-      if (motivo === null) return;
-      await api(`/api/admin/saques/${rc.dataset.saqueRecusar}/recusar`, { method: 'POST', body: { observacao: motivo } });
-      globalMsg('Saque recusado. O valor voltou ao saldo da empresa.');
-    } else {
-      const c = await api(`/api/admin/carteiras/${ex.dataset.extrato}`);
-      $('#tk-title').textContent = `Carteira — ${ex.dataset.nome}`;
-      $('#tk-body').innerHTML = `<dl class="kv"><dt>Disponível</dt><dd><b>${brl(c.saldo.disponivel)}</b></dd><dt>A liberar</dt><dd>${brl(c.saldo.a_liberar)}</dd>
-        <dt>Vendido</dt><dd>${brl(c.saldo.vendido)}</dd><dt>Tarifas do Mercado Pago</dt><dd>${brl(c.saldo.tarifas)}</dd><dt>Sacado</dt><dd>${brl(c.saldo.sacado)}</dd></dl>
-        <div class="tk-msgs">${c.extrato.map(m => `<div class="tk-msg"><b>${m.valor < 0 ? '−' : '+'}${brl(Math.abs(m.valor))}</b>${esc(m.descricao || m.tipo)}<small>${fmtDate(m.created_at)} · ${m.liberado ? 'disponível' : 'a liberar'}</small></div>`).join('') || '<span class="hint">Sem lançamentos.</span>'}</div>`;
-      if (!$('#tk-dlg').open) $('#tk-dlg').showModal();
-      return;
-    }
-    loadAtendimento();
-  } catch (err) { globalMsg(err.message, false); }
-});
 $('#at-lojas').addEventListener('click', async e => {
   const b = e.target.closest('[data-quitar]');
   if (!b) return;
@@ -2615,23 +2540,8 @@ $('#agenda-run').addEventListener('click', async () => {
   } catch (err) { globalMsg(err.message, false); }
 });
 
-// Prévia da marca d'água: pega uma oferta no ar e mostra a imagem gerada (recarrega depois de salvar).
-let previewIds = [], previewIdx = 0;
-async function marcaPreview(next = false) {
-  if (!previewIds.length) {
-    const d = await api('/api/admin/offers?state=active&page=1');
-    previewIds = d.rows.filter(o => o.imagem).map(o => o.id);
-  }
-  if (!previewIds.length) return;
-  if (next) previewIdx = (previewIdx + 1) % previewIds.length;
-  $('#marca-prev').src = `/img/marca/${previewIds[previewIdx]}.jpg?t=${Date.now()}`;
-}
-$('#marca-refresh').addEventListener('click', () => marcaPreview(true));
-$('[name=marca_texto]').form.addEventListener('submit', () => setTimeout(() => marcaPreview(), 800));
-
 async function loadSocialLog() {
   loadAgenda().catch(() => {});
-  marcaPreview().catch(() => {});
   const rows = await api('/api/postagens/historico');
   $('#social-log').innerHTML = rows.length ? rows.map(r => `<tr>
       <td class="num">${fmtDate(r.created_at)}</td>

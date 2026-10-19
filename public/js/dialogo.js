@@ -1,7 +1,8 @@
 /* Ofertou! — janelas de aviso, confirmação e pergunta no visual do site (no lugar do alert/confirm/prompt do navegador).
    OfertouUI.confirmar(texto, { titulo, ok, cancelar, perigo })  → Promise<boolean>
    OfertouUI.perguntar(texto, padrao, { titulo, tipo, ok })        → Promise<string | null>  (null = cancelou)
-   OfertouUI.avisar(texto, { titulo })                             → Promise<void> */
+   OfertouUI.avisar(texto, { titulo })                             → Promise<void>
+   OfertouUI.escolher(texto, [{ valor, nome }], { titulo, ok })    → Promise<string | null>  (null = cancelou) */
 (() => {
   'use strict';
   if (window.OfertouUI) return;
@@ -43,7 +44,7 @@
   };
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   // Ações que apagam, bloqueiam ou tiram algo ficam com o botão vermelho
-  const ehPerigo = t => /\b(excluir|apagar|banir|bloquear|remover|tirar|recusar|cancelar este|cancelar o pedido|encerrar)\b/i.test(t);
+  const ehPerigo = t => /\b(excluir|apagar|banir|bloquear|remover|tirar|recusar|cancelar este|cancelar o pedido|encerrar|desconectar|ocultar)\b/i.test(t);
 
   function abrir({ texto, titulo, ok = 'OK', cancelar = null, perigo = false, campo = null, icone = 'pergunta' }) {
     return new Promise(resolve => {
@@ -53,7 +54,8 @@
       fundo.innerHTML = `<div class="oui-caixa" role="${cancelar ? 'alertdialog' : 'dialog'}" aria-modal="true" aria-labelledby="oui-t">
         <div class="oui-topo"><span class="oui-ico${perigo ? ' perigo' : ''}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONES[perigo ? 'perigo' : icone]}</svg></span>
           <div><p class="oui-titulo" id="oui-t">${esc(titulo)}</p>${texto ? `<p class="oui-texto">${esc(texto)}</p>` : ''}</div></div>
-        ${campo ? `<input class="oui-campo" type="${campo.tipo}" value="${esc(campo.valor)}" ${campo.tipo === 'number' ? 'inputmode="numeric" min="0"' : ''} autocomplete="${campo.tipo === 'password' ? 'new-password' : 'off'}">` : ''}
+        ${campo && campo.tipo === 'select' ? `<select class="oui-campo" aria-label="${esc(titulo)}">${campo.opcoes.map(o => `<option value="${esc(o.valor)}">${esc(o.nome)}</option>`).join('')}</select>` : ''}
+        ${campo && campo.tipo !== 'select' ? `<input class="oui-campo" type="${campo.tipo}" value="${esc(campo.valor)}" ${campo.tipo === 'number' ? 'inputmode="numeric" min="0"' : ''} autocomplete="${campo.tipo === 'password' ? 'new-password' : 'off'}">` : ''}
         <div class="oui-botoes">${cancelar ? `<button type="button" class="oui-btn" data-r="nao">${esc(cancelar)}</button>` : ''}
           <button type="button" class="oui-btn ok${perigo ? ' perigo' : ''}" data-r="sim">${esc(ok)}</button></div></div>`;
       // Dentro de um <dialog> aberto, a janela precisa ficar dentro dele para aparecer por cima
@@ -77,7 +79,7 @@
         if (b) responder(b.dataset.r === 'sim');
         else if (e.target === fundo && cancelar) responder(false);
       });
-      setTimeout(() => (input ? (input.focus(), input.select()) : fundo.querySelector(cancelar ? '[data-r="nao"]' : '[data-r="sim"]').focus()), 30);
+      setTimeout(() => (input ? (input.focus(), input.select?.()) : fundo.querySelector(cancelar ? '[data-r="nao"]' : '[data-r="sim"]').focus()), 30);
     });
   }
 
@@ -99,6 +101,10 @@
       const tipo = o.tipo || (/senha/i.test(texto) ? 'password' : /quantos dias/i.test(texto) ? 'number' : 'text');
       const [tit, resto] = dividir(texto);
       return abrir({ titulo: o.titulo || tit, texto: o.titulo ? texto : resto, ok: o.ok || 'Continuar', cancelar: 'Cancelar', campo: { tipo, valor: padrao ?? '' }, icone: 'editar' });
+    },
+    escolher(texto, opcoes, o = {}) {
+      const [tit, resto] = dividir(texto);
+      return abrir({ titulo: o.titulo || tit, texto: o.titulo ? texto : resto, ok: o.ok || 'Continuar', cancelar: 'Cancelar', campo: { tipo: 'select', opcoes }, icone: 'editar' });
     },
     avisar(texto, o = {}) {
       return abrir({ titulo: o.titulo || 'Aviso', texto, ok: 'Entendi', icone: 'info' });

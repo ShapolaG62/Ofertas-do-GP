@@ -76,7 +76,7 @@ async function listarGrupos(s) {
 }
 
 // Envia foto com legenda (ou só texto, sem foto) para um grupo.
-// imagem: endereço https da foto ou o arquivo (Buffer JPEG, ex.: a foto com marca d'água).
+// imagem: endereço https da foto ou o arquivo (Buffer JPEG).
 async function enviar(s, grupoId, { imagem, texto }) {
   const c = config(s);
   if (c.erro) throw new Error(c.erro);

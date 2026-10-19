@@ -183,20 +183,13 @@ function publicStore(slug) {
 }
 
 // Exclui a loja: página, produtos/anúncios, catálogos e avaliações. A conta continua (pode criar outra loja depois);
-// pedidos, conversas e o extrato da carteira ficam guardados como histórico.
-// Não deixa excluir com pedido em andamento ou dinheiro na carteira, para nenhum pagamento ficar sem dono.
+// pedidos e conversas ficam guardados como histórico. Não deixa excluir com pedido em andamento.
 function excluirLoja(lojaId) {
   const loja = db.get('SELECT * FROM lojas WHERE id = ?', lojaId);
   if (!loja) throw fail('Loja não encontrada.', 404);
   const andamento = db.get(`SELECT COUNT(*) AS n FROM pedidos_loja WHERE loja_id = ?
     AND status IN ('aguardando_pagamento', 'pagamento_informado', 'pago', 'enviado')`, lojaId).n;
   if (andamento) throw fail(`A loja tem ${andamento} pedido(s) em andamento. Conclua ou cancele os pedidos antes de excluir a loja.`, 409);
-  const s = require('./carteira').saldo(lojaId);
-  const naCarteira = Math.round(((s.disponivel || 0) + (s.a_liberar || 0) + (s.saque_pendente || 0)) * 100) / 100;
-  if (naCarteira > 0) {
-    throw fail(`A loja ainda tem ${naCarteira.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} na carteira (disponível, a liberar ou em saque). `
-      + 'Espere a liberação e o pagamento do saque antes de excluir a loja.', 409);
-  }
   const produtos = db.run('DELETE FROM offers WHERE loja_id = ?', lojaId).changes;
   db.run('DELETE FROM loja_metricas WHERE loja_id = ?', lojaId);
   db.run('DELETE FROM lojas WHERE id = ?', lojaId); // catálogos e avaliações saem junto (ON DELETE CASCADE)

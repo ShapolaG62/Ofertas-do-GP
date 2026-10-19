@@ -58,7 +58,10 @@ router.delete('/api/lojas/:id/avaliacoes/minha', (req, res) => {
 
 // ── Admin: ocultar avaliação ─────────────────────────────────────────────────
 router.post('/api/admin/avaliacoes/:id/ocultar', auth.requireAdmin, (req, res) => {
-  try { res.json(lojaPerfil.moderar(req.params.id, req.body?.oculta !== false)); } catch (err) { sendError(res, err); }
+  try { res.json(lojaPerfil.moderar(req.params.id, req.body?.oculta !== false, String(req.body?.motivo || ''))); } catch (err) { sendError(res, err); }
+});
+router.get('/api/admin/avaliacoes/motivos', auth.requireAdmin, (req, res) => {
+  res.json(Object.entries(lojaPerfil.MOTIVOS_OCULTAR).map(([valor, nome]) => ({ valor, nome })));
 });
 
 module.exports = router;

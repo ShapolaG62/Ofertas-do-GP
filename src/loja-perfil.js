@@ -130,6 +130,7 @@ function avaliacoes(lojaId, visitante = null, { admin = false } = {}) {
   const lista = db.all(`SELECT * FROM loja_avaliacoes WHERE loja_id = ?${admin ? '' : ' AND oculta = 0'} ORDER BY id DESC LIMIT 200`, lojaId).map(a => {
     const p = chat.pessoa(a.autor);
     return { id: a.id, nota: a.nota, texto: a.texto || '', resposta: a.resposta || '', resposta_em: a.resposta_em, oculta: Boolean(a.oculta),
+      ...(admin && a.oculta ? { oculta_motivo: MOTIVOS_OCULTAR[a.oculta_motivo] || 'sem motivo registrado' } : {}),
       autor: { nome: p.nome, avatar: p.avatar, slug: p.slug }, minha: a.autor === visitante, verificada: compraVerificada(lojaId, a.autor),
       created_at: a.created_at, updated_at: a.updated_at };
   });
@@ -149,7 +150,7 @@ function avaliar(dono, lojaId, b) {
   if (Date.now() - ult < 20000) throw fail('Aguarde alguns segundos para avaliar de novo.', 429);
   limiteAvaliar.set(dono, Date.now());
   db.run(`INSERT INTO loja_avaliacoes (loja_id, autor, nota, texto) VALUES (?, ?, ?, ?)
-          ON CONFLICT (loja_id, autor) DO UPDATE SET nota = excluded.nota, texto = excluded.texto, updated_at = datetime('now')`,
+          ON CONFLICT (loja_id, autor) DO UPDATE SET nota = excluded.nota, texto = excluded.texto, updated_at = datetime('now'), oculta = 0, oculta_motivo = NULL, oculta_em = NULL`,
   l.id, dono, nota, texto || null);
   // Aviso para a loja
   try { require('./chat').avisarPorEmail(`u:${l.user_id}`, 'Nova avaliação na sua loja — Ofertou!', `Sua loja recebeu uma avaliação de ${nota} estrela(s).${texto ? `\n\n"${texto.slice(0, 300)}"` : ''}`); } catch { /* sem e-mail */ }
@@ -171,15 +172,39 @@ function responder(user, avaliacaoId, resposta) {
   return avaliacoes(l.id, `u:${user.id}`);
 }
 
-// Admin: ocultar/mostrar (avaliação ofensiva, falsa…)
-function moderar(avaliacaoId, oculta) {
-  const a = db.get('SELECT loja_id FROM loja_avaliacoes WHERE id = ?', Number(avaliacaoId));
+// Admin: ocultar/mostrar. Avaliação negativa NÃO é motivo para ocultar (o consumidor tem direito de opinar e os outros
+// compradores têm direito à informação): só abusos da lista abaixo. Cada ação fica registrada e o autor é avisado.
+const MOTIVOS_OCULTAR = {
+  ofensiva: 'Ofensas, palavrões ou discurso de ódio',
+  dados_pessoais: 'Expõe dados pessoais (telefone, endereço, documento)',
+  spam: 'Propaganda, links ou spam',
+  falsa: 'Avaliação falsa ou fraudulenta (ex.: da própria loja ou de concorrente)',
+  ilegal: 'Conteúdo ilegal',
+  sem_relacao: 'Não fala da loja nem da compra',
+};
+for (const col of ['oculta_motivo TEXT', 'oculta_em TEXT']) {
+  try { db.db.exec(`ALTER TABLE loja_avaliacoes ADD COLUMN ${col}`); } catch { /* já existe */ }
+}
+function moderar(avaliacaoId, oculta, motivo = '') {
+  const a = db.get('SELECT * FROM loja_avaliacoes WHERE id = ?', Number(avaliacaoId));
   if (!a) throw fail('Avaliação não encontrada.', 404);
-  db.run('UPDATE loja_avaliacoes SET oculta = ? WHERE id = ?', oculta ? 1 : 0, Number(avaliacaoId));
+  if (oculta && !MOTIVOS_OCULTAR[motivo]) throw fail('Escolha o motivo: só avaliações abusivas podem ser ocultadas (crítica ou nota baixa não é motivo).');
+  db.run('UPDATE loja_avaliacoes SET oculta = ?, oculta_motivo = ?, oculta_em = ? WHERE id = ?',
+    oculta ? 1 : 0, oculta ? motivo : null, oculta ? new Date().toISOString().replace('T', ' ').slice(0, 19) : null, a.id);
+  const loja = db.get('SELECT nome, slug FROM lojas WHERE id = ?', a.loja_id) || {};
+  require('./users').logAction(null, oculta ? 'avaliacao_ocultada' : 'avaliacao_mostrada',
+    `Avaliação ${a.id} (${a.nota}★, de ${a.autor}) na loja "${loja.nome || a.loja_id}"${oculta ? ` — motivo: ${MOTIVOS_OCULTAR[motivo]}` : ''}`);
+  if (oculta && a.autor !== 'admin') {
+    try {
+      require('./notificacoes').criar(a.autor, { tipo: 'avaliacao_oculta', titulo: 'Sua avaliação foi ocultada',
+        texto: `A avaliação que você deixou para ${loja.nome || 'a loja'} foi ocultada pela moderação. Motivo: ${MOTIVOS_OCULTAR[motivo]}. Você pode editá-la e publicar de novo.`,
+        link: loja.slug ? `/loja/${loja.slug}#avaliacoes` : null });
+    } catch { /* sem aviso */ }
+  }
   return avaliacoes(a.loja_id, 'admin', { admin: true });
 }
 
 module.exports = {
   CORES_LOJA, aparencia, salvarAparencia, catalogos, salvarCatalogo, excluirCatalogo,
-  avaliacoes, resumoAvaliacoes, avaliar, excluirMinhaAvaliacao, responder, moderar,
+  avaliacoes, resumoAvaliacoes, avaliar, excluirMinhaAvaliacao, responder, moderar, MOTIVOS_OCULTAR,
 };

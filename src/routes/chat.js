@@ -87,7 +87,7 @@ function exigirEmpresa(req, res, next) {
 router.get('/api/conta/loja/vendas', exigirEmpresa, (req, res) => {
   if (!req.loja) return res.json({ loja: null });
   res.json({ loja: { id: req.loja.id, nome: req.loja.nome, slug: req.loja.slug }, pagamento: pedidos.configPagamento(req.loja),
-    pedidos: pedidos.pedidosDaLoja(req.user), metricas: pedidos.metricas(req.loja.id), carteira: require('../carteira').painel(req.user) });
+    pedidos: pedidos.pedidosDaLoja(req.user), metricas: pedidos.metricas(req.loja.id) });
 });
 // Painel da loja (dashboard)
 router.get('/api/conta/loja/painel', exigirEmpresa, (req, res) => {
@@ -96,11 +96,26 @@ router.get('/api/conta/loja/painel', exigirEmpresa, (req, res) => {
 router.put('/api/conta/loja/pagamento', exigirEmpresa, (req, res) => {
   try { res.json({ ok: true, pagamento: pedidos.salvarPagamento(req.user, req.body || {}) }); } catch (err) { sendError(res, err); }
 });
-// Carteira: pedido de saque (a partir do mínimo, para a chave Pix cadastrada)
-const saqueLimiter = createLimiter(10, 60);
-router.post('/api/conta/loja/saque', exigirEmpresa, (req, res) => {
-  if (saqueLimiter.hit(`u:${req.user.id}`)) return res.status(429).json({ error: 'Muitas tentativas. Aguarde um pouco.' });
-  try { res.json(require('../carteira').solicitarSaque(req.user, req.body || {})); } catch (err) { sendError(res, err); }
+// Mercado Pago da loja (marketplace): conectar, voltar da autorização e desconectar
+router.post('/api/conta/loja/mp/conectar', exigirEmpresa, (req, res) => {
+  try { res.json({ url: require('../mp-lojas').urlConectar(req.user) }); } catch (err) { sendError(res, err); }
+});
+router.get('/api/mp/oauth/retorno', async (req, res) => {
+  const u = users.currentUser(req);
+  try {
+    await require('../mp-lojas').retorno(u && u.tipo === 'empresa' ? u : null, req.query || {});
+    users.logAction(u, 'loja_mp_conectado', 'Mercado Pago da loja conectado');
+    res.redirect('/conta?aba=vendas&mp=ok');
+  } catch (err) {
+    res.redirect(`/conta?aba=vendas&mp_erro=${encodeURIComponent(err.message)}`);
+  }
+});
+router.post('/api/conta/loja/mp/desconectar', exigirEmpresa, (req, res) => {
+  try {
+    const mp = require('../mp-lojas').desconectar(req.user);
+    users.logAction(req.user, 'loja_mp_desconectado', 'Mercado Pago da loja desconectado');
+    res.json({ ok: true, mp });
+  } catch (err) { sendError(res, err); }
 });
 
 // ── Notificações (sino 🔔) ────────────────────────────────────────────────────

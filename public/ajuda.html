@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="/js/app-nativo.js?v=20261133"></script>
+<script src="/js/app-nativo.js?v=20261135"></script>
 <style>
 /* Guia do usuário: índice fixo à esquerda no computador, coluna única no celular; cores da marca Ofertou! */
 :root {
@@ -120,8 +120,8 @@ details p { color: var(--ink-2); }
 
 .rodape { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 14px; display: grid; gap: 6px; }
 </style>
-<script src="/js/rodape-legal.js?v=20261133" defer></script>
-<script src="/js/cookies.js?v=20261133"></script>
+<script src="/js/rodape-legal.js?v=20261135" defer></script>
+<script src="/js/cookies.js?v=20261135"></script>
 </head>
 <body>
 <header class="topo">
@@ -209,7 +209,8 @@ details p { color: var(--ink-2); }
         <div class="card"><h4>Afiliado Pro</h4><p>Para quem divulga ofertas: usa as ofertas do site com os seus próprios links de afiliado e posta nos seus canais.</p></div>
       </div>
       <ul>
-        <li><b>Assinar:</b> toque no plano, preencha os dados e pague com Pix ou cartão. A conta é liberada assim que o pagamento é confirmado.</li>
+        <li><b>Assinar:</b> toque no plano, preencha os dados e pague com Pix ou cartão (com a conta logada, dá para usar um cartão salvo). A conta é liberada assim que o pagamento é confirmado.</li>
+        <li><b>Desistir em até 7 dias:</b> pelo direito de arrependimento, você pode cancelar o plano em até 7 dias da compra e receber o valor de volta, em <span class="caminho">Minha conta → Senha e conta → Desistir do plano</span>.</li>
         <li><b>Renovar:</b> quando o plano vence, aparece o botão <b>Reativar plano</b>. Renovar antes do fim soma os dias ao prazo que você ainda tinha.</li>
         <li>Você recebe um e-mail com a data de vencimento a cada compra.</li>
       </ul>
@@ -234,7 +235,7 @@ details p { color: var(--ink-2); }
       <ol class="passos">
         <li><b>Abra o produto</b><span>Pela página da loja, pelo perfil da loja ou pela página do anúncio. Toque em <b>Fazer pedido</b>.</span></li>
         <li><b>Escolha a quantidade e escreva observações</b><span>Ex.: cor, tamanho, endereço de entrega. O resumo mostra o valor dos produtos, a taxa de uso do site e o total.</span></li>
-        <li><b>Pague com Pix ou cartão</b><span><b>Pix:</b> aparece o QR code e o código "copia e cola", que vale por 60 minutos. <b>Cartão:</b> use um cartão salvo (só digita o código de segurança) ou cadastre um novo, e escolha as parcelas.</span></li>
+        <li><b>Pague com Pix ou cartão</b><span><b>Pix:</b> aparece o QR code e o código "copia e cola", que vale por 60 minutos. <b>Cartão:</b> digite o cartão no formulário do Mercado Pago e escolha as parcelas. O pagamento cai direto na conta do Mercado Pago da loja.</span></li>
         <li><b>Confirmação automática</b><span>Assim que o pagamento é aprovado, a tela mostra "Pagamento confirmado!". Não precisa enviar comprovante.</span></li>
         <li><b>Combine a entrega com a loja</b><span>O pedido aparece na conversa com a loja, com produto, total e observações. A loja marca quando enviar e quando concluir.</span></li>
       </ol>
@@ -247,13 +248,13 @@ details p { color: var(--ink-2); }
 
     <section id="cartoes">
       <h2>Meus cartões</h2>
-      <p class="sub">Salve seus cartões para pagar mais rápido.</p>
+      <p class="sub">Salve seus cartões para pagar os planos do Ofertou! mais rápido.</p>
       <ol class="passos">
         <li><b>Abra <span class="caminho">Minha conta → Meus cartões</span></b><span>Toque em <b>+ Adicionar cartão</b>.</span></li>
         <li><b>Digite os dados do cartão</b><span>Número, validade e código de segurança, nome impresso e CPF do titular. Você pode salvar até 5 cartões.</span></li>
-        <li><b>Na compra, o cartão já vem escolhido</b><span>Você só digita o código de segurança (pedido a cada compra pelas bandeiras) e escolhe as parcelas. Use <b>Trocar cartão</b> para escolher outro ou <b>+ Cadastrar cartão novo</b> na hora.</span></li>
+        <li><b>Na compra do plano, o cartão já vem escolhido</b><span>Entre na sua conta, escolha o plano e "Cartão de crédito ou débito". Você só digita o código de segurança (pedido a cada compra pelas bandeiras) e escolhe as parcelas. Use <b>Trocar cartão</b> para escolher outro ou <b>+ Cadastrar cartão novo</b> na hora.</span></li>
       </ol>
-      <div class="nota"><b>Seu cartão protegido</b>Os dados do cartão são digitados em campos seguros do Mercado Pago e vão direto para ele. O Ofertou! não guarda número, validade nem código de segurança. Remova um cartão quando quiser.</div>
+      <div class="nota"><b>Seu cartão protegido</b>Os dados do cartão são digitados em campos seguros do Mercado Pago e vão direto para ele. O Ofertou! não guarda número, validade nem código de segurança. Remova um cartão quando quiser. Os pedidos às lojas parceiras não usam os cartões salvos, porque são pagos na conta do Mercado Pago de cada loja.</div>
     </section>
 
     <section id="mensagens">
@@ -264,6 +265,7 @@ details p { color: var(--ink-2); }
         <li><b>Falar com uma pessoa:</b> no perfil dela, toque em <b>Mensagem</b>. A primeira mensagem chega como um pedido: a pessoa aceita, recusa ou bloqueia.</li>
         <li><b>Recebeu um pedido de mensagem?</b> Use o menu ⋯ da conversa para aceitar, recusar ou bloquear. Responder também aceita.</li>
         <li>Cada conversa tem um número (ex.: CV-000123), útil para falar com o suporte.</li>
+        <li><b>Respeito no chat:</b> palavrões e ofensas viram asteriscos automaticamente. A mensagem original fica guardada só para a moderação, que pode dar advertência, bloquear o chat por alguns dias, suspender ou banir quem insiste. Você é avisado no sino e pode contestar pelo Suporte.</li>
       </ul>
     </section>
 
@@ -297,21 +299,22 @@ details p { color: var(--ink-2); }
       <ol class="passos">
         <li><b>Cadastro como empresa</b><span>Escolha <b>Pessoa jurídica</b> (ao digitar o CNPJ, os dados da empresa são preenchidos sozinhos com os dados públicos da Receita Federal) ou <b>Pessoa física</b> (vende com o seu CPF, sem precisar de CNPJ).</span></li>
         <li><b>Minha loja</b><span>Preencha nome, frase de destaque, apresentação, logo, banner, cor, contatos, horário, endereço e as políticas de entrega e troca. Toque em <b>Salvar loja</b>.</span></li>
-        <li><b>Painel da loja liberado</b><span>Depois de salvar, aparece o <b>Painel da loja</b> com vendas, saldo, acessos, avaliação, pendências e um checklist do que falta configurar.</span></li>
+        <li><b>Painel da loja liberado</b><span>Depois de salvar, aparece o <b>Painel da loja</b> com vendas, recebimento, acessos, avaliação, pendências e um checklist do que falta configurar.</span></li>
       </ol>
       <h3>Anunciar produtos</h3>
       <ul>
         <li><b>Criar anúncio:</b> em <span class="caminho">Anúncios → Criar anúncio</span>: até 6 fotos, título, categoria, descrição, preço normal e promocional (o desconto é calculado), parcelamento, frete, estoque, garantia e por quantos dias fica no ar. Há uma prévia ao vivo.</li>
         <li><b>Importação automática:</b> se você tem loja virtual (Shopify, WooCommerce, Nuvemshop, Tray, Loja Integrada, VTEX…), cole o link em <span class="caminho">Importação automática</span>. Entram os produtos com preço promocional, e a lista é atualizada sozinha.</li>
         <li><b>Catálogos:</b> agrupe produtos em coleções (ex.: "Promoções da semana"). Cada catálogo vira uma aba na página da loja.</li>
-        <li><b>Avaliações:</b> responda publicamente as avaliações dos clientes em <span class="caminho">Minha loja</span>.</li>
+        <li><b>Avaliações:</b> responda publicamente as avaliações dos clientes em <span class="caminho">Minha loja</span>. A loja não pode apagar avaliações; a moderação do Ofertou! só oculta as abusivas (ofensas, dados pessoais, spam, falsas), nunca as críticas.</li>
       </ul>
       <h3>Vender e receber</h3>
       <ul>
         <li><b>Pedidos:</b> você só recebe o pedido depois que o cliente paga. Ele chega na conversa com o cliente, com aviso no sino e por e-mail. Marque <b>Enviado</b> e depois <b>Concluído</b>.</li>
-        <li><b>Minha carteira</b> (<span class="caminho">Vendas e pagamentos</span>): cada venda entra com o valor dos produtos menos a tarifa do Mercado Pago. O valor fica "a liberar" pelo prazo mostrado na carteira e depois fica disponível.</li>
-        <li><b>Saque:</b> com o valor mínimo, peça o saque para a sua chave Pix cadastrada em "Recebimento dos saques". Você é avisado quando ele for pago.</li>
-        <li><b>Excluir a loja:</b> no fim de <span class="caminho">Minha loja</span>. Não é possível com pedidos em andamento ou dinheiro na carteira. Sua conta continua.</li>
+        <li><b>Receber pelo Mercado Pago:</b> em <span class="caminho">Vendas e pagamentos</span>, toque em <b>Conectar minha conta do Mercado Pago</b>, entre na conta da sua loja e autorize. Pronto: o botão "Fazer pedido" aparece nos seus produtos.</li>
+        <li><b>O dinheiro cai direto com você:</b> o cliente paga por Pix ou cartão na sua conta do Mercado Pago. O Ofertou! não recebe nem guarda o dinheiro das suas vendas; a taxa de uso do site é paga pelo cliente e separada pelo Mercado Pago na hora. Os prazos para o dinheiro ficar disponível são os da sua conta do Mercado Pago.</li>
+        <li><b>Cancelar um pedido pago:</b> o valor é devolvido ao cliente pela sua conta do Mercado Pago, automaticamente.</li>
+        <li><b>Excluir a loja:</b> no fim de <span class="caminho">Minha loja</span>. Não é possível com pedidos em andamento. Sua conta continua.</li>
       </ul>
     </section>
 
@@ -321,7 +324,7 @@ details p { color: var(--ink-2); }
       <ul>
         <li><b>Painel do afiliado:</b> fica no link "Painel do afiliado", no rodapé da página inicial, e abre com o mesmo e-mail e senha da sua conta.</li>
         <li><b>Seus links:</b> cadastre os seus códigos de afiliado de cada loja. As ofertas que você posta saem com os seus links.</li>
-        <li><b>Seus canais:</b> conecte WhatsApp, Telegram, Facebook/Instagram e X, e coloque a sua marca d'água nas imagens.</li>
+        <li><b>Seus canais:</b> conecte WhatsApp, Telegram, Facebook/Instagram e X.</li>
         <li><b>Postar:</b> escolha as ofertas, revise o texto pronto e publique na hora ou agende para os horários que preferir.</li>
       </ul>
       <div class="nota ouro"><b>Boas práticas</b>Poste só em grupos onde as pessoas entraram por vontade própria e mantenha um intervalo entre as postagens. O WhatsApp pode bloquear números que enviam mensagens automáticas demais.</div>
@@ -332,7 +335,8 @@ details p { color: var(--ink-2); }
       <p class="sub">Você controla os seus dados a qualquer momento.</p>
       <ul>
         <li><b>Meus dados:</b> atualize nome, celular, endereço e os dados da empresa. E-mail, CPF e CNPJ não podem ser trocados por você: fale com o suporte.</li>
-        <li><b>Senha e conta:</b> troque a senha (você sai dos outros aparelhos) ou exclua a sua conta. A exclusão pede confirmação.</li>
+        <li><b>Senha e conta:</b> troque a senha (você sai dos outros aparelhos) ou exclua a sua conta. A exclusão pede confirmação. Comprou um plano há até 7 dias? Ali também fica o botão <b>Desistir do plano</b>, com o valor devolvido.</li>
+        <li><b>Cookies:</b> na primeira visita, escolha <b>Só os essenciais</b> ou <b>Aceitar todos</b> (estatísticas e anúncios do Google só funcionam se você aceitar). Mude quando quiser em <b>Preferências de cookies</b>, no rodapé.</li>
         <li><b>Privacidade (LGPD):</b> você pode pedir acesso, correção, portabilidade ou exclusão dos seus dados. Os detalhes estão em <a href="/privacidade">Termos de Uso e Política de Privacidade</a>.</li>
         <li><b>Sair:</b> pelo menu da sua foto, no topo, ou em <span class="caminho">Minha conta</span>.</li>
       </ul>

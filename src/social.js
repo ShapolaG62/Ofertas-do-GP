@@ -6,7 +6,6 @@ const axios = require('axios');
 const db = require('./db');
 const settings = require('./settings');
 const whatsapp = require('./whatsapp');
-const watermark = require('./watermark');
 
 const GRAPH = 'https://graph.facebook.com/v23.0';
 const TIMEOUT = 25000;
@@ -69,13 +68,6 @@ function postImage(o, s = settings.getAll()) {
   return LOCAL_IMAGE.test(o.imagem || '') && /^https:\/\//i.test(site) ? `${site}${o.imagem}` : null;
 }
 
-// Foto com a marca d'água do site (null se desligada ou se a foto não puder ser baixada: aí vai a foto da loja).
-async function fotoMarcada(o, s) {
-  if (!watermark.ativa(s)) return null;
-  try { return await watermark.paraOferta(o, s); } catch { return null; }
-}
-const jpegBlob = buf => new Blob([buf], { type: 'image/jpeg' });
-
 // O texto editado na tela usa a marcação do WhatsApp (*negrito*, _itálico_, ~riscado~).
 const plain = t => String(t).replace(/(^|\s)[*_~]([^*_~\n]+)[*_~](?=\s|$|[.,!?)])/g, '$1$2');
 const escHtml = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -123,17 +115,7 @@ async function postTelegram(o, texto, s) {
   const base = `https://api.telegram.org/bot${s.telegram_bot_token}`;
   const html = toTelegramHtml(texto);
   const img = postImage(o, s);
-  const marcada = html.length <= 1024 ? await fotoMarcada(o, s) : null;
   try {
-    if (marcada) { // envia o arquivo da foto com marca d'água
-      const form = new FormData();
-      form.append('chat_id', s.telegram_chat_id);
-      form.append('caption', html);
-      form.append('parse_mode', 'HTML');
-      form.append('photo', jpegBlob(marcada), 'oferta.jpg');
-      const r = await axios.post(`${base}/sendPhoto`, form, { timeout: TIMEOUT });
-      return `mensagem ${r.data.result.message_id}`;
-    }
     if (img && html.length <= 1024) {
       const r = await axios.post(`${base}/sendPhoto`, { chat_id: s.telegram_chat_id, photo: img, caption: html, parse_mode: 'HTML' }, { timeout: TIMEOUT });
       return `mensagem ${r.data.result.message_id}`;
@@ -154,16 +136,7 @@ async function postTelegram(o, texto, s) {
 async function postFacebook(o, texto, s) {
   const img = postImage(o, s);
   const message = plain(texto);
-  const marcada = await fotoMarcada(o, s);
   try {
-    if (marcada) { // envia o arquivo da foto com marca d'água
-      const form = new FormData();
-      form.append('caption', message);
-      form.append('access_token', s.facebook_page_token);
-      form.append('source', jpegBlob(marcada), 'oferta.jpg');
-      const r = await axios.post(`${GRAPH}/${s.facebook_page_id}/photos`, form, { timeout: TIMEOUT });
-      return `post ${r.data.post_id || r.data.id}`;
-    }
     if (img) {
       const r = await axios.post(`${GRAPH}/${s.facebook_page_id}/photos`, null,
         { params: { url: img, caption: message, access_token: s.facebook_page_token }, timeout: TIMEOUT });
@@ -176,9 +149,8 @@ async function postFacebook(o, texto, s) {
 }
 
 async function postInstagram(o, texto, s) {
-  // O Instagram só baixa a foto de um endereço público: com o site publicado, usa a versão com marca d'água.
-  const site = String(s.site_url || '').replace(/\/+$/, '');
-  const img = watermark.ativa(s) && /^https:\/\//i.test(site) && postImage(o, s) ? `${site}/img/marca/${o.id}.jpg` : postImage(o, s);
+  // O Instagram só baixa a foto de um endereço público (a da loja, ou a enviada pela empresa com o site publicado).
+  const img = postImage(o, s);
   if (!img) throw new Error('A oferta não tem imagem pública (o Instagram só publica com foto).');
   try {
     const media = await axios.post(`${GRAPH}/${s.instagram_business_id}/media`, null,
@@ -229,7 +201,7 @@ async function postX(o, _texto, s) {
 // WhatsApp: foto + texto em cada grupo escolhido, com uma pausa aleatória entre grupos (parece menos robô).
 async function postWhatsApp(o, texto, s) {
   const grupos = whatsapp.gruposEscolhidos(s);
-  const imagem = (await fotoMarcada(o, s)) || postImage(o, s); // arquivo com marca d'água ou endereço da foto da loja
+  const imagem = postImage(o, s); // endereço da foto da loja
   const ok = [], erros = [];
   for (let i = 0; i < grupos.length; i++) {
     try {

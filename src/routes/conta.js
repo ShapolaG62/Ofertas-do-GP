@@ -170,7 +170,8 @@ router.post('/api/conta/arrependimento', async (req, res) => {
 const cartoes = require('../cartoes');
 const pedidosLoja = require('../pedidos-loja');
 router.get('/api/conta/cartoes', async (req, res) => {
-  const base = { public_key: pedidosLoja.chavePublica(), disponivel: pedidosLoja.gatewayPronto() && Boolean(pedidosLoja.chavePublica()), max: cartoes.MAX_CARTOES, parcelas: pedidosLoja.parcelas() };
+  // Cartões ficam no Mercado Pago do Ofertou! (Access Token e Public Key de Planos → Formas de recebimento)
+  const base = { public_key: pedidosLoja.chavePublica(), disponivel: Boolean(require('../settings').get('mp_access_token')) && Boolean(pedidosLoja.chavePublica()), max: cartoes.MAX_CARTOES, parcelas: pedidosLoja.parcelas() };
   if (!base.disponivel) return res.json({ ...base, cartoes: [] });
   try { res.json({ ...base, cartoes: await cartoes.listar(`u:${req.user.id}`) }); } catch (err) { sendError(res, err); }
 });

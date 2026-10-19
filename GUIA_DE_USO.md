@@ -164,14 +164,9 @@ Depois clique em **Testar conexão**, **Carregar grupos do número**, marque os 
 
 > O WhatsApp pode banir números automatizados. Use um chip só para isso (de preferência com algumas semanas de uso), mantenha o intervalo e poste só em grupos onde as pessoas entraram por vontade própria.
 
-### Marca d'água nas imagens
+### Fotos das postagens (sem marca d'água)
 
-As fotos das postagens vão num quadrado 1080×1080 com o selo do site: a Capi + "Ofertou!" (e o endereço do site, quando ele estiver configurado em "Endereço público do site").
-
-- Configure em **Painel → Redes sociais → Marca d'água**: ligar/desligar, texto, posição (cantos ou centro) e opacidade. A prévia mostra o resultado numa oferta real.
-- Vale para WhatsApp, Telegram, Facebook e para o botão **Baixar imagem** da tela de postagens (a miniatura de cada produto já mostra a versão com marca).
-- No **Instagram**, a marca só entra quando o site tiver endereço público (VPS), porque o Instagram baixa a foto pelo endereço; antes disso, ele recebe a foto da loja.
-- As imagens prontas ficam guardadas em data/marca (são refeitas se você mudar a configuração) e as com mais de 7 dias são apagadas sozinhas.
+As postagens usam a **foto original da loja**, sem marca d'água nem selo do site. O recurso de marca d'água foi retirado: as fotos são das lojas (e das marcas dos produtos) e colocar o selo do Ofertou! nelas podia passar a ideia de que a imagem é do site. Os endereços antigos das imagens com marca (`/img/marca/…`) levam à foto original. A pasta `data/marca` (imagens que já tinham sido geradas) não é mais usada e pode ser apagada.
 
 ### Postagens agendadas (manhã, tarde e noite)
 
@@ -198,7 +193,7 @@ Você pode vender o acesso à ferramenta. Cada cliente usa as ofertas mineradas 
 **O que o cliente faz (em /cliente):**
 
 1. **Links de afiliado:** Amazon (tag), Mercado Livre (matt_word e matt_tool), KaBuM! (link de qualquer produto), AliExpress e Shopee (chaves da API de afiliados dele) e Magalu.
-2. **Redes sociais:** WhatsApp (Z-API ou Evolution, número dele), Telegram, Facebook/Instagram, X e marca d'água com o nome dele (sem a Capi).
+2. **Redes sociais:** WhatsApp (Z-API ou Evolution, número dele), Telegram, Facebook/Instagram e X.
 3. **Ofertas:** navega pelas ofertas do site, marca com ✓ e vai para **Postagens** — os textos já saem com os links dele e publicam nos canais dele. Também pode pôr ofertas na fila.
 4. **Agendamento** próprio (horários, quantidade, redes) e **histórico** só das postagens dele.
 
@@ -327,29 +322,28 @@ Os espaços de publicidade que estiverem **sem campanha de anunciante** mostram 
 **Avaliações:** 1 a 5 estrelas com mensagem, uma por pessoa e loja (dá para editar ou apagar). Quem comprou pela loja no site aparece com **✓ Compra verificada**. A loja recebe aviso por e-mail (com o SMTP configurado) e pode responder. O admin, logado, vê o botão **Ocultar/Mostrar** em cada avaliação na página da loja. A nota média aparece no topo da loja e no cartão de parceiro da Comunidade.
 
 
-## 18. Pagamentos dos pedidos às lojas parceiras e carteira das empresas
+## 18. Pagamentos dos pedidos às lojas parceiras (modelo marketplace)
 
-*(Substitui o que as seções 16 e 17 diziam sobre formas de pagamento das lojas, Mercado Pago da empresa e taxa como débito.)*
+*(Substitui o que as seções 16 e 17 diziam sobre formas de pagamento das lojas e taxa como débito. A antiga "carteira das empresas", com saldo e saques pagos por você, foi retirada.)*
 
-**Como o cliente paga:** escolhe **Pix** ou **cartão** (o que a loja aceitar) e paga no **seu Mercado Pago**, o Access Token de Painel → Planos e pagamentos → Formas de recebimento (as parcelas máximas do cartão também vêm de lá). O total já inclui a **taxa de uso do site** (padrão 1%), que fica com você. Tudo acontece na própria janela do pedido:
-- **Pix:** ao clicar em "Confirmar pedido" aparecem o QR code e o copia e cola. A janela confere sozinha e mostra "Pagamento confirmado!". O Pix vale 60 minutos; vencido, o pedido é cancelado. O cliente também encontra o Pix em Minha conta → Meus pedidos.
-- **Cartão:** aparece o formulário do Mercado Pago, onde o cliente digita o cartão e escolhe as **parcelas**. Os dados do cartão vão direto para o Mercado Pago, e o site só recebe um código. Aprovado na hora, já confirma; recusado, mostra o motivo e nada é cobrado.
+**Como funciona:** cada empresa conecta a **própria conta do Mercado Pago** ao Ofertou! e o cliente paga o pedido **direto nela**. O dinheiro dos produtos não passa pela sua conta: você não guarda nem repassa dinheiro de ninguém. A **taxa de uso do site** (padrão 1%) é somada ao total e o Mercado Pago a separa na hora para a sua conta (a dona da aplicação).
 
-Configuração:
-- Para o cartão aparecer, cole também a **Public Key** (APP_USR-…, na mesma tela de credenciais do Mercado Pago) em Painel → Planos e pagamentos → Formas de recebimento.
-- Sem o Access Token, o botão "Fazer pedido" não aparece.
+**Para ativar (uma vez só, você):**
+1. No [Mercado Pago Developers](https://www.mercadopago.com.br/developers/panel/app), crie uma aplicação (Pagamentos online → Checkout Transparente, modelo marketplace), com a sua conta do Mercado Pago.
+2. Cadastre na aplicação o **endereço de retorno** que aparece em Painel → **Lojas e pedidos** (é `https://seu-site/api/mp/oauth/retorno`). O site precisa estar publicado com **https**.
+3. Cole o **Client ID** e o **Client Secret** da aplicação em Painel → Lojas e pedidos e salve. O painel mostra "Ativo".
 
-**O pedido só vai para a loja depois de pago:** antes do pagamento a loja não vê o pedido e nada aparece na conversa. Com o pagamento confirmado, o pedido entra na conversa entre a loja e o cliente, com produto, total, forma de pagamento/parcelas e observações.
+**A empresa (Minha conta → Vendas e pagamentos):** toca em **Conectar minha conta do Mercado Pago**, entra na conta da loja e autoriza. Depois escolhe se aceita Pix, cartão ou os dois. Só com a conta conectada o botão "Fazer pedido" aparece nos produtos. A conexão vale 180 dias e é renovada sozinha; se a renovação falhar, a loja vê o aviso para conectar de novo. A empresa pode desconectar quando quiser (se não houver pedido aguardando pagamento).
 
-**Confirmação automática:** o site consulta o Mercado Pago na tela do pedido, pelo aviso do Mercado Pago (com o site em https) e a cada 2 minutos no servidor. Pago: a empresa recebe aviso no **sino 🔔** (topo das páginas), na **conversa** e no **e-mail**; o cliente também é avisado. Não existe mais o botão "Já paguei".
+**Como o cliente paga** (na própria janela do pedido):
+- **Pix:** QR code e copia e cola na hora. A janela confere sozinha e mostra "Pagamento confirmado!". O Pix vale 60 minutos; vencido, o pedido é cancelado.
+- **Cartão:** formulário do Mercado Pago com a chave da loja, com as **parcelas** (máximo definido em Planos → Formas de recebimento). Os dados do cartão vão direto ao Mercado Pago. Os **cartões salvos** não aparecem aqui: eles ficam na conta do Ofertou! e servem para pagar os **planos** (seção 24).
 
-**Carteira da empresa** (Minha conta → **Vendas e pagamentos → Minha carteira**): cada venda entra com o valor dos produtos **menos a tarifa real do Mercado Pago** daquela venda. Fica **a liberar** até 7 dias depois de o pedido ser **concluído** ou 14 dias depois de **pago** (o que vier primeiro) e então vira **disponível**. Com o mínimo (padrão **R$ 50**), a empresa pede o **saque** para a chave Pix cadastrada em "Recebimento dos saques". Extrato e saques ficam na mesma tela.
+**O pedido só vai para a loja depois de pago**, e a confirmação é automática (na tela do pedido, pelo aviso do Mercado Pago e a cada 2 minutos no servidor). Pago: a empresa recebe aviso no sino 🔔, na conversa e no e-mail. Na conversa, a loja vê quanto recebe (produtos menos a tarifa do Mercado Pago).
 
-**Você (Painel → Lojas e pedidos):** configure taxa, saque mínimo e prazos de liberação. Em **Carteiras e saques** ficam os saques pedidos: pague pelo app do Mercado Pago (Pix para a chave mostrada) e clique em **Marcar como pago** (ou **Recusar**, e o valor volta ao saldo). A empresa é avisada no site e por e-mail. Também há o saldo e o extrato de cada empresa.
+**Cancelamento depois de pago:** a loja cancela e o dinheiro é devolvido ao cliente pela conta do Mercado Pago da loja, automaticamente (a taxa do site volta junto, na proporção).
 
-**Cancelamento depois de pago:** a loja cancela e o dinheiro é devolvido ao cliente pelo Mercado Pago automaticamente; a venda sai da carteira.
-
-**Atenção:** neste modelo o dinheiro das vendas das empresas passa pela sua conta Mercado Pago até o saque. Converse com um contador sobre a declaração desses valores e confira as regras do Mercado Pago para esse uso.
+**Você (Painel → Lojas e pedidos):** taxa do site, Client ID/Secret, situação (ativo ou o que falta) e, na tabela Empresas, quais lojas estão com o Mercado Pago conectado.
 
 ## 19. Painel administrativo (novo layout) e Painel da loja
 
@@ -444,11 +438,11 @@ Em **Minha conta → Meus cartões**, qualquer conta do site pode salvar até 5 
 - **Adicionar cartão:** número, validade e código de segurança são digitados nos campos seguros do Mercado Pago, e os dados vão direto para ele. Também se informa o nome impresso e o CPF do titular.
 - **Remover** um cartão a qualquer momento. A lista mostra bandeira, final, validade e titular; cartão vencido aparece marcado.
 
-**No pedido a uma loja parceira:** ao escolher cartão, o cartão salvo já vem escolhido (o último usado). A pessoa digita só o código de segurança (exigido a cada compra pelo Mercado Pago e pelas bandeiras), escolhe as parcelas e paga. Botões: **Trocar cartão** (escolhe outro salvo) e **+ Cadastrar cartão novo** (salva em Meus cartões e já usa). Sem cartão salvo, o formulário de cadastrar aparece direto. Também há o link "Pagar com um cartão sem salvar".
+**Na compra de um plano** (página /assinar, com a conta logada): ao escolher "Cartão de crédito ou débito", o cartão salvo já vem escolhido (o último usado) e o pagamento é feito ali mesmo, sem ir para a página do Mercado Pago. A pessoa digita só o código de segurança (exigido a cada compra pelo Mercado Pago e pelas bandeiras), escolhe as parcelas e paga. Botões: **Trocar cartão** (escolhe outro salvo) e **+ Cadastrar cartão novo** (salva em Meus cartões e já usa). Sem cartão salvo, o formulário de cadastrar aparece direto. O link "Pagar com um cartão sem salvar" volta para o botão "Finalizar compra", que abre a página do Mercado Pago. Os dados e os aceites do formulário são conferidos antes de cobrar.
 
 **Segurança:** o Ofertou! não guarda número, validade nem código de segurança. Os cartões ficam guardados no Mercado Pago do site (clientes e cartões), e o site guarda só o código do cliente no Mercado Pago. Uma conta não consegue usar o cartão de outra.
 
-Os planos são pagos na página do próprio Mercado Pago, que tem os cartões salvos dele.
+**Pedidos às lojas parceiras** não usam os cartões salvos: eles são cobrados na conta do Mercado Pago de cada loja (seção 18), onde os cartões guardados na conta do Ofertou! não existem. Lá o cliente digita o cartão no formulário do Mercado Pago.
 
 ## 25. Guia do usuário (/ajuda)
 
@@ -498,3 +492,15 @@ A **Área de trabalho** junta o **SAC** e a **Moderação do chat** num lugar s�
 Padrão inicial: Gerente (tudo), Admin (tudo menos gerenciar a equipe), Moderador (Moderação do chat), Suporte (SAC).
 
 **Gerenciar a equipe:** quem tem essa função (ex.: Gerente) cadastra pessoas, troca cargos, define nova senha e tira da equipe, **só para cargos abaixo do seu**. Ninguém muda o próprio cargo. Tudo fica no histórico da conta.
+
+## 29. Adequação à lei brasileira (o que o site faz sozinho)
+
+- **Identificação do responsável (Decreto 7.962/2013):** nome, CPF/CNPJ, endereço, e-mail e o link dos Termos aparecem no rodapé de todas as páginas e no fim de todos os e-mails. Preencha em Painel → Site → Responsável pelo site. O decreto pede o **endereço físico completo** (rua, número, cidade); só a cidade não basta.
+- **Direito de arrependimento nos planos (CDC, art. 49):** em até 7 dias da compra, a pessoa cancela em Minha conta → Senha e conta → Desistir do plano. Pago pelo Mercado Pago, o reembolso sai sozinho; nos outros meios, o pedido aparece em Painel → Planos e pagamentos com o selo "Reembolso a fazer": devolva o valor e clique em **Marcar reembolso feito**. Os dias daquela compra saem da conta.
+- **Registros de acesso (Marco Civil, art. 15):** IP, data e hora de uso (um registro a cada 30 minutos por pessoa e a cada login) ficam guardados por 6 meses e são apagados sozinhos depois. Só entregue a alguém com ordem judicial.
+- **Aviso de cookies (LGPD):** Google Analytics e anúncios do AdSense só carregam depois que o visitante clica em "Aceitar todos". "Preferências de cookies" fica no rodapé.
+- **Pedidos às lojas só no modelo marketplace:** o dinheiro cai na conta do Mercado Pago de cada loja; você recebe apenas a taxa do site (seção 18). Não há mais carteira nem saques.
+- **Sem marca d'água nas fotos das lojas:** as postagens e a vitrine usam a foto original (seção "Fotos das postagens").
+- **Moderação transparente:** palavrões no chat viram asteriscos e o texto original fica só para a moderação (seção 26). Avaliações de lojas só podem ser ocultadas por abuso (ofensas, dados pessoais, spam, falsa, ilegal, sem relação com a loja): ao clicar em **Ocultar** na página da loja, escolha o motivo; o autor é avisado e a ação vai para o registro de moderação. Se o autor editar a avaliação, ela volta a aparecer. A loja nunca consegue ocultar avaliações.
+- **Termos e Política de Privacidade (versão 2026-10-19):** incluem o filtro do chat, o acesso da equipe por cargo, a moderação das avaliações, o aviso de cookies, o arrependimento dos planos e o pagamento direto às lojas.
+- **Acessibilidade:** todas as páginas têm o link "Pular para o conteúdo" (aparece ao apertar Tab), idioma pt-BR e destaque de foco para quem navega pelo teclado.

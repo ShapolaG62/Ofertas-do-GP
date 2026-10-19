@@ -1,4 +1,4 @@
-/* Ofertou! — assinatura de planos: dados do cadastro, pagamento (Pix, cartão, transferência ou link) e confirmação */
+/* Ofertou! — assinatura de planos: dados do cadastro, pagamento (Pix, cartão — inclusive cartão salvo —, transferência ou link) e confirmação */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -97,6 +97,7 @@
         <span><b>${esc(m.nome)}</b><small>${esc(m.desc)}</small></span>${m.automatico ? '<em class="ass-auto">liberação automática</em>' : ''}</label>`).join('')
       : `<p class="form-msg err">Os pagamentos online ainda não foram configurados.${d.whatsapp ? ` <a class="link-btn" target="_blank" rel="noopener" href="https://wa.me/${esc(d.whatsapp)}?text=${encodeURIComponent(`Olá! Quero assinar o plano ${PLANO.nome}.`)}">Fale com a gente no WhatsApp</a>.` : ' Tente mais tarde.'}</p>`;
     $('#ass-enviar').disabled = !opcoes.length && !PLANO.gratis;
+    $('#metodos').addEventListener('change', atualizarCartao);
     const NOME_PERFIL = { consumidor: ['Consumidor', 'Para comprar com desconto'], empresa: ['Empresa', 'Para divulgar a sua loja e os seus produtos'] };
     $('#ass-perfis').innerHTML = PLANO.perfis.map((t, i) => `
       <label class="ass-metodo"><input type="radio" name="perfil_conta" value="${t}" ${i === 0 ? 'checked' : ''}>
@@ -105,6 +106,41 @@
     resumo();
     aplicarPlano();
     show('form');
+    atualizarCartao();
+  }
+
+  // Cartão com conta logada: usa os cartões salvos (Minha conta → Meus cartões) e paga aqui mesmo, digitando só o
+  // código de segurança. "Pagar com um cartão sem salvar" volta para o checkout do Mercado Pago.
+  let semSalvo = false, cartaoAtivo = null, carregandoCartao = false, seqCartao = 0;
+  async function atualizarCartao() {
+    const area = $('#ass-cartao');
+    const usar = Boolean(LOGADO && !PLANO.gratis && !semSalvo && window.OfertouCartoes && $('#metodos [name=metodo]:checked')?.value === 'mercadopago');
+    if (!usar) {
+      seqCartao++; carregandoCartao = false;
+      cartaoAtivo?.desmontar?.(); cartaoAtivo = null;
+      area.hidden = true; area.innerHTML = '';
+      $('#ass-enviar').hidden = false;
+      return;
+    }
+    if (cartaoAtivo || carregandoCartao) return;
+    const n = ++seqCartao;
+    carregandoCartao = true;
+    area.hidden = false;
+    area.innerHTML = '<p class="cli-hint">Carregando seus cartões…</p>';
+    $('#ass-enviar').hidden = true;
+    const escolha = await OfertouCartoes.escolherNoPedido(area, {
+      total: () => PLANO.preco,
+      aoPagar: async cartao => {
+        const f = $('#ass-form');
+        if (!f.reportValidity()) throw new Error('Preencha os dados e marque os aceites acima antes de pagar.');
+        await enviar({ ...coletar(), cartao });
+      },
+      outroCartao: () => { semSalvo = true; cartaoAtivo = null; atualizarCartao(); },
+    });
+    if (n !== seqCartao) { escolha?.desmontar?.(); return; } // trocou a forma de pagamento enquanto carregava
+    carregandoCartao = false;
+    cartaoAtivo = escolha;
+    if (!cartaoAtivo) { area.hidden = true; area.innerHTML = ''; $('#ass-enviar').hidden = false; } // cartões indisponíveis: segue o checkout normal
   }
 
   $('#renovar').addEventListener('change', aplicarPlano);
@@ -127,27 +163,36 @@
   // Endereço pelo CEP, dados da empresa pelo CNPJ e pessoa física/jurídica: /js/cadastro-auto.js
   for (const prefix of ['', 'emp_']) mask($(`[name=${prefix}cep]`), d => d.slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'));
 
-  $('#ass-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const f = e.target;
-    const msg = $('#ass-msg');
-    msg.hidden = true;
+  // Dados do formulário (só os campos visíveis); o cartão salvo fica fora do formulário
+  function coletar() {
     const body = { plano: PLANO.id };
-    for (const el of f.elements) {
-      if (!el.name || el.closest('[hidden]')) continue;
+    for (const el of $('#ass-form').elements) {
+      if (!el.name || el.closest('[hidden]') || el.closest('#ass-cartao')) continue;
       if (el.type === 'checkbox') body[el.name] = el.checked;
       else if (el.type === 'radio') { if (el.checked) body[el.name] = el.value; } else body[el.name] = el.value;
     }
-    if (!body.renovar && body.senha !== body.senha_confirmacao) { msg.textContent = 'As senhas não conferem.'; msg.hidden = false; return; }
+    if (!body.renovar && body.senha !== body.senha_confirmacao) throw new Error('As senhas não conferem.');
+    return body;
+  }
+  async function enviar(body) {
+    const r = await fetch('/api/assinatura', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || `Erro ${r.status}`);
+    history.replaceState(null, '', `/assinar?pedido=${d.token}`);
+    if (d.checkout_url) { location.href = d.checkout_url; return; } // Mercado Pago: paga lá e volta para cá
+    cartaoAtivo?.desmontar?.(); cartaoAtivo = null;
+    acompanhar(d.token);
+  }
+
+  $('#ass-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const msg = $('#ass-msg');
+    msg.hidden = true;
+    if (cartaoAtivo || carregandoCartao) return; // com cartão salvo, o pagamento é pelo botão "Pagar com este cartão"
     const btn = $('#ass-enviar');
     btn.disabled = true; btn.textContent = 'Finalizando…';
     try {
-      const r = await fetch('/api/assinatura', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error || `Erro ${r.status}`);
-      history.replaceState(null, '', `/assinar?pedido=${d.token}`);
-      if (d.checkout_url) { location.href = d.checkout_url; return; } // Mercado Pago: paga lá e volta para cá
-      acompanhar(d.token);
+      await enviar(coletar());
     } catch (err) {
       msg.textContent = err.message; msg.hidden = false;
       msg.scrollIntoView({ block: 'center', behavior: 'smooth' });

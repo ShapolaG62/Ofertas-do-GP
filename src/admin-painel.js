@@ -51,14 +51,6 @@ function dashboard() {
   };
   const afil30 = comissoes('-29 days', '+1 day'), afilAnt = comissoes('-59 days', '-29 days');
   const bruta = r2(assin30.v + pedidos30.taxa + afil30.BRL), brutaAnt = r2(assinAnt.v + pedidosAnt.taxa + afilAnt.BRL);
-  let carteiras = { a_pagar: 0, saques: 0, saques_valor: 0 };
-  try {
-    const c = require('./carteira');
-    const lojas = todos('SELECT DISTINCT loja_id FROM carteira_movimentos');
-    const saldoTotal = lojas.reduce((s, l) => { const x = c.saldo(l.loja_id); return s + x.disponivel + x.a_liberar + (x.saque_pendente || 0); }, 0);
-    const sq = um(`SELECT COUNT(*) n, COALESCE(SUM(valor), 0) v FROM carteira_saques WHERE status = 'solicitado'`);
-    carteiras = { a_pagar: r2(saldoTotal), saques: sq.n || 0, saques_valor: r2(sq.v) };
-  } catch { /* sem carteira */ }
   let afiliados = { disponivel: 0, a_liberar: 0 };
   try {
     const g = require('./ganhos').painel().filter(p => p.ativo);
@@ -70,7 +62,6 @@ function dashboard() {
     cadastros: usuarios.pendentes || 0,
     assinaturas: um(`SELECT COUNT(*) n FROM pagamentos WHERE status = 'pendente' AND metodo IN ('pix_manual', 'transferencia', 'link', 'combinar')`).n || 0,
     leads: um(`SELECT COUNT(*) n FROM ad_leads WHERE status = 'novo'`).n || 0,
-    saques: carteiras.saques, saques_valor: carteiras.saques_valor,
     avisos: um(`SELECT COUNT(*) n FROM admin_notificacoes WHERE lida = 0`).n || 0,
     postagens_erro: um(`SELECT COUNT(*) n FROM post_queue WHERE status = 'erro' AND created_at >= datetime('now', '-3 days')`).n || 0,
     cartao_sem_chave: Boolean(require('./settings').get('mp_access_token')) && !String(require('./settings').get('mp_public_key') || '').trim(),
@@ -122,7 +113,7 @@ function dashboard() {
         total: bruta, var: variacao(bruta, brutaAnt), // receita bruta: assinaturas + taxa do site + comissões de afiliado (R$)
       },
       pedidos: { n: pedidos30.n || 0, valor: r2(pedidos30.v) },
-      carteiras, afiliados,
+      afiliados,
     },
     pendencias: pend, mineracao, serie,
     top_ofertas: topOfertas, ultimos_cadastros: ultimosCadastros, ultimos_pagamentos: ultimosPagamentos, ultimos_pedidos: ultimosPedidos,

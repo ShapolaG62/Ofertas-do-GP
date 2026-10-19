@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const sharp = require('sharp');
 const db = require('./db');
 const offers = require('./offers');
-const { baixarFoto } = require('./watermark');
+const { baixarFoto } = require('./fotos');
 const ia = require('./ia-recorte');
 
 const CACHE_DIR = path.join(path.dirname(db.UPLOADS_DIR), 'recorte');
@@ -55,7 +55,7 @@ const POR_TIPO = 3;          // produtos de cada tipo no carrossel
 const CANDIDATOS = 10;       // ofertas testadas por tipo (a foto precisa dar um bom recorte)
 const VALIDADE_MS = 10 * 60 * 1000; // a vitrine é refeita a cada 10 min
 
-// Imagem da vitrine: a foto ORIGINAL da loja, inteira, num cartão branco com o selo do Ofertou!
+// Imagem da vitrine: a foto ORIGINAL da loja, inteira, num cartão branco (sem marca d'água nem selo)
 // (sem remover o fundo, então nenhuma parte do produto some). O recorte serve só para escolher boas fotos:
 // produto de estúdio, sem textos, selos ou montagens; a imagem mostrada é sempre a foto completa.
 async function avaliarFoto(foto) {
@@ -64,7 +64,7 @@ async function avaliarFoto(foto) {
 }
 async function recortar(foto) {
   await avaliarFoto(foto); // lança erro se a foto não servir
-  return require('./watermark').cartao(foto);
+  return require('./fotos').cartao(foto);
 }
 
 // Método simples: remove o fundo branco ligado às bordas (preenchimento a partir das bordas), suavizando o contorno.
@@ -123,7 +123,7 @@ async function recortarSimples(foto) {
 
 async function recorteDaOferta(o) {
   const chave = crypto.createHash('sha1').update(`cartao2|${ia.disponivel() ? 'ia' : 's'}|${o.imagem}`).digest('hex').slice(0, 12);
-  const ok = path.join(CACHE_DIR, `${o.id}-${chave}.webp`);
+  const ok = path.join(CACHE_DIR, `${o.id}-${chave}-s.webp`); // "-s": cartão sem o selo do site
   const ruim = path.join(CACHE_DIR, `${o.id}-${chave}.ruim`);
   if (fs.existsSync(ok)) return ok;
   if (fs.existsSync(ruim)) return null; // já tentou e a foto não serve

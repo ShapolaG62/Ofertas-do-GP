@@ -2,7 +2,7 @@
 // editados e excluídos em Painel → Planos. Cada plano tem um ou mais TIPOS DE ACESSO, que definem o que a pessoa ganha:
 //   consumidor  → vê todas as ofertas na hora, sem esperar aprovação;
 //   empresa     → + loja própria no site, anúncios e importação do catálogo (com limite de produtos opcional);
-//   ferramenta  → painel de afiliado: os próprios links de afiliado, redes sociais, agendamento e marca d'água.
+//   ferramenta  → painel de afiliado: os próprios links de afiliado, redes sociais e agendamento.
 // Com Consumidor e Empresa no mesmo plano, quem assina escolhe o tipo da conta. Com Ferramenta junto de um deles,
 // a conta do site ganha também o painel de afiliado (mesmo login).
 // E funções extras do perfil (vitrine, capa, links, cores, endereço próprio, moldura e selo).

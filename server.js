@@ -193,10 +193,13 @@ if (process.env.VERCEL) {
     require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
     const acessos = require('./src/registro-acesso');
     acessos.limpar(); setInterval(acessos.limpar, 24 * 3600 * 1000); // registros de acesso com mais de 6 meses
-    const limparMarcas = () => {
-      try { require('./src/watermark').limparCache(); require('./src/vitrine').limparCache(); } catch (err) { console.error('[MARCA]', err.message); }
+    // Conexões das lojas com o Mercado Pago (valem 180 dias): renova as que estão perto de vencer
+    const mpLojas = require('./src/mp-lojas');
+    mpLojas.renovarTodas(); setInterval(() => mpLojas.renovarTodas(), 24 * 3600 * 1000);
+    const limparVitrine = () => {
+      try { require('./src/vitrine').limparCache(); } catch (err) { console.error('[VITRINE]', err.message); }
     };
-    limparMarcas();
-    setInterval(limparMarcas, 24 * 3600 * 1000); // imagens com marca d'água geradas há mais de 7 dias
+    limparVitrine();
+    setInterval(limparVitrine, 24 * 3600 * 1000); // cartões da vitrine gerados há mais de 3 dias
   });
 }

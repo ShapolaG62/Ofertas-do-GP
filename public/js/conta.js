@@ -463,7 +463,7 @@
     const qs = new URLSearchParams(location.search);
     if (qs.get('aba') && tabs.some(([k]) => k === qs.get('aba'))) {
       currentTab = qs.get('aba');
-      if (qs.get('mp') === 'ok') toast('Mercado Pago conectado!');
+      if (qs.get('mp') === 'ok') toast('Mercado Pago conectado! Agora seus clientes podem pagar os pedidos pelo site.');
       if (qs.get('mp_erro')) toast(qs.get('mp_erro'));
       if (currentTab !== 'mensagens') history.replaceState(null, '', '/conta'); // (mensagens: mantém a conversa pedida no endereço)
     }
@@ -540,15 +540,16 @@
       num(a.link.total, 'Cliques para comprar no seu site', `${a.link.d30} em 30 dias`),
       num(m.conversas, 'Conversas de atendimento'),
     ].join('');
-    renderCarteira(d.carteira);
+    renderMpLoja(d.pagamento.mp);
     $('#vendas-top').innerHTML = m.mais_vistos.length ? `<h3 style="margin:16px 0 6px;font-size:15px">Mais vistos no catálogo (30 dias)</h3>
       <ol class="muted" style="margin:0;padding-left:20px">${m.mais_vistos.map(t => `<li>${esc(t.produto)} — <b>${t.n}</b></li>`).join('')}</ol>` : '';
     $('#vendas-pedidos').innerHTML = d.pedidos.length ? d.pedidos.map(linhaPedido).join('') : '<p class="muted">Nenhum pedido ainda.</p>';
     const f = $('#form-pagloja'), pg = d.pagamento;
     for (const k of ['aceita_pedidos', 'aceita_pix', 'aceita_cartao']) f[k].checked = pg[k];
-    for (const k of ['pag_pix_tipo', 'pag_pix_chave', 'pag_pix_nome', 'pedido_instrucoes']) f[k].value = pg[k] || '';
+    f.pedido_instrucoes.value = pg.pedido_instrucoes || '';
     $('#pag-parcelas').textContent = `Pelo Mercado Pago${pg.parcelas > 1 ? `, em até ${pg.parcelas}x` : ''}`;
     if (!pg.gateway_ok) $('#pag-explica').innerHTML = '<b>Os pagamentos pelo site ainda não foram ativados pelo administrador.</b> Enquanto isso, o botão "Fazer pedido" não aparece nos seus produtos.';
+    else if (!pg.mp.conectado) $('#pag-explica').innerHTML = '<b>Conecte o Mercado Pago da loja (acima)</b> para o botão "Fazer pedido" aparecer nos seus produtos.';
   }
   bind('#form-pagloja', async (form, d) => {
     await api('/api/conta/loja/pagamento', { method: 'PUT', body: d });
@@ -556,45 +557,36 @@
     loadVendas();
   });
 
-  // Carteira: saldo disponível e a liberar, saque (a partir do mínimo), extrato e saques
-  const TIPO_MOV = { venda: 'Venda', tarifa_mp: 'Tarifa do Mercado Pago', estorno: 'Devolução ao cliente', saque: 'Saque', saque_devolvido: 'Saque recusado (devolvido)', ajuste: 'Ajuste' };
-  const STATUS_SAQUE = { solicitado: ['Aguardando pagamento', ''], pago: ['Pago', 'st-pago'], recusado: ['Recusado', 'st-cancelado'] };
-  const dia = s2 => (s2 ? new Date(String(s2).replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '');
-  let CART = null;
-  function renderCarteira(c) {
-    CART = c;
-    if (!c) return;
-    const sd = c.saldo;
-    const num = (v, rot, sub) => `<div class="vendas-numero"><b>${v}</b><span>${rot}${sub ? `<br>${sub}` : ''}</span></div>`;
-    $('#cart-regras').textContent = `Saque mínimo ${brlFmt(sd.minimo)} · libera ${sd.dias_concluido} dias após concluir (ou ${sd.dias_pago} dias após pago)`;
-    $('#cart-numeros').innerHTML = [
-      num(brlFmt(sd.disponivel), 'Disponível para saque'),
-      num(brlFmt(sd.a_liberar), 'A liberar', sd.proxima_liberacao ? `próxima em ${dia(sd.proxima_liberacao)}` : ''),
-      num(brlFmt(sd.vendido), 'Vendido pelo site', `tarifas do Mercado Pago: ${brlFmt(sd.tarifas)}`),
-      num(brlFmt(sd.sacado), 'Já sacado', sd.saque_pendente ? `${brlFmt(sd.saque_pendente)} aguardando` : ''),
-    ].join('');
-    const pode = sd.disponivel >= sd.minimo && !sd.saque_pendente;
-    $('#cart-saque').innerHTML = sd.saque_pendente
-      ? `<p class="muted">Você tem um saque de <b>${brlFmt(sd.saque_pendente)}</b> aguardando pagamento. Avisaremos quando for pago.</p>`
-      : `<div class="cart-saque-linha"><label class="field"><span>Valor do saque</span><input id="cart-valor" inputmode="decimal" value="${sd.disponivel > 0 ? sd.disponivel.toFixed(2).replace('.', ',') : ''}"></label>
-          <button class="btn btn-primary" type="button" id="cart-sacar" ${pode ? '' : 'disabled'}>Solicitar saque</button></div>
-        <small class="muted">${pode ? 'O valor é enviado para a sua chave Pix cadastrada abaixo.' : `Disponível a partir de ${brlFmt(sd.minimo)} de saldo.`}</small>`;
-    $('#cart-extrato').innerHTML = c.extrato.length ? `<table class="cart-tabela"><thead><tr><th>Data</th><th>Lançamento</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${c.extrato.map(m => `<tr>
-      <td>${dia(m.created_at)}</td><td>${esc(TIPO_MOV[m.tipo] || m.tipo)}<br><small class="muted">${esc(m.descricao || '')}</small></td>
-      <td class="${m.valor < 0 ? 'neg' : 'pos'}">${m.valor < 0 ? '−' : '+'}${brlFmt(Math.abs(m.valor))}</td>
-      <td><small>${m.cancelado ? 'Pedido cancelado' : m.liberado ? 'Disponível' : m.libera_em ? `Libera em ${dia(m.libera_em)}` : 'Aguardando conclusão'}</small></td></tr>`).join('')}</tbody></table>`
-      : '<p class="muted">Nenhum lançamento ainda. As vendas pagas pelo site aparecem aqui.</p>';
-    $('#cart-saques').innerHTML = c.saques.length ? `<table class="cart-tabela"><thead><tr><th>Pedido em</th><th>Valor</th><th>Chave Pix</th><th>Situação</th></tr></thead><tbody>${c.saques.map(q => `<tr>
-      <td>${dia(q.solicitado_em)}</td><td>${brlFmt(q.valor)}</td><td><small>${esc(q.pix_chave || '')}</small></td>
-      <td><span class="status-pill ${STATUS_SAQUE[q.status][1]}">${STATUS_SAQUE[q.status][0]}</span>${q.resolvido_em ? `<br><small class="muted">${dia(q.resolvido_em)}${q.observacao ? ` · ${esc(q.observacao)}` : ''}</small>` : ''}</td></tr>`).join('')}</tbody></table>`
-      : '<p class="muted">Nenhum saque ainda.</p>';
+  // Mercado Pago da loja (marketplace): conectar (vai ao Mercado Pago e volta), situação e desconectar
+  function renderMpLoja(m) {
+    const el = $('#mp-loja-situacao');
+    if (!m) { el.innerHTML = ''; return; }
+    if (m.conectado) {
+      el.innerHTML = `<p class="mp-ok"><b>✓ Mercado Pago conectado</b>${m.conta_id ? ` · conta ${esc(m.conta_id)}` : ''}${m.conectado_em ? ` · desde ${fmtDate(m.conectado_em)}` : ''}${m.teste ? ' · <b>conta de teste</b>' : ''}</p>
+        ${m.erro ? `<p class="form-msg err">A renovação da conexão falhou (${esc(m.erro)}). Conecte de novo para não parar de receber pedidos.</p>` : ''}
+        <div class="row-actions">${m.erro ? '<button class="btn btn-primary" type="button" data-mp-conectar>Conectar de novo</button>' : ''}<button class="btn" type="button" data-mp-desconectar>Desconectar</button></div>`;
+    } else if (!m.disponivel) {
+      el.innerHTML = '<p class="muted"><b>O recebimento pelo Mercado Pago ainda não foi ativado pelo administrador do site.</b> Assim que for, você poderá conectar a sua conta aqui.</p>';
+    } else {
+      el.innerHTML = `<p class="muted">Você vai entrar na sua conta do Mercado Pago (ou criar uma, grátis) e autorizar o Ofertou! a <b>criar cobranças em nome da sua loja</b>. A autorização é usada só para cobrar os pedidos feitos pelo site, conferir se foram pagos e devolver o valor quando um pedido pago é cancelado. O Ofertou! não faz saques nem transferências na sua conta.</p>
+        <div class="row-actions"><button class="btn btn-primary" type="button" data-mp-conectar>Conectar minha conta do Mercado Pago</button></div>`;
+    }
   }
   $('[data-pane="vendas"]').addEventListener('click', async e => {
-    if (!e.target.closest('#cart-sacar')) return;
-    const valor = $('#cart-valor').value;
-    if (!await OfertouUI.confirmar(`Solicitar o saque de R$ ${valor} para a sua chave Pix?`)) return;
-    try { renderCarteira(await api('/api/conta/loja/saque', { method: 'POST', body: { valor } })); toast('Saque solicitado! Avisaremos quando for pago.'); }
-    catch (err) { toast(err.message); }
+    const con = e.target.closest('[data-mp-conectar]'), des = e.target.closest('[data-mp-desconectar]');
+    if (!con && !des) return;
+    try {
+      if (con) {
+        con.disabled = true;
+        const r = await api('/api/conta/loja/mp/conectar', { method: 'POST', body: {} });
+        location.href = r.url;
+        return;
+      }
+      if (!await OfertouUI.confirmar('Desconectar o Mercado Pago? O botão "Fazer pedido" some dos seus produtos até você conectar de novo.')) return;
+      await api('/api/conta/loja/mp/desconectar', { method: 'POST', body: {} });
+      toast('Mercado Pago desconectado.');
+      loadVendas();
+    } catch (err) { toast(err.message); if (con) con.disabled = false; }
   });
 
 

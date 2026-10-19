@@ -273,24 +273,14 @@ router.get('/api/admin/store-list', (req, res) => {
 router.get('/api/admin/atendimento', (req, res) => {
   const chat = require('../chat'), pedidosLoja = require('../pedidos-loja');
   const q = String(req.query.q || '');
-  const lojasLista = db.all(`SELECT l.id, l.nome, l.slug, l.user_id, l.oculta, l.aceita_pedidos FROM lojas l ORDER BY l.nome`).map(l => {
+  const lojasLista = db.all(`SELECT l.id, l.nome, l.slug, l.user_id, l.oculta, l.aceita_pedidos, (l.mp_access_token IS NOT NULL) AS mp_conectado, l.mp_erro FROM lojas l ORDER BY l.nome`).map(l => {
     const m = pedidosLoja.metricas(l.id);
     return { ...l, finalizacoes: m.finalizacoes, pedidos: m.pedidos.total, conversas: m.conversas, taxas: m.taxas,
       acessos30: m.acessos.pagina.d30, produtos30: m.acessos.produto.d30, site30: m.acessos.site.d30, acessos: m.acessos.pagina.total };
   });
   res.json({ conversas: chat.listarAdmin({ q }), pedidos: pedidosLoja.listarAdmin({ q }), lojas: lojasLista,
-    taxa: { pct: pedidosLoja.taxaPct(), gateway_ok: pedidosLoja.gatewayPronto(), cartao_ok: Boolean(pedidosLoja.chavePublica()) }, carteiras: require('../carteira').visaoAdmin() });
-});
-// Carteiras: pagar ou recusar um saque pedido pela empresa
-router.post('/api/admin/saques/:id/pagar', (req, res) => {
-  try { res.json({ ok: true, saque: require('../carteira').resolverSaque(req.params.id, true, req.body?.observacao) }); } catch (err) { sendError(res, err); }
-});
-router.post('/api/admin/saques/:id/recusar', (req, res) => {
-  try { res.json({ ok: true, saque: require('../carteira').resolverSaque(req.params.id, false, req.body?.observacao) }); } catch (err) { sendError(res, err); }
-});
-router.get('/api/admin/carteiras/:lojaId', (req, res) => {
-  const c = require('../carteira');
-  res.json({ saldo: c.saldo(Number(req.params.lojaId)), extrato: c.extrato(Number(req.params.lojaId)), saques: c.saques(Number(req.params.lojaId)) });
+    taxa: { pct: pedidosLoja.taxaPct(), gateway_ok: pedidosLoja.gatewayPronto(), retorno: require('../mp-lojas').retornoUrl(), site_https: /^https:\/\//i.test(String(require('../settings').get('site_url') || '')),
+      app_ok: Boolean(String(require('../settings').get('mp_mkt_client_id') || '').trim() && require('../settings').get('mp_mkt_client_secret')) } });
 });
 router.post('/api/admin/taxas/:lojaId/quitar', (req, res) => {
   try { res.json(require('../pedidos-loja').quitarTaxas(req.params.lojaId, req.body?.observacao)); } catch (err) { sendError(res, err); }

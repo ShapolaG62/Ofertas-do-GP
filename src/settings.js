@@ -88,12 +88,6 @@ const DEFAULTS = {
   whatsapp_groups: '[]',        // grupos de destino: [{ id, nome }]
   whatsapp_intervalo_s: '90',   // espera entre uma oferta e outra no WhatsApp
 
-  // Marca d'água nas imagens das postagens
-  marca_ativa: '1',
-  marca_texto: 'Ofertou!',
-  marca_posicao: 'inferior-direito', // inferior-direito | inferior-esquerdo | superior-direito | superior-esquerdo | centro
-  marca_opacidade: '90',             // 30 a 100 (%)
-
   // Planos pagos (página de login) — nome, preço (R$) e dias de acesso de cada um
   plano_consumidor_nome: 'Caçador de Ofertas',
   plano_consumidor_preco: '9.90',
@@ -121,12 +115,8 @@ const DEFAULTS = {
   pix_nome: '',
   pix_banco: '',
   pix_cidade: '',               // cidade do recebedor (vai no Pix "copia e cola" das taxas das lojas)
-  // Taxa de uso do site nos pedidos às lojas parceiras (%) e app do Mercado Pago para dividir o pagamento
+  // Taxa de uso do site nos pedidos às lojas parceiras (%) e aplicação do Mercado Pago (marketplace) que conecta as lojas
   taxa_site_pct: '1',
-  // Carteira das empresas: saque mínimo e prazos para o valor das vendas ficar disponível
-  saque_minimo: '50',
-  liberar_dias_concluido: '7',
-  liberar_dias_pago: '14',
   mp_mkt_client_id: '',
   mp_mkt_client_secret: '',
   pag_ted_ativo: '0',
@@ -182,8 +172,6 @@ const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas']
 for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);
 }
-// O site passou a se chamar Ofertou!: a marca d'água que ainda usa o nome antigo padrão acompanha a mudança.
-db.run("UPDATE settings SET value = 'Ofertou!' WHERE key = 'marca_texto' AND value = 'Ofertas do GP'");
 
 function getAll() {
   const map = {};

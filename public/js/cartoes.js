@@ -1,4 +1,4 @@
-// Cartões salvos (Minha conta → Meus cartões e escolha do cartão no pedido).
+// Cartões salvos (Minha conta → Meus cartões e escolha do cartão na compra de um plano do Ofertou!).
 // Número, validade e código de segurança são digitados nos campos seguros do Mercado Pago (iframes deles):
 // esses dados vão direto ao Mercado Pago, e o site só recebe um código (token) para salvar ou pagar.
 (() => {
@@ -49,7 +49,9 @@
     if (!sdkPromessa) sdkPromessa = new Promise((ok, erro) => {
       const sc = document.createElement('script');
       sc.src = 'https://sdk.mercadopago.com/js/v2';
-      sc.onload = ok; sc.onerror = () => { sdkPromessa = null; erro(new Error('Não foi possível carregar o Mercado Pago.')); };
+      const falhou = () => { clearTimeout(limite); sdkPromessa = null; erro(new Error('Não foi possível carregar o Mercado Pago.')); };
+      const limite = setTimeout(falhou, 15000); // rede lenta ou bloqueada: avisa em vez de ficar carregando para sempre
+      sc.onload = () => { clearTimeout(limite); ok(); }; sc.onerror = falhou;
       document.head.appendChild(sc);
     });
     return sdkPromessa;
@@ -137,7 +139,7 @@
     box.innerHTML = `
       <div class="ct-lista">${lista.length ? lista.map(c => `<div class="ct-item ${c.vencido ? 'vencido' : ''}">${resumoCartao(c)}
         <button class="btn btn-sm" type="button" data-ct-remover="${esc(c.id)}">Remover</button></div>`).join('')
-        : '<p class="muted" style="margin:0">Nenhum cartão salvo ainda. Salve um cartão para pagar seus pedidos mais rápido: na compra, ele já vem escolhido e você só digita o código de segurança.</p>'}</div>
+        : '<p class="muted" style="margin:0">Nenhum cartão salvo ainda. Salve um cartão para pagar seus planos mais rápido: na compra, ele já vem escolhido e você só digita o código de segurança.</p>'}</div>
       ${lista.length < d.max ? '<button class="btn btn-primary" type="button" data-ct-novo>+ Adicionar cartão</button>' : `<p class="muted">Você já tem ${d.max} cartões salvos (o máximo).</p>`}
       <div data-ct-form hidden></div>`;
     box.querySelector('[data-ct-novo]')?.addEventListener('click', () => {
@@ -155,7 +157,7 @@
     }));
   }
 
-  // ── No pedido: cartão salvo já escolhido, "Trocar cartão" e "Cadastrar cartão novo" ──
+  // ── Na compra do plano: cartão salvo já escolhido, "Trocar cartão" e "Cadastrar cartão novo" ──
   // opcoes: { publicKey, total(), maxParcelas, aoPagar({ token, card_id, installments }), outroCartao() }
   // Devolve false quando a pessoa não pode usar cartões salvos (aí a loja mostra o formulário comum).
   async function escolherNoPedido(area, opcoes) {
@@ -168,6 +170,12 @@
     let atualizarParcelas = () => {};
     const semSalvar = '<p class="ct-nota" style="justify-content:center"><button class="ct-link" type="button" data-ct-sem-salvar>Pagar com um cartão sem salvar</button></p>';
 
+    area._ctOuvinte?.abort(); // a mesma área pode ser reaproveitada: só o último escolherNoPedido responde
+    area._ctOuvinte = new AbortController();
+    area.addEventListener('click', e => {
+      if (e.target.closest('[data-ct-novo]')) { modo = 'novo'; render(); }
+      else if (e.target.closest('[data-ct-sem-salvar]')) { desmontar(); opcoes.outroCartao(); }
+    }, { signal: area._ctOuvinte.signal });
     async function render() {
       desmontar();
       atualizarParcelas = () => {};
@@ -205,7 +213,7 @@
         const form = area.querySelector('.ct-pagar');
         const msg = t => { const m = form.querySelector('[data-ct-msg]'); m.textContent = t || ''; m.hidden = !t; };
         let mp;
-        try { await sdk(); mp = mercadoPago(opcoes.publicKey); campo(mp, 'securityCode', `ct-cvv-pedido-${n}`, 'CVV'); }
+        try { await sdk(); mp = mercadoPago(opcoes.publicKey || d.public_key); campo(mp, 'securityCode', `ct-cvv-pedido-${n}`, 'CVV'); }
         catch { msg('Não foi possível carregar o Mercado Pago. Recarregue a página.'); return; }
         atualizarParcelas = async () => {
           const s = form.parcelas;
@@ -213,7 +221,7 @@
           if (!c.bin) return;
           try {
             const r = await mp.getInstallments({ amount: String(opcoes.total()), bin: c.bin });
-            const custos = (r?.[0]?.payer_costs || []).filter(p => p.installments <= (opcoes.maxParcelas || 1));
+            const custos = (r?.[0]?.payer_costs || []).filter(p => p.installments <= (opcoes.maxParcelas || d.parcelas || 1));
             if (custos.length) s.innerHTML = custos.map(p => `<option value="${p.installments}">${esc(p.recommended_message || `${p.installments}x`)}</option>`).join('');
           } catch { /* fica 1x */ }
         };
@@ -234,8 +242,6 @@
           }
         });
       }
-      area.querySelectorAll('[data-ct-novo]').forEach(b => b.addEventListener('click', () => { modo = 'novo'; render(); }));
-      area.querySelector('[data-ct-sem-salvar]')?.addEventListener('click', () => { desmontar(); opcoes.outroCartao(); });
     }
     await render();
     return { atualizarParcelas: () => atualizarParcelas(), desmontar };

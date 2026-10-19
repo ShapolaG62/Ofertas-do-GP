@@ -5,7 +5,6 @@ const settings = require('../settings');
 const offers = require('../offers');
 const { safeGet } = require('../net');
 const banners = require('../banners');
-const watermark = require('../watermark');
 const vitrine = require('../vitrine');
 const { createLimiter } = require('../ratelimit');
 
@@ -70,24 +69,10 @@ router.get('/api/img/:id', async (req, res) => {
   }
 });
 
-// Foto da oferta com a marca d'água do site (usada nas postagens, no Instagram e no "Baixar imagem").
-const marcaLimiter = createLimiter(120, 1); // até 120 imagens novas por minuto por IP
-router.get('/img/marca/:id.jpg', async (req, res) => {
-  const o = db.get('SELECT id, imagem FROM offers WHERE id = ?', Number(req.params.id));
-  if (!o) return res.status(404).send('Não encontrado');
-  if (!watermark.ativa()) return res.redirect(`/api/img/${o.id}`);
-  if (marcaLimiter.hit(req.ip)) return res.status(429).send('Muitas imagens. Tente em instantes.');
-  try {
-    const buf = await watermark.paraOferta(o);
-    res.setHeader('Content-Type', 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(buf);
-  } catch {
-    res.redirect(`/api/img/${o.id}`);
-  }
-});
+// Endereço antigo da foto com marca d'água (recurso retirado): leva para a foto original da oferta.
+router.get('/img/marca/:id.jpg', (req, res) => res.redirect(301, `/api/img/${Number(req.params.id) || 0}`));
 
-// Vitrine da página inicial: notebook, TV, PS5 e iPhone das melhores ofertas, em cartões com a foto inteira e o selo do site.
+// Vitrine da página inicial: notebook, TV, PS5 e iPhone das melhores ofertas, em cartões com a foto inteira.
 router.get('/api/vitrine', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'private, max-age=300');
@@ -125,8 +110,7 @@ router.get('/o/:id', (req, res) => {
 <title>${h(titulo)}</title>
 <meta property="og:type" content="product"><meta property="og:site_name" content="Ofertou!">
 <meta property="og:title" content="${h(titulo)}"><meta property="og:description" content="${h(desc)}">
-<meta property="og:image" content="${h(`${site}/img/marca/${o.id}.jpg`)}"><meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1080"><meta property="og:image:height" content="1080">
+<meta property="og:image" content="${h(`${site}/api/img/${o.id}`)}">
 <meta property="og:url" content="${h(`${site}/o/${o.id}`)}"><meta name="twitter:card" content="summary_large_image">
 <meta http-equiv="refresh" content="0;url=/oferta/${o.id}"></head><body><a href="/oferta/${o.id}">${h(titulo)}</a></body></html>`);
 });

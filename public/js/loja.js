@@ -163,7 +163,7 @@
         <article class="panel-card lj-aval-item${x.oculta ? ' is-oculta' : ''}">
           <header><span class="lj-aval-av">${x.autor.avatar ? `<img src="${esc(x.autor.avatar)}" alt="" referrerpolicy="no-referrer">` : esc(x.autor.nome.charAt(0).toUpperCase())}</span>
             <div><b>${x.autor.slug ? `<a href="/perfil/${esc(x.autor.slug)}">${esc(x.autor.nome)}</a>` : esc(x.autor.nome)}</b>
-              <small>${estrelas(x.nota)} · ${dia(x.updated_at || x.created_at)}${x.verificada ? ' · <span class="lj-verif">✓ Compra verificada</span>' : ''}${x.oculta ? ' · <b>oculta</b>' : ''}</small></div>
+              <small>${estrelas(x.nota)} · ${dia(x.updated_at || x.created_at)}${x.verificada ? ' · <span class="lj-verif">✓ Compra verificada</span>' : ''}${x.oculta ? ` · <b>oculta</b>${x.oculta_motivo ? ` (${esc(x.oculta_motivo)})` : ''}` : ''}</small></div>
             ${D.admin ? `<button class="btn btn-sm" type="button" data-ocultar="${x.id}" data-oculta="${x.oculta ? 0 : 1}">${x.oculta ? 'Mostrar' : 'Ocultar'}</button>` : ''}</header>
           ${x.texto ? `<p>${esc(x.texto).replace(/\n/g, '<br>')}</p>` : ''}
           ${x.resposta ? `<div class="lj-resposta"><b>Resposta da loja</b><p>${esc(x.resposta).replace(/\n/g, '<br>')}</p></div>` : ''}
@@ -187,7 +187,16 @@
     }
     const oc = e.target.closest('[data-ocultar]');
     if (oc) {
-      try { D.avaliacoes = await api(`/api/admin/avaliacoes/${oc.dataset.ocultar}/ocultar`, { oculta: oc.dataset.oculta === '1' }); renderAvaliacoes(); } catch (err) { toast(err.message); }
+      try {
+        const ocultar = oc.dataset.oculta === '1';
+        let motivo = '';
+        if (ocultar) {
+          const motivos = await api('/api/admin/avaliacoes/motivos');
+          motivo = await OfertouUI.escolher('Por que ocultar esta avaliação? Crítica ou nota baixa não é motivo: o autor é avisado e a ação fica registrada.', motivos, { ok: 'Ocultar' });
+          if (!motivo) return;
+        }
+        D.avaliacoes = await api(`/api/admin/avaliacoes/${oc.dataset.ocultar}/ocultar`, { oculta: ocultar, motivo }); renderAvaliacoes();
+      } catch (err) { toast(err.message); }
     }
   });
   $('#lj-conteudo').addEventListener('submit', async e => {

@@ -17,13 +17,13 @@ const AFILIADO_KEYS = ['amazon_tag', 'ml_matt_word', 'ml_matt_tool', 'kabum_afil
 const REDES_KEYS = ['telegram_bot_token', 'telegram_chat_id', 'facebook_page_id', 'facebook_page_token', 'instagram_business_id',
   'x_api_key', 'x_api_secret', 'x_access_token', 'x_access_secret',
   'whatsapp_provider', 'zapi_instance', 'zapi_token', 'zapi_client_token', 'evolution_url', 'evolution_api_key', 'evolution_instance',
-  'whatsapp_groups', 'whatsapp_intervalo_s', 'marca_ativa', 'marca_texto', 'marca_posicao', 'marca_opacidade'];
+  'whatsapp_groups', 'whatsapp_intervalo_s'];
 const AGENDA_KEYS = ['agenda_ativa', 'agenda_horarios', 'agenda_qtd', 'agenda_redes', 'agenda_completar'];
 const CLIENT_KEYS = [...AFILIADO_KEYS, ...REDES_KEYS, ...AGENDA_KEYS];
 const SECRET_KEYS = ['aliexpress_app_secret', 'shopee_app_secret', 'telegram_bot_token', 'facebook_page_token', 'x_api_secret',
   'x_access_token', 'x_access_secret', 'zapi_token', 'zapi_client_token', 'evolution_api_key'];
-// Padrões próprios do cliente: marca d'água desligada e sem a Capi (é a marca do site).
-const CLIENT_DEFAULTS = { marca_ativa: '0', marca_texto: '', agenda_ativa: '0' };
+// Padrões próprios do cliente
+const CLIENT_DEFAULTS = { agenda_ativa: '0' };
 
 const nowSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 const addDays = (base, dias) => new Date(Math.max(Date.now(), new Date(String(base).replace(' ', 'T') + 'Z').getTime() || 0) + dias * 86400000)
@@ -199,7 +199,6 @@ function config(id) {
   for (const k of CLIENT_KEYS) out[k] = k in CLIENT_DEFAULTS ? CLIENT_DEFAULTS[k] : settings.DEFAULTS[k] ?? '';
   for (const r of db.all('SELECT key, value FROM cliente_config WHERE cliente_id = ?', id)) if (CLIENT_KEYS.includes(r.key)) out[r.key] = r.value;
   out.site_url = settings.get('site_url') || '';
-  out.marca_logo = '0'; // selo sem a Capi
   out.cliente_id = id;
   return out;
 }

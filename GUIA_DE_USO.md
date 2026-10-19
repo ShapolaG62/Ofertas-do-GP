@@ -460,3 +460,17 @@ O botão **Guia do usuário** aparece:
 - no Suporte (Mensagens → Suporte Ofertou!, ao abrir um chamado) e na Fila do SAC.
 
 O vídeo do guia fica em `public/videos/ofertou-apresentacao.mp4` (versão leve, 720p). Para trocar, coloque o vídeo novo em `video/guia/original.mp4` e rode `node video/guia/reduzir.js` (com a variável `CDP_SOM=1` para gravar o som) e `node video/guia/capa.js 5` para a capa.
+
+## 26. Moderação do chat (xingamentos)
+
+**Filtro automático:** nas conversas entre usuários e lojas e no Suporte, os xingamentos são trocados por asteriscos do mesmo tamanho antes de a mensagem ser gravada (ex.: "Que porra" → "Que *****"). O filtro reconhece variações com acento, letras repetidas e números no lugar de letras (p0rr4), e compara a palavra inteira para não trocar palavras normais ("cuidado", "computador"). A lista de palavras fica em `src/palavroes.js`.
+
+**Painel → Moderação do chat** (em Pessoas, com contador vermelho e aviso em "Precisa da sua atenção"): lista as conversas com xingamentos (Novas, Resolvidas, Todas). Em **Ver histórico** aparece a conversa completa, com cada xingamento marcado, a hora e o texto original com as palavras destacadas.
+
+**Punições para quem xingou:**
+- **Advertir:** aviso no sino da pessoa (com uma mensagem sua, opcional).
+- **Bloquear mensagens…** por X dias: a pessoa não envia mensagens no chat (o Suporte continua aberto). **Liberar mensagens** desfaz.
+- **Suspender conta…** por X dias e **Banir**: as mesmas punições de Usuários.
+- **Marcar como resolvido (sem punição).**
+
+Cada punição fecha as ocorrências daquela pessoa na conversa e fica no histórico da conta.

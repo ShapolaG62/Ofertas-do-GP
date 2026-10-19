@@ -75,6 +75,7 @@ function dashboard() {
     postagens_erro: um(`SELECT COUNT(*) n FROM post_queue WHERE status = 'erro' AND created_at >= datetime('now', '-3 days')`).n || 0,
     cartao_sem_chave: Boolean(require('./settings').get('mp_access_token')) && !String(require('./settings').get('mp_public_key') || '').trim(),
     sac_fila: um(`SELECT COUNT(*) n FROM sac_chamados WHERE status = 'fila'`).n || 0,
+    xingamentos: (() => { try { return require('./moderacao-chat').novos(); } catch { return 0; } })(),
     clientes_vencendo: um(`SELECT COUNT(*) n FROM clientes WHERE status = 'ativo' AND validade >= date('now') AND validade <= date('now', '+5 days')`).n || 0,
   };
 

@@ -248,6 +248,18 @@ router.post('/api/admin/lojas/:id/sincronizar', async (req, res) => {
   res.json(await lojas.syncFeed(Number(req.params.id)));
 });
 
+// Moderação do chat: conversas com xingamentos, histórico e punições
+router.get('/api/admin/chat-moderacao', (req, res) => {
+  const m = require('../moderacao-chat');
+  res.json({ conversas: m.listar({ status: String(req.query.status || '') }), novos: m.novos() });
+});
+router.get('/api/admin/chat-moderacao/:origem/:id', (req, res) => {
+  try { res.json(require('../moderacao-chat').detalhe(req.params.origem, req.params.id)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
+router.post('/api/admin/chat-moderacao/:origem/:id/acao', (req, res) => {
+  try { res.json(require('../moderacao-chat').punir(req.params.origem, req.params.id, req.body || {})); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
+
 router.get('/api/admin/moderacao', (req, res) => {
   res.json(db.all('SELECT * FROM moderation_log ORDER BY id DESC LIMIT 200'));
 });

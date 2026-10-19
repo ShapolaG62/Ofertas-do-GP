@@ -187,7 +187,13 @@ function enviar(de, convId, msg) {
     }
   }
   limitar(de);
-  return { id: gravar(c.id, de, t) };
+  // Xingamentos viram *** e ficam registrados para o administrador (Painel → Moderação do chat)
+  const mod = require('./moderacao-chat');
+  mod.conferirBloqueio(de);
+  const f = mod.filtrar(t);
+  const id = gravar(c.id, de, f.texto);
+  mod.registrar('chat', c.id, id, de, t, f.palavras);
+  return { id };
 }
 
 function aceitarConversa(c, dono) {

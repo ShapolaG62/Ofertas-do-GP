@@ -57,9 +57,13 @@ const nome = dono => (dono === 'admin' ? 'Equipe Ofertou!' : chat.pessoa(dono).n
 
 // ── Mensagens ───────────────────────────────────────────────────────────────
 function msg(id, autor, texto) {
-  const r = db.run('INSERT INTO sac_mensagens (chamado_id, autor, texto) VALUES (?, ?, ?)', id, autor, texto);
+  // Mensagens de pessoas: xingamentos viram *** e ficam registrados (Painel → Moderação do chat)
+  const f = autor ? require('./moderacao-chat').filtrar(texto) : { texto, palavras: [] };
+  const r = db.run('INSERT INTO sac_mensagens (chamado_id, autor, texto) VALUES (?, ?, ?)', id, autor, f.texto);
   db.run(`UPDATE sac_chamados SET ultima_msg_at = datetime('now') WHERE id = ?`, id);
-  return Number(r.lastInsertRowid);
+  const msgId = Number(r.lastInsertRowid);
+  if (f.palavras.length) require('./moderacao-chat').registrar('sac', id, msgId, autor, texto, f.palavras);
+  return msgId;
 }
 const sistema = (id, texto) => msg(id, null, texto);
 function posicao(c) {

@@ -128,6 +128,19 @@
   .img-pick input[type=text] { flex: 1; }
   #ad-form textarea { min-height: 70px; font-family: inherit; }
   .check { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+  /* Moderação do chat */
+  #cm-dlg { width: min(860px, calc(100vw - 24px)); }
+  .cm-autores { display: grid; gap: 10px; margin-bottom: 14px; }
+  .cm-autor { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+  .cm-autor .row { gap: 6px; flex-wrap: wrap; }
+  .cm-msgs { display: grid; gap: 6px; max-height: 52vh; overflow-y: auto; scrollbar-width: none; border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .cm-msgs::-webkit-scrollbar { display: none; }
+  .cm-msg { padding: 8px 10px; border-radius: 10px; background: var(--surface-2, rgba(127,127,127,.08)); font-size: 13.5px; }
+  .cm-msg small { color: var(--muted); }
+  .cm-msg.sis { background: none; color: var(--muted); font-style: italic; text-align: center; font-size: 12.5px; }
+  .cm-msg.xing { background: color-mix(in srgb, var(--red) 12%, transparent); border: 1px solid color-mix(in srgb, var(--red) 45%, transparent); }
+  .cm-msg .orig { display: block; margin-top: 4px; font-size: 12.5px; }
+  .cm-msg .orig mark { background: var(--red); color: #fff; border-radius: 4px; padding: 0 3px; }
   .btn-voltar-painel { display: inline-flex; align-items: center; gap: 4px; flex: none; }
   .btn-voltar-painel svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
   @media (max-width: 600px) { .btn-voltar-painel span { display: none; } }
@@ -251,9 +264,9 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261126"></script>
-<script src="/js/capi-minerando.js?v=20261126" defer></script>
-<script src="/js/cadastro-auto.js?v=20261126" defer></script>
+<script src="/js/dialogo.js?v=20261127"></script>
+<script src="/js/capi-minerando.js?v=20261127" defer></script>
+<script src="/js/cadastro-auto.js?v=20261127" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -310,6 +323,7 @@
         <button class="tab" data-tab="equipe"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-1.5A5.5 5.5 0 0 1 10.5 14h3a5.5 5.5 0 0 1 5.5 5.5V21"/><path d="M9 11.5l3 2.5 3-2.5"/></svg><span>Equipe (staff)</span></button>
         <button class="tab" data-tab="atendimento"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg><span>Lojas e pedidos</span></button>
         <button class="tab" data-tab="sac"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19a3 3 0 0 1-3 3h-3"/></svg><span>SAC (fila de atendimento)</span><span class="count-badge hidden" id="sac-badge">0</span></button>
+        <button class="tab" data-tab="chatmod"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M9 8l6 5M15 8l-6 5"/></svg><span>Moderação do chat</span><span class="count-badge hidden" id="chatmod-badge">0</span></button>
         <button class="tab" data-tab="clientes"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h3"/></svg><span>Clientes da ferramenta</span></button>
         <p class="side-grupo">Dinheiro</p>
         <button class="tab" data-tab="planos"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6 6.5 1-4.7 4.6 1.1 6.4L12 17l-5.9 3 1.1-6.4L2.5 9 9 8z"/></svg><span>Planos e pagamentos</span><span class="count-badge hidden" id="pedidos-badge">0</span></button>
@@ -520,6 +534,24 @@
     </div>
 
     <!-- EQUIPE (STAFF) -->
+    <div class="tab-body hidden" data-body="chatmod">
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <h2>Conversas com xingamentos</h2>
+          <div class="row" style="gap:6px" id="cm-filtros">
+            <button class="btn small primary" type="button" data-cm-status="novo">Novas</button>
+            <button class="btn small" type="button" data-cm-status="resolvido">Resolvidas</button>
+            <button class="btn small" type="button" data-cm-status="">Todas</button>
+          </div>
+        </div>
+        <p class="hint">Os xingamentos são trocados por *** antes de a outra pessoa ver. Aqui ficam as conversas em que isso aconteceu, com o texto original e a hora de cada ocorrência. Abra uma conversa para ver o histórico completo e aplicar uma punição.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Conversa</th><th>Quem participa</th><th>Quem xingou</th><th class="num">Ocorrências</th><th>Última</th><th>Situação</th><th></th></tr></thead>
+          <tbody id="cm-lista"><tr><td colspan="7" class="hint">Carregando…</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
     <div class="tab-body hidden" data-body="sac">
       <iframe class="sac-quadro" id="sac-quadro" title="Fila do SAC"></iframe>
     </div>
@@ -1151,6 +1183,11 @@
   <div class="dlg-body" id="tk-body"></div>
 </dialog>
 
+<dialog id="cm-dlg">
+  <div class="dlg-head"><h3 id="cm-titulo">Conversa</h3><button class="btn small" type="button" data-close>Fechar</button></div>
+  <div class="dlg-body" id="cm-corpo"></div>
+</dialog>
+
 <dialog id="user-dlg">
   <div class="dlg-head"><h3 id="ud-title">Usuário</h3><button class="btn small" type="button" data-close>Fechar</button></div>
   <div class="dlg-body" id="ud-body"></div>
@@ -1339,6 +1376,7 @@ const PAGINAS = {
   offers: ['Ofertas', 'Adicione ofertas à mão e gerencie as que estão no site: buscar, ocultar, editar e ver os cliques.'],
   mining: ['Mineração', 'Situação de cada loja, busca pontual e as regras da mineração automática (lojas, termos e frequência).'],
   social: ['Redes sociais', 'Postagem automática das ofertas no WhatsApp, Telegram, Facebook/Instagram e X, com fila e histórico.'],
+  chatmod: ['Moderação do chat', 'Conversas em que alguém usou xingamentos: veja o histórico com a hora de cada ocorrência e aplique advertência, bloqueio das mensagens, suspensão ou banimento.'],
   sac: ['SAC (fila de atendimento)', 'Chamados do Suporte Ofertou!: assuma um chamado da fila, converse com o cliente e marque como resolvido.'],
   equipe: ['Equipe (staff)', 'Cadastre quem trabalha com você: atender o SAC e postar os anúncios. Cada pessoa entra com o próprio e-mail e senha.'],
   users: ['Usuários', 'Cadastros do site: aprove empresas, modere contas e configure o login com Google.'],
@@ -1388,6 +1426,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   window.scrollTo({ top: 0 });
   if (t.dataset.tab === 'offers') loadOffers();
   if (t.dataset.tab === 'sac' && !$('#sac-quadro').src) $('#sac-quadro').src = '/sac?embed=1';
+  if (t.dataset.tab === 'chatmod') loadChatMod();
   if (t.dataset.tab === 'dash') loadDashboard();
   if (t.dataset.tab === 'mining') loadStores();
   if (t.dataset.tab === 'equipe') loadEquipe().catch(e => globalMsg(e.message, false));
@@ -1439,6 +1478,7 @@ async function loadDashboard() {
   catch (err) { el.innerHTML = `<div class="panel"><div class="msg err">${esc(err.message)}</div></div>`; return; }
   const d = DASH, k = d.kpis, p = d.pendencias, m = d.mineracao;
   $('#sac-badge').textContent = p.sac_fila; $('#sac-badge').classList.toggle('hidden', !p.sac_fila);
+  $('#chatmod-badge').textContent = p.xingamentos; $('#chatmod-badge').classList.toggle('hidden', !p.xingamentos);
   const soma7 = d.serie.slice(-7).reduce((s, x) => s + x.cliques, 0);
   const serie0 = Object.keys(DB_SERIES).find(c => d.serie.some(x => x[c])) || 'cliques'; // abre numa série com dados
   // O que precisa de atenção (cada item abre a página certa)
@@ -1446,6 +1486,7 @@ async function loadDashboard() {
   const add = (n, txt, aba, forte, ico = 'alerta') => { if (n) acoes.push({ txt, aba, forte, ico }); };
   add(p.cartao_sem_chave, '<b>Cartão desligado nos pedidos às lojas:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro');
   add(p.sac_fila, `<b>${p.sac_fila} chamado(s) no SAC</b> esperando atendimento`, 'sac', true, 'sino');
+  add(p.xingamentos, `<b>${p.xingamentos} conversa(s) com xingamentos</b> para revisar`, 'chatmod', true);
   add(p.cadastros, `<b>${p.cadastros} cadastro(s) de empresa</b> esperando aprovação`, 'users', true);
   add(p.saques, `<b>${p.saques} saque(s) de lojas</b> para pagar (${brl(p.saques_valor)})`, 'atendimento', true, 'dinheiro');
   add(p.assinaturas, `<b>${p.assinaturas} pedido(s) de assinatura</b> para confirmar o pagamento`, 'planos', true, 'dinheiro');
@@ -1863,6 +1904,83 @@ $('[data-body="equipe"]').addEventListener('click', async e => {
     try { await api(`/api/admin/equipe/${r.dataset.eqRemover}/remover`, { method: 'POST', body: {} }); globalMsg('Removido da equipe.'); loadEquipe(); }
     catch (err) { globalMsg(err.message, false); }
   }
+});
+
+// ── Moderação do chat ────────────────────────────────────────────────────────
+let CM_STATUS = 'novo', CM_ATUAL = null;
+const cmQuando = s => new Date(String(s).replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+async function loadChatMod() {
+  try {
+    const d = await api(`/api/admin/chat-moderacao?status=${CM_STATUS}`);
+    $('#chatmod-badge').textContent = d.novos; $('#chatmod-badge').classList.toggle('hidden', !d.novos);
+    $$('[data-cm-status]').forEach(b => b.classList.toggle('primary', b.dataset.cmStatus === CM_STATUS));
+    $('#cm-lista').innerHTML = d.conversas.length ? d.conversas.map(c => `<tr>
+      <td><b>${esc(c.codigo)}</b><br><small class="hint">${esc(c.tipo)}</small></td>
+      <td>${c.participantes.map(esc).join(' · ')}</td>
+      <td>${c.autores.map(a => esc(a.nome)).join(', ')}</td>
+      <td class="num">${c.total}</td>
+      <td>${cmQuando(c.ultima)}</td>
+      <td>${c.novos ? `<span class="badge" style="color:var(--red)">${c.novos} nova(s)</span>` : '<span class="tag">resolvida</span>'}</td>
+      <td><button class="btn small" type="button" data-cm-abrir="${c.origem}:${c.ref_id}">Ver histórico</button></td></tr>`).join('')
+      : `<tr><td colspan="7" class="hint">${CM_STATUS === 'novo' ? 'Nenhuma conversa nova com xingamentos. 🎉' : 'Nada por aqui.'}</td></tr>`;
+  } catch (err) { globalMsg(err.message, false); }
+}
+// Marca as palavras do xingamento no texto original
+function cmMarcar(texto, palavras) {
+  let h = esc(texto);
+  for (const p of [...new Set(palavras)].sort((a, b) => b.length - a.length)) h = h.split(esc(p)).join(`<mark>${esc(p)}</mark>`);
+  return h;
+}
+function cmRender(d) {
+  CM_ATUAL = d;
+  $('#cm-titulo').textContent = `${d.codigo} · ${d.tipo}`;
+  const btn = (a, acao, txt, cls = '') => `<button class="btn small ${cls}" type="button" data-cm-acao="${acao}" data-autor="${esc(a.dono)}">${txt}</button>`;
+  $('#cm-corpo').innerHTML = `
+    <p class="hint" style="margin-top:0">${d.participantes.map(esc).join(' · ')} — ${d.ocorrencias} ocorrência(s)${d.novos ? `, <b style="color:var(--red)">${d.novos} sem revisão</b>` : ''}.</p>
+    <h4 style="margin:8px 0">Quem xingou</h4>
+    <div class="cm-autores">${d.autores.map(a => `<div class="cm-autor">
+      <div><b>${esc(a.nome)}</b> <small class="hint">${a.email ? esc(a.email) + ' · ' : ''}${a.total_infracoes} ocorrência(s) no total${a.status && a.status !== 'active' ? ` · conta: ${esc(a.status)}` : ''}${a.chat_bloqueado_ate ? ` · mensagens bloqueadas até ${cmQuando(a.chat_bloqueado_ate)}` : ''}</small></div>
+      <div class="row">
+        ${btn(a, 'advertir', 'Advertir')}
+        ${a.conta_site ? (a.chat_bloqueado_ate ? btn(a, 'liberar_chat', 'Liberar mensagens') : btn(a, 'bloquear_chat', 'Bloquear mensagens…')) : ''}
+        ${a.conta_site ? btn(a, 'suspender', 'Suspender conta…', 'danger') : ''}
+        ${a.conta_site && a.status !== 'banned' ? btn(a, 'banir', 'Banir', 'danger') : ''}
+        ${a.conta_site && a.id ? `<button class="btn small" type="button" data-cm-ficha="${a.id}">Ficha da conta</button>` : ''}
+      </div></div>`).join('')}</div>
+    <h4 style="margin:8px 0">Histórico da conversa</h4>
+    <div class="cm-msgs" id="cm-msgs">${d.mensagens.map(m => m.autor ? `<div class="cm-msg ${m.infracao ? 'xing' : ''}">
+        <small><b>${esc(m.nome)}</b> · ${cmQuando(m.created_at)}${m.infracao ? ` · <b style="color:var(--red)">xingamento</b>${m.infracao.acao ? ` · ${esc(m.infracao.acao)}` : m.infracao.status === 'novo' ? ' · sem revisão' : ''}` : ''}</small>
+        <div>${esc(m.texto)}</div>
+        ${m.infracao ? `<span class="orig"><small>Escrito originalmente:</small> ${cmMarcar(m.infracao.original, m.infracao.palavras)}</span>` : ''}
+      </div>` : `<div class="cm-msg sis">${esc(m.texto)} · ${cmQuando(m.created_at)}</div>`).join('')}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px">${d.novos ? '<button class="btn" type="button" data-cm-acao="resolver">Marcar como resolvido (sem punição)</button>' : ''}</div>`;
+  const primeira = $('#cm-msgs .xing'); if (primeira) setTimeout(() => primeira.scrollIntoView({ block: 'center' }), 50);
+}
+async function cmAbrir(origem, id) {
+  try { cmRender(await api(`/api/admin/chat-moderacao/${origem}/${id}`)); if (!$('#cm-dlg').open) $('#cm-dlg').showModal(); }
+  catch (err) { globalMsg(err.message, false); }
+}
+$('[data-body="chatmod"]').addEventListener('click', e => {
+  const f = e.target.closest('[data-cm-status]'); if (f) { CM_STATUS = f.dataset.cmStatus; loadChatMod(); return; }
+  const a = e.target.closest('[data-cm-abrir]'); if (a) { const [o, id] = a.dataset.cmAbrir.split(':'); cmAbrir(o, id); }
+});
+$('#cm-dlg').addEventListener('click', async e => {
+  if (e.target === $('#cm-dlg') || e.target.closest('[data-close]')) { $('#cm-dlg').close(); loadChatMod(); return; }
+  const fi = e.target.closest('[data-cm-ficha]'); if (fi) { $('#cm-dlg').close(); openUser(Number(fi.dataset.cmFicha)); return; }
+  const b = e.target.closest('[data-cm-acao]'); if (!b || !CM_ATUAL) return;
+  const acao = b.dataset.cmAcao, autor = b.dataset.autor, nome = CM_ATUAL.autores.find(x => x.dono === autor)?.nome || '';
+  const body = { acao, autor };
+  if (acao === 'resolver') { if (!await OfertouUI.confirmar('Marcar as ocorrências desta conversa como resolvidas, sem punição?')) return; }
+  if (acao === 'advertir') { const m = await OfertouUI.perguntar(`Advertir ${nome}. Mensagem extra para a pessoa (opcional):`, ''); if (m === null) return; body.motivo = m; }
+  if (acao === 'bloquear_chat' || acao === 'suspender') {
+    const dias = await OfertouUI.perguntar(`${acao === 'suspender' ? 'Suspender a conta de' : 'Bloquear as mensagens de'} ${nome} por quantos dias?`, acao === 'suspender' ? '7' : '3');
+    if (!dias) return; body.dias = Number(dias);
+  }
+  if (acao === 'banir' && !await OfertouUI.confirmar(`Banir ${nome}? A pessoa perde o acesso ao site.`)) return;
+  if (['bloquear_chat', 'suspender', 'banir'].includes(acao)) { const m = await OfertouUI.perguntar('Motivo (aparece para a pessoa):', 'Linguagem ofensiva no chat'); if (m === null) return; body.motivo = m; }
+  b.disabled = true;
+  try { cmRender(await api(`/api/admin/chat-moderacao/${CM_ATUAL.origem}/${CM_ATUAL.ref_id}/acao`, { method: 'POST', body })); globalMsg('Feito.'); }
+  catch (err) { globalMsg(err.message, false); b.disabled = false; }
 });
 
 // Caixa "Plano" da ficha do usuário

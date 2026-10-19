@@ -17,6 +17,56 @@
   const NOME_COR = { 'por-do-sol': 'Pôr do sol', galaxia: 'Galáxia' };
   const corNome = c => NOME_COR[c] || c[0].toUpperCase() + c.slice(1);
   const ICONE_LINK = { site: '🌐', instagram: '📸', whatsapp: '💬', telegram: '✈️', youtube: '▶️', tiktok: '🎵' };
+  // Conquistas em carrossel: uma categoria por vez, com setas, abas por categoria e deslizar o dedo no celular
+  let famAtual = 0;
+  function renderConquistas() {
+    const fams = P.conquistas.familias || [];
+    const el = $('#pf-conquistas');
+    if (!fams.length) { el.innerHTML = '<p class="pf-vazio">Nenhuma conquista ainda.</p>'; return; }
+    famAtual = (famAtual + fams.length) % fams.length;
+    const cont = f => (P.conquistas.total ? `${f.itens.filter(c => c.obtida).length}/${f.itens.length}` : String(f.itens.length));
+    const f = fams[famAtual];
+    el.innerHTML = `
+      <div class="pf-conq-abas" role="tablist" aria-label="Categorias de conquistas">${fams.map((x, i) => `
+        <button type="button" role="tab" class="pf-conq-aba${i === famAtual ? ' is-ativa' : ''}" aria-selected="${i === famAtual}" data-conq-fam="${i}" title="${esc(x.nome)} (${cont(x)})">
+          <span aria-hidden="true">${x.icone}</span><small>${cont(x)}</small><span class="sr-only">${esc(x.nome)}</span></button>`).join('')}</div>
+      <div class="pf-conq-nav">
+        <button type="button" class="pf-conq-seta" data-conq-ir="-1" aria-label="Categoria anterior">‹</button>
+        <div class="pf-conq-titulo" aria-live="polite"><b>${f.icone} ${esc(f.nome)}</b><small>${cont(f)} · categoria ${famAtual + 1} de ${fams.length}</small></div>
+        <button type="button" class="pf-conq-seta" data-conq-ir="1" aria-label="Próxima categoria">›</button>
+      </div>
+      <div class="pf-familia" role="tabpanel"><div class="pf-conqs">${f.itens.map(c => conquistaHtml(c)).join('')}</div></div>`;
+    // A aba da categoria aberta fica visível na fileira (sem rolar a página)
+    const abas = el.querySelector('.pf-conq-abas'), ativa = abas.querySelector('.is-ativa');
+    const ra = abas.getBoundingClientRect(), rb = ativa.getBoundingClientRect();
+    abas.scrollLeft += (rb.left + rb.width / 2) - (ra.left + ra.width / 2);
+  }
+  {
+    const el = $('#pf-conquistas');
+    if (el) {
+      const ir = n => { famAtual = n; renderConquistas(); };
+      el.addEventListener('click', e => {
+        const s = e.target.closest('[data-conq-ir]'), a = e.target.closest('[data-conq-fam]');
+        if (s) ir(famAtual + Number(s.dataset.conqIr));
+        else if (a) ir(Number(a.dataset.conqFam));
+      });
+      el.addEventListener('keydown', e => {
+        if (!e.target.closest('[data-conq-fam]')) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault(); ir(famAtual + (e.key === 'ArrowRight' ? 1 : -1));
+          el.querySelector('.pf-conq-aba.is-ativa')?.focus();
+        }
+      });
+      let x0 = null, y0 = 0;
+      el.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+      el.addEventListener('touchend', e => {
+        if (x0 === null) return;
+        const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+        x0 = null;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) ir(famAtual + (dx < 0 ? 1 : -1));
+      });
+    }
+  }
   const TIER = { inicio: 'Início', bronze: 'Bronze', prata: 'Prata', ouro: 'Ouro', diamante: 'Diamante', especial: 'Especial' };
 
   // Dentro de Minha conta (aba "Meu perfil"): mostra o próprio perfil, sem mudar o endereço da página
@@ -108,11 +158,7 @@
       : '<p class="pf-vazio">Nenhuma conquista ainda. Use o site e elas vão aparecendo aqui!</p>';
 
     $('#pf-contagem').textContent = P.conquistas.total ? `${P.conquistas.obtidas} de ${P.conquistas.total}` : `${P.conquistas.obtidas} conquistada${P.conquistas.obtidas === 1 ? '' : 's'}`;
-    $('#pf-conquistas').innerHTML = P.conquistas.familias.map(f => `
-      <div class="pf-familia">
-        <h3>${f.icone} ${esc(f.nome)} <small>${P.conquistas.total ? `${f.itens.filter(c => c.obtida).length}/${f.itens.length}` : f.itens.length}</small></h3>
-        <div class="pf-conqs">${f.itens.map(c => conquistaHtml(c)).join('')}</div>
-      </div>`).join('');
+    renderConquistas();
 
     const comProgresso = nv.xp_proximo !== undefined;
     $('#pf-nivel').innerHTML = `

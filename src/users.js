@@ -36,7 +36,7 @@ function publicUser(u) {
   if (!u) return null;
   const out = {
     id: u.id, tipo: u.tipo, email: u.email, cpf: u.cpf, cnpj: u.cnpj,
-    status: u.status, bloqueio_publicacao: Boolean(u.bloqueio_publicacao), pode_postar: Boolean(u.pode_postar), pode_sac: Boolean(u.pode_sac), staff: Boolean(u.staff),
+    status: u.status, bloqueio_publicacao: Boolean(u.bloqueio_publicacao), pode_postar: Boolean(u.pode_postar), pode_sac: Boolean(u.pode_sac), pode_moderar: Boolean(u.pode_moderar), staff: Boolean(u.staff),
     plano: u.plano || null, assinatura_ate: u.assinatura_ate || null,
     assinatura_vencida: Boolean(u.assinatura_ate && u.assinatura_ate < nowSql()),
     created_at: u.created_at,

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Moderação do chat — Ofertou!</title>
+<link rel="icon" href="/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261128">
+<script src="/js/app-nativo.js?v=20261128"></script>
+<script src="/js/dialogo.js?v=20261128"></script>
+</head>
+<body class="mod-body">
+<main class="container mod-page">
+  <div class="mod-topo">
+    <div class="mod-filtros" role="tablist">
+      <button type="button" data-status="novo" aria-selected="true">Novas <b id="mod-n"></b></button>
+      <button type="button" data-status="resolvido" aria-selected="false">Resolvidas</button>
+      <button type="button" data-status="" aria-selected="false">Todas</button>
+    </div>
+    <p class="muted" id="mod-dica">Os xingamentos são trocados por *** antes de a outra pessoa ver. Abra uma conversa para ver o histórico com o texto original e aplicar uma punição.</p>
+  </div>
+  <div class="mod-grade" id="mod-app">
+    <aside class="mod-lista panel-card"><div class="mod-itens" id="mod-itens"><p class="muted mod-vazio">Carregando…</p></div></aside>
+    <section class="mod-conversa panel-card" id="mod-conversa">
+      <div class="mod-vazio-grande"><p>Escolha uma conversa da lista para ver o histórico e decidir o que fazer.</p></div>
+    </section>
+  </div>
+  <div class="panel-card" id="mod-sem-acesso" hidden>
+    <h2>Somente a equipe de moderação</h2>
+    <p class="muted">Esta página é de quem modera o chat. O administrador libera em Painel → Equipe (staff) → <b>Moderar o chat</b>.</p>
+  </div>
+</main>
+<script src="/js/moderacao.js?v=20261128" defer></script>
+</body>
+</html>

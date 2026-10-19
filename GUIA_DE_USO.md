@@ -474,3 +474,13 @@ O vídeo do guia fica em `public/videos/ofertou-apresentacao.mp4` (versão leve,
 - **Marcar como resolvido (sem punição).**
 
 Cada punição fecha as ocorrências daquela pessoa na conversa e fica no histórico da conta.
+
+## 27. Área de trabalho da equipe (/trabalho)
+
+A **Área de trabalho** junta o **SAC** e a **Moderação do chat** num lugar só.
+- **No painel admin:** o grupo **Área de trabalho (equipe)** do menu tem as duas abas. Você vê e faz tudo.
+- **Para a equipe:** a pessoa entra em /conta com o próprio login e, na **Área da equipe**, toca em **Área de trabalho** (ou abre /trabalho). Ela vê só as seções liberadas para ela e nada do resto do painel.
+
+**Funções da equipe** (Painel → Equipe (staff)): **Atender o SAC**, **Moderar o chat** e **Postar anúncios**, marcadas por pessoa.
+
+**O que a equipe pode fazer na Moderação do chat:** advertir, bloquear e liberar as mensagens e marcar como resolvido. **Suspender e banir a conta** continuam só com o administrador. Cada ação registra quem a fez.

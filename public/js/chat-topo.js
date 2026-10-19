@@ -127,7 +127,7 @@
           <span class="chatf-av chatf-av-sac">${ICO_SAC}</span>
           <span class="chatf-item-txt"><b>Suporte Ofertou!</b><small>Dúvidas? Fale com a nossa equipe</small></span>
           <span class="chatf-item-lado">${RESUMO.sac ? `<b class="chatf-n-item">${RESUMO.sac}</b>` : ''}</span></button>`)+`
-        ${sa ? `<a class="chatf-item chatf-sac-fila${sa.fila || sa.nao_lidas ? ' tem-novas' : ''}" href="/sac">
+        ${sa ? `<a class="chatf-item chatf-sac-fila${sa.fila || sa.nao_lidas ? ' tem-novas' : ''}" href="${sa.admin ? '/admin#sac' : '/trabalho#sac'}">
           <span class="chatf-av chatf-av-sac">${ICO_FILA}</span>
           <span class="chatf-item-txt"><b>Fila do SAC</b><small>${sa.fila} na fila · ${sa.meus} com você</small></span>
           <span class="chatf-item-lado">${sa.fila + sa.nao_lidas ? `<b class="chatf-n-item">${sa.fila + sa.nao_lidas}</b>` : ''}</span></a>` : ''}`;

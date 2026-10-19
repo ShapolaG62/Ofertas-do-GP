@@ -49,7 +49,16 @@ function registrar(origem, refId, mensagemId, autor, original, palavras) {
     origem, Number(refId), mensagemId ? Number(mensagemId) : null, autor, JSON.stringify(palavras.slice(0, 20)), String(original).slice(0, 2000));
 }
 
-// ── Painel do administrador ─────────────────────────────────────────────────
+// ── Quem modera: o administrador e a equipe com a função "Moderar o chat" ──
+function podeModerar(dono) {
+  if (dono === 'admin') return true;
+  const m = /^u:(\d+)$/.exec(dono || '');
+  return Boolean(m && db.get(`SELECT 1 FROM users WHERE id = ? AND status = 'active' AND pode_moderar = 1`, Number(m[1])));
+}
+// A equipe adverte, bloqueia as mensagens e resolve; suspender e banir a conta são só do administrador
+const ACOES_EQUIPE = ['advertir', 'bloquear_chat', 'liberar_chat', 'resolver'];
+
+// ── Painel do administrador e Área de trabalho da equipe ─────────────────────
 const novos = () => db.get(`SELECT COUNT(DISTINCT origem || ':' || ref_id) n FROM chat_infracoes WHERE status = 'novo'`).n || 0;
 
 function rotulo(origem, refId) {
@@ -111,12 +120,14 @@ function fecharOcorrencias(origem, refId, autor, acao) {
 
 // Punições para quem escreveu os xingamentos
 // acao: advertir | bloquear_chat (dias) | liberar_chat | suspender (dias) | banir | resolver
-function punir(origem, refId, b = {}) {
+function punir(origem, refId, b = {}, quem = 'admin') {
   const acao = String(b.acao || '');
+  if (quem !== 'admin' && !ACOES_EQUIPE.includes(acao)) throw fail('Suspender ou banir a conta é só com o administrador.', 403);
+  const porQuem = quem === 'admin' ? '' : ` por ${chat().pessoa(quem).nome}`;
   const users = require('./users');
   const motivo = String(b.motivo || '').trim().slice(0, 300);
   const ref = rotulo(origem, Number(refId)).codigo;
-  if (acao === 'resolver') { fecharOcorrencias(origem, refId, null, 'Resolvido sem punição'); return detalhe(origem, refId); }
+  if (acao === 'resolver') { fecharOcorrencias(origem, refId, null, `Resolvido sem punição${porQuem}`); return detalhe(origem, refId); }
   const autor = String(b.autor || '');
   if (!db.get('SELECT 1 FROM chat_infracoes WHERE origem = ? AND ref_id = ? AND autor = ?', origem, Number(refId), autor)) throw fail('Esta pessoa não tem ocorrências nesta conversa.', 404);
   const m = /^u:(\d+)$/.exec(autor);
@@ -147,8 +158,8 @@ function punir(origem, refId, b = {}) {
     users.moderate(u.id, acao, { dias, motivo: motivo || `Linguagem ofensiva no chat (${ref})` });
     feito = acao === 'suspender' ? `Conta suspensa por ${dias} dia(s)` : 'Conta banida';
   } else throw fail('Ação desconhecida.');
-  fecharOcorrencias(origem, refId, autor, feito);
+  fecharOcorrencias(origem, refId, autor, feito + porQuem);
   return detalhe(origem, refId);
 }
 
-module.exports = { filtrar, registrar, conferirBloqueio, novos, listar, detalhe, punir };
+module.exports = { filtrar, registrar, conferirBloqueio, novos, listar, detalhe, punir, podeModerar, ACOES_EQUIPE };

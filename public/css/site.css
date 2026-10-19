@@ -1959,3 +1959,72 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .chatf-pulso { animation: chatf-pulso 1s ease-out 3; }
 @keyframes chatf-pulso { 0% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--deal) 70%, transparent); } 50% { transform: scale(1.25); } 100% { transform: scale(1); box-shadow: 0 0 0 12px transparent; } }
 @media (prefers-reduced-motion: reduce) { .chatf-pulso { animation: none; } }
+
+/* ── Moderação do chat (/moderacao): mesma estrutura do SAC ─────────────── */
+.mod-page { padding-top: 20px; padding-bottom: 40px; }
+.mod-topo { display: grid; gap: 8px; margin-bottom: 14px; }
+.mod-topo p { margin: 0; font-size: 13.5px; }
+.mod-filtros { display: flex; gap: 6px; flex-wrap: wrap; }
+.mod-filtros button { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 999px; cursor: pointer; }
+.mod-filtros button[aria-selected="true"] { background: var(--brand-soft); color: var(--brand); border-color: var(--brand); }
+.mod-filtros b { font-size: 11px; background: var(--deal); color: #fff; border-radius: 999px; padding: 0 6px; margin-left: 2px; }
+.mod-filtros b:empty { display: none; }
+.mod-grade { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; height: calc(100vh - 170px); min-height: 460px; }
+.mod-lista, .mod-conversa { margin: 0 !important; padding: 0 !important; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.mod-itens { flex: 1; overflow-y: auto; scrollbar-width: none; }
+.mod-itens::-webkit-scrollbar { display: none; }
+.mod-item { display: flex; gap: 10px; width: 100%; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mod-item:hover { background: var(--surface-2); }
+.mod-item.ativo { background: var(--brand-soft); }
+.mod-item-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.mod-item-txt > b { font-size: 14px; }
+.mod-item-txt small { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mod-item-lado { display: grid; justify-items: end; gap: 4px; flex: none; }
+.mod-item-lado small { font-size: 11px; color: var(--ink-3); }
+.mod-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 11px; display: grid; place-items: center; }
+.mod-ok { color: var(--brand) !important; }
+.mod-vazio { padding: 24px 16px; text-align: center; margin: 0; }
+.mod-vazio-grande { flex: 1; display: grid; place-content: center; text-align: center; color: var(--ink-3); padding: 24px; }
+.mod-conv { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.mod-conv-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.mod-conv-topo > div { display: grid; gap: 2px; }
+.mod-conv-topo small { font-size: 12px; color: var(--ink-3); }
+.mod-vermelho { color: var(--deal); }
+.mod-autores { display: grid; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.mod-autor { display: grid; gap: 6px; }
+.mod-autor small { color: var(--ink-3); font-size: 12px; }
+.mod-botoes { display: flex; gap: 6px; flex-wrap: wrap; }
+.mod-msgs { flex: 1; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; }
+.mod-msgs::-webkit-scrollbar { display: none; }
+.mod-msg { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); font-size: 13.5px; }
+.mod-msg small { color: var(--ink-3); font-size: 12px; }
+.mod-msg.sis { background: none; color: var(--ink-3); font-style: italic; text-align: center; font-size: 12.5px; }
+.mod-msg.xing { background: var(--deal-soft); border: 1px solid color-mix(in srgb, var(--deal) 45%, transparent); }
+.mod-orig { display: block; margin-top: 4px; font-size: 12.5px; }
+.mod-orig mark { background: var(--deal); color: #fff; border-radius: 4px; padding: 0 3px; }
+.mod-rodape { margin: 0; padding: 8px 16px; border-top: 1px solid var(--line); font-size: 12.5px; }
+@media (max-width: 860px) { .mod-grade { grid-template-columns: 1fr; grid-template-rows: minmax(0, 38%) minmax(0, 1fr); } }
+/* dentro do painel / Área de trabalho: ocupa o quadro inteiro, só a lista e a conversa rolam */
+.mod-embed, .mod-embed body { height: 100%; overflow: hidden; scrollbar-width: none; background: transparent; }
+.mod-embed .mod-page { height: 100%; display: flex; flex-direction: column; padding: 0; max-width: none; }
+.mod-embed .mod-grade { flex: 1; height: auto; min-height: 0; }
+
+/* ── Área de trabalho da equipe (/trabalho) ─────────────────────────────── */
+.trab-page { padding-top: 16px; padding-bottom: 16px; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 16px; }
+.trab-menu { display: grid; gap: 6px; align-content: start; }
+.trab-menu h1 { font-size: 18px; margin: 0 0 2px; }
+.trab-menu p { margin: 0 0 8px; font-size: 13px; }
+.trab-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; text-align: left; }
+.trab-menu button[aria-current="true"] { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
+.trab-menu button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.trab-menu button b { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--deal); color: #fff; font-size: 11px; display: grid; place-items: center; }
+.trab-menu button b:empty { display: none; }
+.trab-quadro { width: 100%; height: calc(100vh - var(--header-h) - 40px); min-height: 460px; border: 0; border-radius: 14px; display: block; background: transparent; }
+@media (max-width: 860px) {
+  .trab-page { grid-template-columns: 1fr; }
+  .trab-menu { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .trab-menu h1, .trab-menu p { grid-column: 1 / -1; }
+  .trab-quadro { height: calc(100vh - var(--header-h) - 150px); }
+}
+
+.eq-cartao.eq-destaque { border-color: var(--brand); background: var(--brand-soft); }

@@ -78,6 +78,9 @@ app.get('/mensagens/tela', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'men
 // SAC: o chamado do usuário abre no painel de Mensagens; /sac é a fila de atendimento (admin e atendentes)
 app.get('/sac/meu', (req, res) => res.redirect('/?sac=1'));
 app.get(['/sac', '/sac.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'sac.html')));
+// Área de trabalho da equipe (SAC e Moderação do chat); as próprias páginas conferem a permissão pela API
+app.get(['/trabalho', '/trabalho.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'trabalho.html')));
+app.get(['/moderacao', '/moderacao.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'moderacao.html')));
 
 // O próprio perfil fica em Minha conta (aba "Meu perfil"); admin e clientes só da ferramenta continuam em /perfil.
 app.get(['/perfil', '/perfil.html'], (req, res, next) => {
@@ -145,6 +148,7 @@ app.use(perfilRoutes);
 app.use(ganhosRoutes);
 app.use(require('./src/routes/chat'));
 app.use(require('./src/routes/sac')); // SAC: chamados e fila de atendimento
+app.use(require('./src/routes/trabalho')); // Área de trabalho da equipe: Moderação do chat
 app.use(require('./src/routes/loja')); // página profissional das lojas: aparência, catálogos e avaliações // mensagens, pedidos às lojas e contadores de acesso
 
 app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'admin.html')));

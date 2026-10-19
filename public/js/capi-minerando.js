@@ -40,11 +40,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261135`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261136`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261135';
+      img.src = PASTA + m.arquivo + '?v=20261136';
       // onload em vez de img.decode(): o decode() pode ficar pendurado em alguns navegadores
       folhas[nome] = new Promise((ok, erro) => {
         img.onload = () => ok(img);
@@ -107,7 +107,9 @@
 
   // ── Quando aparece ──
   let cfg = { so_mineracao: false, intervalo: 10 }, minerando = false, carregou = false, proxima = null, rodando = false;
-  const pode = () => TESTE || !cfg.so_mineracao || minerando;
+  // Nunca na tela de entrar/criar conta (Minha conta sem login)
+  const naTelaDeLogin = () => { const v = document.getElementById('view-login'); return Boolean(v && !v.hidden); };
+  const pode = () => !naTelaDeLogin() && (TESTE || !cfg.so_mineracao || minerando);
 
   // Um clipe por vez; o intervalo conta do fim de um até o começo do próximo
   async function ciclo() {

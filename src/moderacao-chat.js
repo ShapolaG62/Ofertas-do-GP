@@ -51,11 +51,9 @@ function registrar(origem, refId, mensagemId, autor, original, palavras) {
 
 // ── Quem modera: o administrador e a equipe com a função "Moderar o chat" ──
 function podeModerar(dono) {
-  if (dono === 'admin') return true;
-  const m = /^u:(\d+)$/.exec(dono || '');
-  return Boolean(m && db.get(`SELECT 1 FROM users WHERE id = ? AND status = 'active' AND pode_moderar = 1`, Number(m[1])));
+  return require('./cargos').pode(dono, 'moderar');
 }
-// A equipe adverte, bloqueia as mensagens e resolve; suspender e banir a conta são só do administrador
+// Advertir, bloquear as mensagens e resolver: todo cargo com Moderação; suspender e banir pedem a função "Suspender e banir"
 const ACOES_EQUIPE = ['advertir', 'bloquear_chat', 'liberar_chat', 'resolver'];
 
 // ── Painel do administrador e Área de trabalho da equipe ─────────────────────
@@ -122,7 +120,8 @@ function fecharOcorrencias(origem, refId, autor, acao) {
 // acao: advertir | bloquear_chat (dias) | liberar_chat | suspender (dias) | banir | resolver
 function punir(origem, refId, b = {}, quem = 'admin') {
   const acao = String(b.acao || '');
-  if (quem !== 'admin' && !ACOES_EQUIPE.includes(acao)) throw fail('Suspender ou banir a conta é só com o administrador.', 403);
+  // suspender e banir só para cargos com a função 'Suspender e banir' (o dono do site sempre pode)
+  if (quem !== 'admin' && !ACOES_EQUIPE.includes(acao) && !require('./cargos').pode(quem, 'punir')) throw fail('Seu cargo não pode suspender ou banir contas.', 403);
   const porQuem = quem === 'admin' ? '' : ` por ${chat().pessoa(quem).nome}`;
   const users = require('./users');
   const motivo = String(b.motivo || '').trim().slice(0, 300);

@@ -484,3 +484,17 @@ A **Área de trabalho** junta o **SAC** e a **Moderação do chat** num lugar s�
 **Funções da equipe** (Painel → Equipe (staff)): **Atender o SAC**, **Moderar o chat** e **Postar anúncios**, marcadas por pessoa.
 
 **O que a equipe pode fazer na Moderação do chat:** advertir, bloquear e liberar as mensagens e marcar como resolvido. **Suspender e banir a conta** continuam só com o administrador. Cada ação registra quem a fez.
+
+## 28. Cargos da equipe (hierarquia e permissões)
+
+**Cargos, do maior para o menor:** Proprietário > Gerente > Admin > Moderador > Suporte.
+- **Proprietário:** você (login "admin" do painel), com **acesso total**. Você também pode dar esse cargo a alguém da equipe: a pessoa ganha todas as funções da Área de trabalho, mas **nunca** o painel administrativo.
+- **Ninguém da equipe entra no painel admin.** A equipe usa só a **Área de trabalho** (/trabalho), pelo botão **Área de trabalho (equipe)** em Minha conta, junto do perfil.
+
+**Funções que cada cargo pode ter:** SAC · Moderação do chat (advertir e bloquear mensagens) · Suspender e banir · Postar anúncios · Gerenciar a equipe.
+
+**Onde mudar:** Painel → Área de trabalho (equipe) → **Equipe (staff)** → aba **Cargos e permissões**. Marque, uma a uma, o que cada cargo pode fazer e clique em **Salvar permissões**. Só o Proprietário (dono do site) muda essa tabela; quem gerencia a equipe só consegue ver.
+
+Padrão inicial: Gerente (tudo), Admin (tudo menos gerenciar a equipe), Moderador (Moderação do chat), Suporte (SAC).
+
+**Gerenciar a equipe:** quem tem essa função (ex.: Gerente) cadastra pessoas, troca cargos, define nova senha e tira da equipe, **só para cargos abaixo do seu**. Ninguém muda o próprio cargo. Tudo fica no histórico da conta.

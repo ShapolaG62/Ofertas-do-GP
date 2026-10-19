@@ -81,6 +81,7 @@ app.get(['/sac', '/sac.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 
 // Área de trabalho da equipe (SAC e Moderação do chat); as próprias páginas conferem a permissão pela API
 app.get(['/trabalho', '/trabalho.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'trabalho.html')));
 app.get(['/moderacao', '/moderacao.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'moderacao.html')));
+app.get(['/equipe', '/equipe.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'equipe.html')));
 
 // O próprio perfil fica em Minha conta (aba "Meu perfil"); admin e clientes só da ferramenta continuam em /perfil.
 app.get(['/perfil', '/perfil.html'], (req, res, next) => {

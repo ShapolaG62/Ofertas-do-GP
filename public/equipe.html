@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Equipe — Ofertou!</title>
+<link rel="icon" href="/images/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css?v=20261129">
+<script src="/js/app-nativo.js?v=20261129"></script>
+<script src="/js/dialogo.js?v=20261129"></script>
+<script src="/js/cadastro-auto.js?v=20261129" defer></script>
+</head>
+<body class="eqp-body">
+<main class="container eqp-page">
+  <div class="eqp-abas" role="tablist">
+    <button type="button" data-aba="pessoas" aria-selected="true">Pessoas</button>
+    <button type="button" data-aba="cargos" aria-selected="false">Cargos e permissões</button>
+  </div>
+
+  <section data-painel="pessoas">
+    <div class="panel-card">
+      <h2>Adicionar à equipe</h2>
+      <p class="muted" id="eqp-dica-add">A pessoa entra no site em <b>/conta</b> com o e-mail e a senha abaixo e usa a <b>Área de trabalho</b>. Se o e-mail já tem conta no site, ela só ganha o cargo (a senha continua a dela, a menos que você digite uma nova).</p>
+      <form class="eqp-form" id="eqp-form" autocomplete="off" novalidate>
+        <label class="field"><span>Nome</span><input name="nome" maxlength="80" placeholder="Ex.: Ana Souza"></label>
+        <label class="field"><span>E-mail</span><input name="email" type="email" maxlength="120" required></label>
+        <label class="field"><span>Senha inicial</span><input name="senha" type="password" autocomplete="new-password" placeholder="senha forte"></label>
+        <label class="field"><span>Cargo</span><select name="cargo" id="eqp-cargo-novo"></select></label>
+        <div class="form-msg" id="eqp-msg" hidden></div>
+        <div><button class="btn btn-primary" type="submit">Adicionar à equipe</button></div>
+      </form>
+    </div>
+    <div class="panel-card">
+      <h2>Equipe</h2>
+      <p class="muted">Troque o cargo a qualquer momento. "Tirar da equipe" remove o cargo; a conta continua existindo como conta comum. Você só gerencia pessoas de cargos abaixo do seu.</p>
+      <div class="eqp-lista" id="eqp-lista"><p class="muted">Carregando…</p></div>
+    </div>
+  </section>
+
+  <section data-painel="cargos" hidden>
+    <div class="panel-card">
+      <h2>Cargos e permissões</h2>
+      <p class="muted" id="eqp-dica-cargos">Marque, uma a uma, o que cada cargo pode fazer na Área de trabalho. O Proprietário tem acesso total. Ninguém da equipe entra no painel administrativo.</p>
+      <div class="eqp-matriz-wrap"><table class="eqp-matriz" id="eqp-matriz"></table></div>
+      <div class="eqp-acoes"><span class="form-msg" id="eqp-msg-cargos" hidden></span><button class="btn btn-primary" type="button" id="eqp-salvar-cargos" hidden>Salvar permissões</button></div>
+    </div>
+  </section>
+
+  <div class="panel-card" id="eqp-sem-acesso" hidden>
+    <h2>Somente quem gerencia a equipe</h2>
+    <p class="muted">Seu cargo não tem a função "Gerenciar a equipe".</p>
+  </div>
+</main>
+<script src="/js/equipe.js?v=20261129" defer></script>
+</body>
+</html>

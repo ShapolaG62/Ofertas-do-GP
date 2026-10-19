@@ -412,16 +412,17 @@
     show('conta');
     const empresa = ME.tipo === 'empresa';
     $('#who-name').textContent = empresa ? (ME.empresa_nome || ME.nome) : ME.nome;
-    $('#who-type').textContent = empresa ? `Conta empresarial · ${ME.nome}` : ME.staff ? 'Equipe Ofertou!' : 'Conta de consumidor';
+    $('#who-type').textContent = empresa ? `Conta empresarial · ${ME.nome}` : ME.staff ? `Equipe Ofertou!${ME.cargo ? ` · ${({ proprietario: 'Proprietário', gerente: 'Gerente', admin: 'Admin', moderador: 'Moderador', suporte: 'Suporte' })[ME.cargo] || ''}` : ''}` : 'Conta de consumidor';
     $('#who-avatar').hidden = !ME.avatar_url;
     if (ME.avatar_url) $('#who-avatar').src = ME.avatar_url;
     // Empresa ainda sem loja: o "Painel da loja" fica escondido e a conta abre em "Minha loja" para criar a loja
     const equipe = ME.staff || ME.pode_sac || ME.pode_postar || ME.pode_moderar;
+    $('#btn-trabalho').hidden = !ME.staff; // equipe: Área de trabalho junto do perfil (nunca o painel admin)
     const tabs = [...(equipe ? [['equipe', 'Área da equipe']] : []), ...(empresa ? TABS_EMPRESA.filter(([k]) => k !== 'painel' || LOJA) : TABS_CONSUMIDOR)];
     if (equipe) {
       $('#eq-sac').hidden = !ME.pode_sac;
       $('#eq-moderar').hidden = !ME.pode_moderar;
-      $('#eq-trabalho').hidden = !(ME.pode_sac || ME.pode_moderar);
+      $('#eq-trabalho').hidden = !ME.staff;
       $('#eq-postar').hidden = !ME.pode_postar;
     }
     if (empresa && !LOJA && currentTab === null) currentTab = 'loja';

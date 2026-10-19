@@ -1,6 +1,6 @@
 /* Ofertou! — Moderação do chat (/moderacao): conversas em que alguém xingou, histórico com a hora e o texto original,
    e punições. Usada pelo administrador (dentro do painel) e pela equipe com a função "Moderar o chat" (Área de trabalho).
-   A equipe adverte, bloqueia as mensagens e resolve; suspender e banir a conta são só do administrador. */
+   Advertir, bloquear as mensagens e resolver: todo cargo com Moderação; suspender e banir: cargos com essa função. */
 (() => {
   'use strict';
   const $ = s => document.querySelector(s);
@@ -16,7 +16,7 @@
   }
   const avisar = t => (window.OfertouUI ? OfertouUI.avisar(t) : alert(t));
 
-  let STATUS = 'novo', ATUAL = null, ADMIN = false;
+  let STATUS = 'novo', ATUAL = null, PUNIR = false;
 
   async function carregar() {
     let d;
@@ -25,7 +25,7 @@
       if (err.status === 401 || err.status === 403) { $('#mod-app').hidden = true; $('.mod-topo').hidden = true; $('#mod-sem-acesso').hidden = false; return; }
       $('#mod-itens').innerHTML = `<p class="form-msg err">${esc(err.message)}</p>`; return;
     }
-    ADMIN = d.admin;
+    PUNIR = d.pode_punir;
     $('#mod-n').textContent = d.novos || '';
     document.querySelectorAll('[data-status]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.status === STATUS)));
     $('#mod-itens').innerHTML = d.conversas.length ? d.conversas.map(c => `
@@ -45,7 +45,7 @@
   }
 
   function render(d) {
-    ATUAL = d; ADMIN = d.admin;
+    ATUAL = d; PUNIR = d.pode_punir;
     const btn = (a, acao, txt, cls = '') => `<button class="btn btn-sm ${cls}" type="button" data-acao="${acao}" data-autor="${esc(a.dono)}">${txt}</button>`;
     $('#mod-conversa').innerHTML = `<div class="mod-conv">
       <div class="mod-conv-topo"><div><b>${esc(d.codigo)} · ${esc(d.tipo)}</b><small>${d.participantes.map(esc).join(' · ')} — ${d.ocorrencias} ocorrência(s)${d.novos ? `, <b class="mod-vermelho">${d.novos} sem revisão</b>` : ''}</small></div>
@@ -55,15 +55,15 @@
         <div class="mod-botoes">
           ${btn(a, 'advertir', 'Advertir')}
           ${a.conta_site ? (a.chat_bloqueado_ate ? btn(a, 'liberar_chat', 'Liberar mensagens') : btn(a, 'bloquear_chat', 'Bloquear mensagens…')) : ''}
-          ${ADMIN && a.conta_site ? btn(a, 'suspender', 'Suspender conta…', 'btn-danger') : ''}
-          ${ADMIN && a.conta_site && a.status !== 'banned' ? btn(a, 'banir', 'Banir', 'btn-danger') : ''}
+          ${PUNIR && a.conta_site ? btn(a, 'suspender', 'Suspender conta…', 'btn-danger') : ''}
+          ${PUNIR && a.conta_site && a.status !== 'banned' ? btn(a, 'banir', 'Banir', 'btn-danger') : ''}
         </div></div>`).join('')}</div>
       <div class="mod-msgs" id="mod-msgs">${d.mensagens.map(m => m.autor ? `<div class="mod-msg ${m.infracao ? 'xing' : ''}">
           <small><b>${esc(m.nome)}</b> · ${quando(m.created_at)}${m.infracao ? ` · <b class="mod-vermelho">xingamento</b>${m.infracao.acao ? ` · ${esc(m.infracao.acao)}` : m.infracao.status === 'novo' ? ' · sem revisão' : ''}` : ''}</small>
           <div>${esc(m.texto)}</div>
           ${m.infracao ? `<span class="mod-orig"><small>Escrito originalmente:</small> ${marcar(m.infracao.original, m.infracao.palavras)}</span>` : ''}
         </div>` : `<div class="mod-msg sis">${esc(m.texto)} · ${quando(m.created_at)}</div>`).join('')}</div>
-      ${ADMIN ? '' : '<p class="muted mod-rodape">Suspender ou banir a conta: fale com o administrador.</p>'}
+      ${PUNIR ? '' : '<p class="muted mod-rodape">Suspender ou banir a conta: peça a quem tem esse cargo.</p>'}
     </div>`;
     const primeira = $('#mod-msgs .xing');
     if (primeira) setTimeout(() => primeira.scrollIntoView({ block: 'center' }), 50);

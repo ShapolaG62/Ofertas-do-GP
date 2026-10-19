@@ -1,44 +1,60 @@
-// Área de trabalho da equipe (/trabalho): SAC e Moderação do chat para o administrador e a equipe (staff).
-// Cada pessoa vê só o que tem permissão; suspender e banir contas continuam só com o administrador.
+// Área de trabalho da equipe (/trabalho): SAC, Moderação do chat, Postagens e Equipe (cargos e permissões).
+// Cada pessoa vê só o que o cargo dela permite (src/cargos.js). O dono do site (admin) é Proprietário: vê e faz tudo.
 const express = require('express');
 const perfis = require('../perfis');
 const sac = require('../sac');
 const mod = require('../moderacao-chat');
+const cargos = require('../cargos');
+const equipe = require('../equipe');
 
 const router = express.Router();
 const sendError = (res, err) => res.status(err.status || 400).json({ error: err.message });
 
-function quem(req) {
-  const dono = perfis.donoDe(req);
-  return { dono, sac: Boolean(dono && sac.ehAtendente(dono)), moderar: Boolean(dono && mod.podeModerar(dono)), admin: dono === 'admin' };
-}
-function exigirModerador(req, res, next) {
-  req.q = quem(req);
-  if (!req.q.moderar) return res.status(403).json({ error: 'Somente quem modera o chat.' });
-  res.setHeader('Cache-Control', 'no-store');
-  next();
+function exigir(permissao) {
+  return (req, res, next) => {
+    req.dono = perfis.donoDe(req);
+    if (!req.dono) return res.status(401).json({ error: 'Entre na sua conta.' });
+    if (permissao && !cargos.pode(req.dono, permissao)) return res.status(403).json({ error: 'Seu cargo não tem acesso a esta parte.' });
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  };
 }
 
 // O que esta pessoa pode fazer na Área de trabalho
-router.get('/api/trabalho/me', (req, res) => {
-  const q = quem(req);
-  res.setHeader('Cache-Control', 'no-store');
-  if (!q.dono) return res.status(401).json({ error: 'Entre na sua conta.' });
+router.get('/api/trabalho/me', exigir(null), (req, res) => {
+  const eu = cargos.de(req.dono);
   res.json({
-    nome: q.admin ? 'Administrador' : require('../chat').pessoa(q.dono).nome, admin: q.admin, sac: q.sac, moderar: q.moderar,
-    xingamentos: q.moderar ? mod.novos() : 0, sac_fila: q.sac ? sac.resumoAtendente(q.dono)?.fila || 0 : 0,
+    nome: eu.dono_site ? 'Proprietário' : require('../chat').pessoa(req.dono).nome,
+    cargo: eu.cargo, cargo_nome: eu.cargo_nome || null, dono_site: eu.dono_site, permissoes: eu.permissoes,
+    xingamentos: eu.permissoes.includes('moderar') ? mod.novos() : 0,
+    sac_fila: eu.permissoes.includes('sac') ? sac.resumoAtendente(req.dono)?.fila || 0 : 0,
   });
 });
 
 // Moderação do chat
-router.get('/api/moderacao', exigirModerador, (req, res) => {
-  res.json({ conversas: mod.listar({ status: String(req.query.status || '') }), novos: mod.novos(), admin: req.q.admin, acoes_equipe: mod.ACOES_EQUIPE });
+router.get('/api/moderacao', exigir('moderar'), (req, res) => {
+  res.json({ conversas: mod.listar({ status: String(req.query.status || '') }), novos: mod.novos(), pode_punir: cargos.pode(req.dono, 'punir') });
 });
-router.get('/api/moderacao/:origem/:id', exigirModerador, (req, res) => {
-  try { res.json({ ...mod.detalhe(req.params.origem, req.params.id), admin: req.q.admin }); } catch (err) { sendError(res, err); }
+router.get('/api/moderacao/:origem/:id', exigir('moderar'), (req, res) => {
+  try { res.json({ ...mod.detalhe(req.params.origem, req.params.id), pode_punir: cargos.pode(req.dono, 'punir') }); } catch (err) { sendError(res, err); }
 });
-router.post('/api/moderacao/:origem/:id/acao', exigirModerador, (req, res) => {
-  try { res.json({ ...mod.punir(req.params.origem, req.params.id, req.body || {}, req.q.dono), admin: req.q.admin }); } catch (err) { sendError(res, err); }
+router.post('/api/moderacao/:origem/:id/acao', exigir('moderar'), (req, res) => {
+  try { res.json({ ...mod.punir(req.params.origem, req.params.id, req.body || {}, req.dono), pode_punir: cargos.pode(req.dono, 'punir') }); } catch (err) { sendError(res, err); }
+});
+
+// Equipe: pessoas, cargos e permissões
+router.get('/api/equipe', exigir('equipe'), (req, res) => {
+  const eu = cargos.de(req.dono);
+  res.json({ equipe: equipe.listar(req.dono), matriz: cargos.matriz(), cargos_permitidos: equipe.cargosPermitidos(req.dono), dono_site: eu.dono_site, meu_nivel: eu.nivel });
+});
+router.post('/api/equipe', exigir('equipe'), (req, res) => { try { res.json({ pessoa: equipe.adicionar(req.body || {}, req.dono) }); } catch (err) { sendError(res, err); } });
+router.post('/api/equipe/:id/cargo', exigir('equipe'), (req, res) => { try { res.json({ pessoa: equipe.atualizar(req.params.id, req.body || {}, req.dono) }); } catch (err) { sendError(res, err); } });
+router.post('/api/equipe/:id/senha', exigir('equipe'), (req, res) => { try { res.json({ pessoa: equipe.definirSenha(req.params.id, req.body?.senha, req.dono) }); } catch (err) { sendError(res, err); } });
+router.post('/api/equipe/:id/remover', exigir('equipe'), (req, res) => { try { res.json({ ok: equipe.remover(req.params.id, req.dono) }); } catch (err) { sendError(res, err); } });
+// Cargos e permissões: só o Proprietário dono do site muda
+router.put('/api/equipe/cargos', exigir('equipe'), (req, res) => {
+  if (!cargos.de(req.dono).dono_site) return res.status(403).json({ error: 'Só o Proprietário (dono do site) muda as permissões dos cargos.' });
+  try { res.json({ matriz: cargos.salvarMatriz(req.body?.matriz || {}) }); } catch (err) { sendError(res, err); }
 });
 
 module.exports = router;

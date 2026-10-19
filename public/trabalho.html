@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261128">
-<script src="/js/app-nativo.js?v=20261128"></script>
-<script src="/js/dialogo.js?v=20261128"></script>
-<script src="/js/voltar.js?v=20261128" data-padrao="/conta" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261129">
+<script src="/js/app-nativo.js?v=20261129"></script>
+<script src="/js/dialogo.js?v=20261129"></script>
+<script src="/js/voltar.js?v=20261129" data-padrao="/conta" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -34,6 +34,8 @@
     <p class="muted" id="trab-quem">Carregando…</p>
     <button type="button" data-secao="sac" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19a3 3 0 0 1-3 3h-3"/></svg>SAC<b id="trab-n-sac"></b></button>
     <button type="button" data-secao="moderacao" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M9 8l6 5M15 8l-6 5"/></svg>Moderação do chat<b id="trab-n-mod"></b></button>
+    <button type="button" data-secao="equipe" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg>Equipe</button>
+    <a class="trab-link" href="/" id="trab-postar" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 18-8-8 18-2-8z"/></svg>Postar anúncios</a>
   </nav>
   <section>
     <iframe class="trab-quadro" id="trab-quadro" title="Área de trabalho" hidden></iframe>
@@ -48,16 +50,18 @@
 // Área de trabalho: mostra só as seções que a pessoa pode usar (SAC e/ou Moderação do chat)
 (async () => {
   const $ = s => document.querySelector(s);
-  const ENDERECO = { sac: '/sac?embed=1', moderacao: '/moderacao?embed=1' };
+  const ENDERECO = { sac: '/sac?embed=1', moderacao: '/moderacao?embed=1', equipe: '/equipe?embed=1' };
   let me;
   try {
     const r = await fetch('/api/trabalho/me', { cache: 'no-store' });
     if (r.status === 401) { location.href = '/conta?voltar=/trabalho'; return; }
     me = await r.json();
   } catch { $('#trab-quem').textContent = 'Sem conexão. Recarregue a página.'; return; }
-  const secoes = [me.sac && 'sac', me.moderar && 'moderacao'].filter(Boolean);
-  $('#trab-quem').textContent = me.nome ? `Olá, ${me.nome.split(' ')[0]}.` : '';
-  if (!secoes.length) { $('#trab-sem-acesso').hidden = false; return; }
+  const P = me.permissoes || [];
+  const secoes = [P.includes('sac') && 'sac', P.includes('moderar') && 'moderacao', P.includes('equipe') && 'equipe'].filter(Boolean);
+  $('#trab-quem').innerHTML = (me.nome ? `Olá, ${me.nome.split(' ')[0].replace(/[<>&]/g, '')}.` : '') + (me.cargo_nome ? `<br><span class="trab-cargo">${me.cargo_nome}</span>` : '');
+  $('#trab-postar').hidden = !P.includes('postar');
+  if (!secoes.length) { if (!P.includes('postar')) $('#trab-sem-acesso').hidden = false; return; }
   secoes.forEach(s => { document.querySelector(`[data-secao="${s}"]`).hidden = false; });
   $('#trab-n-sac').textContent = me.sac_fila || '';
   $('#trab-n-mod').textContent = me.xingamentos || '';

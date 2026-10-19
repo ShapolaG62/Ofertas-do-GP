@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="140" height="140"><defs>
+  <filter id="grao" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" seed="7"/>
+    <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 -.25"/>
+    <feComposite in2="SourceGraphic" operator="in"/>
+  </filter>
+  <filter id="pedra" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="4" seed="3"/>
+    <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -.55"/>
+    <feComposite in2="SourceGraphic" operator="in"/>
+  </filter>
+  <filter id="sombra" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="1.2" stdDeviation="1.1" flood-color="#000" flood-opacity=".55"/>
+  </filter>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#050505"/><stop offset=".35" stop-color="#4a4a4a"/><stop offset=".5" stop-color="#151515"/><stop offset=".7" stop-color="#3a3a3a"/><stop offset="1" stop-color="#050505"/></linearGradient>
+    <linearGradient id="ouro2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9a6b05"/><stop offset=".5" stop-color="#ffe08a"/><stop offset="1" stop-color="#9a6b05"/></linearGradient></defs><g filter="url(#sombra)">
+  <rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="12"/>
+  <rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="url(#metal)" stroke-width="9.5"/>
+  <rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="#fff" stroke-width="9.5" filter="url(#grao)" opacity="0.5"/>
+  <rect x="22.6" y="22.6" width="94.8" height="94.8" rx="18" fill="none" stroke="rgba(255,224,138,.8)" stroke-width=".9"/>
+  <rect x="13.4" y="13.4" width="113.2" height="113.2" rx="26.5" fill="none" stroke="rgba(255,224,138,.8)" stroke-width=".6" opacity=".6"/>
+    <rect x="13.4" y="13.4" width="113.2" height="113.2" rx="26.5" fill="none" stroke="url(#ouro2)" stroke-width="1.3"/>
+    <g transform="translate(100 2) rotate(20 16 12)"><path d="M6 2 H32 V24 H6 L0 13Z" fill="url(#ouro2)" stroke="#5a3d00" stroke-width="1.2"/><circle cx="5.5" cy="13" r="2" fill="#0d0d0d"/>
+      <text x="20" y="17.5" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-weight="900" font-size="11" fill="#0d0d0d">-%</text></g>
+    
+  <rect x="30" y="117" width="80" height="14" rx="7" fill="#0d0d0d" stroke="url(#ouro2)" stroke-width="1.2"/>
+  <text x="70" y="127.4" text-anchor="middle" font-family="Figtree, Arial, sans-serif" font-weight="800" font-size="9.5" fill="#ffe08a" letter-spacing=".6">BLACK FRIDAY</text></g></svg>

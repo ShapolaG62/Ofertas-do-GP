@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="140" height="140"><defs>
+  <filter id="grao" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" seed="7"/>
+    <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 -.25"/>
+    <feComposite in2="SourceGraphic" operator="in"/>
+  </filter>
+  <filter id="pedra" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="4" seed="3"/>
+    <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.4 -.55"/>
+    <feComposite in2="SourceGraphic" operator="in"/>
+  </filter>
+  <filter id="sombra" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="1.2" stdDeviation="1.1" flood-color="#000" flood-opacity=".55"/>
+  </filter>
+    <pattern id="bengala" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#fff"/><rect width="4.5" height="9" fill="#d32f2f"/></pattern>
+    <radialGradient id="bola" cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#ffd27a"/><stop offset=".5" stop-color="#e0a100"/><stop offset="1" stop-color="#8a5a00"/></radialGradient></defs><g filter="url(#sombra)">
+  <rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="12"/>
+  <rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="url(#bengala)" stroke-width="9.5"/>
+  <rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="#fff" stroke-width="9.5" filter="url(#grao)" opacity="0.15"/>
+  <rect x="22.6" y="22.6" width="94.8" height="94.8" rx="18" fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".9"/>
+  <rect x="13.4" y="13.4" width="113.2" height="113.2" rx="26.5" fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".6" opacity=".6"/>
+    <path d="M30 13.5 C34 9 40 12 44 9.5 C48 7 54 11 60 9 C66 7 72 11 78 9.5 C84 8 90 11 96 9.5 C100 8.5 106 11 110 14 L110 17 C104 16 98 18 92 16.5 C86 15 80 18 74 16.5 C68 15 62 18 56 16.5 C50 15 44 18 38 16.5 C34 15.5 31 17 29 17Z" fill="#fff" stroke="#cfe3f0" stroke-width=".8"/>
+    <path d="M50 18 q1 4 0 6 q-1 -2 0 -6Z" fill="#e8f4ff"/><path d="M74 18.5 q1 4 0 6 q-1 -2 0 -6Z" fill="#e8f4ff"/><path d="M94 18 q1 4 0 6 q-1 -2 0 -6Z" fill="#e8f4ff"/>
+    <g transform="translate(4 4)">
+      <path d="M12 4 L15 9 L20 7 L19 13 L25 14 L20 18 L22 23 L16 21 L12 26 L10 20 L4 20 L8 15 L3 11 L9 10Z" fill="#2e7d32" stroke="#1b4d1e" stroke-width=".9"/>
+      <path d="M26 10 L28 15 L33 14 L31 19 L36 21 L31 23 L32 28 L27 26 L24 30 L23 24 L18 23 L22 20 L19 16 L24 16Z" fill="#388e3c" stroke="#1b4d1e" stroke-width=".9"/>
+      <circle cx="21" cy="21" r="3.2" fill="#d32f2f" stroke="#7f1010" stroke-width=".8"/><circle cx="25.5" cy="24" r="2.8" fill="#e53935" stroke="#7f1010" stroke-width=".8"/><circle cx="20" cy="26" r="2.5" fill="#c62828" stroke="#7f1010" stroke-width=".8"/>
+      <circle cx="20" cy="20" r=".9" fill="#fff" opacity=".8"/></g>
+    <g transform="translate(108 104)"><rect x="9" y="0" width="6" height="4" rx="1" fill="#b0b0b0"/><path d="M12 0 C12 -4 16 -4 16 -1" stroke="#b0b0b0" stroke-width="1" fill="none"/>
+      <circle cx="12" cy="15" r="11" fill="url(#bola)" stroke="#6b4500" stroke-width=".9"/><path d="M2 13 Q12 18 22 13" stroke="#d32f2f" stroke-width="2" fill="none"/>
+      <circle cx="8" cy="10" r="2.4" fill="#fff" opacity=".6"/></g></g></svg>

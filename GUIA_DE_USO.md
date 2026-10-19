@@ -507,9 +507,9 @@ Padrão inicial: Gerente (tudo), Admin (tudo menos gerenciar a equipe), Moderado
 
 ## 30. Molduras da temporada e das datas comemorativas de 2027
 
-Em **Editar perfil → Moldura da foto** há um grupo novo. Quem **entra no site logado durante o período** ganha a moldura e fica com ela para sempre; depois do fim, quem não ganhou não consegue mais (aparece "evento encerrado"). As datas estão em `src/perfis.js` (lista `MOLDURAS`, horário de Brasília) e podem ser ajustadas ali.
+Em **Editar perfil → Moldura da foto** há um grupo novo. Quem **entra no site logado durante o período** ganha a moldura e fica com ela para sempre; depois do fim, quem não ganhou não consegue mais (aparece "evento encerrado"). As datas estão em `src/perfis.js` (lista `MOLDURAS`, horário de Brasília) e podem ser ajustadas ali. As molduras são ilustrações em SVG com textura (ouro, pedra, metal escovado, renda) em `public/images/molduras/`, geradas por `node video/molduras/gerar.js`.
 
-| Moldura | Período | Enfeite |
+| Moldura | Período | Desenho |
 |---|---|---|
 | 1ª Temporada (selo T1) | 01/10/2026 a 31/03/2027 | 🏆 |
 | Ano Novo 2027 | 01/01 a 10/01 | 🎆 |

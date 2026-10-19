@@ -961,26 +961,31 @@ body.pf-body {
 .pf-moldura-diamante { background: linear-gradient(135deg, #63e6f6, #ffffff, #8b7bff, #63e6f6); background-size: 300% 300%; animation: pf-brilho 4s linear infinite; box-shadow: 0 0 22px rgba(99, 230, 246, .45); }
 .pf-moldura-pro { background: linear-gradient(135deg, #13c26b, #4d8cff, #13c26b); background-size: 200% 200%; animation: pf-brilho 5s linear infinite; }
 .pf-moldura-coroa { background: linear-gradient(135deg, #b8860b, #ffe08a, #ff9f1c, #b8860b); background-size: 300% 300%; animation: pf-brilho 4s linear infinite; box-shadow: 0 0 24px rgba(255, 196, 0, .45); }
-/* Temporada e datas comemorativas de 2027: cores próprias e um enfeite no canto */
-.pf-moldura-temporada-1, .pf-moldura-ano-novo-2027, .pf-moldura-carnaval-2027, .pf-moldura-consumidor-2027, .pf-moldura-pascoa-2027, .pf-moldura-terra-2027,
-.pf-moldura-maes-2027, .pf-moldura-halloween-2027, .pf-moldura-black-friday-2027, .pf-moldura-natal-2027 { background-size: 300% 300%; animation: pf-brilho 6s linear infinite; }
-.pf-moldura-temporada-1::after, .pf-moldura-ano-novo-2027::after, .pf-moldura-carnaval-2027::after, .pf-moldura-consumidor-2027::after, .pf-moldura-pascoa-2027::after,
-.pf-moldura-terra-2027::after, .pf-moldura-maes-2027::after, .pf-moldura-halloween-2027::after, .pf-moldura-black-friday-2027::after, .pf-moldura-natal-2027::after {
-  content: var(--enfeite); position: absolute; top: calc(var(--tam) * -.2); right: calc(var(--tam) * -.14); font-size: calc(var(--tam) * .3); line-height: 1; transform: rotate(14deg);
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
-.pf-moldura-temporada-1 { --enfeite: "\1F3C6"; background-image: linear-gradient(135deg, #0c8f4f, #2bd37f, #f2c94c, #2bd37f, #0c8f4f); box-shadow: 0 0 20px rgba(43, 211, 127, .4); }
-.pf-moldura-temporada-1::before { content: "T1"; position: absolute; left: 50%; bottom: calc(var(--tam) * -.13); transform: translateX(-50%); z-index: 1;
-  font: 800 calc(var(--tam) * .16)/1 Figtree, system-ui, sans-serif; letter-spacing: .04em; color: #0d1116; background: #f2c94c;
-  padding: calc(var(--tam) * .035) calc(var(--tam) * .08); border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
-.pf-moldura-ano-novo-2027 { --enfeite: "\1F386"; background-image: linear-gradient(135deg, #1b1f3b, #c9a227, #ffffff, #c9a227, #1b1f3b); box-shadow: 0 0 20px rgba(201, 162, 39, .4); }
-.pf-moldura-carnaval-2027 { --enfeite: "\1F3AD"; background-image: linear-gradient(135deg, #9b2cff, #ffd60a, #00c853, #ff2d95, #00b0ff, #9b2cff); }
-.pf-moldura-consumidor-2027 { --enfeite: "\1F6CD"; background-image: linear-gradient(135deg, #0c8f4f, #2bd37f, #1d5fd6, #2bd37f, #0c8f4f); }
-.pf-moldura-pascoa-2027 { --enfeite: "\1F430"; background-image: linear-gradient(135deg, #ffb3d1, #c9b6ff, #fff3a6, #b6f0d0, #ffb3d1); }
-.pf-moldura-terra-2027 { --enfeite: "\1F30E"; background-image: linear-gradient(135deg, #0b6e3a, #3ac47d, #1e88e5, #3ac47d, #0b6e3a); }
-.pf-moldura-maes-2027 { --enfeite: "\1F490"; background-image: linear-gradient(135deg, #ff7eb3, #ffd1e3, #ff4f8b, #ffd1e3, #ff7eb3); }
-.pf-moldura-halloween-2027 { --enfeite: "\1F383"; background-image: linear-gradient(135deg, #ff7a00, #1a1a1a, #7b2cbf, #1a1a1a, #ff7a00); box-shadow: 0 0 20px rgba(255, 122, 0, .4); }
-.pf-moldura-black-friday-2027 { --enfeite: "\1F3F7"; background-image: linear-gradient(135deg, #000000, #3a3a3a, #f2c94c, #3a3a3a, #000000); box-shadow: 0 0 20px rgba(242, 201, 76, .3); }
-.pf-moldura-natal-2027 { --enfeite: "\1F384"; background-image: linear-gradient(135deg, #c62828, #ffffff, #2e7d32, #ffffff, #c62828); box-shadow: 0 0 20px rgba(198, 40, 40, .35); }
+/* Temporada e datas comemorativas de 2027: molduras ilustradas (SVG em /images/molduras, geradas por video/molduras/gerar.js).
+   O desenho passa 20% para fora da foto em cada lado; o aro fica sobre a borda e os enfeites, nos cantos. */
+.pf-moldura-temporada-1, .pf-moldura-ano-novo-2027, .pf-moldura-carnaval-2027, .pf-moldura-consumidor-2027, .pf-moldura-pascoa-2027, .pf-moldura-terra-2027, .pf-moldura-maes-2027, .pf-moldura-halloween-2027, .pf-moldura-black-friday-2027, .pf-moldura-natal-2027 { padding: 0; }
+.pf-moldura-temporada-1::after, .pf-moldura-ano-novo-2027::after, .pf-moldura-carnaval-2027::after, .pf-moldura-consumidor-2027::after, .pf-moldura-pascoa-2027::after, .pf-moldura-terra-2027::after, .pf-moldura-maes-2027::after, .pf-moldura-halloween-2027::after, .pf-moldura-black-friday-2027::after, .pf-moldura-natal-2027::after {
+  content: ""; position: absolute; inset: calc(var(--tam) * -.2); pointer-events: none; background: center / 100% 100% no-repeat; }
+.pf-moldura-temporada-1 { background: #c8920e; }
+.pf-moldura-temporada-1::after { background-image: url("/images/molduras/temporada-1.svg?v=1"); }
+.pf-moldura-ano-novo-2027 { background: #2a3170; }
+.pf-moldura-ano-novo-2027::after { background-image: url("/images/molduras/ano-novo-2027.svg?v=1"); }
+.pf-moldura-carnaval-2027 { background: #9b2cff; }
+.pf-moldura-carnaval-2027::after { background-image: url("/images/molduras/carnaval-2027.svg?v=1"); }
+.pf-moldura-consumidor-2027 { background: #2bd37f; }
+.pf-moldura-consumidor-2027::after { background-image: url("/images/molduras/consumidor-2027.svg?v=1"); }
+.pf-moldura-pascoa-2027 { background: #ffd1e3; }
+.pf-moldura-pascoa-2027::after { background-image: url("/images/molduras/pascoa-2027.svg?v=1"); }
+.pf-moldura-terra-2027 { background: #1e88e5; }
+.pf-moldura-terra-2027::after { background-image: url("/images/molduras/terra-2027.svg?v=1"); }
+.pf-moldura-maes-2027 { background: #ff9cc2; }
+.pf-moldura-maes-2027::after { background-image: url("/images/molduras/maes-2027.svg?v=1"); }
+.pf-moldura-halloween-2027 { background: #6a2fa0; }
+.pf-moldura-halloween-2027::after { background-image: url("/images/molduras/halloween-2027.svg?v=1"); }
+.pf-moldura-black-friday-2027 { background: #2a2a2a; }
+.pf-moldura-black-friday-2027::after { background-image: url("/images/molduras/black-friday-2027.svg?v=1"); }
+.pf-moldura-natal-2027 { background: #d32f2f; }
+.pf-moldura-natal-2027::after { background-image: url("/images/molduras/natal-2027.svg?v=1"); }
 .pf-moldura-coroa::after { content: "\1F451"; position: absolute; top: calc(var(--tam) * -.22); right: calc(var(--tam) * -.12); font-size: calc(var(--tam) * .3); transform: rotate(18deg); }
 @keyframes pf-brilho { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 @media (prefers-reduced-motion: reduce) { .pf-avatar { animation: none !important; } }

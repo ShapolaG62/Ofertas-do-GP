@@ -1077,15 +1077,19 @@
       <div class="panel">
         <h2>Vídeos patrocinados (moedas da Loja de cosméticos)</h2>
         <p class="hint">Vídeos de anunciantes que as pessoas assistem em <b>Loja de cosméticos → Ganhar moedas</b>. As moedas só saem depois do tempo mínimo assistido, uma vez por vídeo por dia e no máximo 5 vídeos por dia por pessoa. Todos aparecem com o selo <b>Patrocinado</b>. Use um link do YouTube ou de um arquivo .mp4/.webm (https).</p>
-        <form id="vp-form" class="grid" style="align-items:end">
+        <form id="vp-form">
           <input type="hidden" name="id">
-          <label class="field">Título <input name="titulo" maxlength="80" required></label>
-          <label class="field">Anunciante <input name="anunciante" maxlength="60" required></label>
-          <label class="field" style="grid-column:1/-1">Link do vídeo <input name="url" placeholder="https://www.youtube.com/watch?v=… ou https://…/video.mp4" required></label>
-          <label class="field">Tempo mínimo (segundos) <input name="duracao_s" type="number" min="5" max="180" value="30"></label>
-          <label class="field">Moedas por vídeo <input name="moedas" type="number" min="1" max="100" value="10"></label>
-          <label class="field">Situação <select name="ativo"><option value="1">No ar</option><option value="0">Pausado</option></select></label>
-          <div class="actions"><button class="btn primary" type="submit" id="vp-salvar">Adicionar vídeo</button><button class="btn" type="button" id="vp-cancelar" hidden>Cancelar edição</button></div>
+          <div class="grid">
+            <label class="field">Título <input type="text" name="titulo" maxlength="80" placeholder="Ex.: Promoção de verão" required></label>
+            <label class="field">Anunciante <input type="text" name="anunciante" maxlength="60" placeholder="Nome da empresa" required></label>
+          </div>
+          <label class="field" style="margin-top:10px">Link do vídeo <input type="url" name="url" placeholder="https://www.youtube.com/watch?v=… ou https://…/video.mp4" required></label>
+          <div class="grid" style="margin-top:10px">
+            <label class="field">Tempo mínimo (segundos) <input type="number" name="duracao_s" min="5" max="180" value="30"></label>
+            <label class="field">Moedas por vídeo <input type="number" name="moedas" min="1" max="100" value="10"></label>
+            <label class="field">Situação <select name="ativo"><option value="1">No ar</option><option value="0">Pausado</option></select></label>
+          </div>
+          <div class="actions"><button class="btn" type="button" id="vp-cancelar" hidden>Cancelar edição</button><button class="btn primary" type="submit" id="vp-salvar">Adicionar vídeo</button></div>
         </form>
         <div class="table-wrap" style="margin-top:12px"><table>
           <thead><tr><th>Vídeo</th><th>Anunciante</th><th>Tempo</th><th>Moedas</th><th>Visualizações</th><th>Situação</th><th></th></tr></thead>

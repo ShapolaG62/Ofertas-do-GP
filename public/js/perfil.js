@@ -270,8 +270,13 @@
         style="background:linear-gradient(120deg, ${CORES[c].join(', ')})" title="${esc(corNome(c))}${livre ? '' : ` — ${esc(quem?.rotulo || '')}`}">
         ${livre ? '' : '🔒'}</button>`;
     }).join('');
-    // Molduras liberadas
     escolhaMoldura = P.moldura;
+    renderMolduras();
+    preencherResto(L);
+  }
+
+  // Molduras do editor (também é chamada quando a Loja de cosméticos fecha, para mostrar o que foi comprado)
+  function renderMolduras() {
     // Molduras: comuns (nível e plano) junto com as da temporada e das datas comemorativas (ganhas entrando no site no
     // período); as animadas são compradas com moedas na Loja de cosméticos e aparecem aqui depois de compradas.
     const catalogo = P.opcoes.catalogo_molduras || [];
@@ -284,10 +289,12 @@
       <p class="pf-molduras-dica">As de temporada e datas comemorativas de 2027 são ganhas entrando no site durante o período; depois ficam suas para sempre.</p>
       <div class="pf-loja-chamada">
         <p class="pf-molduras-tit">Da Loja de cosméticos <small>molduras animadas compradas com moedas · você tem <b>${Number(P.moedas || 0).toLocaleString('pt-BR')}</b> moedas</small></p>
-        <a class="btn btn-sm btn-primary" href="/cosmeticos">🛒 Abrir a loja</a>
+        <a class="btn btn-sm btn-primary" href="/cosmeticos" data-abrir-loja>🛒 Abrir a loja</a>
       </div>
       ${daLoja.length ? `<div class="pf-molduras-grupo">${daLoja.map(opMoldura).join('')}</div>` : '<p class="pf-vazio">Você ainda não comprou molduras animadas.</p>'}`;
+  }
 
+  function preencherResto(L) {
     // Vitrine
     const obtidas = P.conquistas.familias.flatMap(fm => fm.itens).filter(c => c.obtida);
     const marcadas = new Set(P.vitrine_ids || []);
@@ -441,6 +448,15 @@
       } catch (err) { toast(err.message); }
     }));
   }
+
+  window.addEventListener('ofertou:loja-fechou', async e => {
+    if (!e.detail?.mudou || !P || !P.proprio) return;
+    try {
+      P = await api('/api/perfil');
+      render();
+      if ($('#pf-editor').open) { escolhaMoldura = P.moldura; renderMolduras(); }
+    } catch { /* fica como estava */ }
+  });
 
   // ── Início ─────────────────────────────────────────────────────────────────
   async function carregar() {

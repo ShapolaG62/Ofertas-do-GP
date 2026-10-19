@@ -524,7 +524,7 @@ Em **Editar perfil → Moldura da foto** há um grupo novo. Quem **entra no site
 
 ## 31. Loja de cosméticos e molduras animadas
 
-As 6 molduras animadas (estilo decoração de avatar do Discord) são compradas na **Loja de cosméticos** (`/cosmeticos`). Ela abre pelo botão **🛒 Loja de cosméticos** no menu de Minha conta, no topo do perfil e em Editar perfil → Abrir a loja.
+As 6 molduras animadas (estilo decoração de avatar do Discord) são compradas na **Loja de cosméticos** (`/cosmeticos`). O botão **🛒 Loja de cosméticos** fica no topo de **Editar perfil**, no menu de Minha conta e no topo do perfil; ele abre a loja numa janela por cima da tela, sem sair da página (ao fechar, o perfil e as molduras do editor já mostram o que foi comprado ou trocado).
 
 **Moedas:** cada XP ganho com as conquistas vira uma moeda. Saldo = XP total − o que já foi gasto. Gastar moedas **não tira** o XP nem o nível. Não há dinheiro real envolvido.
 

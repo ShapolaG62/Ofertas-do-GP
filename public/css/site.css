@@ -2251,3 +2251,16 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .cos-video-quadro iframe, .cos-video-quadro video { width: 100%; height: 100%; border: 0; display: block; }
 .cos-missao .cos-moeda, .cos-video .cos-moeda { width: 15px; height: 15px; box-shadow: inset 0 0 0 1.5px #a8770a; }
 .cos-video-rodape .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Loja de cosméticos aberta por cima da tela (janela) */
+.cos-dlg { width: min(1120px, calc(100% - 20px)); max-height: calc(100dvh - 24px); padding: 0; border-radius: 18px; overflow: auto; overscroll-behavior: contain;
+  border: 1px solid var(--line-strong); background: var(--bg, #0e1210); color: var(--ink); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .8); }
+.cos-dlg::backdrop { background: rgba(0, 0, 0, .65); backdrop-filter: blur(3px); }
+.cos-dlg .cos-page { padding: 22px 22px 26px; }
+.cos-dlg .cos-topo { padding-right: 46px; }
+.cos-dlg-fechar { position: sticky; top: 12px; float: right; margin: 12px 12px -48px 0; z-index: 3; width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-size: 16px; cursor: pointer; }
+.cos-dlg-fechar:hover { border-color: var(--brand); color: var(--brand); }
+.cos-toast { position: fixed; }
+.pf-dialog-head .pf-loja-btn { margin-left: auto; margin-right: 8px; border-color: #b8860b; color: #f2c94c; }
+@media (max-width: 560px) { .cos-dlg { width: 100%; max-height: 100dvh; border-radius: 0; } .cos-dlg .cos-page { padding: 16px; } }

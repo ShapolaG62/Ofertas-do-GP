@@ -188,7 +188,14 @@
   const temHover = window.matchMedia('(hover: hover)').matches;
   let popTimer; let fecharTimer;
   const pop = $('#comu-pop');
-  function esconderPop() { clearTimeout(popTimer); pop.hidden = true; pop.dataset.slug = ''; }
+  // A janela da Comunidade é um <dialog> aberto (fica numa camada acima da página): a miniatura abre como "popover",
+  // que vai para essa mesma camada de cima e aparece na frente do diálogo.
+  const usaPopover = typeof pop.showPopover === 'function';
+  if (usaPopover) pop.setAttribute('popover', 'manual');
+  function esconderPop() {
+    clearTimeout(popTimer); pop.hidden = true; pop.dataset.slug = '';
+    if (usaPopover && pop.matches(':popover-open')) pop.hidePopover();
+  }
 
   function renderPop(m, ancora) {
     pop.style.cssText = tema(m.cor);
@@ -212,6 +219,13 @@
     : '<small class="comu-pop-vazio">Nenhuma conquista ainda.</small>'}</div>
       </div>`;
     pop.hidden = false;
+    if (usaPopover) {
+      if (pop.matches(':popover-open')) pop.hidePopover(); // reabre para ficar acima do diálogo aberto por último
+      pop.showPopover();
+    } else {
+      const dlg = ancora.closest('dialog[open]'); // navegador antigo: dentro do diálogo, para ficar por cima
+      if (pop.parentElement !== (dlg || document.body)) (dlg || document.body).appendChild(pop);
+    }
     // Posição: à direita do item (ou à esquerda se não couber), dentro da tela
     const r = ancora.getBoundingClientRect();
     const w = pop.offsetWidth, h = pop.offsetHeight;
@@ -245,6 +259,7 @@
       fecharTimer = setTimeout(() => { if (!pop.matches(':hover')) esconderPop(); }, 180);
     });
     window.addEventListener('scroll', esconderPop, { passive: true });
+    $('#comu-dialog')?.addEventListener('close', esconderPop); // fechou a Comunidade: a miniatura some junto
   }
 
   // ── Busca com # na barra principal ────────────────────────────────────────

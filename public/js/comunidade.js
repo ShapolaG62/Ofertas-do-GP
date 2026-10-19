@@ -235,6 +235,10 @@
     let left = r.right + 12;
     if (left + w > window.innerWidth - 8) left = Math.max(8, r.left - w - 12);
     let top = Math.min(Math.max(8, r.top - 20), window.innerHeight - h - 8);
+    if (ancora.closest('.site-header')) { // foto do perfil no topo: logo abaixo dela, sem sair da tela
+      left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+      top = r.bottom + 10;
+    }
     pop.style.left = `${left}px`;
     pop.style.top = `${Math.max(8, top)}px`;
   }
@@ -262,6 +266,7 @@
       fecharTimer = setTimeout(() => { if (!pop.matches(':hover')) esconderPop(); }, 180);
     });
     window.addEventListener('scroll', esconderPop, { passive: true });
+    document.addEventListener('click', e => { if (e.target.closest('[data-mini]') && !e.target.closest('a')) esconderPop(); }); // abriu o menu da conta: a prévia sai
     $('#comu-dialog')?.addEventListener('close', esconderPop); // fechou a Comunidade: a miniatura some junto
   }
 

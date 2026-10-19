@@ -647,6 +647,7 @@
     mostrarConta();
     if (p.nome) $('#conta-nome').textContent = p.nome.split(' ')[0].slice(0, 16);
     if (p.avatar) { $('#perfil-link-img').src = p.avatar; $('#perfil-link-img').hidden = false; }
+    if (p.slug) $('#perfil-link-img').dataset.mini = p.slug; // passar o mouse na foto mostra a prévia do perfil (comunidade.js)
   }).catch(() => {});
   fetch('/api/conta/me').then(r => r.json()).then(d => { if (d.user) mostrarConta(); }).catch(() => {});
   // Menu da conta (fica fora da barra do topo para não ser cortado no celular)

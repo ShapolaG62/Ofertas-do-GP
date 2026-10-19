@@ -40,11 +40,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261170`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261171`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261170';
+      img.src = PASTA + m.arquivo + '?v=20261171';
       // onload em vez de img.decode(): o decode() pode ficar pendurado em alguns navegadores
       folhas[nome] = new Promise((ok, erro) => {
         img.onload = () => ok(img);

@@ -128,6 +128,9 @@
   .img-pick input[type=text] { flex: 1; }
   #ad-form textarea { min-height: 70px; font-family: inherit; }
   .check { display: flex; gap: 8px; align-items: center; font-weight: 700; cursor: pointer; }
+  .btn-voltar-painel { display: inline-flex; align-items: center; gap: 4px; flex: none; }
+  .btn-voltar-painel svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  @media (max-width: 600px) { .btn-voltar-painel span { display: none; } }
   .db-dinheiro .db-total b { color: var(--green, #2bb673); }
   /* SAC dentro do painel */
   .wrap:has(.tab-body[data-body="sac"]:not(.hidden)) { padding-bottom: 16px; } /* aba SAC: cabe na tela, sem rolar o painel */
@@ -286,6 +289,7 @@
   <!-- APLICATIVO -->
   <section id="app" class="hidden">
     <header class="top">
+      <button class="btn small btn-voltar-painel" type="button" id="painel-voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Voltar</span></button>
       <div class="logo"><img src="/images/capi-76.png" alt=""><span>Ofertou<b>!</b> · Painel</span></div>
       <div class="spacer"></div>
       <button class="btn small" type="button" id="sino" title="Avisos de saldo para sacar">🔔<span class="count-badge hidden" id="sino-badge">0</span></button>
@@ -1361,7 +1365,22 @@ document.addEventListener('click', e => {
 function abrirAba(aba) {
   const t = document.querySelector(`.tab[data-tab="${aba}"]`); if (t) t.click(); }
 
+// Botão Voltar do painel: volta para a aba anterior; no Painel inicial (sem aba anterior), volta ao site
+const ABAS_ANTES = []; let voltandoAba = false;
+$('#painel-voltar').addEventListener('click', () => {
+  const atual = document.querySelector('.tab.active')?.dataset.tab;
+  let ant; while ((ant = ABAS_ANTES.pop()) && ant === atual);
+  if (ant) { voltandoAba = true; abrirAba(ant); voltandoAba = false; return; }
+  if (atual && atual !== 'dash') { voltandoAba = true; abrirAba('dash'); voltandoAba = false; return; }
+  try {
+    const r = document.referrer && new URL(document.referrer);
+    if (r && r.origin === location.origin && !r.pathname.startsWith('/admin')) { history.back(); return; }
+  } catch { /* vai para o site */ }
+  location.href = '/';
+});
 $$('.tab').forEach(t => t.addEventListener('click', () => {
+  const antes = document.querySelector('.tab.active')?.dataset.tab;
+  if (!voltandoAba && antes && antes !== t.dataset.tab) { ABAS_ANTES.push(antes); if (ABAS_ANTES.length > 30) ABAS_ANTES.shift(); }
   $$('.tab').forEach(x => x.classList.toggle('active', x === t));
   $$('.tab-body').forEach(b => b.classList.toggle('hidden', b.dataset.body !== t.dataset.tab));
   if (location.hash.slice(1) !== t.dataset.tab) history.replaceState(null, '', `#${t.dataset.tab}`);

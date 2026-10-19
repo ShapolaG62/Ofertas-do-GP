@@ -2292,7 +2292,7 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 @media (min-width: 1200px) {
   body.pf-com-previa .pf-dialog { --dw: min(720px, calc(100vw - 500px)); }
   body.pf-com-previa .cos-dlg { --dw: min(940px, calc(100vw - 500px)); }
-  body.pf-com-previa .pf-dialog, body.pf-com-previa .cos-dlg { width: var(--dw); margin-left: calc((100vw - var(--dw) - 450px) / 2); margin-right: auto; }
+  body.pf-com-previa .pf-dialog, body.pf-com-previa .cos-dlg { width: var(--dw); margin-left: calc((100vw - var(--dw) - 436px) / 2); margin-right: auto; }
 }
 .pf-previa {
   --bg: #0d1116; --surface: #161c23; --surface-2: #1c232c; --surface-3: #232c36; --ink: #eef2f6; --ink-2: #b4bfca; --ink-3: #7f8b97;

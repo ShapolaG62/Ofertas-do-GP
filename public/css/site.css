@@ -2264,3 +2264,7 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .cos-toast { position: fixed; }
 .pf-dialog-head .pf-loja-btn { margin-left: auto; margin-right: 8px; border-color: #b8860b; color: #f2c94c; }
 @media (max-width: 560px) { .cos-dlg { width: 100%; max-height: 100dvh; border-radius: 0; } .cos-dlg .cos-page { padding: 16px; } }
+
+/* Efeitos da Loja de cosméticos na miniatura da Comunidade: o efeito fica por baixo do conteúdo do cartão */
+.comu-pop .pf-efeito { z-index: 0; }
+.comu-pop-corpo { position: relative; z-index: 1; }

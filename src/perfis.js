@@ -576,6 +576,7 @@ function cartao(p, ctx, visitante) {
     seguidores: db.get('SELECT COUNT(*) n FROM seguidores WHERE seguido = ?', p.dono).n,
     eu_sigo: Boolean(visitante && db.get('SELECT 1 FROM seguidores WHERE seguidor = ? AND seguido = ?', visitante, p.dono)),
     eu: visitante === p.dono, _xp: xp,
+    efeito_nome: require('./cosmeticos').emUso(p.dono, ctx.tipo === 'admin').efeito_nome, // efeito de nome da loja
   };
 }
 
@@ -632,6 +633,7 @@ function mini(slug, visitante) {
     slug: p.slug, nome: p.nome, titulo: p.titulo, avatar: p.avatar, capa: p.capa, cor: p.cor, moldura: p.moldura,
     papel_rotulo: p.papel_rotulo, selos: p.selos, nivel: p.nivel.nivel, bio: (p.bio || '').slice(0, 140),
     seguidores: p.seguidores, seguindo: p.seguindo, eu_sigo: p.eu_sigo, pode_seguir: p.pode_seguir, conquistas: todas,
+    efeito: p.efeito || null, efeito_nome: p.efeito_nome || null, // da Loja de cosméticos
   };
 }
 

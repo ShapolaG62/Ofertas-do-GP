@@ -28,11 +28,13 @@
 
   const botaoSeguir = p => (p.eu ? '<span class="comu-eu">Você</span>'
     : `<button class="comu-seguir${p.eu_sigo ? ' is-on' : ''}" type="button" data-seguir="${esc(p.slug)}">${p.eu_sigo ? 'Seguindo' : 'Seguir'}</button>`);
+  // Efeito de nome comprado na Loja de cosméticos (classe + texto para o efeito Glitch)
+  const nomeEfeito = p => (p.efeito_nome ? ` class="pf-${esc(p.efeito_nome)}" data-texto="${esc(p.nome)}"` : '');
   const item = p => `
     <li class="comu-item">
       <a class="comu-link" href="/perfil/${esc(p.slug)}" data-mini="${esc(p.slug)}">
         ${avatar(p, 40)}
-        <span class="comu-info"><b>${esc(p.nome)}</b>
+        <span class="comu-info"><b${nomeEfeito(p)}>${esc(p.nome)}</b>
           <small>${esc(p.papel_rotulo)} · Nível ${p.nivel} · 🏅 ${num(p.conquistas)}</small></span>
       </a>
       ${botaoSeguir(p)}
@@ -202,11 +204,12 @@
     pop.dataset.slug = m.slug;
     pop.innerHTML = `
       <div class="comu-pop-capa" style="${m.capa ? `background-image:url('${esc(m.capa)}')` : ''}"></div>
+      ${m.efeito ? `<div class="pf-efeito pf-${esc(m.efeito)}" aria-hidden="true"></div>` : ''}
       <div class="comu-pop-corpo">
         <div class="comu-pop-topo">
           ${avatar(m, 64)}
           <div class="comu-pop-id">
-            <b>${esc(m.nome)}</b>
+            <b${nomeEfeito(m)}>${esc(m.nome)}</b>
             ${m.titulo ? `<small>${esc(m.titulo)}</small>` : ''}
             <span class="comu-pop-selos"><span class="pf-papel">${esc(m.papel_rotulo)}</span>${m.selos.map(s => `<span class="pf-selo pf-selo-${esc(s.id)}">${esc(s.nome)}</span>`).join('')}</span>
           </div>

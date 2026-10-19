@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140" width="140" height="140">
+<style>
+  .pulsa { animation: pulsa 2.4s ease-in-out infinite; }
+  .corre { animation: corre 2.6s linear infinite; }
+  @keyframes pulsa { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+  @keyframes corre { to { stroke-dashoffset: -100; } } @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }</style><defs><filter id="neon" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.4"/></filter></defs><rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="#0c2a33" stroke-width="9"/>
+ <g class="pulsa"><rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="#29f0ff" stroke-width="7" filter="url(#neon)"/></g>
+ <rect x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="#9ffbff" stroke-width="2.2"/>
+ <rect x="12.5" y="12.5" width="115" height="115" rx="27" fill="none" stroke="#29f0ff" stroke-width=".8" opacity=".5"/>
+ <rect class="corre" x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" pathLength="100" stroke-dasharray="9 41" filter="url(#neon)"/>
+ <rect class="corre" x="18" y="18" width="104" height="104" rx="22" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" pathLength="100" stroke-dasharray="9 41"/></svg>

@@ -277,7 +277,9 @@
         title="${esc(m.nome)}${m.evento ? ` — ${m.livre ? 'ganha' : esc(m.req)}` : ''}">
         <span class="pf-avatar pf-moldura-${esc(m.id)}"><span class="pf-avatar-letra">${esc(P.nome[0] || '?')}</span></span>
         <small>${esc(m.nome)}${m.livre ? (m.evento ? (m.ganha ? '<br>✓ ganha' : '<br>liberada') : '') : `<br>🔒 ${esc(m.req)}`}</small></button>`;
-    $('#pf-molduras').innerHTML = `<div class="pf-molduras-grupo">${catalogo.filter(m => !m.evento).map(opMoldura).join('')}</div>
+    $('#pf-molduras').innerHTML = `<div class="pf-molduras-grupo">${catalogo.filter(m => !m.evento && !m.animada).map(opMoldura).join('')}</div>
+      <p class="pf-molduras-tit">Animadas <small>liberadas conforme o seu nível sobe</small></p>
+      <div class="pf-molduras-grupo">${catalogo.filter(m => m.animada).map(opMoldura).join('')}</div>
       <p class="pf-molduras-tit">Temporada e datas comemorativas de 2027 <small>entre no site durante o período para ganhar; depois ela é sua para sempre</small></p>
       <div class="pf-molduras-grupo">${catalogo.filter(m => m.evento).map(opMoldura).join('')}</div>`;
 

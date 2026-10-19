@@ -986,6 +986,22 @@ body.pf-body {
 .pf-moldura-black-friday-2027::after { background-image: url("/images/molduras/black-friday-2027.svg?v=1"); }
 .pf-moldura-natal-2027 { background: #d32f2f; }
 .pf-moldura-natal-2027::after { background-image: url("/images/molduras/natal-2027.svg?v=1"); }
+/* Molduras animadas (estilo decoração do Discord): SVG com a animação dentro (video/molduras/animadas.js) */
+.pf-moldura-anim-brilhos, .pf-moldura-anim-neon, .pf-moldura-anim-chamas, .pf-moldura-anim-raios, .pf-moldura-anim-espinhos, .pf-moldura-anim-galaxia { padding: 0; }
+.pf-moldura-anim-brilhos::after, .pf-moldura-anim-neon::after, .pf-moldura-anim-chamas::after, .pf-moldura-anim-raios::after, .pf-moldura-anim-espinhos::after, .pf-moldura-anim-galaxia::after {
+  content: ""; position: absolute; inset: calc(var(--tam) * -.2); pointer-events: none; background: center / 100% 100% no-repeat; }
+.pf-moldura-anim-brilhos { background: #58b4ff; }
+.pf-moldura-anim-brilhos::after { background-image: url("/images/molduras/anim-brilhos.svg?v=2"); }
+.pf-moldura-anim-neon { background: #0c2a33; }
+.pf-moldura-anim-neon::after { background-image: url("/images/molduras/anim-neon.svg?v=2"); }
+.pf-moldura-anim-chamas { background: #3b0a00; }
+.pf-moldura-anim-chamas::after { background-image: url("/images/molduras/anim-chamas.svg?v=2"); }
+.pf-moldura-anim-raios { background: #2b0a5c; }
+.pf-moldura-anim-raios::after { background-image: url("/images/molduras/anim-raios.svg?v=2"); }
+.pf-moldura-anim-espinhos { background: #1a0006; }
+.pf-moldura-anim-espinhos::after { background-image: url("/images/molduras/anim-espinhos.svg?v=2"); }
+.pf-moldura-anim-galaxia { background: #1b1446; }
+.pf-moldura-anim-galaxia::after { background-image: url("/images/molduras/anim-galaxia.svg?v=2"); }
 .pf-moldura-coroa::after { content: "\1F451"; position: absolute; top: calc(var(--tam) * -.22); right: calc(var(--tam) * -.12); font-size: calc(var(--tam) * .3); transform: rotate(18deg); }
 @keyframes pf-brilho { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 @media (prefers-reduced-motion: reduce) { .pf-avatar { animation: none !important; } }

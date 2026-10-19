@@ -521,3 +521,18 @@ Em **Editar perfil → Moldura da foto** há um grupo novo. Quem **entra no site
 | Halloween 2027 | 24/10 a 31/10 | 🎃 |
 | Black Friday 2027 | 22/11 a 29/11 | 🏷️ |
 | Natal 2027 | 15/12 a 26/12 | 🎄 |
+
+## 31. Molduras animadas
+
+Em **Editar perfil → Moldura da foto → Animadas** há 6 molduras com animação (estilo decoração de avatar do Discord), liberadas pelo nível do perfil:
+
+| Moldura | Nível | Animação |
+|---|---|---|
+| Brilhos | 5 | aro arco-íris mudando de cor e estrelinhas piscando |
+| Neon | 10 | aro ciano pulsando e duas luzes correndo em volta |
+| Chamas | 18 | labaredas tremulando nas laterais e embaixo, fagulhas subindo |
+| Raios | 22 | aro elétrico e raios estalando nos cantos |
+| Espinhos | 30 | galho de espinhos com brilho vermelho pulsando e gotas caindo |
+| Galáxia | 40 | nebulosa com estrelas cintilando e planetas em órbita |
+
+São SVGs com a animação dentro (`public/images/molduras/anim-*.svg`, gerados por `node video/molduras/animadas.js`). Para quem ativou "reduzir movimento" no sistema, as animações param. Os níveis ficam em `src/perfis.js` (lista `MOLDURAS`).

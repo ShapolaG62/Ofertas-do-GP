@@ -46,6 +46,13 @@ const MOLDURAS = [
   { id: 'diamante', nome: 'Diamante', nivel: 25 },
   { id: 'pro', nome: 'Moldura do plano', especial: true }, // planos com "moldura exclusiva"
   { id: 'coroa', nome: 'Coroa do admin', plano: 'admin' },
+  // Animadas (estilo decoração do Discord), liberadas pelo nível
+  { id: 'anim-brilhos', nome: 'Brilhos', nivel: 5, animada: true },
+  { id: 'anim-neon', nome: 'Neon', nivel: 10, animada: true },
+  { id: 'anim-chamas', nome: 'Chamas', nivel: 18, animada: true },
+  { id: 'anim-raios', nome: 'Raios', nivel: 22, animada: true },
+  { id: 'anim-espinhos', nome: 'Espinhos', nivel: 30, animada: true },
+  { id: 'anim-galaxia', nome: 'Galáxia', nivel: 40, animada: true },
   // Temporada e datas comemorativas de 2027 (horário de Brasília): quem entra no site durante o período ganha a
   // moldura e fica com ela para sempre. Depois do fim, quem não ganhou não consegue mais.
   { id: 'temporada-1', nome: '1ª Temporada', evento: true, de: '2026-10-01', ate: '2027-03-31' },
@@ -78,7 +85,7 @@ function catalogoMolduras(pl, lim, nivelAtual, ganhas) {
     const livre = molduraLiberada(mo, pl, lim, nivelAtual, ganhas);
     let req = mo.especial ? 'planos com moldura' : mo.plano ? 'admin' : mo.nivel ? `nível ${mo.nivel}` : 'livre';
     if (mo.evento) req = hoje > mo.ate ? 'evento encerrado' : hoje < mo.de ? `entre no site de ${diaMes(mo.de)} a ${diaMes(mo.ate)}` : 'disponível agora';
-    return { id: mo.id, nome: mo.nome, livre, req, evento: Boolean(mo.evento), ...(mo.evento ? { de: mo.de, ate: mo.ate, ganha: ganhas.has(mo.id) } : {}) };
+    return { id: mo.id, nome: mo.nome, livre, req, evento: Boolean(mo.evento), animada: Boolean(mo.animada), ...(mo.evento ? { de: mo.de, ate: mo.ate, ganha: ganhas.has(mo.id) } : {}) };
   });
 }
 function molduraLiberada(mo, pl, lim, nivelAtual, ganhas = new Set()) {

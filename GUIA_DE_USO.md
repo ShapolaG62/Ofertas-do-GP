@@ -504,3 +504,20 @@ Padrão inicial: Gerente (tudo), Admin (tudo menos gerenciar a equipe), Moderado
 - **Moderação transparente:** palavrões no chat viram asteriscos e o texto original fica só para a moderação (seção 26). Avaliações de lojas só podem ser ocultadas por abuso (ofensas, dados pessoais, spam, falsa, ilegal, sem relação com a loja): ao clicar em **Ocultar** na página da loja, escolha o motivo; o autor é avisado e a ação vai para o registro de moderação. Se o autor editar a avaliação, ela volta a aparecer. A loja nunca consegue ocultar avaliações.
 - **Termos e Política de Privacidade (versão 2026-10-19):** incluem o filtro do chat, o acesso da equipe por cargo, a moderação das avaliações, o aviso de cookies, o arrependimento dos planos e o pagamento direto às lojas.
 - **Acessibilidade:** todas as páginas têm o link "Pular para o conteúdo" (aparece ao apertar Tab), idioma pt-BR e destaque de foco para quem navega pelo teclado.
+
+## 30. Molduras da temporada e das datas comemorativas de 2027
+
+Em **Editar perfil → Moldura da foto** há um grupo novo. Quem **entra no site logado durante o período** ganha a moldura e fica com ela para sempre; depois do fim, quem não ganhou não consegue mais (aparece "evento encerrado"). As datas estão em `src/perfis.js` (lista `MOLDURAS`, horário de Brasília) e podem ser ajustadas ali.
+
+| Moldura | Período | Enfeite |
+|---|---|---|
+| 1ª Temporada (selo T1) | 01/10/2026 a 31/03/2027 | 🏆 |
+| Ano Novo 2027 | 01/01 a 10/01 | 🎆 |
+| Carnaval 2027 | 05/02 a 10/02 | 🎭 |
+| Dia do Consumidor | 10/03 a 15/03 | 🛍️ |
+| Páscoa 2027 | 22/03 a 04/04 | 🐰 |
+| Dia da Terra | 18/04 a 25/04 | 🌎 |
+| Dia das Mães | 03/05 a 09/05 | 💐 |
+| Halloween 2027 | 24/10 a 31/10 | 🎃 |
+| Black Friday 2027 | 22/11 a 29/11 | 🏷️ |
+| Natal 2027 | 15/12 a 26/12 | 🎄 |

@@ -271,14 +271,15 @@
     }).join('');
     // Molduras liberadas
     escolhaMoldura = P.moldura;
-    const todasMolduras = [['nenhuma', 'Sem moldura', 'livre'], ['bronze', 'Bronze', 'nível 3'], ['prata', 'Prata', 'nível 8'], ['ouro', 'Ouro', 'nível 15'],
-      ['diamante', 'Diamante', 'nível 25'], ['pro', 'Do plano', 'planos com moldura'], ['coroa', 'Coroa', 'admin']];
-    $('#pf-molduras').innerHTML = todasMolduras.filter(([id]) => id !== 'coroa' || P.plano === 'admin').map(([id, nome, req]) => {
-      const livre = P.opcoes.molduras.some(m => m.id === id);
-      return `<button type="button" class="pf-mold-op${id === escolhaMoldura ? ' is-sel' : ''}" data-moldura="${id}" ${livre ? '' : 'disabled'}>
-        <span class="pf-avatar pf-moldura-${id}"><span class="pf-avatar-letra">${esc(P.nome[0] || '?')}</span></span>
-        <small>${esc(nome)}${livre ? '' : `<br>🔒 ${esc(req)}`}</small></button>`;
-    }).join('');
+    // Molduras: as de nível e plano, e as da temporada e das datas comemorativas (ganhas entrando no site no período)
+    const catalogo = P.opcoes.catalogo_molduras || [];
+    const opMoldura = m => `<button type="button" class="pf-mold-op${m.id === escolhaMoldura ? ' is-sel' : ''}" data-moldura="${esc(m.id)}" ${m.livre ? '' : 'disabled'}
+        title="${esc(m.nome)}${m.evento ? ` — ${m.livre ? 'ganha' : esc(m.req)}` : ''}">
+        <span class="pf-avatar pf-moldura-${esc(m.id)}"><span class="pf-avatar-letra">${esc(P.nome[0] || '?')}</span></span>
+        <small>${esc(m.nome)}${m.livre ? (m.evento ? (m.ganha ? '<br>✓ ganha' : '<br>liberada') : '') : `<br>🔒 ${esc(m.req)}`}</small></button>`;
+    $('#pf-molduras').innerHTML = `<div class="pf-molduras-grupo">${catalogo.filter(m => !m.evento).map(opMoldura).join('')}</div>
+      <p class="pf-molduras-tit">Temporada e datas comemorativas de 2027 <small>entre no site durante o período para ganhar; depois ela é sua para sempre</small></p>
+      <div class="pf-molduras-grupo">${catalogo.filter(m => m.evento).map(opMoldura).join('')}</div>`;
 
     // Vitrine
     const obtidas = P.conquistas.familias.flatMap(fm => fm.itens).filter(c => c.obtida);

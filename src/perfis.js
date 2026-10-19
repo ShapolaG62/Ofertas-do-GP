@@ -46,9 +46,44 @@ const MOLDURAS = [
   { id: 'diamante', nome: 'Diamante', nivel: 25 },
   { id: 'pro', nome: 'Moldura do plano', especial: true }, // planos com "moldura exclusiva"
   { id: 'coroa', nome: 'Coroa do admin', plano: 'admin' },
+  // Temporada e datas comemorativas de 2027 (horário de Brasília): quem entra no site durante o período ganha a
+  // moldura e fica com ela para sempre. Depois do fim, quem não ganhou não consegue mais.
+  { id: 'temporada-1', nome: '1ª Temporada', evento: true, de: '2026-10-01', ate: '2027-03-31' },
+  { id: 'ano-novo-2027', nome: 'Ano Novo 2027', evento: true, de: '2027-01-01', ate: '2027-01-10' },
+  { id: 'carnaval-2027', nome: 'Carnaval 2027', evento: true, de: '2027-02-05', ate: '2027-02-10' },
+  { id: 'consumidor-2027', nome: 'Dia do Consumidor', evento: true, de: '2027-03-10', ate: '2027-03-15' },
+  { id: 'pascoa-2027', nome: 'Páscoa 2027', evento: true, de: '2027-03-22', ate: '2027-04-04' },
+  { id: 'terra-2027', nome: 'Dia da Terra', evento: true, de: '2027-04-18', ate: '2027-04-25' },
+  { id: 'maes-2027', nome: 'Dia das Mães', evento: true, de: '2027-05-03', ate: '2027-05-09' },
+  { id: 'halloween-2027', nome: 'Halloween 2027', evento: true, de: '2027-10-24', ate: '2027-10-31' },
+  { id: 'black-friday-2027', nome: 'Black Friday 2027', evento: true, de: '2027-11-22', ate: '2027-11-29' },
+  { id: 'natal-2027', nome: 'Natal 2027', evento: true, de: '2027-12-15', ate: '2027-12-26' },
 ];
-function molduraLiberada(mo, pl, lim, nivelAtual) {
+db.db.exec(`CREATE TABLE IF NOT EXISTS molduras_ganhas (
+  dono TEXT NOT NULL, moldura TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (dono, moldura))`);
+const hojeBrasilia = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }); // AAAA-MM-DD
+// Dá as molduras dos eventos que estão acontecendo agora (chamado quando a pessoa usa o site logada)
+function ganharMolduras(dono) {
+  const hoje = hojeBrasilia();
+  for (const mo of MOLDURAS) {
+    if (mo.evento && hoje >= mo.de && hoje <= mo.ate) db.run('INSERT OR IGNORE INTO molduras_ganhas (dono, moldura) VALUES (?, ?)', dono, mo.id);
+  }
+}
+const molduraGanhas = dono => new Set(db.all('SELECT moldura FROM molduras_ganhas WHERE dono = ?', dono).map(r => r.moldura));
+const diaMes = s => s.slice(8, 10) + '/' + s.slice(5, 7);
+// Catálogo para o editor: todas as molduras, com o que falta para liberar cada uma
+function catalogoMolduras(pl, lim, nivelAtual, ganhas) {
+  const hoje = hojeBrasilia();
+  return MOLDURAS.filter(mo => mo.id !== 'coroa' || pl === 'admin').map(mo => {
+    const livre = molduraLiberada(mo, pl, lim, nivelAtual, ganhas);
+    let req = mo.especial ? 'planos com moldura' : mo.plano ? 'admin' : mo.nivel ? `nível ${mo.nivel}` : 'livre';
+    if (mo.evento) req = hoje > mo.ate ? 'evento encerrado' : hoje < mo.de ? `entre no site de ${diaMes(mo.de)} a ${diaMes(mo.ate)}` : 'disponível agora';
+    return { id: mo.id, nome: mo.nome, livre, req, evento: Boolean(mo.evento), ...(mo.evento ? { de: mo.de, ate: mo.ate, ganha: ganhas.has(mo.id) } : {}) };
+  });
+}
+function molduraLiberada(mo, pl, lim, nivelAtual, ganhas = new Set()) {
   if (pl === 'admin') return true;
+  if (mo.evento) return ganhas.has(mo.id);
   if (mo.plano) return mo.plano === pl;
   if (mo.especial) return Boolean(lim.moldura);
   return nivelAtual >= mo.nivel;
@@ -225,7 +260,8 @@ function montar(perfil, ctx, { proprio = false, admin = false, visitante = null 
   let vitrine = json(perfil.vitrine, []).filter(id => obtidas.some(c => c.id === id)).slice(0, lim.vitrine);
   if (!vitrine.length) vitrine = [...obtidas].sort((a, b) => b.xp - a.xp || (b.obtida_em > a.obtida_em ? 1 : -1)).slice(0, lim.vitrine).map(c => c.id);
   // O admin tem tudo liberado.
-  const molduras = MOLDURAS.filter(mo => molduraLiberada(mo, pl, lim, av.nivel.nivel));
+  const ganhas = molduraGanhas(ctx.dono);
+  const molduras = MOLDURAS.filter(mo => molduraLiberada(mo, pl, lim, av.nivel.nivel, ganhas));
   const familias = [...FAMILIAS.map(f => ({ id: f.id, nome: f.nome, icone: f.icone })), { id: 'especiais', nome: 'Especiais', icone: '✨' }]
     .map(f => ({ ...f, itens: av.lista.filter(c => c.familia === f.id) })).filter(f => f.itens.length);
   const loja = ctx.user?.tipo === 'empresa' ? db.get('SELECT nome, slug FROM lojas WHERE user_id = ?', ctx.user.id) : null;
@@ -250,7 +286,7 @@ function montar(perfil, ctx, { proprio = false, admin = false, visitante = null 
   };
   if (proprio || admin) {
     out.limites = lim;
-    out.opcoes = { cores: lim.cores, gradientes: GRADIENTES, molduras, tipos_link: TIPOS_LINK, todos_planos: todosLimites() };
+    out.opcoes = { cores: lim.cores, gradientes: GRADIENTES, molduras, catalogo_molduras: catalogoMolduras(pl, lim, av.nivel.nivel, ganhas), tipos_link: TIPOS_LINK, todos_planos: todosLimites() };
     out.vitrine_ids = json(perfil.vitrine, []);
   }
   if (admin) out.dono = ctx.dono;
@@ -287,6 +323,7 @@ function numerosVisiveis(m, pap) {
 function meu(dono) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
+  ganharMolduras(dono); // temporada e datas comemorativas: usar o site no período dá a moldura
   return montar(garantir(ctx), ctx, { proprio: true, admin: dono === 'admin', visitante: dono });
 }
 
@@ -333,7 +370,7 @@ function salvar(dono, b) {
   if (b.moldura !== undefined) {
     const av = avaliar(ctx, perfil);
     const pl = plano(ctx);
-    const ok = MOLDURAS.find(mo => mo.id === b.moldura && molduraLiberada(mo, pl, lim, av.nivel.nivel));
+    const ok = MOLDURAS.find(mo => mo.id === b.moldura && molduraLiberada(mo, pl, lim, av.nivel.nivel, molduraGanhas(ctx.dono)));
     if (!ok) throw fail('Esta moldura ainda não foi liberada.');
     cols.moldura = b.moldura;
   }

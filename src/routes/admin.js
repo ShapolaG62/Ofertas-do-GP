@@ -285,6 +285,17 @@ router.get('/api/admin/atendimento', (req, res) => {
 router.post('/api/admin/taxas/:lojaId/quitar', (req, res) => {
   try { res.json(require('../pedidos-loja').quitarTaxas(req.params.lojaId, req.body?.observacao)); } catch (err) { sendError(res, err); }
 });
+// Vídeos patrocinados (as pessoas assistem e ganham moedas para a Loja de cosméticos)
+router.get('/api/admin/videos-patrocinados', (req, res) => res.json(require('../cosmeticos').listarVideosAdmin()));
+router.post('/api/admin/videos-patrocinados', (req, res) => {
+  try { res.json(require('../cosmeticos').salvarVideo(req.body || {})); } catch (err) { sendError(res, err); }
+});
+router.put('/api/admin/videos-patrocinados/:id', (req, res) => {
+  try { res.json(require('../cosmeticos').salvarVideo(req.body || {}, req.params.id)); } catch (err) { sendError(res, err); }
+});
+router.delete('/api/admin/videos-patrocinados/:id', (req, res) => {
+  try { res.json(require('../cosmeticos').excluirVideo(req.params.id)); } catch (err) { sendError(res, err); }
+});
 router.get('/api/admin/conversas/:id', (req, res) => {
   try { res.json(require('../chat').transcricao(req.params.id)); } catch (err) { sendError(res, err); }
 });

@@ -126,9 +126,10 @@
     $('#pf-capa').classList.toggle('tem-imagem', Boolean(P.capa));
     const nv = P.nivel;
     $('#pf-topo').innerHTML = `
+      ${P.efeito ? `<div class="pf-efeito pf-${esc(P.efeito)}" aria-hidden="true"></div>` : ''}
       ${avatarHtml(P, 'is-grande')}
       <div class="pf-ident">
-        <h1>${esc(P.nome)}</h1>
+        <h1${P.efeito_nome ? ` class="pf-${esc(P.efeito_nome)}" data-texto="${esc(P.nome)}"` : ''}>${esc(P.nome)}</h1>
         ${P.titulo ? `<p class="pf-titulo">${esc(P.titulo)}</p>` : ''}
         <div class="pf-selos">
           <span class="pf-papel">${esc(P.papel_rotulo)}</span>

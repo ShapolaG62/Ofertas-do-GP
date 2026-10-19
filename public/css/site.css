@@ -2147,3 +2147,106 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .pf-loja-chamada { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .pf-loja-chamada .pf-molduras-tit { margin: 0; }
 .cos-comprar:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.4); }
+
+/* ── Efeitos de perfil (Loja de cosméticos): animação de fundo no topo do perfil ──
+   Texturas em /images/efeitos (video/molduras/efeitos.js). Cada camada anda um múltiplo exato do tamanho dela. */
+.pf-topo { position: relative; }
+.pf-topo > :not(.pf-efeito) { position: relative; z-index: 1; }
+.pf-efeito { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 0; }
+.pf-efeito::before, .pf-efeito::after { content: ""; position: absolute; inset: 0; }
+.pf-efeito-neve { background: url("/images/efeitos/neve.svg") 0 0 / 200px, url("/images/efeitos/neve.svg") 70px 30px / 120px; opacity: .85; animation: ef-neve 16s linear infinite; }
+@keyframes ef-neve { to { background-position: 40px 400px, 150px 270px; } }
+.pf-efeito-bolhas { background: url("/images/efeitos/bolhas.svg") 0 0 / 220px, url("/images/efeitos/bolhas.svg") 90px 40px / 150px; animation: ef-bolhas 18s linear infinite; }
+@keyframes ef-bolhas { to { background-position: 0 -440px, 90px -260px; } }
+.pf-efeito-confete { background: url("/images/efeitos/confete.svg") 0 0 / 200px, url("/images/efeitos/confete.svg") 60px 90px / 140px; animation: ef-confete 9s linear infinite; }
+@keyframes ef-confete { to { background-position: 200px 400px, -80px 370px; } }
+.pf-efeito-estrelas { background: radial-gradient(ellipse at 70% 0%, rgba(80, 90, 200, .35), transparent 60%), url("/images/efeitos/estrelas.svg") 0 0 / 240px; animation: ef-cintila 4s ease-in-out infinite; }
+@keyframes ef-cintila { 50% { opacity: .65; } }
+.pf-efeito-estrelas::before, .pf-efeito-estrelas::after { left: auto; right: -20%; top: -10%; width: 140px; height: 2px; inset: auto; top: 12%; right: -30%;
+  background: linear-gradient(90deg, #fff, rgba(255,255,255,0)); border-radius: 2px; transform: rotate(-28deg); opacity: 0; animation: ef-cadente 5s ease-in infinite; }
+.pf-efeito-estrelas::after { top: 40%; animation-delay: 2.6s; width: 100px; }
+@keyframes ef-cadente { 0% { opacity: 0; transform: translateX(0) rotate(-28deg); } 6% { opacity: 1; } 22% { opacity: 0; transform: translateX(-900px) rotate(-28deg); } 100% { opacity: 0; transform: translateX(-900px) rotate(-28deg); } }
+.pf-efeito-vagalumes { background: url("/images/efeitos/vagalumes.svg") 0 0 / 220px; animation: ef-vagar 20s linear infinite; }
+.pf-efeito-vagalumes::before { background: url("/images/efeitos/vagalumes.svg") 110px 60px / 160px; animation: ef-vagar2 14s linear infinite, ef-pisca 2.4s ease-in-out infinite; }
+@keyframes ef-vagar { to { background-position: 220px -220px; } }
+@keyframes ef-vagar2 { to { background-position: -50px -100px; } }
+@keyframes ef-pisca { 50% { opacity: .2; } }
+.pf-efeito-sakura { background: url("/images/efeitos/sakura.svg") 0 0 / 220px, url("/images/efeitos/sakura.svg") 100px 50px / 150px; animation: ef-sakura 14s linear infinite; }
+@keyframes ef-sakura { to { background-position: -220px 440px, -300px 300px; } }
+.pf-efeito-matrix { background: url("/images/efeitos/matrix.svg") 0 0 / 160px 240px, url("/images/efeitos/matrix.svg") 80px 100px / 120px 180px; opacity: .55; animation: ef-matrix 6s linear infinite; }
+@keyframes ef-matrix { to { background-position: 0 480px, 80px 460px; } }
+.pf-efeito-aurora::before { inset: -40% -10% 30%; filter: blur(22px); opacity: .6;
+  background: linear-gradient(100deg, transparent 10%, #2bd37f 30%, transparent 45%, #8b5cf6 60%, transparent 75%, #22d3ee 90%, transparent);
+  background-size: 200% 100%; animation: ef-aurora 12s ease-in-out infinite alternate; }
+.pf-efeito-aurora::after { inset: -30% 0 45%; filter: blur(30px); opacity: .45; background: linear-gradient(80deg, transparent 20%, #34d399 45%, #a78bfa 70%, transparent 90%);
+  background-size: 250% 100%; animation: ef-aurora 17s ease-in-out infinite alternate-reverse; }
+@keyframes ef-aurora { 0% { background-position: 0% 0; transform: skewY(-4deg); } 100% { background-position: 100% 0; transform: skewY(3deg); } }
+
+/* ── Efeitos de nome ── */
+.pf-nome-arcoiris, .pf-nome-ouro, .pf-nome-fogo, .pf-nome-gelo { -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+.pf-nome-arcoiris { background-image: linear-gradient(90deg, #ff5fd2, #ffd84d, #5cf2a8, #58b4ff, #b47bff, #ff5fd2); background-size: 200% 100%; animation: nm-desliza 4s linear infinite; }
+@keyframes nm-desliza { to { background-position: 200% 0; } }
+.pf-nome-ouro { background-image: linear-gradient(100deg, #9a6b05 0%, #ffe08a 35%, #fffbe6 50%, #ffe08a 65%, #9a6b05 100%); background-size: 250% 100%;
+  animation: nm-reflexo 3s ease-in-out infinite; filter: drop-shadow(0 1px 0 rgba(90, 60, 0, .6)); }
+@keyframes nm-reflexo { 0% { background-position: 100% 0; } 100% { background-position: -150% 0; } }
+.pf-nome-gelo { background-image: linear-gradient(100deg, #7fd3ff 0%, #e0f7ff 40%, #ffffff 50%, #e0f7ff 60%, #7fd3ff 100%); background-size: 250% 100%;
+  animation: nm-reflexo 4.5s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(127, 211, 255, .6)); }
+.pf-nome-fogo { background-image: linear-gradient(0deg, #ff3d00 10%, #ff9100 50%, #ffe082 90%); animation: nm-fogo 1.2s ease-in-out infinite alternate; }
+@keyframes nm-fogo { 0% { filter: drop-shadow(0 0 4px #ff6d00) drop-shadow(0 -2px 2px #ff3d00); } 100% { filter: drop-shadow(0 0 9px #ff9100) drop-shadow(0 -5px 4px #ff6d00); } }
+.pf-nome-neon { color: #d9feff !important; animation: nm-neon 2.6s ease-in-out infinite; }
+@keyframes nm-neon { 0%, 100% { text-shadow: 0 0 3px #29f0ff, 0 0 10px #29f0ff, 0 0 22px #0bb7d4; } 45% { text-shadow: 0 0 2px #29f0ff, 0 0 5px #29f0ff; } 48% { text-shadow: none; } 52% { text-shadow: 0 0 3px #29f0ff, 0 0 10px #29f0ff, 0 0 22px #0bb7d4; } }
+.pf-nome-glitch { position: relative; display: inline-block; }
+.pf-nome-glitch::before, .pf-nome-glitch::after { content: attr(data-texto); position: absolute; inset: 0; pointer-events: none; }
+.pf-nome-glitch::before { color: #ff2a6d; transform: translate(-2px, 0); clip-path: inset(0 0 60% 0); animation: nm-glitch 2.2s steps(1) infinite; mix-blend-mode: screen; }
+.pf-nome-glitch::after { color: #05d9e8; transform: translate(2px, 0); clip-path: inset(55% 0 0 0); animation: nm-glitch 2.2s steps(1) infinite reverse; mix-blend-mode: screen; }
+@keyframes nm-glitch { 0% { clip-path: inset(0 0 60% 0); transform: translate(-2px, 0); } 20% { clip-path: inset(40% 0 30% 0); transform: translate(2px, -1px); }
+  40% { clip-path: inset(80% 0 5% 0); transform: translate(-3px, 1px); } 60% { clip-path: inset(10% 0 70% 0); transform: translate(1px, 0); }
+  80% { clip-path: inset(50% 0 20% 0); transform: translate(-1px, 1px); } 100% { clip-path: inset(0 0 60% 0); transform: translate(-2px, 0); } }
+@media (prefers-reduced-motion: reduce) { .pf-efeito, .pf-efeito::before, .pf-efeito::after, [class*="pf-nome-"], [class*="pf-nome-"]::before, [class*="pf-nome-"]::after { animation: none !important; } }
+
+/* Loja de cosméticos: abas, prévias de efeitos, missões e vídeos patrocinados */
+.cos-abas { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.cos-abas::-webkit-scrollbar { display: none; }
+.cos-abas button { flex: none; font: inherit; font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 999px; cursor: pointer;
+  background: var(--surface); color: var(--ink-2); border: 1px solid var(--line-strong); }
+.cos-abas button[aria-selected="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+.cos-abas .cos-aba-ganhar:not([aria-selected="true"]) { border-color: #b8860b; color: #f2c94c; }
+.cos-palco { position: relative; overflow: hidden; height: 168px; padding: 0 !important; box-sizing: border-box; }
+.cos-palco-topo { display: flex; align-items: center; justify-content: center; gap: 12px; background: linear-gradient(160deg, #1b2230, #0d1116); }
+.cos-palco-topo > :not(.pf-efeito) { position: relative; z-index: 1; }
+.cos-palco-nome { font-size: 18px; }
+.cos-nome-grande { font-size: 26px; font-weight: 800; color: var(--ink); text-align: center; padding: 0 12px; max-width: 100%; overflow-wrap: anywhere; }
+.cos-bloco { display: grid; gap: 10px; }
+.cos-bloco h2 { margin: 0; font-size: 17px; }
+.cos-bloco h2 small { display: block; font-size: 12.5px; font-weight: 500; color: var(--ink-3); }
+.cos-missoes, .cos-videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 10px; }
+.cos-missao, .cos-video { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--line); }
+.cos-missao > div { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.cos-missao small, .cos-video small { color: var(--ink-3); font-size: 12px; }
+.cos-missao.is-pronta { border-color: #b8860b; box-shadow: 0 0 0 1px rgba(242, 201, 76, .25); }
+.cos-missao.is-feita { opacity: .6; }
+.cos-barra { display: block; height: 6px; border-radius: 6px; background: var(--surface-3); overflow: hidden; margin-top: 3px; }
+.cos-barra span { display: block; height: 100%; background: linear-gradient(90deg, #b8860b, #f2c94c); border-radius: inherit; }
+.cos-missao .btn, .cos-video .btn { flex: none; display: inline-flex; align-items: center; gap: 4px; }
+.cos-missao .btn:disabled { opacity: .45; cursor: not-allowed; }
+.cos-ok { flex: none; color: var(--brand); font-weight: 700; font-size: 13px; }
+.cos-video { flex-wrap: wrap; }
+.cos-video b { flex: 1 1 140px; }
+.cos-video small { flex-basis: 100%; order: 3; }
+.cos-patrocinado { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: 6px; background: #f2c94c; color: #2b2000; }
+#cos-ganhar { display: grid; gap: 22px; }
+#cos-ganhar[hidden] { display: none; }
+.cos-extrato { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cos-extrato li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--surface); font-size: 13.5px; }
+.cos-extrato .pos { color: var(--brand); } .cos-extrato .neg { color: #ff8a8a; }
+.cos-video-dlg { width: min(720px, calc(100% - 24px)); padding: 0; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.cos-video-dlg::backdrop { background: rgba(0, 0, 0, .7); }
+.cos-video-topo, .cos-video-rodape { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
+.cos-video-topo b { flex: 1; font-size: 14.5px; }
+.cos-video-rodape { justify-content: space-between; flex-wrap: wrap; }
+.cos-fechar { font-size: 24px; line-height: 1; background: none; border: 0; color: var(--ink-2); cursor: pointer; }
+.cos-video-quadro { aspect-ratio: 16 / 9; background: #000; }
+.cos-video-quadro iframe, .cos-video-quadro video { width: 100%; height: 100%; border: 0; display: block; }
+.cos-missao .cos-moeda, .cos-video .cos-moeda { width: 15px; height: 15px; box-shadow: inset 0 0 0 1.5px #a8770a; }
+.cos-video-rodape .btn:disabled { opacity: .45; cursor: not-allowed; }

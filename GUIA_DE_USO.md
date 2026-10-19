@@ -540,3 +540,32 @@ As 6 molduras animadas (estilo decoração de avatar do Discord) são compradas 
 Na loja, cada moldura aparece com a foto da própria pessoa; depois de comprar, dá para usar na hora. Em **Editar perfil → Moldura da foto**, as comuns e as de temporada ficam juntas, e as compradas aparecem em "Da Loja de cosméticos". O admin tem todas.
 
 Preços em `src/perfis.js` (lista `MOLDURAS`); as compras ficam na tabela `cosmeticos_compras`. Desenhos: `node video/molduras/animadas.js`. Para quem ativou "reduzir movimento" no sistema, as animações param.
+
+## 32. Ganhar moedas (missões e vídeos patrocinados) e efeitos de perfil e de nome
+
+**Saldo de moedas** = XP das conquistas + moedas ganhas em missões e vídeos − moedas gastas na loja. Na Loja de cosméticos, a aba **🪙 Ganhar moedas** mostra as missões, os vídeos e o extrato.
+
+**Missões** (o site confere sozinho o que a pessoa fez; completa, ela toca em resgatar):
+
+| Missão | Tipo | Meta | Moedas |
+|---|---|---|---|
+| Passe no site hoje | diária | entrar logado | 10 |
+| Caçador do dia | diária | ir a 3 ofertas nas lojas | 20 |
+| Bate-papo | diária | mandar 1 mensagem | 10 |
+| Pausa patrocinada | diária | assistir 1 vídeo patrocinado | 10 |
+| Frequentador da semana | semanal | entrar em 5 dias | 50 |
+| Garimpeiro | semanal | ir a 15 ofertas nas lojas | 60 |
+| Fazendo amigos | semanal | seguir 1 perfil | 30 |
+| Opinião sincera | semanal | avaliar uma loja | 40 |
+| Cara nova | única | foto + resumo no perfil | 50 |
+| Popular | única | seguir 5 perfis | 40 |
+
+As diárias renovam à meia-noite (Brasília) e as semanais toda segunda-feira. As missões ficam em `src/cosmeticos.js` (lista `MISSOES`).
+
+**Vídeos patrocinados:** cadastre em **Painel → Publicidade → Vídeos patrocinados** (título, anunciante, link do YouTube ou .mp4/.webm, tempo mínimo e moedas). A pessoa assiste numa janela com o selo **Patrocinado**; o tempo só conta com a página visível (e com o vídeo tocando, no caso de arquivo), e o servidor confere que o tempo mínimo passou. Vale uma vez por vídeo por dia e no máximo 5 vídeos por dia por pessoa. O painel mostra quantas vezes cada vídeo foi assistido até o fim (bom para mostrar ao anunciante).
+
+**Efeitos de perfil** (animação de fundo no topo do perfil): Neve 200, Bolhas 200, Confete 250, Estrelas cadentes 300, Vaga-lumes 350, Pétalas de sakura 400, Código Matrix 500, Aurora boreal 600.
+
+**Efeitos de nome** (o nome de exibição animado): Arco-íris 250, Neon 300, Gelo 300, Ouro brilhante 350, Fogo 400, Glitch 450.
+
+Na loja, cada item aparece com a foto e o nome da própria pessoa. Depois de comprar: **Usar no perfil** e **Usando · tirar**. Texturas dos efeitos: `node video/molduras/efeitos.js`. Com "reduzir movimento" ligado no sistema, as animações param.

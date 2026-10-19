@@ -252,9 +252,9 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261150"></script>
-<script src="/js/capi-minerando.js?v=20261150" defer></script>
-<script src="/js/cadastro-auto.js?v=20261150" defer></script>
+<script src="/js/dialogo.js?v=20261154"></script>
+<script src="/js/capi-minerando.js?v=20261154" defer></script>
+<script src="/js/cadastro-auto.js?v=20261154" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1073,6 +1073,23 @@
             <tbody id="leads-body"></tbody>
           </table>
         </div>
+      </div>
+      <div class="panel">
+        <h2>Vídeos patrocinados (moedas da Loja de cosméticos)</h2>
+        <p class="hint">Vídeos de anunciantes que as pessoas assistem em <b>Loja de cosméticos → Ganhar moedas</b>. As moedas só saem depois do tempo mínimo assistido, uma vez por vídeo por dia e no máximo 5 vídeos por dia por pessoa. Todos aparecem com o selo <b>Patrocinado</b>. Use um link do YouTube ou de um arquivo .mp4/.webm (https).</p>
+        <form id="vp-form" class="grid" style="align-items:end">
+          <input type="hidden" name="id">
+          <label class="field">Título <input name="titulo" maxlength="80" required></label>
+          <label class="field">Anunciante <input name="anunciante" maxlength="60" required></label>
+          <label class="field" style="grid-column:1/-1">Link do vídeo <input name="url" placeholder="https://www.youtube.com/watch?v=… ou https://…/video.mp4" required></label>
+          <label class="field">Tempo mínimo (segundos) <input name="duracao_s" type="number" min="5" max="180" value="30"></label>
+          <label class="field">Moedas por vídeo <input name="moedas" type="number" min="1" max="100" value="10"></label>
+          <label class="field">Situação <select name="ativo"><option value="1">No ar</option><option value="0">Pausado</option></select></label>
+          <div class="actions"><button class="btn primary" type="submit" id="vp-salvar">Adicionar vídeo</button><button class="btn" type="button" id="vp-cancelar" hidden>Cancelar edição</button></div>
+        </form>
+        <div class="table-wrap" style="margin-top:12px"><table>
+          <thead><tr><th>Vídeo</th><th>Anunciante</th><th>Tempo</th><th>Moedas</th><th>Visualizações</th><th>Situação</th><th></th></tr></thead>
+          <tbody id="vp-body"></tbody></table></div>
       </div>
     </div>
 
@@ -2559,7 +2576,41 @@ const fmtDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString(
 const isoDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) : '');
 const okAdImg = src => /^(\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|https:\/\/)/.test(src || '');
 
+// Vídeos patrocinados (moedas da Loja de cosméticos)
+let VPS = [];
+function renderVideosPat() {
+  $('#vp-body').innerHTML = VPS.length ? VPS.map(v => `<tr>
+    <td><b>${esc(v.titulo)}</b><br><a class="hint" style="margin:0" href="${esc(v.url)}" target="_blank" rel="noopener">abrir vídeo</a></td><td>${esc(v.anunciante)}</td>
+    <td class="num">${v.duracao_s} s</td><td class="num">${v.moedas}</td><td class="num">${v.visualizacoes}</td>
+    <td>${v.ativo ? '<span class="badge b-active">No ar</span>' : '<span class="badge b-pending">Pausado</span>'}</td>
+    <td class="num"><button class="btn small" type="button" data-vp-editar="${v.id}">Editar</button> <button class="btn small danger" type="button" data-vp-excluir="${v.id}">Excluir</button></td></tr>`).join('')
+    : '<tr><td colspan="7" class="hint">Nenhum vídeo cadastrado.</td></tr>';
+}
+async function loadVideosPat() { VPS = await api('/api/admin/videos-patrocinados'); renderVideosPat(); }
+function limparVp() { const f = $('#vp-form'); f.reset(); f.id.value = ''; $('#vp-salvar').textContent = 'Adicionar vídeo'; $('#vp-cancelar').hidden = true; }
+$('#vp-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, d = Object.fromEntries(new FormData(f));
+  try {
+    VPS = await api(d.id ? `/api/admin/videos-patrocinados/${d.id}` : '/api/admin/videos-patrocinados', { method: d.id ? 'PUT' : 'POST', body: d });
+    renderVideosPat(); limparVp(); globalMsg('Vídeo salvo.');
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#vp-cancelar').addEventListener('click', limparVp);
+$('#vp-body').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-vp-editar]'), ex = e.target.closest('[data-vp-excluir]');
+  if (ed) {
+    const v = VPS.find(x => x.id === Number(ed.dataset.vpEditar)), f = $('#vp-form');
+    for (const k of ['id', 'titulo', 'anunciante', 'url', 'duracao_s', 'moedas', 'ativo']) f[k].value = v[k];
+    $('#vp-salvar').textContent = 'Salvar alterações'; $('#vp-cancelar').hidden = false; f.scrollIntoView({ block: 'center' });
+  } else if (ex) {
+    if (!await OfertouUI.confirmar('Excluir este vídeo patrocinado?')) return;
+    try { VPS = await api(`/api/admin/videos-patrocinados/${ex.dataset.vpExcluir}`, { method: 'DELETE' }); renderVideosPat(); } catch (err) { globalMsg(err.message, false); }
+  }
+});
+
 async function loadAds() {
+  loadVideosPat().catch(() => {});
   ADS = await api('/api/admin/publicidade');
   $('#leads-badge').textContent = ADS.novos;
   $('#leads-badge').classList.toggle('hidden', !ADS.novos);

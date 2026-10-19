@@ -294,6 +294,7 @@ function montar(perfil, ctx, { proprio = false, admin = false, visitante = null 
     vitrine: vitrine.map(id => av.lista.find(c => c.id === id)).filter(Boolean),
     conquistas: { total: av.lista.length, obtidas: obtidas.length, familias },
     numeros: numerosVisiveis(av.metricas, av.papel),
+    ...require('./cosmeticos').emUso(ctx.dono, ctx.tipo === 'admin'), // efeito de perfil e de nome
     proprio, admin_vendo: admin && !proprio,
   };
   if (proprio || admin) {
@@ -337,6 +338,7 @@ function meu(dono) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
   ganharMolduras(dono); // temporada e datas comemorativas: usar o site no período dá a moldura
+  require('./cosmeticos').registrarPresenca(dono); // missões de entrar no site
   return montar(garantir(ctx), ctx, { proprio: true, admin: dono === 'admin', visitante: dono });
 }
 
@@ -515,10 +517,9 @@ function visivel(ctx) {
 }
 
 // ── Loja de cosméticos ───────────────────────────────────────────────────────
-function moedasDe(dono) {
-  const gasto = db.get('SELECT COALESCE(SUM(preco), 0) g FROM cosmeticos_compras WHERE dono = ?', dono).g;
-  return Math.max(0, xpDe(dono) - gasto);
-}
+// Moedas: XP + ganhos de missões e vídeos − gastos (ver cosmeticos.js)
+const moedasDe = dono => require('./cosmeticos').saldo(dono);
+const nomeMoldura = id => MOLDURAS.find(m => m.id === id)?.nome || null;
 function lojaCosmeticos(dono) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
@@ -527,13 +528,14 @@ function lojaCosmeticos(dono) {
   const admin = ctx.tipo === 'admin';
   return {
     moedas: moedasDe(dono), xp: xpDe(dono), nome: perfil.nome, avatar: perfil.avatar || null, cor: perfil.cor, moldura: perfil.moldura || 'nenhuma',
-    itens: MOLDURAS.filter(mo => mo.animada).map(mo => ({ id: mo.id, nome: mo.nome, desc: mo.desc, preco: mo.preco, tipo: 'moldura',
-      possui: admin || tem.has(mo.id), equipada: perfil.moldura === mo.id })),
+    itens: [...MOLDURAS.filter(mo => mo.animada).map(mo => ({ id: mo.id, nome: mo.nome, desc: mo.desc, preco: mo.preco, tipo: 'moldura',
+      possui: admin || tem.has(mo.id), equipada: perfil.moldura === mo.id })), ...require('./cosmeticos').itensDe(dono, admin)],
   };
 }
 function comprarCosmetico(dono, itemId) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
+  if (require('./cosmeticos').comprar(dono, itemId, ctx.tipo === 'admin')) return lojaCosmeticos(dono); // efeito de perfil ou de nome
   const mo = MOLDURAS.find(m => m.id === itemId && m.animada);
   if (!mo) throw fail('Item não encontrado.', 404);
   if (ctx.tipo === 'admin' || molduraGanhas(dono).has(mo.id)) throw fail('Você já tem esta moldura.');
@@ -545,9 +547,12 @@ function comprarCosmetico(dono, itemId) {
   });
   return lojaCosmeticos(dono);
 }
-function equiparMoldura(dono, itemId) {
+function equiparMoldura(dono, itemId, usar = true) {
   const ctx = contexto(dono);
   if (!ctx) throw fail('Perfil não encontrado.', 404);
+  garantir(ctx);
+  if (require('./cosmeticos').equipar(dono, itemId, ctx.tipo === 'admin', usar)) return lojaCosmeticos(dono); // efeito de perfil ou de nome
+  if (!usar) { db.run(`UPDATE perfis SET moldura = 'nenhuma' WHERE dono = ? AND moldura = ?`, dono, itemId); return lojaCosmeticos(dono); }
   const mo = MOLDURAS.find(m => m.id === itemId);
   const perfil = garantir(ctx);
   const pl = plano(ctx);
@@ -654,5 +659,5 @@ function garantirPerfil(dono) {
 
 module.exports = {
   garantirPerfil, donoDe, contexto, meu, porSlug, salvar, salvarImagem, removerImagem, incrementar,
-  registrarVenda, resumoAdmin, moderar, excluir, limitesDe, listar, mini, seguir, lojaCosmeticos, comprarCosmetico, equiparMoldura, moedasDe,
+  registrarVenda, resumoAdmin, moderar, excluir, limitesDe, listar, mini, seguir, lojaCosmeticos, comprarCosmetico, equiparMoldura, moedasDe, xpDe, nomeMoldura,
 };

@@ -11,12 +11,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261150">
-<script src="/js/app-nativo.js?v=20261150"></script>
-<script src="/js/dialogo.js?v=20261150"></script>
-<script src="/js/voltar.js?v=20261150" data-padrao="/perfil" defer></script>
-<script src="/js/rodape-legal.js?v=20261150" defer></script>
-<script src="/js/cookies.js?v=20261150"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261154">
+<script src="/js/app-nativo.js?v=20261154"></script>
+<script src="/js/dialogo.js?v=20261154"></script>
+<script src="/js/voltar.js?v=20261154" data-padrao="/perfil" defer></script>
+<script src="/js/rodape-legal.js?v=20261154" defer></script>
+<script src="/js/cookies.js?v=20261154"></script>
 </head>
 <body class="pf-body">
 <header class="site-header">
@@ -36,15 +36,27 @@
   <section class="cos-topo">
     <div>
       <h1>Loja de cosméticos</h1>
-      <p class="muted">Molduras animadas para a sua foto. Compre com <b>moedas</b>: cada XP que você ganha com as conquistas vira uma moeda. Gastar moedas não tira o seu nível.</p>
+      <p class="muted">Molduras animadas, efeitos de perfil e efeitos de nome. Compre com <b>moedas</b>: cada XP das conquistas vira uma moeda, e você ganha mais cumprindo <b>missões</b> e assistindo a <b>vídeos patrocinados</b>. Gastar moedas não tira o seu nível.</p>
     </div>
     <div class="cos-saldo" aria-live="polite"><span class="cos-moeda" aria-hidden="true"></span><div><b id="cos-moedas">—</b><small>moedas</small></div></div>
   </section>
-  <div class="cos-grade" id="cos-grade"><p class="muted">Carregando…</p></div>
-  <p class="cos-nota muted">Como ganhar moedas: use o site e desbloqueie conquistas (veja em <a href="/perfil">Meu perfil → Conquistas</a>). As molduras compradas aparecem também em <b>Editar perfil → Moldura da foto</b>.</p>
+  <nav class="cos-abas" role="tablist" aria-label="Seções da loja">
+    <button type="button" role="tab" data-aba="moldura" aria-selected="true">🖼️ Molduras</button>
+    <button type="button" role="tab" data-aba="efeito" aria-selected="false">✨ Efeitos de perfil</button>
+    <button type="button" role="tab" data-aba="nome" aria-selected="false">🔤 Efeitos de nome</button>
+    <button type="button" role="tab" data-aba="ganhar" aria-selected="false" class="cos-aba-ganhar">🪙 Ganhar moedas</button>
+  </nav>
+  <div class="cos-grade" id="cos-grade" role="tabpanel"><p class="muted">Carregando…</p></div>
+  <div id="cos-ganhar" role="tabpanel" hidden></div>
 </main>
 
+<dialog class="cos-video-dlg" id="cos-video-dlg" aria-labelledby="cos-video-tit">
+  <div class="cos-video-topo"><span class="cos-patrocinado">Patrocinado</span><b id="cos-video-tit"></b><button type="button" class="cos-fechar" data-fechar aria-label="Fechar">×</button></div>
+  <div class="cos-video-quadro" id="cos-video-quadro"></div>
+  <div class="cos-video-rodape"><span id="cos-video-tempo" class="muted"></span><button type="button" class="btn btn-primary" id="cos-video-resgatar" disabled>Resgatar moedas</button></div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/js/cosmeticos.js?v=20261150" defer></script>
+<script src="/js/cosmeticos.js?v=20261154" defer></script>
 </body>
 </html>

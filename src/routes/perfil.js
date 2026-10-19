@@ -36,6 +36,26 @@ router.post('/api/cosmeticos/:id/comprar', exigirDono, (req, res) => {
 router.post('/api/cosmeticos/:id/equipar', exigirDono, (req, res) => {
   try { res.json(perfis.equiparMoldura(req.dono, String(req.params.id))); } catch (err) { sendError(res, err); }
 });
+router.post('/api/cosmeticos/:id/tirar', exigirDono, (req, res) => {
+  try { res.json(perfis.equiparMoldura(req.dono, String(req.params.id), false)); } catch (err) { sendError(res, err); }
+});
+// Ganhar moedas: missões e vídeos patrocinados
+const cosmeticos = require('../cosmeticos');
+router.get('/api/moedas', exigirDono, (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try { res.json(cosmeticos.painel(req.dono)); } catch (err) { sendError(res, err); }
+});
+router.post('/api/moedas/missoes/:id/resgatar', exigirDono, (req, res) => {
+  if (compraLimiter.hit(req.dono)) return res.status(429).json({ error: 'Muitas tentativas. Aguarde um pouco.' });
+  try { res.json(cosmeticos.resgatarMissao(req.dono, String(req.params.id))); } catch (err) { sendError(res, err); }
+});
+router.post('/api/moedas/videos/:id/iniciar', exigirDono, (req, res) => {
+  try { res.json(cosmeticos.iniciarVideo(req.dono, req.params.id)); } catch (err) { sendError(res, err); }
+});
+router.post('/api/moedas/videos/resgatar', exigirDono, (req, res) => {
+  if (compraLimiter.hit(req.dono)) return res.status(429).json({ error: 'Muitas tentativas. Aguarde um pouco.' });
+  try { res.json(cosmeticos.resgatarVideo(req.dono, req.body?.token)); } catch (err) { sendError(res, err); }
+});
 
 router.get('/api/perfil', exigirDono, (req, res) => {
   try { res.json(perfis.meu(req.dono)); } catch (err) { sendError(res, err); }

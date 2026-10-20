@@ -619,3 +619,26 @@ Em **Painel → Conteúdo → Avisos na entrada** você cria janelas que aparece
 **Editar** o texto, a imagem, o cupom ou o botão faz o aviso aparecer de novo para quem já tinha visto. Só mudar datas, ordem, público ou pausar não faz.
 
 **Números:** a lista mostra quantas pessoas viram e quantas clicaram (no botão ou em Copiar), contando uma vez por pessoa por dia.
+
+## 35. Acessos suspeitos (varredura de IP)
+
+Em **Painel → Pessoas → Acessos suspeitos** o site procura contas usadas em **lugares diferentes do Brasil em pouco tempo**: sinal de login emprestado, compartilhado ou revendido (proibido pelos Termos do Parceiro, item 6-A) ou de conta invadida.
+
+**Como funciona:** o site já guarda os registros de acesso (IP, data e hora; um por pessoa e IP a cada 30 minutos de uso e a cada login, por 6 meses — Marco Civil). A varredura descobre a cidade aproximada de cada IP numa base que fica **no próprio servidor** (nenhum IP é enviado para fora) e compara acessos seguidos da mesma conta.
+
+**Filtros:** período (24 h, 7, 30 ou 90 dias), distância mínima (150 a 1.000 km) e tempo máximo entre os dois acessos (1 a 24 h).
+
+**Resultado, por conta:** risco, ocorrências, quantos IPs, os lugares (com quantas vezes cada um), um exemplo ("São Paulo → Rio, 360 km em 30 min") e o último acesso. Botões **Histórico** (todos os acessos da conta com o lugar de cada um) e **Ficha** (a ficha do usuário, para suspender ou banir).
+
+**Risco:**
+- **Alto:** "viagem impossível" (lugares distantes num tempo menor do que um avião levaria, ou outro país) repetida, ou **idas e voltas** entre os mesmos lugares (duas pessoas usando a conta ao mesmo tempo).
+- **Médio:** uma viagem impossível, uma ida e volta ou duas ocorrências.
+- **Baixo:** uma ocorrência isolada.
+
+Contas de risco alto nas últimas 24 h aparecem em **Precisa da sua atenção** no Painel e no número vermelho do menu.
+
+**Cuidado antes de punir:** internet de celular (4G/5G) e algumas operadoras aparecem na cidade da central da operadora, e VPN muda o lugar. Veja o histórico e, se for o caso, fale com a pessoa antes.
+
+**Consultar um IP:** mostra a cidade do IP e todas as contas que o usaram.
+
+**Base de localização:** IP to City Lite da DB-IP (gratuita, CC BY 4.0, crédito "IP Geolocation by DB-IP" no painel), em `data/geoip.db`. Atualize uma vez por mês em **Atualizar a base agora** ou com `npm run geoip` no servidor (baixa ~86 MB e leva menos de um minuto). Na VPS, rode `npm run geoip` uma vez depois de instalar.

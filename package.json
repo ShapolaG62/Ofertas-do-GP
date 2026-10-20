@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node server.js",
     "mine": "node scripts/mine-once.js",
+    "geoip": "node src/geoip.js",
     "start:vps": "pm2 start ecosystem.config.js",
     "stop:vps": "pm2 stop ofertas-do-gp",
     "logs": "pm2 logs ofertas-do-gp",

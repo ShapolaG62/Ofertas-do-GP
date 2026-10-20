@@ -162,6 +162,13 @@
   .pl-checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 10px; }
   .pl-checks .check { font-weight: 600; font-size: 14px; }
   #pl-form textarea { font-family: inherit; }
+  .nota-ac { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2, #1b211d); font-size: 13.5px; line-height: 1.5; color: var(--muted, #a3ada7); }
+  .nota-ac b { color: var(--text, #eef3f0); }
+  .ac-risco { font-weight: 800; }
+  .ac-alta { color: var(--red); } .ac-media { color: var(--yellow); } .ac-baixa { color: var(--muted, #a3ada7); }
+  .ac-lugares { display: flex; flex-wrap: wrap; gap: 4px; max-width: 280px; }
+  .ac-lugares span { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line, #262d28); white-space: nowrap; }
+  .ac-ex { font-size: 12.5px; line-height: 1.45; min-width: 220px; }
   #av-form textarea { min-height: 100px; font-family: inherit; font-size: 14.5px; }
   .av-imagem { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
   .av-imagem img { width: 160px; aspect-ratio: 1200 / 630; object-fit: cover; border-radius: 10px; border: 1px solid var(--line, #262d28); }
@@ -256,11 +263,11 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261177"></script>
-<script src="/js/avisos-entrada.js?v=20261177"></script>
-<script src="/js/capi-minerando.js?v=20261177" defer></script>
-<script src="/js/cadastro-auto.js?v=20261177" defer></script>
-<script src="/js/seletor.js?v=20261177" defer></script>
+<script src="/js/dialogo.js?v=20261179"></script>
+<script src="/js/avisos-entrada.js?v=20261179"></script>
+<script src="/js/capi-minerando.js?v=20261179" defer></script>
+<script src="/js/cadastro-auto.js?v=20261179" defer></script>
+<script src="/js/seletor.js?v=20261179" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -317,6 +324,7 @@
         <button class="tab" data-tab="users"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg><span>Usuários</span><span class="count-badge hidden" id="pending-badge">0</span></button>
         <button class="tab" data-tab="atendimento"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg><span>Lojas e pedidos</span></button>
         <button class="tab" data-tab="clientes"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h3"/></svg><span>Clientes da ferramenta</span></button>
+        <button class="tab" data-tab="acessos"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Acessos suspeitos</span><span class="count-badge hidden" id="acessos-badge">0</span></button>
         <p class="side-grupo">Área de trabalho (equipe)</p>
         <button class="tab" data-tab="sac"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19a3 3 0 0 1-3 3h-3"/></svg><span>SAC (fila de atendimento)</span><span class="count-badge hidden" id="sac-badge">0</span></button>
         <button class="tab" data-tab="chatmod"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M9 8l6 5M15 8l-6 5"/></svg><span>Moderação do chat</span><span class="count-badge hidden" id="chatmod-badge">0</span></button>
@@ -1104,6 +1112,45 @@
       </div>
     </div>
 
+    <!-- ACESSOS SUSPEITOS (varredura de IP) -->
+    <div class="tab-body hidden" data-body="acessos">
+      <div class="panel">
+        <h2>Varredura de IP</h2>
+        <p class="hint">Procura contas usadas em <b>lugares diferentes do Brasil em pouco tempo</b> (login emprestado, compartilhado, revendido ou conta invadida). Usa os registros de acesso do site e a localização aproximada de cada IP. Nenhum IP é enviado para fora do servidor.</p>
+        <form id="ac-form" class="grid" style="align-items:end">
+          <label class="field">Período <select name="horas"><option value="24">Últimas 24 horas</option><option value="168" selected>Últimos 7 dias</option><option value="720">Últimos 30 dias</option><option value="2160">Últimos 90 dias</option></select></label>
+          <label class="field">Distância mínima <select name="km"><option value="150">150 km</option><option value="300" selected>300 km</option><option value="500">500 km</option><option value="1000">1.000 km</option></select></label>
+          <label class="field">Em até <select name="max_horas"><option value="1">1 hora</option><option value="3" selected>3 horas</option><option value="6">6 horas</option><option value="12">12 horas</option><option value="24">24 horas</option></select></label>
+          <div class="actions" style="margin:0"><button class="btn primary" type="submit">Fazer varredura</button></div>
+        </form>
+        <p class="hint" id="ac-geo"></p>
+        <div id="ac-resumo"></div>
+        <div class="table-wrap" style="margin-top:10px"><table>
+          <thead><tr><th>Conta</th><th>Risco</th><th>Ocorrências</th><th>Lugares</th><th>Exemplo</th><th>Último acesso</th><th></th></tr></thead>
+          <tbody id="ac-body"><tr><td colspan="7" class="hint">Clique em <b>Fazer varredura</b>.</td></tr></tbody></table></div>
+        <div class="nota-ac"><b>Antes de punir:</b> internet de celular (4G/5G) e algumas operadoras aparecem na cidade da central da operadora, e VPNs mudam o lugar. Desconfie quando há <b>várias ocorrências</b>, <b>idas e voltas</b> entre os mesmos lugares ou <b>viagem impossível</b> (mais rápido que um avião). Veja o histórico da conta e, se for o caso, fale com a pessoa antes.</div>
+      </div>
+      <div class="panel hidden" id="ac-hist">
+        <h2 id="ac-hist-tit">Histórico de acessos</h2>
+        <p class="hint" id="ac-hist-sub"></p>
+        <div class="table-wrap"><table><thead><tr><th>Quando</th><th>Lugar</th><th>IP</th><th>Evento</th><th>Navegador</th></tr></thead><tbody id="ac-hist-body"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <h2>Consultar um IP</h2>
+        <form id="ac-ip-form" class="grid" style="align-items:end">
+          <label class="field">IP <input type="text" name="ip" placeholder="Ex.: 177.12.34.56" maxlength="64" required></label>
+          <div class="actions" style="margin:0"><button class="btn" type="submit">Consultar</button></div>
+        </form>
+        <div id="ac-ip-res"></div>
+      </div>
+      <div class="panel">
+        <h2>Base de localização</h2>
+        <p class="hint" id="ac-base"></p>
+        <div class="actions"><button class="btn" type="button" id="ac-base-atualizar">Atualizar a base agora</button></div>
+        <p class="hint">A base é a <b>IP to City Lite</b> da <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a> (gratuita, licença CC BY 4.0), atualizada uma vez por mês. Atualize por aqui ou pelo comando <code>npm run geoip</code> no servidor (baixa cerca de 86 MB e leva alguns minutos). <a href="https://db-ip.com" target="_blank" rel="noopener">IP Geolocation by DB-IP</a>.</p>
+      </div>
+    </div>
+
     <!-- AVISOS NA ENTRADA -->
     <div class="tab-body hidden" data-body="avisos">
       <div class="panel">
@@ -1426,6 +1473,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'equipe' && !$('#eq-quadro').src) $('#eq-quadro').src = '/equipe?embed=1';
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
   if (t.dataset.tab === 'ads') loadAds();
+  if (t.dataset.tab === 'acessos') { loadAcessosBase().catch(() => {}); $('#ac-form').requestSubmit(); }
   if (t.dataset.tab === 'avisos') loadAvisos().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'social') loadSocialLog();
   if (t.dataset.tab === 'clientes') loadClientes();
@@ -1474,6 +1522,7 @@ async function loadDashboard() {
   const d = DASH, k = d.kpis, p = d.pendencias, m = d.mineracao;
   $('#sac-badge').textContent = p.sac_fila; $('#sac-badge').classList.toggle('hidden', !p.sac_fila);
   $('#chatmod-badge').textContent = p.xingamentos; $('#chatmod-badge').classList.toggle('hidden', !p.xingamentos);
+  $('#acessos-badge').textContent = p.acessos_suspeitos || 0; $('#acessos-badge').classList.toggle('hidden', !p.acessos_suspeitos);
   const soma7 = d.serie.slice(-7).reduce((s, x) => s + x.cliques, 0);
   const serie0 = Object.keys(DB_SERIES).find(c => d.serie.some(x => x[c])) || 'cliques'; // abre numa série com dados
   // O que precisa de atenção (cada item abre a página certa)
@@ -1482,6 +1531,7 @@ async function loadDashboard() {
   add(p.cartao_sem_chave, '<b>Cartões salvos desligados:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro');
   add(p.sac_fila, `<b>${p.sac_fila} chamado(s) no SAC</b> esperando atendimento`, 'sac', true, 'sino');
   add(p.xingamentos, `<b>${p.xingamentos} conversa(s) com xingamentos</b> para revisar`, 'chatmod', true);
+  add(p.acessos_suspeitos, `<b>${p.acessos_suspeitos} conta(s) acessada(s) de lugares distantes</b> em pouco tempo (últimas 24 h)`, 'acessos', true);
   add(p.cadastros, `<b>${p.cadastros} cadastro(s) de empresa</b> esperando aprovação`, 'users', true);
   add(p.assinaturas, `<b>${p.assinaturas} pedido(s) de assinatura</b> para confirmar o pagamento`, 'planos', true, 'dinheiro');
   add(p.leads, `<b>${p.leads} empresa(s)</b> querem anunciar no site`, 'ads', false, 'sino');
@@ -2630,6 +2680,72 @@ let ADS = { espacos: {}, campanhas: [], pedidos: [], novos: 0 };
 const fmtDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '—');
 const isoDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) : '');
 const okAdImg = src => /^(\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|https:\/\/)/.test(src || '');
+
+// Acessos suspeitos (varredura de IP)
+const AC_RISCO = { alta: 'Alto', media: 'Médio', baixa: 'Baixo' };
+const fmtHora = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' }) : '—');
+const acTempo = m => (m < 60 ? `${m} min` : `${(m / 60).toFixed(1).replace('.', ',')} h`);
+let acGeoTimer = null;
+async function loadAcessosBase() {
+  const g = await api('/api/admin/acessos/geoip');
+  $('#ac-base').innerHTML = g.atualizando ? 'Baixando e preparando a base… (alguns minutos; pode continuar usando o painel)'
+    : g.pronta ? `Base <b>${esc(g.versao)}</b> · ${Number(g.faixas).toLocaleString('pt-BR')} faixas · atualizada em ${fmtHora(g.atualizada_em.replace('T', ' ').slice(0, 19))}`
+    : '<b>Base ainda não baixada.</b> Sem ela, a varredura não sabe a cidade dos IPs. Clique em "Atualizar a base agora".';
+  if (g.erro) $('#ac-base').innerHTML += `<br><span style="color:var(--red)">Última tentativa falhou: ${esc(g.erro)}</span>`;
+  $('#ac-base-atualizar').disabled = g.atualizando;
+  clearTimeout(acGeoTimer);
+  if (g.atualizando) acGeoTimer = setTimeout(() => loadAcessosBase().catch(() => {}), 5000);
+  return g;
+}
+$('#ac-base-atualizar').addEventListener('click', async () => {
+  try { await api('/api/admin/acessos/geoip/atualizar', { method: 'POST' }); loadAcessosBase(); } catch (err) { globalMsg(err.message, false); }
+});
+const acConta = c => `<b>${esc(c.nome)}</b>${c.email ? `<br><span class="hint" style="margin:0">${esc(c.email)}</span>` : ''}<br><span class="hint" style="margin:0">${c.cliente ? 'Cliente da ferramenta' : c.tipo === 'admin' ? 'Login do painel' : esc(c.tipo || '')}</span>`;
+$('#ac-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = new URLSearchParams(new FormData(e.target));
+  $('#ac-body').innerHTML = '<tr><td colspan="7" class="hint">Analisando os acessos…</td></tr>';
+  try {
+    const d = await api(`/api/admin/acessos/varredura?${q}`);
+    $('#ac-geo').innerHTML = d.geo.pronta ? '' : '<b style="color:var(--yellow)">A base de localização ainda não foi baixada (veja embaixo): sem ela, nenhuma cidade é identificada.</b>';
+    const altas = d.contas.filter(c => c.gravidade === 'alta').length;
+    $('#acessos-badge').textContent = altas; $('#acessos-badge').classList.toggle('hidden', !altas);
+    $('#ac-resumo').innerHTML = `<p class="hint">${d.analisados.toLocaleString('pt-BR')} registros analisados${d.limite ? ' (limite atingido: escolha um período menor)' : ''} · <b>${d.contas.length}</b> conta(s) com acessos distantes · <b>${altas}</b> de risco alto.</p>`;
+    $('#ac-body').innerHTML = d.contas.length ? d.contas.map(c => {
+      const ex = c.exemplos[0];
+      return `<tr>
+        <td>${acConta(c)}</td>
+        <td><span class="ac-risco ac-${c.gravidade}">${AC_RISCO[c.gravidade]}</span>${c.velocidade_max >= 900 ? '<br><span class="hint" style="margin:0">viagem impossível</span>' : ''}${c.alternancias ? `<br><span class="hint" style="margin:0">${c.alternancias} ida(s) e volta(s)</span>` : ''}</td>
+        <td class="num">${c.ocorrencias}<br><span class="hint" style="margin:0">${c.ips} IPs</span></td>
+        <td><div class="ac-lugares">${c.lugares.slice(0, 6).map(l => `<span>${esc(l.lugar)} · ${l.vezes}</span>`).join('')}</div></td>
+        <td class="ac-ex">${fmtHora(ex.de.em)} · ${esc(ex.de.texto)}<br>→ ${fmtHora(ex.para.em)} · ${esc(ex.para.texto)}<br><span class="hint" style="margin:0">${ex.km != null ? `${ex.km.toLocaleString('pt-BR')} km em ${acTempo(ex.minutos)}` : `outro país em ${acTempo(ex.minutos)}`}</span></td>
+        <td>${fmtHora(c.ultimo_acesso)}</td>
+        <td class="num" style="white-space:nowrap"><button class="btn small" type="button" data-ac-hist="${esc(c.dono)}">Histórico</button>
+          ${c.id && !c.cliente ? `<button class="btn small" type="button" data-ac-ficha="${c.id}">Ficha</button>` : ''}</td></tr>`;
+    }).join('') : '<tr><td colspan="7" class="hint">Nenhuma conta com acessos distantes nesse período.</td></tr>';
+  } catch (err) { $('#ac-body').innerHTML = `<tr><td colspan="7" class="hint">${esc(err.message)}</td></tr>`; }
+});
+$('#ac-body').addEventListener('click', async e => {
+  const h = e.target.closest('[data-ac-hist]'), f = e.target.closest('[data-ac-ficha]');
+  if (f) return openUser(Number(f.dataset.acFicha));
+  if (!h) return;
+  try {
+    const d = await api(`/api/admin/acessos/historico?dono=${encodeURIComponent(h.dataset.acHist)}&horas=${$('#ac-form').horas.value}`);
+    $('#ac-hist').classList.remove('hidden');
+    $('#ac-hist-tit').textContent = `Histórico de acessos — ${d.nome}`;
+    $('#ac-hist-sub').textContent = `${d.acessos.length} registro(s), do mais novo para o mais antigo. Cada linha é um IP a cada 30 minutos de uso, ou uma entrada na conta.`;
+    $('#ac-hist-body').innerHTML = d.acessos.map(a => `<tr><td>${fmtHora(a.em)}</td><td>${esc(a.texto)}</td><td><code>${esc(a.ip)}</code></td><td>${a.evento === 'login' ? 'Entrou na conta' : 'Acesso'}</td><td class="hint" style="margin:0;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(a.navegador || '')}">${esc(a.navegador || '—')}</td></tr>`).join('') || '<tr><td colspan="5" class="hint">Sem registros.</td></tr>';
+    $('#ac-hist').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#ac-ip-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    const d = await api(`/api/admin/acessos/ip?ip=${encodeURIComponent(e.target.ip.value.trim())}`);
+    $('#ac-ip-res').innerHTML = `<p><b>${esc(d.ip)}</b>: ${esc(d.local?.texto || 'local desconhecido (base sem esse IP ou ainda não baixada)')}</p>`
+      + (d.contas.length ? `<div class="table-wrap"><table><thead><tr><th>Conta que usou este IP</th><th>Registros</th><th>Último</th></tr></thead><tbody>${d.contas.map(c => `<tr><td>${acConta(c)}</td><td class="num">${c.n}</td><td>${fmtHora(c.ultimo)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">Nenhuma conta usou este IP nos últimos 6 meses.</p>');
+  } catch (err) { globalMsg(err.message, false); }
+});
 
 // Avisos na entrada (janelas da tela de ofertas)
 let AV = null;

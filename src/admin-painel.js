@@ -67,6 +67,8 @@ function dashboard() {
     cartao_sem_chave: Boolean(require('./settings').get('mp_access_token')) && !String(require('./settings').get('mp_public_key') || '').trim(),
     sac_fila: um(`SELECT COUNT(*) n FROM sac_chamados WHERE status = 'fila'`).n || 0,
     xingamentos: (() => { try { return require('./moderacao-chat').novos(); } catch { return 0; } })(),
+    // Contas de risco alto na varredura de IP das últimas 24 h (lugares distantes em pouco tempo)
+    acessos_suspeitos: (() => { try { return require('./varredura-ip').varrer({ horas: 24 }).contas.filter(c => c.gravidade === 'alta').length; } catch { return 0; } })(),
     clientes_vencendo: um(`SELECT COUNT(*) n FROM clientes WHERE status = 'ativo' AND validade >= date('now') AND validade <= date('now', '+5 days')`).n || 0,
   };
 

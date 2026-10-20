@@ -262,6 +262,26 @@ router.get('/api/admin/atendimento', (req, res) => {
       app_ok: Boolean(String(require('../settings').get('mp_mkt_client_id') || '').trim() && require('../settings').get('mp_mkt_client_secret')) } });
 });
 // Vídeos patrocinados (as pessoas assistem e ganham moedas para a Loja de cosméticos)
+// ── Acessos suspeitos (varredura de IP) ──
+router.get('/api/admin/acessos/varredura', (req, res) => {
+  res.json(require('../varredura-ip').varrer({ horas: req.query.horas, km: req.query.km, maxHoras: req.query.max_horas }));
+});
+router.get('/api/admin/acessos/historico', (req, res) => res.json(require('../varredura-ip').historico(req.query.dono, req.query.horas)));
+router.get('/api/admin/acessos/ip', (req, res) => {
+  const ip = String(req.query.ip || '').trim().slice(0, 64);
+  const geoip = require('../geoip');
+  res.json({ ip, local: geoip.localizar(ip), contas: db.all('SELECT dono, COUNT(*) AS n, MAX(created_at) AS ultimo FROM registros_acesso WHERE ip = ? AND dono IS NOT NULL GROUP BY dono ORDER BY ultimo DESC LIMIT 50', ip)
+    .map(r => ({ ...r, ...require('../varredura-ip').quem(r.dono) })) });
+});
+router.get('/api/admin/acessos/geoip', (req, res) => res.json({ ...require('../geoip').info(), atualizando: require('../geoip').atualizandoAgora(), erro: geoErro }));
+let geoErro = null;
+router.post('/api/admin/acessos/geoip/atualizar', (req, res) => {
+  const geoip = require('../geoip');
+  geoErro = null;
+  geoip.atualizar().catch(err => { geoErro = err.message; console.error('[GEOIP]', err.message); });
+  res.json({ ok: true, atualizando: true });
+});
+
 // ── Avisos na entrada (janelas na tela de ofertas) ──
 const avisos = require('../avisos');
 const respostaAvisos = () => ({ avisos: avisos.listar(), tipos: avisos.TIPOS, publicos: avisos.PUBLICOS, frequencias: avisos.FREQUENCIAS, max: avisos.MAX_ATIVOS });

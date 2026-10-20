@@ -162,6 +162,12 @@
   .pl-checks { display: flex; flex-wrap: wrap; gap: 10px 18px; margin-top: 10px; }
   .pl-checks .check { font-weight: 600; font-size: 14px; }
   #pl-form textarea { font-family: inherit; }
+  #av-form textarea { min-height: 100px; font-family: inherit; font-size: 14.5px; }
+  .av-imagem { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+  .av-imagem img { width: 160px; aspect-ratio: 1200 / 630; object-fit: cover; border-radius: 10px; border: 1px solid var(--line, #262d28); }
+  .av-linha { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+  .av-linha img { width: 56px; height: 34px; object-fit: cover; border-radius: 6px; flex: none; }
+  .av-linha code { font-size: 12px; }
   .tk-msgs { display: grid; gap: 6px; max-height: 60vh; overflow: auto; font-size: 13.5px; }
   .tk-msg { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
   .tk-msg.sis { background: transparent; border: 1px dashed var(--border-strong); color: var(--muted); }
@@ -250,10 +256,11 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261174"></script>
-<script src="/js/capi-minerando.js?v=20261174" defer></script>
-<script src="/js/cadastro-auto.js?v=20261174" defer></script>
-<script src="/js/seletor.js?v=20261174" defer></script>
+<script src="/js/dialogo.js?v=20261177"></script>
+<script src="/js/avisos-entrada.js?v=20261177"></script>
+<script src="/js/capi-minerando.js?v=20261177" defer></script>
+<script src="/js/cadastro-auto.js?v=20261177" defer></script>
+<script src="/js/seletor.js?v=20261177" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -305,6 +312,7 @@
         <button class="tab" data-tab="offers"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></svg><span>Ofertas</span></button>
         <button class="tab" data-tab="mining"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M4 20l9-9M15 3l6 6-3 1-4-4z"/></svg><span>Mineração</span></button>
         <button class="tab" data-tab="social"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.5M8.2 13.2l7.6 4.5"/></svg><span>Redes sociais</span></button>
+        <button class="tab" data-tab="avisos"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span>Avisos na entrada</span><span class="count-badge hidden" id="avisos-badge">0</span></button>
         <p class="side-grupo">Pessoas</p>
         <button class="tab" data-tab="users"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/></svg><span>Usuários</span><span class="count-badge hidden" id="pending-badge">0</span></button>
         <button class="tab" data-tab="atendimento"><svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg><span>Lojas e pedidos</span></button>
@@ -1096,6 +1104,62 @@
       </div>
     </div>
 
+    <!-- AVISOS NA ENTRADA -->
+    <div class="tab-body hidden" data-body="avisos">
+      <div class="panel">
+        <h2 id="av-titulo-form">Novo aviso</h2>
+        <p class="hint">Janelas que aparecem para quem abre a <b>tela de ofertas</b>: cupons, novidades, produtos ou avisos. Até <b id="av-max">5</b> avisos no ar aparecem em sequência, um de cada vez, na ordem escolhida. A pessoa fecha no X, no botão ou fora da janela.</p>
+        <form id="av-form">
+          <input type="hidden" name="id">
+          <div class="grid">
+            <label class="field">Tipo <select name="tipo" id="av-tipo"></select></label>
+            <label class="field">Título <input type="text" name="titulo" maxlength="80" placeholder="Ex.: 10% OFF em toda a loja" required></label>
+          </div>
+          <label class="field" style="margin-top:10px">Texto <textarea name="texto" rows="4" maxlength="600" placeholder="Escreva a mensagem. Pode pular linha."></textarea></label>
+          <div class="grid" style="margin-top:10px" id="av-cupom-linha">
+            <label class="field">Código do cupom <input type="text" name="cupom" maxlength="40" placeholder="Ex.: OFERTOU10" autocomplete="off"></label>
+          </div>
+          <div class="field" style="margin-top:10px">Imagem <span class="hint" style="margin:0">(opcional · JPG, PNG ou WEBP até 3 MB · aparece no topo da janela, ideal 1200×630)</span>
+            <div class="av-imagem">
+              <img id="av-img-previa" alt="" hidden>
+              <div class="actions" style="margin:0">
+                <button class="btn" type="button" id="av-img-enviar">Enviar imagem</button>
+                <button class="btn danger" type="button" id="av-img-tirar" hidden>Tirar imagem</button>
+              </div>
+              <input type="hidden" name="imagem">
+              <input type="file" id="av-img-arq" accept="image/jpeg,image/png,image/webp" hidden>
+            </div>
+          </div>
+          <div class="grid" style="margin-top:10px">
+            <label class="field">Texto do botão <input type="text" name="botao_texto" maxlength="30" placeholder="Ex.: Ver oferta"></label>
+            <label class="field">Link do botão <input type="text" name="link" maxlength="500" placeholder="https://… ou /loja/minha-loja"></label>
+          </div>
+          <div class="grid" style="margin-top:10px">
+            <label class="field">Quem vê <select name="publico" id="av-publico"></select></label>
+            <label class="field">Quantas vezes <select name="frequencia" id="av-freq"></select></label>
+            <label class="field">Ordem <input type="number" name="ordem" min="0" max="99" value="0"></label>
+          </div>
+          <div class="grid" style="margin-top:10px">
+            <label class="field">Começa em <input type="date" name="inicio"></label>
+            <label class="field">Termina em <input type="date" name="fim"></label>
+            <label class="field">Situação <select name="ativo"><option value="1">No ar</option><option value="0">Pausado</option></select></label>
+          </div>
+          <p class="hint">Sem datas, o aviso fica no ar até você pausar. "Uma vez por pessoa" volta a aparecer quando você edita o texto, a imagem, o cupom ou o botão.</p>
+          <div class="actions">
+            <button class="btn" type="button" id="av-previa">Ver prévia</button>
+            <button class="btn" type="button" id="av-cancelar" hidden>Cancelar edição</button>
+            <button class="btn primary" type="submit" id="av-salvar">Publicar aviso</button>
+          </div>
+        </form>
+      </div>
+      <div class="panel">
+        <h2>Avisos</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Aviso</th><th>Tipo</th><th>Quem vê</th><th>Período</th><th>Vezes</th><th>Vistos</th><th>Cliques</th><th>Situação</th><th></th></tr></thead>
+          <tbody id="av-body"></tbody></table></div>
+      </div>
+    </div>
+
     <!-- CONTA -->
     <div class="tab-body hidden" data-body="account">
       <div class="panel" style="max-width:480px">
@@ -1362,6 +1426,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'equipe' && !$('#eq-quadro').src) $('#eq-quadro').src = '/equipe?embed=1';
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
   if (t.dataset.tab === 'ads') loadAds();
+  if (t.dataset.tab === 'avisos') loadAvisos().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'social') loadSocialLog();
   if (t.dataset.tab === 'clientes') loadClientes();
   if (t.dataset.tab === 'ganhos') loadGanhos();
@@ -2565,6 +2630,97 @@ let ADS = { espacos: {}, campanhas: [], pedidos: [], novos: 0 };
 const fmtDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '—');
 const isoDay = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) : '');
 const okAdImg = src => /^(\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|https:\/\/)/.test(src || '');
+
+// Avisos na entrada (janelas da tela de ofertas)
+let AV = null;
+const AV_SIT = { no_ar: ['b-active', 'No ar'], agendado: ['b-pending', 'Agendado'], pausado: ['b-pending', 'Pausado'], encerrado: ['b-rejected', 'Encerrado'] };
+function aplicarAvisos(d) {
+  AV = d;
+  const f = $('#av-form');
+  if (!$('#av-tipo').options.length) {
+    const opts = o => Object.entries(o).map(([v, n]) => `<option value="${v}">${esc(n)}</option>`).join('');
+    $('#av-tipo').innerHTML = opts(d.tipos); $('#av-publico').innerHTML = opts(d.publicos); $('#av-freq').innerHTML = opts(d.frequencias);
+    f.tipo.value = 'novidade'; avTipo();
+  }
+  $('#av-max').textContent = d.max;
+  const noAr = d.avisos.filter(a => a.situacao === 'no_ar').length;
+  $('#avisos-badge').textContent = noAr; $('#avisos-badge').classList.toggle('hidden', !noAr);
+  const periodo = a => (a.inicio || a.fim ? `${a.inicio ? fmtDay(a.inicio) : 'já'} → ${a.fim ? fmtDay(a.fim) : 'sem fim'}` : 'Sempre');
+  $('#av-body').innerHTML = d.avisos.length ? d.avisos.map(a => {
+    const [cls, nome] = AV_SIT[a.situacao] || AV_SIT.pausado;
+    return `<tr>
+      <td><div class="av-linha">${a.imagem ? `<img src="${esc(a.imagem)}" alt="">` : ''}<span><b>${esc(a.titulo)}</b>${a.cupom ? `<br><code>${esc(a.cupom)}</code>` : ''}</span></div></td>
+      <td>${esc(d.tipos[a.tipo])}</td><td>${esc(d.publicos[a.publico])}</td><td>${periodo(a)}</td><td>${esc(d.frequencias[a.frequencia])}</td>
+      <td class="num">${a.visualizacoes}</td><td class="num">${a.cliques}</td>
+      <td><span class="badge ${cls}">${nome}</span></td>
+      <td class="num" style="white-space:nowrap"><button class="btn small" type="button" data-av-ver="${a.id}">Prévia</button>
+        <button class="btn small" type="button" data-av-ligar="${a.id}">${a.ativo ? 'Pausar' : 'Pôr no ar'}</button>
+        <button class="btn small" type="button" data-av-editar="${a.id}">Editar</button>
+        <button class="btn small danger" type="button" data-av-excluir="${a.id}">Excluir</button></td></tr>`;
+  }).join('') : '<tr><td colspan="9" class="hint">Nenhum aviso ainda. Crie o primeiro acima.</td></tr>';
+}
+async function loadAvisos() { aplicarAvisos(await api('/api/admin/avisos')); }
+function avTipo() { $('#av-cupom-linha').classList.toggle('hidden', $('#av-form').tipo.value !== 'cupom'); }
+function avImagem(url) {
+  const f = $('#av-form'); f.imagem.value = url || '';
+  $('#av-img-previa').hidden = !url; if (url) $('#av-img-previa').src = url;
+  $('#av-img-tirar').hidden = !url; $('#av-img-enviar').textContent = url ? 'Trocar imagem' : 'Enviar imagem';
+}
+function limparAviso() {
+  const f = $('#av-form'); f.reset(); f.id.value = ''; f.tipo.value = 'novidade'; avTipo(); avImagem('');
+  $('#av-salvar').textContent = 'Publicar aviso'; $('#av-titulo-form').textContent = 'Novo aviso'; $('#av-cancelar').hidden = true;
+}
+const avDoForm = () => { const d = Object.fromEntries(new FormData($('#av-form'))); return { ...d, id: d.id || 0, versao: 0 }; };
+$('#av-tipo').addEventListener('change', avTipo);
+$('#av-img-enviar').addEventListener('click', () => $('#av-img-arq').click());
+$('#av-img-tirar').addEventListener('click', () => avImagem(''));
+$('#av-img-arq').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  if (file.size > 3 * 1024 * 1024) return globalMsg('A imagem pode ter no máximo 3 MB.', false);
+  try {
+    const res = await fetch('/api/admin/publicidade/upload', { method: 'POST', headers: { 'Content-Type': file.type }, body: file });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || 'Falha no envio.');
+    avImagem(d.url);
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#av-previa').addEventListener('click', () => {
+  const a = avDoForm();
+  if (!a.titulo.trim()) return globalMsg('Escreva o título para ver a prévia.', false);
+  if (a.tipo !== 'cupom') a.cupom = '';
+  if (a.link && !a.botao_texto) a.botao_texto = 'Saiba mais';
+  OfertouAvisos.mostrar([a], { previa: true });
+});
+$('#av-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(e.target));
+  try {
+    aplicarAvisos(await api(d.id ? `/api/admin/avisos/${d.id}` : '/api/admin/avisos', { method: d.id ? 'PUT' : 'POST', body: d }));
+    globalMsg(d.id ? 'Aviso salvo.' : 'Aviso publicado.'); limparAviso();
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#av-cancelar').addEventListener('click', limparAviso);
+$('#av-body').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = Number(b.dataset.avVer || b.dataset.avLigar || b.dataset.avEditar || b.dataset.avExcluir);
+  const a = AV.avisos.find(x => x.id === id); if (!a) return;
+  try {
+    if (b.dataset.avVer) OfertouAvisos.mostrar([a], { previa: true });
+    else if (b.dataset.avLigar) aplicarAvisos(await api(`/api/admin/avisos/${id}`, { method: 'PATCH', body: { ativo: !a.ativo } }));
+    else if (b.dataset.avExcluir) {
+      if (!await OfertouUI.confirmar(`Excluir o aviso "${a.titulo}"?`, { perigo: true, ok: 'Excluir' })) return;
+      aplicarAvisos(await api(`/api/admin/avisos/${id}`, { method: 'DELETE' }));
+    } else {
+      const f = $('#av-form');
+      for (const k of ['id', 'tipo', 'titulo', 'texto', 'cupom', 'botao_texto', 'link', 'publico', 'frequencia', 'ordem']) f[k].value = a[k] ?? '';
+      f.inicio.value = isoDay(a.inicio); f.fim.value = isoDay(a.fim); f.ativo.value = a.ativo ? '1' : '0';
+      avTipo(); avImagem(a.imagem);
+      $('#av-salvar').textContent = 'Salvar alterações'; $('#av-titulo-form').textContent = 'Editar aviso'; $('#av-cancelar').hidden = false;
+      f.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  } catch (err) { globalMsg(err.message, false); }
+});
 
 // Vídeos patrocinados (moedas da Loja de cosméticos)
 let VPS = [];

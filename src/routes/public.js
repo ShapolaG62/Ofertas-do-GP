@@ -184,4 +184,14 @@ router.get('/publicidade/:id', (req, res) => {
   res.redirect(link || '/');
 });
 
+// Avisos na entrada (public/js/avisos-entrada.js)
+router.get('/api/avisos', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ avisos: require('../avisos').paraVisitante(require('../users').currentUser(req)) });
+});
+router.post('/api/avisos/:id/:evento(visto|clique)', (req, res) => {
+  require('../avisos').contar(Number(req.params.id), req.params.evento, req.ip);
+  res.json({ ok: true });
+});
+
 module.exports = router;

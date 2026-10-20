@@ -262,6 +262,19 @@ router.get('/api/admin/atendimento', (req, res) => {
       app_ok: Boolean(String(require('../settings').get('mp_mkt_client_id') || '').trim() && require('../settings').get('mp_mkt_client_secret')) } });
 });
 // Vídeos patrocinados (as pessoas assistem e ganham moedas para a Loja de cosméticos)
+// ── Avisos na entrada (janelas na tela de ofertas) ──
+const avisos = require('../avisos');
+const respostaAvisos = () => ({ avisos: avisos.listar(), tipos: avisos.TIPOS, publicos: avisos.PUBLICOS, frequencias: avisos.FREQUENCIAS, max: avisos.MAX_ATIVOS });
+router.get('/api/admin/avisos', (req, res) => res.json(respostaAvisos()));
+router.post('/api/admin/avisos', (req, res) => {
+  try { avisos.salvar(req.body); res.json(respostaAvisos()); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
+router.put('/api/admin/avisos/:id', (req, res) => {
+  try { avisos.salvar(req.body, Number(req.params.id)); res.json(respostaAvisos()); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
+router.patch('/api/admin/avisos/:id', (req, res) => { avisos.ligar(Number(req.params.id), Boolean(req.body?.ativo)); res.json(respostaAvisos()); });
+router.delete('/api/admin/avisos/:id', (req, res) => { avisos.excluir(Number(req.params.id)); res.json(respostaAvisos()); });
+
 router.get('/api/admin/videos-patrocinados', (req, res) => res.json(require('../cosmeticos').listarVideosAdmin()));
 router.post('/api/admin/videos-patrocinados', (req, res) => {
   try { res.json(require('../cosmeticos').salvarVideo(req.body || {})); } catch (err) { sendError(res, err); }

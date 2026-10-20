@@ -599,3 +599,23 @@ O item **6-A** dos Termos de Uso (/privacidade#parceiros) vale para lojistas par
 **Mudou o item 6-A?** Troque `VERSAO_PARCEIRO` em `src/consentimento.js`: todos os parceiros aceitam de novo ao entrar.
 
 > Os textos foram escritos com base no CDC, no Código Civil e na LGPD, mas **não substituem a revisão de um advogado**.
+
+## 34. Avisos na entrada (janelas na tela de ofertas)
+
+Em **Painel → Conteúdo → Avisos na entrada** você cria janelas que aparecem para quem abre a **tela de ofertas**: cupons, novidades, produtos ou avisos.
+
+**Cada aviso tem:**
+- **Tipo:** Cupom (selo dourado, com o código e o botão **Copiar**), Novidade, Produto ou Aviso.
+- **Título** (até 80 caracteres), **texto** (até 600, pode pular linha) e **imagem** opcional (JPG, PNG ou WEBP até 3 MB, aparece no topo; ideal 1200×630).
+- **Botão** com texto e link: `https://…` (abre em outra aba) ou um endereço do site começando com `/` (ex.: `/loja/minha-loja`, `/cosmeticos`).
+- **Quem vê:** todo mundo, só consumidores, só lojas ou só afiliados.
+- **Quantas vezes:** uma vez por pessoa, uma vez por dia ou toda vez que entrar no site.
+- **Período** (começa / termina, opcional), **ordem** e **situação** (no ar ou pausado).
+
+**Como aparece:** até 5 avisos no ar, um de cada vez, na ordem escolhida, com "Próximo" e os pontinhos de posição. A pessoa fecha no X, no botão, fora da janela ou com Esc.
+
+**Ver prévia:** no formulário ou na lista, mostra a janela exatamente como o visitante vê (sem contar nada).
+
+**Editar** o texto, a imagem, o cupom ou o botão faz o aviso aparecer de novo para quem já tinha visto. Só mudar datas, ordem, público ou pausar não faz.
+
+**Números:** a lista mostra quantas pessoas viram e quantas clicaram (no botão ou em Copiar), contando uma vez por pessoa por dia.

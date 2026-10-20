@@ -122,8 +122,13 @@ router.post('/api/conta/sair', (req, res) => {
 router.get('/api/conta/me', (req, res) => {
   const u = users.currentUser(req);
   if (!u) return res.json({ user: null, admin: auth.isLoggedIn(req) });
-  res.json({ user: users.publicUser(u), loja: u.tipo === 'empresa' ? lojas.getByUser(u.id) : null });
+  res.json({ user: users.publicUser(u), loja: u.tipo === 'empresa' ? lojas.getByUser(u.id) : null, parceiro_pendente: parceiroPendente(u) });
 });
+
+// Termos do Parceiro: lojista (conta de empresa) e afiliado que ainda não aceitaram a versão atual
+const papeisConta = u => require('../consentimento').papeisDe({ tipo: u.tipo, ferramenta: Boolean(u.cliente_id) });
+const parceiroPendente = u => (['active', 'suspended'].includes(u.status)
+  ? require('../consentimento').pendentesParceiro({ dono: `u:${u.id}`, email: u.email, papeis: papeisConta(u) }) : []);
 
 router.use('/api/conta', users.requireUser);
 
@@ -131,9 +136,13 @@ router.use('/api/conta', users.requireUser);
 router.post('/api/conta/perfil-inicial', (req, res) => {
   try {
     const u = users.completeProfile(req.user, req.body || {});
-    require('../consentimento').registrar({ dono: `u:${u.id}`, email: u.email, origem: 'cadastro', req });
+    require('../consentimento').registrar({ dono: `u:${u.id}`, email: u.email, origem: 'cadastro', req, papeis: require('../consentimento').papeisDe({ tipo: u.tipo }) });
     res.json({ ok: true, status: u.status });
   } catch (err) { sendError(res, err); }
+});
+
+router.post('/api/conta/aceite-parceiro', (req, res) => {
+  try { res.json(require('../consentimento').aceitarParceiro({ dono: `u:${req.user.id}`, email: req.user.email, papeis: papeisConta(req.user), b: req.body || {}, req })); } catch (err) { sendError(res, err); }
 });
 
 router.post('/api/conta/senha', (req, res) => {

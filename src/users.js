@@ -102,6 +102,7 @@ function completeProfile(u, body) {
   const mode = signupMode(tipo);
   if (mode === 'fechado') throw new Error(`Os cadastros de ${NOME_TIPO[tipo]} estão fechados no momento.`);
   require('./consentimento').validar(body); // LGPD + Termos de Uso (duas caixas obrigatórias)
+  require('./consentimento').validarParceiro(body, require('./consentimento').papeisDe({ tipo })); // lojista / afiliado
   const dados = { ...cadastro.dadosPessoa(body), ...(tipo === 'empresa' ? cadastro.dadosEmpresa(body) : {}) };
   if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) {
     throw new Error('Não é possível concluir o cadastro com estes dados. Fale com o administrador.');

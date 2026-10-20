@@ -46,7 +46,9 @@ router.post('/api/assinatura', async (req, res) => {
     const r = await pagamentos.criarPedido(req.body || {}, req);
     // Prova do aceite (a conta pode ser criada só depois do pagamento: fica ligada pelo e-mail)
     const logado = require('../users').currentUser(req);
-    require('../consentimento').registrar({ dono: logado ? `u:${logado.id}` : null, email: logado?.email || req.body?.email, origem: 'assinatura', req });
+    const pl = require('../planos').plano(req.body?.plano);
+    const papeis = pl ? require('../consentimento').papeisDe({ tipo: pl.perfis.includes(logado?.tipo) ? logado.tipo : (req.body?.perfil_conta || pl.perfil), ferramenta: pl.ferramenta }) : [];
+    require('../consentimento').registrar({ dono: logado ? `u:${logado.id}` : null, email: logado?.email || req.body?.email, origem: 'assinatura', req, papeis });
     res.json(r);
   } catch (err) {
     res.status(err.status || 400).json({ error: err.message });

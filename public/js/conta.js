@@ -308,6 +308,8 @@
     // Usuário da ferramenta liberado usa o painel de afiliado.
     if (ME.tipo === 'afiliado' && ME.ferramenta) return location.replace('/cliente');
     renderAccount();
+    // Lojista (ou afiliado) que ainda não aceitou os Termos do Parceiro atuais: janela de aceite por cima da conta
+    OfertouAceiteParceiro.pedir(me.parceiro_pendente, '/api/conta/aceite-parceiro', '/api/conta/sair');
   }
 
   // ── Login e criação de conta ───────────────────────────────────────────────
@@ -389,6 +391,11 @@
     $('#dados-title').textContent = empresa ? 'Dados do responsável e da empresa' : 'Seus dados';
     $('#dados-sub').textContent = `Perfil escolhido: ${{ empresa: 'Empresarial', consumidor: 'Consumidor', afiliado: 'Usuário da ferramenta (Afiliado)' }[chosenTipo]} — gratuito${INFO[chosenTipo] === 'aberto' ? '' : ', passa por aprovação'}.`;
     $('#form-dados [data-fields="empresa"]').hidden = !empresa;
+    // Termos do Parceiro: lojista (empresa) e afiliado aceitam numa caixa a mais
+    $$('#form-dados [data-aceite-papel]').forEach(l => {
+      const vale = ({ lojista: empresa, afiliado: chosenTipo === 'afiliado' })[l.dataset.aceitePapel];
+      l.hidden = !vale; l.querySelector('input').disabled = !vale;
+    });
     const form = $('#form-dados');
     if (ME?.nome && !form.nome.value) form.nome.value = ME.nome;
     show('dados');

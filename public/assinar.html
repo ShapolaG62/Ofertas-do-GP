@@ -9,15 +9,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261171">
-<script src="/js/app-nativo.js?v=20261171"></script>
-<script src="/js/dialogo.js?v=20261171"></script>
-<script src="/js/cadastro-auto.js?v=20261171" defer></script>
-<script src="/js/cartoes.js?v=20261171" defer></script>
-<script src="/js/voltar.js?v=20261171" data-padrao="/conta#planos" defer></script>
-<script src="/js/rodape-legal.js?v=20261171" defer></script>
-<script src="/js/cookies.js?v=20261171"></script>
-<script src="/js/seletor.js?v=20261171" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261174">
+<script src="/js/app-nativo.js?v=20261174"></script>
+<script src="/js/dialogo.js?v=20261174"></script>
+<script src="/js/cadastro-auto.js?v=20261174" defer></script>
+<script src="/js/cartoes.js?v=20261174" defer></script>
+<script src="/js/voltar.js?v=20261174" data-padrao="/conta#planos" defer></script>
+<script src="/js/rodape-legal.js?v=20261174" defer></script>
+<script src="/js/cookies.js?v=20261174"></script>
+<script src="/js/seletor.js?v=20261174" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -131,6 +131,10 @@
               <span><b>Privacidade e proteção de dados (LGPD).</b> Declaro que li a <a href="/privacidade#privacidade" target="_blank" rel="noopener">Política de Privacidade</a> e estou ciente de como o Ofertou! coleta, usa, armazena e compartilha os meus dados pessoais, para as finalidades nela descritas, nos termos da Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018). Sei que posso, a qualquer momento, solicitar acesso, correção, portabilidade ou eliminação dos meus dados e revogar consentimentos, pelos canais informados na Política.</span></label>
             <label class="aceite"><input type="checkbox" name="aceite_termos" required>
               <span><b>Finalidade do site e responsabilidades.</b> Li e aceito os <a href="/privacidade#termos" target="_blank" rel="noopener">Termos de Uso</a>. Estou ciente de que o Ofertou! é uma plataforma de divulgação de ofertas das lojas on-line e de lojas parceiras, que <b>não fabrica, não vende, não estoca e não entrega produtos</b>. A venda, o preço final, a entrega, a troca, a devolução, a garantia e o atendimento sobre os produtos são de responsabilidade da loja vendedora, e o Ofertou! não se responsabiliza por essas transações, sem prejuízo dos direitos garantidos pelo Código de Defesa do Consumidor. Declaro ter 18 anos ou mais e que as informações que forneço são verdadeiras.</span></label>
+            <label class="aceite" data-aceite-papel="lojista" hidden><input type="checkbox" name="aceite_lojista" required disabled>
+              <span><b>Termos do Lojista Parceiro.</b> Li e aceito os <a href="/privacidade#parceiros" target="_blank" rel="noopener">Termos do Parceiro</a>. Sou o <b>único responsável</b> pelos produtos, preços, estoque, notas fiscais, <b>prazos de entrega, de troca e de atendimento</b> e pelo cumprimento do Código de Defesa do Consumidor nas vendas da minha loja. O Ofertou! <b>não responde</b> por descumprimentos meus e, se for reclamado, processado, condenado ou tiver de pagar qualquer valor por ato ou omissão minha, terá <b>direito de regresso</b>: eu o ressarcirei integralmente, com custas, honorários e multas. Sei que a loja pode ser suspensa ou excluída se eu descumprir essas regras.</span></label>
+            <label class="aceite" data-aceite-papel="afiliado" hidden><input type="checkbox" name="aceite_afiliado" required disabled>
+              <span><b>Termos do Afiliado.</b> Li e aceito os <a href="/privacidade#parceiros" target="_blank" rel="noopener">Termos do Parceiro</a>. Sou o <b>único responsável</b> pelo que divulgo nos meus canais e pelos meus links, inclusive pelas regras dos programas de afiliados, da publicidade e da LGPD. O Ofertou! <b>não responde</b> por violações minhas e terá <b>direito de regresso</b> contra mim por qualquer valor que tiver de pagar por causa delas. O acesso é <b>pessoal e intransferível</b>: <b>não posso revender, alugar, emprestar, ceder ou compartilhar</b> a minha conta, o painel ou a ferramenta com outras pessoas, sob pena de encerramento do acesso sem reembolso e de responder pelos prejuízos.</span></label>
           </div>
         <div class="form-msg err" id="ass-msg" hidden></div>
         <div class="ass-cartao" id="ass-cartao" hidden></div>
@@ -154,6 +158,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261171" defer></script>
+<script src="/js/assinar.js?v=20261174" defer></script>
 </body>
 </html>

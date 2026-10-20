@@ -39,6 +39,11 @@
     });
     $('#ass-perfil').hidden = !(PLANO.perfis.length > 1 && !(LOGADO && PLANO.perfis.includes(LOGADO.tipo)) && !renovar);
     $('#ass-pagamento').hidden = PLANO.gratis;
+    // Termos do Parceiro: plano de empresa (lojista) e/ou com a ferramenta (afiliado)
+    $$('[data-aceite-papel]').forEach(l => {
+      const vale = { lojista: empresa, afiliado: Boolean(PLANO.ferramenta) }[l.dataset.aceitePapel];
+      l.hidden = !vale; l.querySelector('input').disabled = !vale;
+    });
     $('#ass-enviar').textContent = PLANO.gratis ? 'Ativar plano grátis' : 'Finalizar compra';
     $('#ass-google').hidden = Boolean(LOGADO) || renovar;
     $('#ass-google-div').hidden = $('#ass-google').hidden;

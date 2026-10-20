@@ -84,6 +84,14 @@ app.get(['/sac', '/sac.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 
 app.get(['/trabalho', '/trabalho.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'trabalho.html')));
 app.get(['/moderacao', '/moderacao.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'moderacao.html')));
 app.get(['/equipe', '/equipe.html'], (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'equipe.html')));
+// Guia da equipe: só para quem tem cargo na equipe (ou o dono do site); fica fora de public/ para não abrir sem login
+app.get('/trabalho/guia', (req, res) => {
+  const dono = require('./src/perfis').donoDe(req);
+  if (!dono) return res.redirect('/conta?voltar=/trabalho%23guia');
+  if (!require('./src/cargos').de(dono).permissoes.length) return res.redirect('/trabalho');
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'src', 'paginas', 'guia-equipe.html'));
+});
 
 // O próprio perfil fica em Minha conta (aba "Meu perfil"); admin e clientes só da ferramenta continuam em /perfil.
 app.get(['/perfil', '/perfil.html'], (req, res, next) => {

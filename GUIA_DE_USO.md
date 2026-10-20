@@ -502,7 +502,7 @@ Padrão inicial: Gerente (tudo), Admin (tudo menos gerenciar a equipe), Moderado
 - **Pedidos às lojas só no modelo marketplace:** o dinheiro cai na conta do Mercado Pago de cada loja; você recebe apenas a taxa do site (seção 18). Não há mais carteira nem saques.
 - **Sem marca d'água nas fotos das lojas:** as postagens e a vitrine usam a foto original (seção "Fotos das postagens").
 - **Moderação transparente:** palavrões no chat viram asteriscos e o texto original fica só para a moderação (seção 26). Avaliações de lojas só podem ser ocultadas por abuso (ofensas, dados pessoais, spam, falsa, ilegal, sem relação com a loja): ao clicar em **Ocultar** na página da loja, escolha o motivo; o autor é avisado e a ação vai para o registro de moderação. Se o autor editar a avaliação, ela volta a aparecer. A loja nunca consegue ocultar avaliações.
-- **Termos e Política de Privacidade (versão 2026-10-19):** incluem o filtro do chat, o acesso da equipe por cargo, a moderação das avaliações, o aviso de cookies, o arrependimento dos planos e o pagamento direto às lojas.
+- **Termos e Política de Privacidade (versão 2026-10-20):** incluem os Termos do Parceiro (seção 33), o filtro do chat, o acesso da equipe por cargo, a moderação das avaliações, o aviso de cookies, o arrependimento dos planos e o pagamento direto às lojas.
 - **Acessibilidade:** todas as páginas têm o link "Pular para o conteúdo" (aparece ao apertar Tab), idioma pt-BR e destaque de foco para quem navega pelo teclado.
 
 ## 30. Molduras da temporada e das datas comemorativas de 2027
@@ -579,3 +579,23 @@ As diárias renovam à meia-noite (Brasília) e as semanais toda segunda-feira. 
 **Efeitos de nome** (o nome de exibição animado): Arco-íris 250, Neon 300, Gelo 300, Ouro brilhante 350, Fogo 400, Glitch 450.
 
 Na loja, cada item aparece com a foto e o nome da própria pessoa. Depois de comprar: **Usar no perfil** e **Usando · tirar**. Texturas dos efeitos: `node video/molduras/efeitos.js`. Com "reduzir movimento" ligado no sistema, as animações param.
+
+## 33. Termos do Parceiro (lojistas e afiliados)
+
+O item **6-A** dos Termos de Uso (/privacidade#parceiros) vale para lojistas parceiros (conta de empresa) e afiliados (usuário da ferramenta / Afiliado Pro). Ele traz:
+
+- **Responsabilidade exclusiva:** a loja responde pelos produtos, prazos (entrega, troca, atendimento) e direitos do consumidor; o afiliado responde pelo que divulga, pelos links e pelas regras de publicidade, dos programas de afiliados e da LGPD.
+- **Isenção do site:** na relação com o parceiro, o Ofertou! não responde pelos descumprimentos dele (sem limitar os direitos do consumidor, que a lei não deixa limitar).
+- **Direito de regresso:** se o site for reclamado, multado, processado ou tiver de pagar algo por culpa do parceiro, o parceiro ressarce tudo (valor, custas, honorários e multas) em até 15 dias da notificação, e tem 5 dias úteis para mandar os documentos da defesa.
+- **Acesso pessoal:** é proibido revender, alugar, emprestar ou compartilhar a conta, o painel ou a ferramenta. A punição pode chegar ao encerramento do acesso sem reembolso do período restante.
+
+**Onde o aceite é pedido (caixa obrigatória, nunca pré-marcada):**
+- Cadastro gratuito como **Empresarial** (Termos do Lojista) ou **Usuário da ferramenta** (Termos do Afiliado).
+- Compra de plano de empresa e/ou com a ferramenta de afiliado (/assinar).
+- **Quem já era parceiro** (cadastrado antes, ou acesso criado por você em Painel → Clientes) vê uma janela ao entrar em Minha conta ou no painel do afiliado e só continua depois de aceitar. No painel do afiliado, sem o aceite, nada funciona.
+
+**Prova do aceite:** fica no histórico de aceites da ficha do usuário (Painel → Usuários → abrir a ficha), com data, versão, IP e "Termos do Parceiro (lojista/afiliado)".
+
+**Mudou o item 6-A?** Troque `VERSAO_PARCEIRO` em `src/consentimento.js`: todos os parceiros aceitam de novo ao entrar.
+
+> Os textos foram escritos com base no CDC, no Código Civil e na LGPD, mas **não substituem a revisão de um advogado**.

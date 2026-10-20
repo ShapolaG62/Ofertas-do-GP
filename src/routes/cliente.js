@@ -30,10 +30,20 @@ router.post('/api/cliente/sair', (req, res) => {
 
 router.get('/api/cliente/me', (req, res) => {
   const c = clientes.atual(req);
-  res.json({ cliente: c ? clientes.publico(c) : null });
+  res.json({ cliente: c ? clientes.publico(c) : null, parceiro_pendente: c ? pendenteCliente(c) : [] });
 });
 
+// Termos do Afiliado (item 6-A): cliente criado pelo painel ou antes destes Termos aceita ao entrar
+const pendenteCliente = c => require('../consentimento').pendentesParceiro({ dono: `c:${c.id}`, email: c.email, papeis: ['afiliado'] });
+
 router.use('/api/cliente', clientes.exigir);
+
+router.post('/api/cliente/aceite-parceiro', (req, res) => {
+  try { res.json(require('../consentimento').aceitarParceiro({ dono: `c:${req.cliente.id}`, email: req.cliente.email, papeis: ['afiliado'], b: req.body || {}, req })); } catch (err) { sendError(res, err); }
+});
+// Sem o aceite, o painel não funciona (a janela de aceite aparece ao entrar)
+router.use('/api/cliente', (req, res, next) => (pendenteCliente(req.cliente).length
+  ? res.status(428).json({ error: 'Aceite os Termos do Afiliado para continuar usando o painel.', aceite_parceiro: true }) : next()));
 
 router.get('/api/cliente/config', (req, res) => {
   const s = clientes.config(req.cliente.id);

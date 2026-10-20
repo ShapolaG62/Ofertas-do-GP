@@ -98,7 +98,13 @@ function validarLogado(p, b, u) {
       ...(u.tipo ? {} : { perfil_dados: dados }) };
   }
   const perfil = perfilDaConta(p, b, u);
+  parceiro(p, b, perfil);
   return { email: u.email, nome: u.nome, renovar_user_id: u.id, perfil_conta: perfil, ...(u.tipo ? {} : { perfil_dados: novosDados(perfil) }) };
+}
+
+// Termos do Parceiro: plano de empresa (lojista) e/ou com a ferramenta (afiliado)
+function parceiro(p, b, perfil) {
+  require('./consentimento').validarParceiro(b, require('./consentimento').papeisDe({ tipo: perfil, ferramenta: p.ferramenta }));
 }
 
 // Valida os dados do formulário conforme o plano. Se o e-mail já tem conta e a senha confere, é renovação.
@@ -113,6 +119,7 @@ function validarDados(p, b, logado = null) {
   const renovar = b.renovar === true || b.renovar === 'on' || b.renovar === '1';
 
   if (p.conta === 'cliente') {
+    parceiro(p, b, null);
     const existente = db.get('SELECT * FROM clientes WHERE email = ?', emailN);
     if (existente) {
       if (!auth.verifyPassword(senha, existente.senha_hash)) throw fail('Este e-mail já tem acesso ao Afiliado Pro. Para renovar, use a mesma senha.', 409);
@@ -138,11 +145,13 @@ function validarDados(p, b, logado = null) {
     }
     if (['banned', 'rejected'].includes(existente.status)) throw fail('Esta conta não pode assinar. Fale com o administrador.', 403);
     const perfil = perfilDaConta(p, b, existente);
+    parceiro(p, b, perfil);
     return { email: emailN, nome: existente.nome, renovar_user_id: existente.id, perfil_conta: perfil };
   }
   if (renovar) throw fail('Não encontramos uma conta com este e-mail. Desmarque "renovar" para criar uma nova.', 404);
   if (b.senha_confirmacao !== undefined && b.senha_confirmacao !== senha) throw fail('As senhas não conferem.');
   const perfil = perfilDaConta(p, b, null);
+  parceiro(p, b, perfil);
   const dados = { ...cadastro.dadosPessoa(b), ...(perfil === 'empresa' ? cadastro.dadosEmpresa(b) : {}) };
   if (isBlocked(`cpf:${dados.cpf}`) || (dados.cnpj && isBlocked(`cnpj:${dados.cnpj}`))) throw fail('Não é possível concluir com estes dados. Fale com o administrador.');
   if (db.get('SELECT 1 FROM users WHERE cpf = ?', dados.cpf)) throw fail('Já existe uma conta com este CPF. Entre com ela para assinar.', 409);

@@ -1,0 +1,327 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Guia da equipe — Ofertou!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Guia da equipe (cópia do visual do manual do site; só trabalho da equipe, nada da configuração). Layout: manual de referência — índice fixo à esquerda no computador, coluna única no celular; cores da marca Ofertou! */
+:root {
+  --bg: #f4f5f2; --surface: #ffffff; --surface-2: #eef0ec;
+  --ink: #161b18; --ink-2: #48514c; --ink-3: #6f7873;
+  --line: #e2e6e1; --line-strong: #cfd5cf;
+  --brand: #0c8f4f; --brand-strong: #087340; --brand-soft: #e5f3eb;
+  --gold: #9a6800; --gold-soft: #fff4d6;
+  --deal: #c2372a; --deal-soft: #fdecea;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d;
+  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #8b958f;
+  --line: #262d28; --line-strong: #343c36;
+  --brand: #2bb673; --brand-strong: #49c98a; --brand-soft: #16301f;
+  --gold: #e6b143; --gold-soft: #33290f;
+  --deal: #ff7b6b; --deal-soft: #3a1c18; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d;
+  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #8b958f;
+  --line: #262d28; --line-strong: #343c36;
+  --brand: #2bb673; --brand-strong: #49c98a; --brand-soft: #16301f;
+  --gold: #e6b143; --gold-soft: #33290f;
+  --deal: #ff7b6b; --deal-soft: #3a1c18; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 32px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 48px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 20px 60px; } }
+
+/* Índice */
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; font-size: 14px; }
+nav.toc .marca { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; margin-bottom: 16px; }
+nav.toc .marca i { width: 30px; height: 30px; border-radius: 9px; background: var(--brand); color: var(--surface); display: grid; place-items: center; font-style: normal; font-size: 15px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; counter-reset: t; }
+nav.toc a { display: flex; gap: 10px; padding: 6px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; }
+nav.toc a::before { counter-increment: t; content: counter(t, decimal-leading-zero); font-family: var(--f-mono); font-size: 11.5px; color: var(--ink-3); padding-top: 2px; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--surface-2); color: var(--ink); outline: none; }
+@media (max-width: 900px) {
+  nav.toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); }
+}
+
+/* Conteúdo */
+main { min-width: 0; }
+header.capa { padding-bottom: 28px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+h1 { font-size: clamp(32px, 5vw, 46px); line-height: 1.08; margin: 8px 0 14px; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--brand); }
+.lead { font-size: 18.5px; color: var(--ink-2); max-width: 66ch; margin: 0; }
+.meta { margin-top: 16px; font-size: 13.5px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 6px 18px; }
+
+section { padding-top: 40px; scroll-margin-top: 16px; }
+h2 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; display: flex; align-items: baseline; gap: 12px; }
+h2 .n { font-family: var(--f-mono); font-size: 14px; font-weight: 500; color: var(--brand); }
+h2 + .sub { color: var(--ink-3); margin: 0 0 18px; max-width: 66ch; }
+h3 { font-size: 18px; margin: 26px 0 8px; font-weight: 700; }
+p, li { max-width: 70ch; }
+p { margin: 0 0 12px; }
+ul, ol.passos { margin: 0 0 14px; padding-left: 22px; }
+li { margin-bottom: 5px; }
+li::marker { color: var(--brand); }
+b, strong { font-weight: 700; }
+code, .rota { font-family: var(--f-mono); font-size: .86em; background: var(--surface-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+a { color: var(--brand-strong); }
+
+/* Tabelas */
+.tabela { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin: 6px 0 18px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); background: var(--surface-2); font-weight: 700; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; font-weight: 600; }
+
+/* Papéis (quem usa) */
+.papeis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; margin: 8px 0 18px; }
+.papel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+.papel h4 { margin: 0 0 4px; font-size: 16px; }
+.papel .onde { font-family: var(--f-mono); font-size: 12px; color: var(--brand); }
+.papel p { margin: 8px 0 0; font-size: 14.5px; color: var(--ink-2); }
+
+/* Fluxo em etapas */
+.fluxo { list-style: none; padding: 0; margin: 10px 0 18px; display: grid; gap: 0; counter-reset: f; }
+.fluxo li { counter-increment: f; position: relative; padding: 0 0 16px 46px; max-width: none; margin: 0; }
+.fluxo li::before { content: counter(f); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--brand-soft); color: var(--brand-strong); font-weight: 800; font-size: 14px; display: grid; place-items: center; }
+.fluxo li::after { content: ""; position: absolute; left: 14.5px; top: 32px; bottom: 2px; width: 1px; background: var(--line-strong); }
+.fluxo li:last-child::after { display: none; }
+.fluxo b { display: block; }
+.fluxo span { color: var(--ink-2); font-size: 15px; }
+
+/* Avisos */
+.nota { border-radius: 12px; padding: 14px 16px; margin: 8px 0 18px; font-size: 15px; background: var(--brand-soft); color: var(--ink); }
+.nota.ouro { background: var(--gold-soft); }
+.nota.alerta { background: var(--deal-soft); }
+.nota b:first-child { display: block; margin-bottom: 2px; }
+.nota p:last-child, .nota ul:last-child { margin-bottom: 0; }
+
+/* Situação atual */
+.status { display: grid; gap: 8px; margin: 8px 0 18px; }
+.item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.chip { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.chip.ok { background: var(--brand-soft); color: var(--brand-strong); }
+.chip.falta { background: var(--gold-soft); color: var(--gold); }
+.chip.bloq { background: var(--deal-soft); color: var(--deal); }
+.item p { margin: 0; font-size: 15px; }
+.item p b { display: block; }
+
+.rodape { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 13.5px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Índice">
+    <div class="marca"><i>O!</i> Equipe Ofertou!</div>
+    <ol>
+      <li><a href="#boas-vindas">Boas-vindas</a></li>
+      <li><a href="#cargos">Cargos e funções</a></li>
+      <li><a href="#entrar">Entrar e Área de trabalho</a></li>
+      <li><a href="#conduta">Regras da equipe</a></li>
+      <li><a href="#site">O site em 5 minutos</a></li>
+      <li><a href="#sac">Atender o SAC</a></li>
+      <li><a href="#respostas">Respostas para casos comuns</a></li>
+      <li><a href="#moderacao">Moderação do chat</a></li>
+      <li><a href="#postar">Postar anúncios</a></li>
+      <li><a href="#gerenciar">Gerenciar a equipe</a></li>
+      <li><a href="#encaminhar">Quando encaminhar</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="capa">
+      <div class="eyebrow">Guia da equipe</div>
+      <h1>Trabalhando no <em>Ofertou!</em></h1>
+      <p class="lead">Tutoriais e regras para quem atende o SAC, modera o chat, posta ofertas ou cuida da equipe. Cada pessoa usa só as partes liberadas para o seu cargo.</p>
+      <div class="meta"><span>Atualizado em 20/10/2026</span><span>Dúvidas: fale com o seu Gerente ou com o Proprietário</span></div>
+    </header>
+
+    <section id="boas-vindas">
+      <h2><span class="n">01</span>Boas-vindas</h2>
+      <p class="sub">O que a equipe faz.</p>
+      <p>A equipe é quem mantém o Ofertou! bom de usar: responde as dúvidas dos clientes, cuida para o chat continuar respeitoso e leva as melhores ofertas para os grupos e redes. Tudo o que você faz fica registrado com o seu nome.</p>
+      <div class="nota"><b>Em uma frase</b>Atenda com educação, resolva o que estiver ao seu alcance, registre tudo pelo site e encaminhe o que não for da sua função.</div>
+    </section>
+
+    <section id="cargos">
+      <h2><span class="n">02</span>Cargos e funções</h2>
+      <p class="sub">Do maior para o menor. Cada cargo tem as funções que o Proprietário liberar.</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Cargo</th><th>O que costuma fazer</th></tr></thead>
+        <tbody>
+          <tr><td>Proprietário</td><td>Dono do site. Acesso a todas as funções.</td></tr>
+          <tr><td>Gerente</td><td>SAC, moderação, suspender e banir, postar anúncios e gerenciar a equipe (cargos abaixo do dele).</td></tr>
+          <tr><td>Admin</td><td>SAC, moderação, suspender e banir e postar anúncios.</td></tr>
+          <tr><td>Moderador</td><td>Moderação do chat.</td></tr>
+          <tr><td>Suporte</td><td>Atendimento do SAC.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="tabela"><table>
+        <thead><tr><th>Função</th><th>O que libera</th></tr></thead>
+        <tbody>
+          <tr><td>SAC</td><td>Atender os chamados do Suporte Ofertou! (fila de atendimento).</td></tr>
+          <tr><td>Moderação do chat</td><td>Ver as conversas com xingamentos, advertir, bloquear e liberar as mensagens.</td></tr>
+          <tr><td>Suspender e banir</td><td>Suspender por dias ou banir contas, dentro da Moderação do chat.</td></tr>
+          <tr><td>Postar anúncios</td><td>Escolher ofertas e postar nos grupos e redes.</td></tr>
+          <tr><td>Gerenciar a equipe</td><td>Cadastrar pessoas, trocar cargos e definir nova senha, só para cargos abaixo do seu.</td></tr>
+        </tbody>
+      </table></div>
+      <p>As funções de cada cargo podem mudar. A Área de trabalho sempre mostra só o que o <b>seu</b> cargo pode usar hoje.</p>
+    </section>
+
+    <section id="entrar">
+      <h2><span class="n">03</span>Entrar e usar a Área de trabalho</h2>
+      <p class="sub">O seu login é pessoal.</p>
+      <ol class="fluxo">
+        <li><b>Entre em /conta</b><span>Com o seu e-mail e a sua senha (ou o Google, se a conta foi criada assim).</span></li>
+        <li><b>Abra a Área da equipe</b><span>A aba aparece em Minha conta. Os cartões levam direto para a Fila do SAC, a Moderação do chat, a Equipe, Postar anúncios e este guia, conforme o seu cargo.</span></li>
+        <li><b>Trabalhe pela Área de trabalho</b><span>Em <code>/trabalho</code>, o menu da esquerda troca de seção sem sair da página. Os números ao lado mostram quantos chamados ou ocorrências estão esperando.</span></li>
+        <li><b>Troque a senha quando quiser</b><span>Em Minha conta → Senha e conta. Ao trocar, você sai dos outros aparelhos.</span></li>
+      </ol>
+      <div class="nota ouro"><b>Esqueceu a senha ou perdeu o acesso?</b>Peça a quem gerencia a equipe uma nova senha. Ninguém da equipe pode mudar o próprio cargo.</div>
+    </section>
+
+    <section id="conduta">
+      <h2><span class="n">04</span>Regras da equipe</h2>
+      <p class="sub">Valem para todos os cargos.</p>
+      <ul>
+        <li><b>Conta pessoal:</b> nunca empreste o seu login nem trabalhe pela conta de outra pessoa. Tudo o que é feito fica no histórico com o nome de quem fez.</li>
+        <li><b>Sigilo (LGPD):</b> os dados que você vê (nome, e-mail, pedidos, conversas) servem só para atender. Não copie, não fotografe, não repasse e não comente fora do trabalho.</li>
+        <li><b>Nunca peça</b> senha, código de verificação ou dados completos de cartão. O Ofertou! não precisa disso para nada.</li>
+        <li><b>Use só os canais do site</b> para falar com clientes. Não chame ninguém no seu WhatsApp ou e-mail pessoal.</li>
+        <li><b>Não prometa o que não depende de você:</b> reembolso de loja, prazo de entrega, liberação de conta, desconto. Explique o caminho e encaminhe.</li>
+        <li><b>Respeito sempre</b>, mesmo com cliente nervoso. Se houver ofensa, encerre com educação e registre.</li>
+        <li><b>Imparcialidade:</b> não atenda nem modere casos de amigos, parentes ou lojas em que você tenha interesse. Passe para outra pessoa.</li>
+      </ul>
+    </section>
+
+    <section id="site">
+      <h2><span class="n">05</span>O site em 5 minutos</h2>
+      <p class="sub">O básico para responder as dúvidas dos clientes.</p>
+      <ul>
+        <li><b>O que é:</b> o Ofertou! mostra ofertas com desconto real das grandes lojas (Amazon, Mercado Livre, Shopee, AliExpress, KaBuM!, Magalu…) e de lojas parceiras que vendem dentro do site.</li>
+        <li><b>O Ofertou! não vende produtos.</b> Nas grandes lojas, a compra é feita no site da loja. Nas lojas parceiras, o pedido é feito aqui, mas o pagamento cai direto na conta do Mercado Pago da loja. Entrega, troca e garantia são sempre da loja vendedora.</li>
+        <li><b>Tipos de conta:</b> Consumidor, Empresarial (loja parceira) e Usuário da ferramenta (Afiliado Pro, com painel em <code>/cliente</code>). Contas sem plano podem passar por aprovação.</li>
+        <li><b>Planos:</b> Caçador de Ofertas (grátis), Loja Parceira e Afiliado Pro. Pagos com Pix ou cartão pelo Mercado Pago.</li>
+        <li><b>Lojistas e afiliados</b> aceitam os Termos do Parceiro: são os únicos responsáveis pelos seus produtos, prazos e divulgação, e o acesso é pessoal (não pode ser revendido nem compartilhado).</li>
+        <li><b>Perfil e cosméticos:</b> conquistas dão XP e moedas; com as moedas a pessoa compra molduras animadas e efeitos de perfil e de nome na Loja de cosméticos (dentro de Editar perfil). Missões e vídeos patrocinados dão mais moedas. Não há dinheiro real nisso.</li>
+        <li><b>Guia do usuário:</b> <code>/ajuda</code> explica tudo para o cliente, passo a passo. Mande o link quando ajudar.</li>
+      </ul>
+    </section>
+
+    <section id="sac">
+      <h2><span class="n">06</span>Atender o SAC</h2>
+      <p class="sub">Para quem tem a função SAC.</p>
+      <ol class="fluxo">
+        <li><b>Veja a fila</b><span>Na Área de trabalho → SAC, aba <b>Na fila</b>, com o assunto e o tempo de espera. Atenda primeiro quem espera há mais tempo.</span></li>
+        <li><b>Assuma o chamado</b><span>Só uma pessoa fica com cada chamado. Se aparecer "Outro atendente já assumiu", escolha o próximo.</span></li>
+        <li><b>Converse</b><span>Cumprimente pelo nome, entenda o problema e peça o número do pedido (PD-…) ou da conversa (CV-…) quando for o caso. Enter envia a mensagem.</span></li>
+        <li><b>Resolva ou devolva</b><span><b>Marcar como resolvido</b> quando terminar: o cliente é avisado e avalia de 1 a 5 estrelas. <b>Devolver à fila</b> se outra pessoa precisa continuar (ex.: fim do seu turno).</span></li>
+      </ol>
+      <ul>
+        <li><b>Abas:</b> Na fila, Meus (os seus em andamento), Outros (com colegas) e Resolvidos. No topo ficam o tamanho da fila e a nota média.</li>
+        <li><b>Chamado novo</b> avisa no sino de quem atende o SAC.</li>
+        <li>Se o cliente escrever depois de resolvido, abre um chamado novo.</li>
+      </ul>
+      <div class="nota"><b>Boas práticas</b>Responda em frases curtas, uma informação por vez. Antes de resolver, confirme: "Consegui ajudar em mais alguma coisa?". Nunca deixe um chamado assumido sem resposta.</div>
+    </section>
+
+    <section id="respostas">
+      <h2><span class="n">07</span>Respostas para casos comuns</h2>
+      <p class="sub">Use como base e adapte ao cliente.</p>
+      <div class="tabela"><table>
+        <thead><tr><th>Caso</th><th>O que orientar</th></tr></thead>
+        <tbody>
+          <tr><td>Preço mudou na loja</td><td>As lojas mudam os preços a qualquer momento. Vale o valor mostrado na loja na hora da compra. Ofertas que acabam saem do site sozinhas.</td></tr>
+          <tr><td>Compra em loja grande (Amazon, Mercado Livre…)</td><td>A compra foi feita na loja. Entrega, troca, reembolso e garantia são com o atendimento da própria loja.</td></tr>
+          <tr><td>Pedido de loja parceira não chegou</td><td>Peça o número PD-…. Oriente a falar com a loja pela conversa do pedido (Mensagens). Se a loja não responder ou descumprir o prazo, encaminhe ao Gerente com o número do pedido.</td></tr>
+          <tr><td>Quero cancelar um pedido pago</td><td>Quem cancela é a loja. Ao cancelar, o Mercado Pago devolve o valor automaticamente pela conta da loja.</td></tr>
+          <tr><td>Quero cancelar o meu plano</td><td>Até 7 dias da compra: Minha conta → Senha e conta → <b>Desistir do plano</b>, com o dinheiro de volta. Depois disso, o plano vale até o fim do período e não renova sozinho.</td></tr>
+          <tr><td>Paguei e o acesso não liberou</td><td>Pix e cartão pelo Mercado Pago liberam sozinhos em poucos minutos. Comprovante de Pix pela chave ou transferência é conferido pela administração: encaminhe com o e-mail da conta.</td></tr>
+          <tr><td>Cadastro aguardando aprovação</td><td>A equipe da administração analisa. Com um plano, a liberação é imediata.</td></tr>
+          <tr><td>Esqueci a senha / não consigo entrar</td><td>Confirme se a conta foi criada com o Google (aí é "Entrar com Google"). Caso contrário, encaminhe ao Gerente. Nunca peça a senha.</td></tr>
+          <tr><td>Quero trocar e-mail, CPF ou CNPJ</td><td>Só a administração muda: encaminhe.</td></tr>
+          <tr><td>Avaliação ofensiva sobre a minha loja</td><td>A loja pode responder publicamente, mas não apagar. Avaliações só são ocultadas por abuso (ofensa, dados pessoais, spam, falsa, ilegal). Encaminhe o link para análise.</td></tr>
+          <tr><td>Afiliado quer dividir a conta com um sócio</td><td>O acesso é pessoal e não pode ser compartilhado nem revendido (Termos do Parceiro). Cada pessoa precisa da própria conta.</td></tr>
+          <tr><td>Moedas, molduras e efeitos</td><td>Moedas vêm das conquistas, das missões e dos vídeos patrocinados. Compras na Loja de cosméticos não usam dinheiro real e não tiram o nível.</td></tr>
+          <tr><td>Quero excluir a minha conta / meus dados</td><td>Minha conta → Senha e conta → excluir a conta. Pedidos de acesso ou correção de dados (LGPD): encaminhe ao Proprietário.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="moderacao">
+      <h2><span class="n">08</span>Moderação do chat</h2>
+      <p class="sub">Para quem tem a função Moderação do chat.</p>
+      <p>O site troca os palavrões por asteriscos antes de entregar a mensagem. A mensagem original fica guardada só para a moderação, e a conversa aparece na sua lista.</p>
+      <ol class="fluxo">
+        <li><b>Abra a lista</b><span>Área de trabalho → Moderação do chat, abas Novas, Resolvidas e Todas.</span></li>
+        <li><b>Leia o histórico</b><span>Em <b>Ver histórico</b>, a conversa completa aparece com cada xingamento marcado, a hora e o texto original. Leia o contexto antes de decidir.</span></li>
+        <li><b>Escolha a medida</b><span>Veja a escala abaixo. Toda ação fecha as ocorrências daquela pessoa na conversa e fica no histórico da conta.</span></li>
+      </ol>
+      <div class="tabela"><table>
+        <thead><tr><th>Medida</th><th>Quando usar</th></tr></thead>
+        <tbody>
+          <tr><td>Marcar como resolvido</td><td>Palavrão sem ofensa a ninguém, desabafo, brincadeira entre conhecidos.</td></tr>
+          <tr><td>Advertir</td><td>Primeira ofensa leve a outra pessoa. Escreva uma mensagem curta e educada (opcional).</td></tr>
+          <tr><td>Bloquear mensagens (X dias)</td><td>Ofensas repetidas ou depois de advertência. Comece com 1 a 3 dias; reincidência, 7. O Suporte continua aberto para a pessoa.</td></tr>
+          <tr><td>Suspender a conta (X dias)</td><td>Só com a função Suspender e banir. Ameaças, assédio, ofensas graves ou bloqueios que não resolveram.</td></tr>
+          <tr><td>Banir</td><td>Só com a função Suspender e banir. Discurso de ódio, golpe, ameaça séria ou reincidência grave. Na dúvida, fale com o Gerente antes.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="nota alerta"><b>Golpes e crimes</b>Tentativa de golpe, pedido de dados de cartão, ameaça ou conteúdo envolvendo menores: aplique a medida que puder e avise o Gerente ou o Proprietário na hora.</div>
+      <p><b>Liberar mensagens</b> desfaz um bloqueio antes do prazo, se houver engano.</p>
+    </section>
+
+    <section id="postar">
+      <h2><span class="n">09</span>Postar anúncios</h2>
+      <p class="sub">Para quem tem a função Postar anúncios.</p>
+      <ol class="fluxo">
+        <li><b>Escolha as ofertas</b><span>Na página de ofertas (<code>/</code>), toque no ✓ dos produtos ou em "★ Melhor de cada categoria".</span></li>
+        <li><b>Vá para as postagens</b><span>Toque em <b>Ir para postagens</b>. Cada produto tem um texto pronto e editável, com preços e o link.</span></li>
+        <li><b>Revise</b><span>Confira se o preço ainda é o da loja, se a foto é do produto certo e se o texto está correto. Não invente desconto nem urgência ("só hoje!") que a loja não oferece.</span></li>
+        <li><b>Publique</b><span>Manual (copiar, baixar a imagem, WhatsApp, Telegram) ou pelo envio automático nas redes marcadas.</span></li>
+      </ol>
+      <div class="nota ouro"><b>Cuidado com o WhatsApp</b>Poste só nos grupos oficiais do Ofertou!, com intervalo entre as mensagens. Muitas mensagens seguidas podem fazer o número ser bloqueado.</div>
+    </section>
+
+    <section id="gerenciar">
+      <h2><span class="n">10</span>Gerenciar a equipe</h2>
+      <p class="sub">Para quem tem a função Gerenciar a equipe.</p>
+      <ul>
+        <li><b>Cadastrar:</b> Área de trabalho → Equipe. Informe nome, e-mail, uma senha inicial e o cargo. Se o e-mail já tem conta no site, a pessoa só ganha o cargo e continua com a senha dela (a menos que você digite outra).</li>
+        <li><b>Trocar o cargo:</b> só para cargos abaixo do seu. Você não muda o próprio cargo.</li>
+        <li><b>Nova senha:</b> a pessoa sai de todos os aparelhos e passa a entrar com a senha nova. Entregue a senha pessoalmente ou por um canal seguro e peça para ela trocar.</li>
+        <li><b>Tirar da equipe:</b> a pessoa perde o cargo e as funções, mas a conta continua existindo.</li>
+        <li>A aba <b>Cargos e permissões</b> mostra o que cada cargo pode fazer. Só o Proprietário muda essa tabela.</li>
+      </ul>
+      <div class="nota"><b>Ao receber alguém novo</b>Mande este guia, explique o cargo e acompanhe os primeiros atendimentos. Ao tirar alguém da equipe, faça isso no mesmo dia em que a pessoa sair.</div>
+    </section>
+
+    <section id="encaminhar">
+      <h2><span class="n">11</span>Quando encaminhar</h2>
+      <p class="sub">Leve para o Gerente ou para o Proprietário, com o número do pedido, da conversa ou o e-mail da conta.</p>
+      <ul>
+        <li>Pagamento por comprovante (Pix pela chave, transferência) para conferir.</li>
+        <li>Pedidos de reembolso fora do que o cliente consegue fazer sozinho.</li>
+        <li>Loja parceira que não responde, descumpre prazos ou vende produto irregular.</li>
+        <li>Suspeita de conta compartilhada, revendida ou de golpe.</li>
+        <li>Troca de e-mail, CPF ou CNPJ, liberação ou aprovação de conta.</li>
+        <li>Pedidos sobre dados pessoais (LGPD), notificação de Procon, processo ou imprensa: não responda nada, só encaminhe.</li>
+        <li>Erro no site (algo que não carrega ou não funciona): descreva o que aconteceu, em que página e a hora.</li>
+      </ul>
+      <div class="rodape">Guia da equipe do Ofertou!. Ele traz só o trabalho da equipe; a configuração do site fica com o Proprietário.</div>
+    </section>
+  </main>
+</div>
+
+</body></html>

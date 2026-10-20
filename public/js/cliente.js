@@ -72,6 +72,8 @@
     ['#go-offers', '#go-posts', '#logout'].forEach(s => { $(s).hidden = false; });
     $('#cli-nome').textContent = `Olá, ${me.cliente.nome.split(' ')[0]}`;
     $('#cli-validade').textContent = String(me.cliente.validade).startsWith('9999') ? 'Acesso sem vencimento.' : `Acesso válido até ${fmtDay(me.cliente.validade)}.`;
+    // Termos do Afiliado ainda não aceitos (acesso criado pelo painel ou antes dos Termos): pede antes de abrir o painel
+    await OfertouAceiteParceiro.pedir(me.parceiro_pendente, '/api/cliente/aceite-parceiro', '/api/cliente/sair');
     await carregarConfig();
   }
 

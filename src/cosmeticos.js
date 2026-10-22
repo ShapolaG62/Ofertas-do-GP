@@ -73,16 +73,34 @@ const utcDe = dia => `${dia} 03:00:00`; // meia-noite de Brasília em UTC (como 
 // ── Moedas ──────────────────────────────────────────────────────────────────
 const ganhos = dono => db.get('SELECT COALESCE(SUM(valor), 0) v FROM moedas_ganhas WHERE dono = ?', dono).v;
 const gastos = dono => db.get('SELECT COALESCE(SUM(preco), 0) v FROM cosmeticos_compras WHERE dono = ?', dono).v;
+// Moedas de boas-vindas conforme o tipo de conta (o plano escolhido): consumidor 1.000, loja 3.000, afiliado 5.000.
+// Calculadas na hora: quem troca de plano passa a ter o bônus do plano novo.
+const BOAS_VINDAS = { consumidor: 1000, empresa: 3000, afiliado: 5000 };
+const NOME_BOAS_VINDAS = { consumidor: 'consumidor', empresa: 'loja', afiliado: 'afiliado' };
+function perfilDeMoedas(dono) {
+  if (/^c:\d+$/.test(dono || '')) return 'afiliado';
+  const m = /^u:(\d+)$/.exec(dono || '');
+  if (!m) return null; // admin já tem tudo
+  const u = db.get('SELECT tipo, cliente_id FROM users WHERE id = ?', Number(m[1]));
+  if (!u) return null;
+  return u.tipo === 'empresa' ? 'empresa' : u.tipo === 'afiliado' || u.cliente_id ? 'afiliado' : 'consumidor';
+}
+const boasVindas = dono => BOAS_VINDAS[perfilDeMoedas(dono)] || 0;
 function saldo(dono) {
-  return Math.max(0, require('./perfis').xpDe(dono) + ganhos(dono) - gastos(dono));
+  return Math.max(0, boasVindas(dono) + require('./perfis').xpDe(dono) + ganhos(dono) - gastos(dono));
 }
 function creditar(dono, origem, ref, valor, descricao) {
   const r = db.run('INSERT OR IGNORE INTO moedas_ganhas (dono, origem, ref, valor, descricao) VALUES (?, ?, ?, ?, ?)', dono, origem, ref, valor, descricao);
   return r.changes > 0;
 }
-const extrato = dono => db.all(`SELECT origem, valor, descricao, created_at FROM moedas_ganhas WHERE dono = ?
-  UNION ALL SELECT 'compra', -preco, item, created_at FROM cosmeticos_compras WHERE dono = ? ORDER BY created_at DESC LIMIT 30`, dono, dono)
-  .map(r => ({ ...r, descricao: r.origem === 'compra' ? `Compra: ${POR_ID[r.descricao]?.nome || require('./perfis').nomeMoldura(r.descricao) || r.descricao}` : r.descricao }));
+function extrato(dono) {
+  const linhas = db.all(`SELECT origem, valor, descricao, created_at FROM moedas_ganhas WHERE dono = ?
+    UNION ALL SELECT 'compra', -preco, item, created_at FROM cosmeticos_compras WHERE dono = ? ORDER BY created_at DESC LIMIT 30`, dono, dono)
+    .map(r => ({ ...r, descricao: r.origem === 'compra' ? `Compra: ${POR_ID[r.descricao]?.nome || require('./perfis').nomeMoldura(r.descricao) || r.descricao}` : r.descricao }));
+  const p = perfilDeMoedas(dono);
+  if (BOAS_VINDAS[p] && linhas.length < 30) linhas.push({ origem: 'boas_vindas', valor: BOAS_VINDAS[p], descricao: `Moedas de boas-vindas (conta de ${NOME_BOAS_VINDAS[p]})`, created_at: null });
+  return linhas;
+}
 
 // ── Presença: marca o dia (missões de entrar no site) e guarda a base dos contadores do período ──
 const contador = (dono, chave) => db.get('SELECT valor FROM metricas WHERE dono = ? AND chave = ?', dono, chave)?.valor || 0;
@@ -235,6 +253,6 @@ function painel(dono) {
 }
 
 module.exports = {
-  ITENS, saldo, painel, missoes, resgatarMissao, videos, iniciarVideo, resgatarVideo, registrarPresenca,
+  ITENS, BOAS_VINDAS, saldo, painel, missoes, resgatarMissao, videos, iniciarVideo, resgatarVideo, registrarPresenca,
   listarVideosAdmin, salvarVideo, excluirVideo, itensDe, comprar, equipar, emUso, youtubeId, VIDEOS_POR_DIA,
 };

@@ -19,7 +19,7 @@
     <section class="cos-topo">
       <div>
         <h1><svg class="ico-btn cos-h1-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1 12h-11z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>Loja de cosméticos</h1>
-        <p class="muted">Molduras animadas, efeitos de perfil e efeitos de nome. Compre com <b>moedas</b>: cada XP das conquistas vira uma moeda, e você ganha mais cumprindo <b>missões</b> e assistindo a <b>vídeos patrocinados</b>. Gastar moedas não tira o seu nível.</p>
+        <p class="muted">Molduras animadas, efeitos de perfil e efeitos de nome. Compre com <b>moedas</b>: você começa com moedas de boas-vindas (1.000 para consumidor, 3.000 para loja e 5.000 para afiliado), cada XP das conquistas vira uma moeda, e você ganha mais cumprindo <b>missões</b> e assistindo a <b>vídeos patrocinados</b>. Gastar moedas não tira o seu nível.</p>
       </div>
       <div class="cos-saldo" aria-live="polite"><span class="cos-moeda" aria-hidden="true"></span><div><b data-cos="moedas">—</b><small>moedas</small></div></div>
     </section>

@@ -131,3 +131,24 @@ cd ~/ofertas-do-gp && git pull && npm ci --omit=dev && npm run ia && pm2 restart
 ## 💾 Backup
 
 Todo o conteúdo (ofertas, configurações, senha) fica na pasta `data/`. Copie essa pasta para fazer backup. Ela **não** vai para o GitHub.
+
+---
+
+## 🔑 Não consigo entrar no painel (/admin)
+
+Na pasta do site, na VPS:
+
+```bash
+node scripts/senha-admin.js --ver
+```
+
+Mostra qual banco o site está usando, se a senha do painel existe e quantas contas há. **"Contas de usuários: 0"** quer dizer que o site não está usando o banco que veio do computador: confira se `data/ofertas.db` está na pasta onde o PM2 roda o site (`pm2 describe ofertas-do-gp` → "exec cwd").
+
+Para definir uma senha nova (ela não aparece enquanto você digita):
+
+```bash
+node scripts/senha-admin.js
+pm2 restart ofertas-do-gp
+```
+
+Errou a senha 5 vezes? O IP fica bloqueado por 15 minutos; `pm2 restart ofertas-do-gp` libera na hora.

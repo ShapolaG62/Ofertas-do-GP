@@ -478,8 +478,7 @@ function desenhar(t) {
 
 // ════════════════════════════════ MÚSICA ════════════════════════════════
 // Trilha eletrônica (118 bpm): pad, baixo, arpejo e batida. Acordes: Lá menor – Fá – Dó – Sol. Batida em todos os
-// compassos do meio e um "whoosh" de ruído nas trocas de cena.
-const TROCAS = [3.4, 7.4, 11.8, 16.2, 20.4, 25, 28.8];
+// compassos do meio.
 function musica(ac, destino, inicio) {
   const BPM = 118, BEAT = 60 / BPM, COMP = BEAT * 4;
   const master = ac.createGain();
@@ -510,13 +509,6 @@ function musica(ac, destino, inicio) {
     g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + .07);
     s.connect(f); f.connect(g); g.connect(master); s.start(t0); s.stop(t0 + .1);
   }
-  function whoosh(t0) {
-    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-    s.buffer = ruido; f.type = 'bandpass'; f.Q.value = 1.2;
-    f.frequency.setValueAtTime(400, t0 - .35); f.frequency.exponentialRampToValueAtTime(5000, t0 + .1);
-    g.gain.setValueAtTime(0, t0 - .35); g.gain.linearRampToValueAtTime(.18, t0); g.gain.linearRampToValueAtTime(0, t0 + .3);
-    s.connect(f); f.connect(g); g.connect(master); s.start(t0 - .35); s.stop(t0 + .35);
-  }
   const compassos = Math.ceil(DUR / COMP);
   for (let c = 0; c < compassos; c++) {
     const t0 = inicio + c * COMP, i = c % 4, cheio = c >= 2 && c < compassos - 1;
@@ -529,7 +521,6 @@ function musica(ac, destino, inicio) {
     if (cheio) for (let b = 0; b < 4; b++) { bumbo(t0 + b * BEAT); chimbal(t0 + b * BEAT + BEAT / 2); }
     else if (c > 0) for (let b = 0; b < 4; b++) chimbal(t0 + b * BEAT + BEAT / 2, .06);
   }
-  for (const tr of TROCAS) whoosh(inicio + tr);
 }
 
 // ════════════════════════════════ EXECUÇÃO ════════════════════════════════

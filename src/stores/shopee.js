@@ -5,45 +5,47 @@ const { http, round2 } = require('../util');
 
 const ENDPOINT = 'https://open-api.affiliate.shopee.com.br/graphql';
 
-async function search(query, s) {
-  const gql = `{ productOfferV2(keyword: ${JSON.stringify(query)}, page: 1, limit: 50) {
-    nodes { itemId productName priceMin priceMax priceDiscountRate imageUrl productLink offerLink }
-  } }`;
-  const payload = JSON.stringify({ query: gql });
-  const ts = Math.floor(Date.now() / 1000);
-  const signature = crypto.createHash('sha256')
-    .update(`${s.shopee_app_id}${ts}${payload}${s.shopee_app_secret}`)
-    .digest('hex');
+// Cada termo pede 3 listas (relevância págs. 1 e 2 + mais vendidos), até 150 produtos: termos amplos
+// como "infantil" ou "vestido" têm milhares de anúncios e só a 1ª página deixava muita oferta de fora.
+const LISTAS = [{ sortType: 1, page: 1 }, { sortType: 1, page: 2 }, { sortType: 2, page: 1 }];
 
-  const res = await http.post(ENDPOINT, payload, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `SHA256 Credential=${s.shopee_app_id}, Timestamp=${ts}, Signature=${signature}`,
-    },
-    validateStatus: () => true,
-  });
-  const data = res.data || {};
-  if (data.errors?.length) {
-    return { status: 'error', message: `API Shopee: ${data.errors[0].message}`, deals: [] };
-  }
-  const nodes = data.data?.productOfferV2?.nodes || [];
+async function search(query, s) {
+  const vistos = new Set();
   const deals = [];
-  for (const n of nodes) {
-    const price = Number(n.priceMin);
-    const rate = Number(n.priceDiscountRate);
-    // A Shopee informa o preço atual e o percentual de desconto anunciado; o preço "de" é derivado deles.
-    if (!price || !rate || rate <= 0 || rate >= 100) continue;
-    deals.push({
-      store_product_id: String(n.itemId),
-      produto: n.productName,
-      preco_atual: price,
-      preco_anterior: round2(price / (1 - rate / 100)),
-      imagem: n.imageUrl,
-      original_url: n.productLink,
-      affiliate_url: n.offerLink || null,
-    });
+  let erro = null, semPagina2 = false;
+  for (const l of LISTAS) {
+    if (l.page === 2 && semPagina2) continue; // poucos resultados: a 2ª página viria vazia
+    let d;
+    try {
+      d = await gql(`{ productOfferV2(keyword: ${JSON.stringify(query)}, sortType: ${l.sortType}, page: ${l.page}, limit: 50) {
+        nodes { itemId productName priceMin priceMax priceDiscountRate imageUrl productLink offerLink }
+        pageInfo { hasNextPage }
+      } }`, s);
+    } catch (err) {
+      erro = err.message;
+      if (!deals.length && l === LISTAS[0]) return { status: 'error', message: erro, deals: [] };
+      continue;
+    }
+    const nodes = d.productOfferV2?.nodes || [];
+    for (const n of nodes) {
+      const price = Number(n.priceMin);
+      const rate = Number(n.priceDiscountRate);
+      // A Shopee informa o preço atual e o percentual de desconto anunciado; o preço "de" é derivado deles.
+      if (!price || !rate || rate <= 0 || rate >= 100 || vistos.has(String(n.itemId))) continue;
+      vistos.add(String(n.itemId));
+      deals.push({
+        store_product_id: String(n.itemId),
+        produto: n.productName,
+        preco_atual: price,
+        preco_anterior: round2(price / (1 - rate / 100)),
+        imagem: n.imageUrl,
+        original_url: n.productLink,
+        affiliate_url: n.offerLink || null,
+      });
+    }
+    if (l.page === 1 && !d.productOfferV2?.pageInfo?.hasNextPage) semPagina2 = true;
   }
-  return { status: 'ok', deals, message: 'via API de afiliados' };
+  return { status: 'ok', deals, message: erro ? `via API de afiliados (aviso: ${erro})` : 'via API de afiliados' };
 }
 
 // Chamada assinada à API GraphQL do Shopee Afiliados.
@@ -72,7 +74,7 @@ module.exports = {
   gerarLink,
   id: 'shopee',
   name: 'Shopee',
-  method: 'API oficial Shopee Afiliados',
+  method: 'API oficial Shopee Afiliados (relevância + mais vendidos, até 150 por termo)',
   automatic: true,
   isReady: s => (s.shopee_app_id && s.shopee_app_secret)
     ? { ready: true }

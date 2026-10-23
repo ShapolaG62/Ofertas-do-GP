@@ -18,6 +18,12 @@ function Passo($t) { Write-Host "`n>> $t" -ForegroundColor Green }
 
 Set-Location $Pasta
 if (-not (Test-Path (Join-Path $Pasta 'server.js'))) { throw "Pasta do site não encontrada: $Pasta" }
+# Porta do site: a do arquivo .env (PORT=...), quando existe
+if (-not $PSBoundParameters.ContainsKey('Porta') -and (Test-Path '.env')) {
+  $linha = Select-String -Path '.env' -Pattern '^\s*PORT\s*=\s*"?(\d+)' | Select-Object -First 1
+  if ($linha) { $Porta = [int]$linha.Matches[0].Groups[1].Value }
+}
+Write-Host "Porta do site: $Porta"
 Write-Host "Atualizando o Ofertou! em: $Pasta" -ForegroundColor Cyan
 
 # 1. Baixar

@@ -1,5 +1,10 @@
 const path = require('path');
 const fs = require('fs');
+
+// Configurações do servidor no arquivo .env (PORT, DATA_DIR, ADMIN_PASSWORD...), como em .env.example.
+// Lido antes de tudo; o que já estiver definido no sistema vale mais que o arquivo. Sobrevive às atualizações.
+try { process.loadEnvFile(path.join(__dirname, '.env')); } catch { /* sem .env: usa o padrão */ }
+
 const express = require('express');
 
 const { UPLOADS_DIR } = require('./src/db');

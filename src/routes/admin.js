@@ -107,7 +107,7 @@ router.post('/api/admin/mine', async (req, res) => {
   }
   if (query) {
     // Busca pontual: espera o resultado para mostrar na tela.
-    return res.json(await miner.runMining({ query, storeIds }));
+    return res.json(await miner.runMining({ query, storeIds, escolhidas: Boolean(storeIds) }));
   }
   miner.runMining({ storeIds }).catch(err => console.error('[MINER]', err));
   res.json({ ok: true, started: true });

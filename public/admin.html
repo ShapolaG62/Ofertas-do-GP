@@ -272,12 +272,12 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261201"></script>
-<script src="/js/dialogo.js?v=20261201"></script>
-<script src="/js/avisos-entrada.js?v=20261201"></script>
-<script src="/js/capi-minerando.js?v=20261201" defer></script>
-<script src="/js/cadastro-auto.js?v=20261201" defer></script>
-<script src="/js/seletor.js?v=20261201" defer></script>
+<script src="/js/tema.js?v=20261202"></script>
+<script src="/js/dialogo.js?v=20261202"></script>
+<script src="/js/avisos-entrada.js?v=20261202"></script>
+<script src="/js/capi-minerando.js?v=20261202" defer></script>
+<script src="/js/cadastro-auto.js?v=20261202" defer></script>
+<script src="/js/seletor.js?v=20261202" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -475,10 +475,17 @@
       </div>
       <div class="panel">
         <h2>Busca pontual</h2>
-        <p class="hint">Minera um termo específico agora em todas as lojas automáticas (ex.: "fone jbl", "air fryer mondial").</p>
-        <form id="quick-mine" class="row">
-          <input type="text" name="query" placeholder="Termo de busca" style="flex:1;min-width:200px" maxlength="100" required>
-          <button class="btn" type="submit">Buscar ofertas</button>
+        <p class="hint">Minera um termo específico agora, nas lojas marcadas (ex.: "fone jbl", "air fryer mondial"). Lojas desligadas na mineração automática também podem ser marcadas aqui.</p>
+        <form id="quick-mine">
+          <div class="row">
+            <input type="text" name="query" placeholder="Termo de busca" style="flex:1;min-width:200px" maxlength="100" required>
+            <button class="btn" type="submit">Buscar ofertas</button>
+          </div>
+          <div class="row qm-lojas" style="gap:14px;margin-top:10px;align-items:center">
+            <span class="hint" style="margin:0">Lojas:</span>
+            <span class="row" id="qm-lojas" style="gap:14px"></span>
+            <button class="btn small" type="button" id="qm-todas">marcar todas</button>
+          </div>
         </form>
         <div id="quick-result" class="hint"></div>
       </div>
@@ -488,6 +495,12 @@
           <div class="row" id="enabled-stores" style="gap:18px;margin:10px 0 4px"></div>
           <h3>Termos de busca</h3>
           <p class="hint">Um termo por linha. Opcional: indique a categoria depois de "|" (ex.: <code>air fryer | cozinha</code>). Categorias: <span id="cat-list"></span>.</p>
+          <div class="row novo-termo" style="gap:8px;margin:6px 0 10px;align-items:end">
+            <label class="field" style="flex:1;min-width:180px;margin:0">Novo termo <input type="text" id="nt-termo" maxlength="60" placeholder="Ex.: camisa gola padre"></label>
+            <label class="field" style="min-width:170px;margin:0">Categoria <select id="nt-cat"><option value="">Automática (pelo nome)</option></select></label>
+            <button class="btn primary" type="button" id="nt-add">+ Adicionar termo</button>
+          </div>
+          <div id="nt-msg" class="hint" style="margin:0 0 8px"></div>
           <textarea name="search_terms"></textarea>
           <div class="grid" style="margin-top:14px">
             <label class="field">Minerar a cada (minutos) <input type="number" name="mining_interval_min" min="15" max="1440"></label>
@@ -1428,6 +1441,7 @@ async function showApp() {
   loadPedidos().catch(() => {});
   $('#manual-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
   $('#cat-list').textContent = CATEGORIES.join(', ');
+  if ($('#nt-cat').options.length === 1) $('#nt-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
   const inicial = location.hash.slice(1);
   if (inicial && inicial !== 'dash' && document.querySelector(`.tab[data-tab="${inicial}"]`)) abrirAba(inicial); else loadDashboard();
 }
@@ -1675,6 +1689,14 @@ async function loadStores() {
   clearTimeout(pollTimer);
   if (st.running) pollTimer = setTimeout(loadStores, 4000);
 
+  // Busca pontual: começa com as lojas ligadas na automática (mantém o que a pessoa já marcou)
+  const marcadas = new Set([...document.querySelectorAll('#qm-lojas input:checked')].map(i => i.value));
+  const primeiraVez = !document.querySelector('#qm-lojas input');
+  $('#qm-lojas').innerHTML = st.stores.filter(s => s.automatic).map(s => `
+    <label class="check"><input type="checkbox" value="${s.id}" ${(primeiraVez ? st.enabled[s.id] !== false : marcadas.has(s.id)) ? 'checked' : ''}> ${esc(s.name)}</label>`).join('');
+
+  $('#qm-todas').textContent = [...document.querySelectorAll('#qm-lojas input')].every(c => c.checked) ? 'desmarcar todas' : 'marcar todas';
+
   $('#enabled-stores').innerHTML = st.stores.filter(s => s.automatic).map(s => `
     <label class="check"><input type="checkbox" data-store="${s.id}" ${st.enabled[s.id] !== false ? 'checked' : ''}> ${esc(s.name)}</label>`).join('');
 }
@@ -1685,20 +1707,53 @@ $('#mine-now').addEventListener('click', async () => {
   setTimeout(loadStores, 800);
 });
 
+$('#qm-lojas').addEventListener('change', () => {
+  $('#qm-todas').textContent = [...document.querySelectorAll('#qm-lojas input')].every(c => c.checked) ? 'desmarcar todas' : 'marcar todas';
+});
+$('#qm-todas').addEventListener('click', () => {
+  const caixas = [...document.querySelectorAll('#qm-lojas input')];
+  const todas = caixas.every(c => c.checked);
+  caixas.forEach(c => { c.checked = !todas; });
+  $('#qm-todas').textContent = todas ? 'marcar todas' : 'desmarcar todas';
+});
+
 $('#quick-mine').addEventListener('submit', async e => {
   e.preventDefault();
   const q = e.target.query.value.trim();
   const out = $('#quick-result');
+  const lojas = [...document.querySelectorAll('#qm-lojas input:checked')].map(i => i.value);
+  if (!lojas.length) { out.textContent = 'Marque pelo menos uma loja.'; return; }
   out.textContent = `Minerando "${q}"... (pode levar até 1 minuto)`;
   e.target.querySelector('button').disabled = true;
   try {
-    const r = await api('/api/admin/mine', { method: 'POST', body: { query: q } });
+    const r = await api('/api/admin/mine', { method: 'POST', body: { query: q, stores: lojas } });
     out.innerHTML = (r.results || []).filter(x => x.status !== 'skipped' && x.status !== 'disabled')
       .map(x => `${esc(STORE_LIST.find(s => s.id === x.store)?.name || x.store)}: <b>${x.saved}</b> gravadas (${esc(STATUS_LABEL[x.status] || x.status)})`).join(' · ') || 'Nenhuma loja automática ativa.';
     loadStores();
   } catch (err) { out.textContent = err.message; }
   e.target.querySelector('button').disabled = false;
 });
+
+// Adicionar termo de mineração no padrão da lista: minúsculas, sem acento, "termo | categoria" (categoria opcional).
+// Acrescenta no fim da lista e já salva.
+function adicionarTermo() {
+  const ta = document.querySelector('textarea[name="search_terms"]');
+  const termo = $('#nt-termo').value.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[|\r\n]/g, ' ').replace(/\s+/g, ' ').trim();
+  const cat = $('#nt-cat').value;
+  const msg = (t, ok) => { $('#nt-msg').textContent = t; $('#nt-msg').style.color = ok ? 'var(--green)' : 'var(--red)'; };
+  if (termo.length < 2) return msg('Digite o termo (pelo menos 2 letras).');
+  const linhas = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
+  if (linhas.some(l => l.split('|')[0].trim().toLowerCase() === termo)) return msg(`"${termo}" já está na lista.`);
+  linhas.push(cat ? `${termo} | ${cat}` : termo);
+  ta.value = linhas.join('\n');
+  ta.scrollTop = ta.scrollHeight;
+  $('#nt-termo').value = '';
+  msg(`"${termo}" adicionado (${linhas.length} termos). Salvando…`, true);
+  ta.closest('form').requestSubmit();
+}
+$('#nt-add').addEventListener('click', adicionarTermo);
+$('#nt-termo').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); adicionarTermo(); } });
 
 // ── Configurações ─────────────────────────────────────────────────────────────
 async function loadSettings() {

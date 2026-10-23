@@ -87,6 +87,7 @@ function nextBatch(all) {
 }
 
 // options.query: busca um termo específico; options.storeIds: limita às lojas indicadas.
+// options.escolhidas: na busca pontual, as lojas marcadas são mineradas mesmo se estiverem desligadas na automática.
 async function runMining(options = {}) {
   if (running) return { alreadyRunning: true };
   const s = settings.getAll();
@@ -100,7 +101,7 @@ async function runMining(options = {}) {
     const startedAt = runningSince;
     log(`Iniciando mineração (${options.query ? `termo "${options.query}"` : `${terms.length} termos`})`);
     const results = await Promise.all(stores.map(store => {
-      if (store.automatic && enabled[store.id] === false) {
+      if (store.automatic && enabled[store.id] === false && !options.escolhidas) {
         setStatus(store.id, { status: 'disabled', message: 'Desativada no painel', found: 0, saved: 0 });
         return { store: store.id, status: 'disabled', found: 0, saved: 0 };
       }

@@ -204,7 +204,26 @@ router.get('/api/admin/users/:id', (req, res) => {
     pedidos_recebidos: data.loja ? pedidosLoja.listarAdmin({ lojaId: data.loja.id, limite: 200 }) : [],
     metricas: data.loja ? pedidosLoja.metricas(data.loja.id) : null,
   };
+  data.moedas = require('../cosmeticos').saldo(dono);
   res.json(data);
+});
+
+// Editar as moedas de um usuário (ficha → Moedas): adicionar, tirar ou definir o saldo exato.
+// Vira um lançamento no extrato da pessoa, com o motivo.
+router.post('/api/admin/users/:id/moedas', (req, res) => {
+  const id = Number(req.params.id);
+  if (!db.get('SELECT 1 FROM users WHERE id = ?', id)) return res.status(404).json({ error: 'Usuário não encontrado.' });
+  const cos = require('../cosmeticos');
+  const dono = `u:${id}`;
+  const valor = Math.min(Math.max(parseInt(req.body?.valor, 10) || 0, 0), 10000000);
+  const modo = ['somar', 'tirar', 'definir'].includes(req.body?.modo) ? req.body.modo : 'somar';
+  const atual = cos.saldo(dono);
+  const delta = modo === 'somar' ? valor : modo === 'tirar' ? -Math.min(valor, atual) : valor - atual;
+  if (!delta) return res.json({ moedas: atual });
+  const motivo = String(req.body?.motivo || '').trim().slice(0, 80);
+  cos.creditar(dono, 'admin', `admin:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`, delta,
+    motivo ? `Ajuste do Ofertou!: ${motivo}` : 'Ajuste do Ofertou!');
+  res.json({ moedas: cos.saldo(dono) });
 });
 
 

@@ -2050,6 +2050,24 @@ function ligarPlano(u, preencher, l) {
 let PLANOS_UD = []; // planos carregados na ficha do usuário (para avisar se a conta muda de tipo)
 // Cadastro rápido ainda sem e-mail: o endereço guardado é provisório (.invalid); mostra o celular no lugar
 const emailUsuario = u => (/\.invalid$/i.test(u.email || '') ? `<i>sem e-mail · cadastro rápido</i>${u.telefone ? ` · ${esc(u.telefone)}` : ''}` : esc(u.email));
+// Moedas do usuário (ficha → quadro "Moedas da Loja de cosméticos")
+document.addEventListener('click', async e => {
+  const b = e.target.closest('#ud-moedas-aplicar');
+  if (!b) return;
+  const caixa = b.closest('[data-moedas-uid]'), msg = $('#ud-moedas-msg');
+  const valor = parseInt($('#ud-moedas-valor').value, 10);
+  if (!Number.isFinite(valor) || valor < 0) { msg.textContent = 'Informe a quantidade de moedas.'; msg.style.color = 'var(--red)'; return; }
+  b.disabled = true;
+  try {
+    const r = await api(`/api/admin/users/${caixa.dataset.moedasUid}/moedas`, { method: 'POST',
+      body: { modo: $('#ud-moedas-modo').value, valor, motivo: $('#ud-moedas-motivo').value } });
+    $('#ud-moedas-saldo').textContent = Number(r.moedas).toLocaleString('pt-BR');
+    $('#ud-moedas-valor').value = ''; $('#ud-moedas-motivo').value = '';
+    msg.textContent = 'Saldo salvo.'; msg.style.color = 'var(--green)';
+  } catch (err) { msg.textContent = err.message; msg.style.color = 'var(--red)'; }
+  b.disabled = false;
+});
+
 async function openUser(id) {
   const d = await api(`/api/admin/users/${id}`);
   const u = d.user, l = d.loja;
@@ -2120,6 +2138,20 @@ async function openUser(id) {
       </div>
       <div class="row" style="margin-top:10px;gap:8px"><button class="btn primary small" type="button" id="ud-plano-aplicar">Aplicar plano</button>
         <span class="hint" style="margin:0" id="ud-plano-msg"></span></div>
+    </div>
+    <div class="store-card" data-moedas-uid="${u.id}">
+      <h4>Moedas da Loja de cosméticos</h4>
+      <p class="hint" style="margin:2px 0 10px">Saldo atual: <b id="ud-moedas-saldo">${Number(d.moedas || 0).toLocaleString('pt-BR')}</b> moedas</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+        <label class="field">O que fazer <select id="ud-moedas-modo">
+          <option value="somar">Adicionar moedas</option>
+          <option value="tirar">Tirar moedas</option>
+          <option value="definir">Definir o saldo exato</option></select></label>
+        <label class="field">Quantidade <input type="number" id="ud-moedas-valor" min="0" max="10000000" step="1" placeholder="Ex.: 500"></label>
+        <label class="field">Motivo (aparece no extrato da pessoa) <input type="text" id="ud-moedas-motivo" maxlength="80" placeholder="Ex.: Prêmio do sorteio"></label>
+      </div>
+      <div class="row" style="margin-top:10px;gap:8px"><button class="btn primary small" type="button" id="ud-moedas-aplicar">Salvar saldo</button>
+        <span class="hint" style="margin:0" id="ud-moedas-msg"></span></div>
     </div>
     ${l ? `
       <div class="store-card">

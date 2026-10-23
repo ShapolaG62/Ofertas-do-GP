@@ -293,6 +293,6 @@ function painel(dono) {
 }
 
 module.exports = {
-  ITENS, saldo, painel, missoes, resgatarMissao, videos, iniciarVideo, resgatarVideo, registrarPresenca,
+  ITENS, saldo, creditar, painel, missoes, resgatarMissao, videos, iniciarVideo, resgatarVideo, registrarPresenca,
   listarVideosAdmin, salvarVideo, excluirVideo, itensDe, comprar, equipar, emUso, youtubeId, VIDEOS_POR_DIA,
 };

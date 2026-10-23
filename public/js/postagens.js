@@ -95,7 +95,7 @@
     for (const o of OFFERS) {
       if (fotoPronta[o.id] !== undefined) continue;
       fotoPronta[o.id] = null;
-      fetch(o.imagem_url || `/api/img/${o.id}`).then(r => (r.ok ? r.blob() : null)).then(b => {
+      fetch(`/api/img/${o.id}?copiar=1`).then(r => (r.ok ? r.blob() : null)).then(b => {
         if (!b || !/^image\//.test(b.type)) return;
         const ext = (b.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
         fotoPronta[o.id] = new File([b], `oferta-${o.id}.${ext}`, { type: b.type });
@@ -146,7 +146,7 @@
   }
 
   // Foto do produto em PNG (único formato de imagem que a área de transferência aceita)
-  const fotoPng = o => fetch(o.imagem_url || `/api/img/${o.id}`).then(r => r.blob()).then(createImageBitmap).then(bmp => {
+  const fotoPng = o => fetch(`/api/img/${o.id}?copiar=1`).then(r => r.blob()).then(createImageBitmap).then(bmp => {
     const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
     c.getContext('2d').drawImage(bmp, 0, 0);
     return new Promise((ok, erro) => c.toBlob(b => (b ? ok(b) : erro(new Error('sem imagem'))), 'image/png'));

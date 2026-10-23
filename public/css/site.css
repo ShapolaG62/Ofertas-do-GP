@@ -1123,8 +1123,11 @@ body.pf-body {
 .pf-dialog-head, .pf-dialog-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .pf-dialog-head h2 { margin: 0; }
 .pf-dialog-foot { justify-content: flex-end; position: sticky; bottom: 0; z-index: 2; margin: 0 -22px -20px; padding: 12px 22px 16px; background: var(--surface); border-top: 1px solid var(--line); border-radius: 0 0 16px 16px; }
-.pf-dialog { overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
-.pf-dialog::-webkit-scrollbar { display: none; }
+.pf-dialog { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.pf-dialog::-webkit-scrollbar { width: 8px; }
+.pf-dialog::-webkit-scrollbar-track { background: transparent; margin: 16px 0; }
+.pf-dialog::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; }
+.pf-dialog::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
 .pf-plano-aviso { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); color: var(--ink-2); font-size: 13.5px; line-height: 1.5; }
 .pf-imgs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; }
 .pf-img-box { display: grid; gap: 8px; align-content: start; }
@@ -2292,7 +2295,12 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-size: 16px; cursor: pointer; }
 .cos-dlg-fechar:hover { border-color: var(--brand); color: var(--brand); }
 .cos-toast { position: fixed; }
-.pf-dialog-head .pf-loja-btn { margin-left: auto; margin-right: 8px; border-color: #b8860b; color: #f2c94c; }
+.pf-dialog-head .pf-loja-btn { margin-left: auto; margin-right: 8px; }
+/* Botões da Loja de cosméticos: dourados, maiores e com brilho, para chamar atenção */
+.pf-loja-btn, .pf-loja-chamada .btn { min-height: 42px; padding: 0 18px; font-size: 15px; font-weight: 800; border-radius: 999px; border: 0;
+  background: linear-gradient(135deg, #f7d774, #e0a526 55%, #c98a10); color: #2a1a00; box-shadow: 0 4px 18px rgba(224, 165, 38, .35); }
+.pf-loja-btn:hover, .pf-loja-chamada .btn:hover { filter: brightness(1.08); color: #2a1a00; box-shadow: 0 6px 22px rgba(224, 165, 38, .5); }
+.pf-loja-btn .ico-btn, .pf-loja-chamada .btn .ico-btn { width: 19px; height: 19px; stroke: currentColor; }
 @media (max-width: 560px) { .cos-dlg { width: 100%; max-height: 100dvh; border-radius: 0; } .cos-dlg .cos-page { padding: 16px; } }
 
 /* Efeitos da Loja de cosméticos na miniatura da Comunidade: o efeito fica por baixo do conteúdo do cartão */

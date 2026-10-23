@@ -1,7 +1,7 @@
 ﻿# Ofertou! — atualiza o site na VPS Windows com a versão mais nova do GitHub, sem mexer nos dados.
 # Uso: dois cliques em "atualizar-vps.bat" (na pasta do site) ou, no PowerShell:  .\scripts\atualizar-vps.ps1
 # O que faz:
-#   1. baixa o código do GitHub (repositório público) para uma pasta temporária;
+#   1. baixa o código do GitHub para uma pasta temporária (repositório privado: chave GITHUB_TOKEN no .env);
 #   2. para o site, faz backup do banco (data\backups\antes-de-atualizar-<data>);
 #   3. copia o código novo por cima, SEM tocar em data\, node_modules\, .env e senha.txt;
 #   4. reinstala as bibliotecas só se package-lock.json mudou;
@@ -32,7 +32,29 @@ $tmp = Join-Path $env:TEMP ("ofertou-atualizacao-" + [guid]::NewGuid().ToString(
 New-Item -ItemType Directory -Force $tmp | Out-Null
 $zip = Join-Path $tmp 'codigo.zip'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Invoke-WebRequest "https://github.com/$Repositorio/archive/refs/heads/main.zip" -OutFile $zip -UseBasicParsing
+# Repositório privado: precisa da chave de leitura do GitHub na linha GITHUB_TOKEN=... do arquivo .env
+$token = ''
+if (Test-Path '.env') {
+  $linhaToken = Select-String -Path '.env' -Pattern '^\s*GITHUB_TOKEN\s*=\s*"?([^"\s]+)' | Select-Object -First 1
+  if ($linhaToken) { $token = $linhaToken.Matches[0].Groups[1].Value }
+}
+try {
+  if ($token) {
+    Invoke-WebRequest "https://api.github.com/repos/$Repositorio/zipball/main" -OutFile $zip -UseBasicParsing `
+      -Headers @{ Authorization = "Bearer $token"; 'User-Agent' = 'ofertou-atualizador'; Accept = 'application/vnd.github+json' }
+  } else {
+    Invoke-WebRequest "https://github.com/$Repositorio/archive/refs/heads/main.zip" -OutFile $zip -UseBasicParsing
+  }
+} catch {
+  $cod = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+  if ($cod -eq 404 -or $cod -eq 401 -or $cod -eq 403) {
+    Write-Host "`nO GitHub recusou o download (erro $cod). Nada foi alterado no site." -ForegroundColor Yellow
+    if ($token) { Write-Host 'A chave GITHUB_TOKEN do arquivo .env está errada, vencida ou sem permissão de leitura (Contents: Read-only) neste repositório.' -ForegroundColor Yellow }
+    else { Write-Host 'O repositório está privado. Crie uma chave de leitura no GitHub e coloque no .env a linha:  GITHUB_TOKEN=sua_chave' -ForegroundColor Yellow }
+    exit 1
+  }
+  throw
+}
 Expand-Archive $zip -DestinationPath $tmp -Force
 $novo = Get-ChildItem $tmp -Directory | Select-Object -First 1
 if (-not $novo -or -not (Test-Path (Join-Path $novo.FullName 'server.js'))) { throw 'O arquivo baixado não tem o site. Nada foi alterado.' }

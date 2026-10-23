@@ -168,6 +168,37 @@ app.get('/site.webmanifest', (req, res) => {
     start_url: `/?origem=app&barra=${escuro ? 'escuro' : 'claro'}` }));
 });
 
+// Google e outros buscadores: o que pode ser indexado (robots.txt) e a lista de páginas públicas (sitemap.xml).
+// Áreas internas, a API e os links de redirecionamento (/o/:id) ficam de fora.
+const baseUrl = req => `${req.protocol}://${req.get('host')}`;
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send([
+    'User-agent: *',
+    'Allow: /',
+    ...['/admin', '/api/', '/o/', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
+    '',
+    `Sitemap: ${baseUrl(req)}/sitemap.xml`,
+    '',
+  ].join('\n'));
+});
+app.get('/sitemap.xml', (req, res) => {
+  const base = baseUrl(req);
+  const hoje = new Date().toISOString().slice(0, 10);
+  const urls = [['/', 'hourly', '1.0'], ['/conta', 'weekly', '0.8'], ['/ajuda', 'monthly', '0.6'], ['/anuncie', 'monthly', '0.5'], ['/assinar', 'monthly', '0.5'], ['/privacidade', 'yearly', '0.3']]
+    .map(([p, freq, pri]) => ({ loc: base + p, freq, pri }));
+  try {
+    const lojas = require('./src/db').all(`SELECT lj.slug FROM lojas lj JOIN users u ON u.id = lj.user_id
+      WHERE lj.oculta = 0 AND u.status = 'active' ORDER BY lj.id LIMIT 5000`);
+    for (const l of lojas) urls.push({ loc: `${base}/loja/${encodeURIComponent(l.slug)}`, freq: 'daily', pri: '0.6' });
+  } catch { /* sem lojas parceiras */ }
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(u => `  <url><loc>${esc(u.loc)}</loc><lastmod>${hoje}</lastmod><changefreq>${u.freq}</changefreq><priority>${u.pri}</priority></url>`).join('\n')}
+</urlset>
+`);
+});
+
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.
 // Cache no navegador: CSS/JS com ?v= (o número muda a cada versão) ficam guardados por 1 ano; imagens por 7 dias;
 // páginas HTML são sempre conferidas (ETag), para as mudanças aparecerem na hora.

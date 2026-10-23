@@ -87,7 +87,24 @@
   });
 
   // ── Lista de produtos ──────────────────────────────────────────────────────
+  // Foto de cada produto já baixada como arquivo, para o botão WhatsApp compartilhar foto + legenda na hora do clique
+  // (o "Compartilhar" do aparelho só abre se for chamado logo depois do clique, sem esperar download).
+  const fotoPronta = {};
+  function prepararFotos() {
+    if (!navigator.canShare) return;
+    for (const o of OFFERS) {
+      if (fotoPronta[o.id] !== undefined) continue;
+      fotoPronta[o.id] = null;
+      fetch(o.imagem_url || `/api/img/${o.id}`).then(r => (r.ok ? r.blob() : null)).then(b => {
+        if (!b || !/^image\//.test(b.type)) return;
+        const ext = (b.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+        fotoPronta[o.id] = new File([b], `oferta-${o.id}.${ext}`, { type: b.type });
+      }).catch(() => {});
+    }
+  }
+
   function render() {
+    prepararFotos();
     const n = OFFERS.length;
     $('#posts-sub').textContent = n
       ? `${n} produto${n === 1 ? '' : 's'} escolhido${n === 1 ? '' : 's'}. Edite os textos se quiser e publique manualmente ou automaticamente.`
@@ -143,6 +160,16 @@
       // Links de compartilhar montados na hora do clique, com o texto já editado.
       const o = offerOf(share);
       const text = textOf(o);
+      // WhatsApp: manda a FOTO do produto com o texto de legenda (o link fica só no texto, sem o quadro de prévia).
+      // Usa o "Compartilhar" do aparelho (celular, Windows); sem ele, abre o WhatsApp só com o texto.
+      if (share.dataset.share === 'wa' && navigator.canShare && fotoPronta[o.id]
+        && navigator.canShare({ files: [fotoPronta[o.id]], text })) {
+        e.preventDefault();
+        navigator.share({ files: [fotoPronta[o.id]], text }).catch(err => {
+          if (err.name !== 'AbortError') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        });
+        return;
+      }
       share.href = share.dataset.share === 'wa'
         ? `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
         : `https://t.me/share/url?url=${encodeURIComponent(o.link)}&text=${encodeURIComponent(text)}`;

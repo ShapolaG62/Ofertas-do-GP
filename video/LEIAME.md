@@ -21,3 +21,9 @@ Com a narração presente:
 - a música fica mais baixa por baixo da voz.
 
 Sem a pasta `narracao`, o vídeo sai sem voz, com 52 s.
+
+## Motion graphics 9:16 e 16:9 (33 s, sem narração)
+1. **Prints:** `node video/capturar-motion.js <endereço> <token de sessão de consumidor>` gera `video/telas-motion/*.png` (tema claro e escuro, computador e celular). Use um banco de **teste**, com chaves apagadas, nunca o do site no ar.
+2. **Assistir:** abra `video/motion.html` (16:9) ou `video/motion.html?formato=vertical` (9:16).
+3. **Conferir instantes:** `node video/gravar-motion.js quadros 2,9.5,14` gera `video/quadros-motion/*.png`.
+4. **Gravar:** `node video/gravar-motion.js` gera `video/Ofertou-motion-16x9.mp4` e `video/Ofertou-motion-9x16.mp4` (ou só um: `vertical` / `horizontal`).

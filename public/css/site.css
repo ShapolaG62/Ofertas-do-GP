@@ -2596,7 +2596,6 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
     pointer-events: none; z-index: 90; }
 }
 
-/* Comunidade (quadro da lateral): 3 perfis visíveis, o resto rolando (altura calculada em comunidade.js) */
-#comu-lista-card { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
-#comu-lista-card::-webkit-scrollbar { width: 6px; }
-#comu-lista-card::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 6px; }
+/* Comunidade (quadro da lateral): 3 perfis visíveis, o resto rolando sem barra aparente (altura calculada em comunidade.js) */
+#comu-lista-card { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+#comu-lista-card::-webkit-scrollbar { display: none; }

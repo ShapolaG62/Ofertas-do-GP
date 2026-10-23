@@ -38,11 +38,11 @@
   .sel-lista { position: fixed; inset: auto; margin: 0; z-index: 2147483300; box-sizing: border-box; overflow: auto; max-height: 280px;
     background: var(--surface, #161b18); color: var(--ink, var(--text, #edf1ee)); border: 1px solid var(--line-strong, var(--border-strong, #343c36));
     border-radius: 12px; padding: 5px; box-shadow: 0 18px 44px -12px rgba(0, 0, 0, .55); font-family: Figtree, system-ui, sans-serif; font-size: 14px;
-    scrollbar-width: thin; animation: sel-abre .12s ease-out; }
+    scrollbar-width: thin; animation: sel-abre .12s ease-out; overflow-x: hidden; }
   .sel-lista[hidden] { display: none; }
   @keyframes sel-abre { from { transform: translateY(-4px); } }
   .sel-op { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 8px; cursor: pointer;
-    white-space: nowrap; line-height: 1.3; user-select: none; }
+    line-height: 1.3; user-select: none; }
   .sel-op.ativo { background: var(--surface-3, #222924); }
   .sel-op[aria-selected="true"] { color: var(--brand, var(--green, #2bb673)); font-weight: 700; }
   .sel-op[aria-selected="true"]::after { content: ""; flex: none; width: 14px; height: 14px; background: currentColor;
@@ -86,8 +86,13 @@
   const temPopover = typeof HTMLElement.prototype.showPopover === 'function';
   // Põe a janelinha na camada de cima (na frente de diálogos abertos) e perto do campo, sem sair da tela
   function mostrarPerto(el, campo, alturaMax) {
-    if (!temPopover) (campo.closest('dialog[open]') || document.body).appendChild(el);
-    else if (!el.isConnected) document.body.appendChild(el);
+    // Dentro de uma janela modal aberta, a lista precisa ficar DENTRO dela: o navegador bloqueia os cliques em
+    // tudo que está fora da janela modal (a lista aparecia, mas o clique caía no que estava atrás).
+    const pai = campo.closest('dialog[open]') || document.body;
+    if (el.parentElement !== pai) {
+      if (temPopover && el.matches(':popover-open')) el.hidePopover();
+      pai.appendChild(el);
+    }
     el.hidden = false;
     if (temPopover && !el.matches(':popover-open')) el.showPopover();
     const r = campo.getBoundingClientRect();

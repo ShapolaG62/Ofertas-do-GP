@@ -19,15 +19,17 @@
     <section class="cos-topo">
       <div>
         <h1><svg class="ico-btn cos-h1-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 8h13l-1 12h-11z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>Loja de cosméticos</h1>
-        <p class="muted">Molduras animadas, efeitos de perfil e efeitos de nome. Compre com <b>moedas</b>: você começa com moedas de boas-vindas (1.000 para consumidor, 3.000 para loja e 5.000 para afiliado), cada XP das conquistas vira uma moeda, e você ganha mais cumprindo <b>missões</b> e assistindo a <b>vídeos patrocinados</b>. Gastar moedas não tira o seu nível.</p>
+        <p class="muted">Molduras animadas, efeitos de perfil e efeitos de nome. Compre com <b>moedas</b>: você ganha as moedas do seu <b>plano</b> ao escolhê-lo (mudou de plano, soma as do novo), e mais a cada <b>missão</b> completada e <b>vídeo patrocinado</b> assistido. Gastar moedas não tira o seu nível.</p>
       </div>
-      <div class="cos-saldo" aria-live="polite"><span class="cos-moeda" aria-hidden="true"></span><div><b data-cos="moedas">—</b><small>moedas</small></div></div>
+      <div class="cos-saldo-col">
+        <div class="cos-saldo" aria-live="polite"><span class="cos-moeda" aria-hidden="true"></span><div><b data-cos="moedas">—</b><small>moedas</small></div></div>
+        <button type="button" role="tab" data-aba="ganhar" aria-selected="false" class="cos-aba-ganhar"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v7M14.2 10.2c-.4-.9-1.2-1.3-2.2-1.3-1.3 0-2.2.7-2.2 1.6 0 2.2 4.6 1.2 4.6 3.4 0 1-.9 1.7-2.4 1.7-1.1 0-2-.5-2.4-1.4"/></svg>Ganhar moedas</button>
+      </div>
     </section>
     <nav class="cos-abas" role="tablist" aria-label="Seções da loja">
       <button type="button" role="tab" data-aba="moldura" aria-selected="true"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><rect x="8.5" y="8.5" width="7" height="7" rx="1.5"/></svg>Molduras</button>
       <button type="button" role="tab" data-aba="efeito" aria-selected="false"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 4.6L18.5 10l-4.7 1.6L12 16.5l-1.8-4.9L5.5 10l4.7-1.4z"/><path d="M18 16l.7 1.6 1.6.6-1.6.6L18 20.5l-.7-1.7-1.6-.6 1.6-.6z"/></svg>Efeitos de perfil</button>
       <button type="button" role="tab" data-aba="nome" aria-selected="false"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.5h14M12 6.5V19M9 19h6"/></svg>Efeitos de nome</button>
-      <button type="button" role="tab" data-aba="ganhar" aria-selected="false" class="cos-aba-ganhar"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8.5v7M14.2 10.2c-.4-.9-1.2-1.3-2.2-1.3-1.3 0-2.2.7-2.2 1.6 0 2.2 4.6 1.2 4.6 3.4 0 1-.9 1.7-2.4 1.7-1.1 0-2-.5-2.4-1.4"/></svg>Ganhar moedas</button>
     </nav>
     <div class="cos-grade" data-cos="grade" role="tabpanel"><p class="muted">Carregando…</p></div>
     <div class="cos-ganhar" data-cos="ganhar" role="tabpanel" hidden></div>
@@ -120,7 +122,7 @@
                 : `<button type="button" class="btn btn-sm btn-primary" data-video="${x.id}" ${v.assistidos_hoje >= v.limite ? 'disabled' : ''}><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>Assistir · +${num(x.moedas)}</button>`}</div>`).join('')}</div>`
             : '<p class="muted">Nenhum vídeo patrocinado no momento. Volte mais tarde!</p>'}
         </section>
-        <section class="cos-bloco"><h2>Extrato <small>últimas movimentações (o XP das conquistas entra direto no saldo)</small></h2>
+        <section class="cos-bloco"><h2>Extrato <small>últimas movimentações (plano, missões, vídeos e compras)</small></h2>
           ${G.extrato.length ? `<ul class="cos-extrato">${G.extrato.map(x => `<li><span>${esc(x.descricao)}</span><b class="${x.valor < 0 ? 'neg' : 'pos'}">${x.valor > 0 ? '+' : ''}${num(x.valor)}</b></li>`).join('')}</ul>`
             : '<p class="muted">Nenhuma movimentação ainda.</p>'}
         </section>`;

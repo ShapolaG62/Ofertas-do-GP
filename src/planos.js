@@ -19,6 +19,9 @@ const TIPOS = {
   ferramenta: { nome: 'Ferramenta de afiliado', conta: 'cliente', perfil: null, icone: 'pro' },
 };
 
+// Moedas da Loja de cosméticos que o plano dá a quem o escolhe (padrão pelo tipo principal; editável em Painel → Planos)
+const MOEDAS_PADRAO = { consumidor: 1000, empresa: 3000, ferramenta: 5000 };
+
 // Funções do perfil que cada plano pode liberar (com os limites aceitos)
 const PERFIL_PADRAO = { vitrine: 4, bio: 300, capa: true, links: 1, cores_extras: true, gradiente: false, slug_livre: false, moldura: false, selo: 'Assinante' };
 const PERFIL_LIMITES = { vitrine: [3, 12], bio: [160, 800], links: [0, 6] };
@@ -109,7 +112,8 @@ function montar(r) {
     preco: r.preco, gratis: !(r.preco > 0), dias: r.dias, sem_vencimento: r.dias === 0, ativo: Boolean(r.ativo) && !r.arquivado, arquivado: Boolean(r.arquivado), ordem: r.ordem,
     chamada: r.chamada || '', ideal: r.ideal || '', beneficios: json(r.beneficios, []),
     destaque: r.destaque || '', icone: r.icone || tipo.icone,
-    recursos: { perfil: { ...PERFIL_PADRAO, ...(recursos.perfil || {}) }, max_produtos: recursos.max_produtos || 0 },
+    recursos: { perfil: { ...PERFIL_PADRAO, ...(recursos.perfil || {}) }, max_produtos: recursos.max_produtos || 0,
+      moedas: Number.isFinite(recursos.moedas) ? recursos.moedas : MOEDAS_PADRAO[tipoP] },
     funcoes: [...new Set(tipos.flatMap(t => FUNCOES_TIPO[t]))],
     link_pagamento: r.link_pagamento || '', produto_app: r.produto_app || '',
   };
@@ -168,7 +172,8 @@ function validar(b, atual = null) {
     nome, tipo, tipos: JSON.stringify(tipos), preco, dias, ativo: sim(b.ativo) ? 1 : 0, ordem: entre(b.ordem, [0, 999], 10),
     chamada: texto(b.chamada, 80) || null, ideal: texto(b.ideal, 200) || null, beneficios: JSON.stringify(beneficios),
     destaque: texto(b.destaque, 24) || null, icone: ['consumidor', 'empresa', 'pro'].includes(b.icone) ? b.icone : TIPOS[tipo].icone,
-    recursos: JSON.stringify({ perfil, max_produtos: tipos.includes('empresa') ? entre(b.max_produtos, [0, 100000], 0) : 0 }),
+    recursos: JSON.stringify({ perfil, max_produtos: tipos.includes('empresa') ? entre(b.max_produtos, [0, 100000], 0) : 0,
+      moedas: entre(b.moedas, [0, 1000000], MOEDAS_PADRAO[tipo]) }),
     link_pagamento: link || null, produto_app: produto || null,
   };
 }

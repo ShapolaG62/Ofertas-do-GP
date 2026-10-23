@@ -275,12 +275,12 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261211"></script>
-<script src="/js/dialogo.js?v=20261211"></script>
-<script src="/js/avisos-entrada.js?v=20261211"></script>
-<script src="/js/capi-minerando.js?v=20261211" defer></script>
-<script src="/js/cadastro-auto.js?v=20261211" defer></script>
-<script src="/js/seletor.js?v=20261211" defer></script>
+<script src="/js/tema.js?v=20261212"></script>
+<script src="/js/dialogo.js?v=20261212"></script>
+<script src="/js/avisos-entrada.js?v=20261212"></script>
+<script src="/js/capi-minerando.js?v=20261212" defer></script>
+<script src="/js/cadastro-auto.js?v=20261212" defer></script>
+<script src="/js/seletor.js?v=20261212" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1298,6 +1298,8 @@
       <p class="hint" id="pl-tipo-aviso" style="margin-top:6px"></p>
       <label class="field pl-so-empresa" style="margin-top:8px">Limite de produtos na loja <input type="number" name="max_produtos" min="0" max="100000" value="0">
         <span class="hint" style="margin:0;font-weight:400">0 = usa o limite geral das configurações</span></label>
+      <label class="field" style="margin-top:8px">Moedas da Loja de cosméticos <input type="number" name="moedas" min="0" max="1000000" value="1000">
+        <span class="hint" style="margin:0;font-weight:400">Quem escolhe este plano ganha essas moedas (uma vez por plano; ao mudar para outro plano, soma as do novo).</span></label>
     </div>
 
     <div>
@@ -2297,7 +2299,7 @@ async function loadPlanos() {
       <h4>${esc(p.nome)} ${p.destaque ? `<span class="badge b-active">${esc(p.destaque)}</span>` : ''} ${p.ativo ? '' : '<span class="badge b-none">fora da venda</span>'}</h4>
       <div class="pl-preco">${p.gratis ? 'Grátis' : brl(p.preco)} <span class="hint" style="margin:0">/ ${p.dias ? `${p.dias} dias` : 'sem vencimento'}</span></div>
       <div class="hint" style="margin:4px 0">${esc(p.tipo_nome)} · código <code>${esc(p.id)}</code> · <b>${p.assinantes}</b> assinante${p.assinantes === 1 ? '' : 's'}</div>
-      <div class="pl-mini">Vitrine ${pf.vitrine} · resumo ${pf.bio} · links ${pf.links} · capa ${sim(pf.capa)} · degradê ${sim(pf.gradiente)} · endereço ${sim(pf.slug_livre)} · moldura ${sim(pf.moldura)}${p.tipos.includes('empresa') ? ` · produtos ${p.recursos.max_produtos || 'padrão'}` : ''}</div>
+      <div class="pl-mini">Vitrine ${pf.vitrine} · resumo ${pf.bio} · links ${pf.links} · capa ${sim(pf.capa)} · degradê ${sim(pf.gradiente)} · endereço ${sim(pf.slug_livre)} · moldura ${sim(pf.moldura)}${p.tipos.includes('empresa') ? ` · produtos ${p.recursos.max_produtos || 'padrão'}` : ''} · ${Number(p.recursos.moedas || 0).toLocaleString('pt-BR')} moedas</div>
       <div class="actions" style="justify-content:flex-start;margin-top:10px">
         <button class="btn small" type="button" data-pl-editar="${esc(p.id)}">Editar</button>
         <button class="btn small danger" type="button" data-pl-excluir="${esc(p.id)}">Excluir</button>
@@ -2321,7 +2323,7 @@ function plAbrir(p) {
   $('#pl-tipo-aviso').textContent = travado ? 'Este plano tem assinantes: os tipos de acesso não podem mudar (crie um plano novo para isso).' : '';
   const v = {
     nome: p?.nome || '', preco: p && !p.gratis ? String(p.preco).replace('.', ',') : '', dias: p?.dias || 30, ordem: p?.ordem ?? (PL.planos.length + 1) * 10,
-    max_produtos: p?.recursos.max_produtos || 0, chamada: p?.chamada || '', ideal: p?.ideal || '', destaque: p?.destaque || '',
+    max_produtos: p?.recursos.max_produtos || 0, moedas: p?.recursos.moedas ?? 1000, chamada: p?.chamada || '', ideal: p?.ideal || '', destaque: p?.destaque || '',
     icone: p?.icone || 'consumidor', beneficios: (p?.beneficios || []).join('\n'),
     link_pagamento: p?.link_pagamento || '', produto_app: p?.produto_app || '',
     p_vitrine: pf.vitrine, p_bio: pf.bio, p_links: pf.links, p_selo: pf.selo || '',
@@ -2348,7 +2350,7 @@ function plDados() {
   const e = f.elements;
   return {
     nome: e.nome.value, preco: e.preco.value, gratis: e.gratis.checked, dias: e.dias.value, sem_vencimento: e.sem_vencimento.checked,
-    ordem: e.ordem.value, ativo: e.ativo.checked, tipos: plTipos(), max_produtos: e.max_produtos.value,
+    ordem: e.ordem.value, ativo: e.ativo.checked, tipos: plTipos(), max_produtos: e.max_produtos.value, moedas: e.moedas.value,
     chamada: e.chamada.value, ideal: e.ideal.value, destaque: e.destaque.value, icone: e.icone.value, beneficios: e.beneficios.value,
     link_pagamento: e.link_pagamento.value, produto_app: e.produto_app.value,
     perfil: { vitrine: e.p_vitrine.value, bio: e.p_bio.value, links: e.p_links.value, selo: e.p_selo.value,

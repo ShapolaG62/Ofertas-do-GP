@@ -1,5 +1,7 @@
 // Moedas, missões, vídeos patrocinados e os cosméticos de perfil (efeitos de perfil e efeitos de nome).
-//  • Moedas = XP das conquistas + moedas ganhas (missões e vídeos) − moedas gastas na Loja de cosméticos.
+//  • Moedas = moedas ganhas − moedas gastas na Loja de cosméticos. Todo mundo começa com zero e ganha:
+//    as moedas do plano escolhido (uma vez por plano: trocar para outro plano soma as moedas do novo),
+//    as das missões (creditadas sozinhas ao completar) e as dos vídeos patrocinados.
 //    Gastar não tira XP nem nível. Não há dinheiro real envolvido.
 //  • Missões: diárias (zeram à meia-noite de Brasília), semanais (segunda a domingo) e únicas. O servidor confere
 //    o que a pessoa fez de verdade no site; completa, ela resgata as moedas.
@@ -73,32 +75,59 @@ const utcDe = dia => `${dia} 03:00:00`; // meia-noite de Brasília em UTC (como 
 // ── Moedas ──────────────────────────────────────────────────────────────────
 const ganhos = dono => db.get('SELECT COALESCE(SUM(valor), 0) v FROM moedas_ganhas WHERE dono = ?', dono).v;
 const gastos = dono => db.get('SELECT COALESCE(SUM(preco), 0) v FROM cosmeticos_compras WHERE dono = ?', dono).v;
-// Moedas de boas-vindas conforme o tipo de conta (o plano escolhido): consumidor 1.000, loja 3.000, afiliado 5.000.
-// Calculadas na hora: quem troca de plano passa a ter o bônus do plano novo.
-const BOAS_VINDAS = { consumidor: 1000, empresa: 3000, afiliado: 5000 };
-const NOME_BOAS_VINDAS = { consumidor: 'consumidor', empresa: 'loja', afiliado: 'afiliado' };
-function perfilDeMoedas(dono) {
-  if (/^c:\d+$/.test(dono || '')) return 'afiliado';
-  const m = /^u:(\d+)$/.exec(dono || '');
-  if (!m) return null; // admin já tem tudo
-  const u = db.get('SELECT tipo, cliente_id FROM users WHERE id = ?', Number(m[1]));
-  if (!u) return null;
-  return u.tipo === 'empresa' ? 'empresa' : u.tipo === 'afiliado' || u.cliente_id ? 'afiliado' : 'consumidor';
-}
-const boasVindas = dono => BOAS_VINDAS[perfilDeMoedas(dono)] || 0;
-function saldo(dono) {
-  return Math.max(0, boasVindas(dono) + require('./perfis').xpDe(dono) + ganhos(dono) - gastos(dono));
-}
 function creditar(dono, origem, ref, valor, descricao) {
   const r = db.run('INSERT OR IGNORE INTO moedas_ganhas (dono, origem, ref, valor, descricao) VALUES (?, ?, ?, ?, ?)', dono, origem, ref, valor, descricao);
   return r.changes > 0;
+}
+// Planos em vigor da conta (do site e/ou da ferramenta de afiliado)
+function planosEmVigor(dono) {
+  const ids = [];
+  const m = /^([uc]):(\d+)$/.exec(dono || '');
+  if (!m) return ids;
+  if (m[1] === 'u') {
+    const u = db.get(`SELECT plano, cliente_id FROM users WHERE id = ? AND plano IS NOT NULL AND (assinatura_ate IS NULL OR assinatura_ate > datetime('now'))`, Number(m[2]))
+      || db.get('SELECT NULL AS plano, cliente_id FROM users WHERE id = ?', Number(m[2]));
+    if (u?.plano) ids.push(u.plano);
+    if (u?.cliente_id) { const c = db.get(`SELECT plano FROM clientes WHERE id = ? AND validade > datetime('now') AND status = 'ativo'`, u.cliente_id); if (c?.plano) ids.push(c.plano); }
+  } else {
+    const c = db.get(`SELECT plano FROM clientes WHERE id = ? AND validade > datetime('now') AND status = 'ativo'`, Number(m[2]));
+    if (c?.plano) ids.push(c.plano);
+  }
+  return [...new Set(ids)];
+}
+// Moedas do plano: entram uma vez por plano. Mudou para outro plano → soma as moedas do novo.
+function creditarPlanos(dono) {
+  for (const id of planosEmVigor(dono)) {
+    const p = require('./planos').plano(id);
+    const valor = p ? Math.max(0, Math.round(p.recursos.moedas || 0)) : 0;
+    if (valor > 0) creditar(dono, 'plano', `plano:${id}`, valor, `Moedas do plano ${p.nome}`);
+  }
+}
+function saldo(dono) {
+  if (!dono) return 0;
+  creditarPlanos(dono);
+  creditarMissoes(dono);
+  return Math.max(0, ganhos(dono) - gastos(dono));
+}
+
+// Uma vez (23/10/2026): a regra antiga (boas-vindas pelo tipo de conta + XP das conquistas) sai e todos os saldos
+// começam do zero. Um lançamento de ajuste deixa ganhos − gastos = 0; depois entram as moedas do plano de cada um.
+if (!db.get(`SELECT 1 FROM settings WHERE key = 'moedas_zeradas_2026_10_23'`)) {
+  const donos = db.all('SELECT dono FROM moedas_ganhas UNION SELECT dono FROM cosmeticos_compras').map(r => r.dono);
+  db.db.exec('BEGIN');
+  try {
+    for (const d of donos) {
+      const liquido = ganhos(d) - gastos(d);
+      if (liquido !== 0) creditar(d, 'ajuste', 'ajuste:zerar-2026-10-23', -liquido, 'Saldo zerado (nova regra das moedas)');
+    }
+    db.run(`INSERT INTO settings (key, value) VALUES ('moedas_zeradas_2026_10_23', ?)`, String(donos.length));
+    db.db.exec('COMMIT');
+  } catch (err) { db.db.exec('ROLLBACK'); console.error('[MOEDAS] falha ao zerar os saldos:', err.message); }
 }
 function extrato(dono) {
   const linhas = db.all(`SELECT origem, valor, descricao, created_at FROM moedas_ganhas WHERE dono = ?
     UNION ALL SELECT 'compra', -preco, item, created_at FROM cosmeticos_compras WHERE dono = ? ORDER BY created_at DESC LIMIT 30`, dono, dono)
     .map(r => ({ ...r, descricao: r.origem === 'compra' ? `Compra: ${POR_ID[r.descricao]?.nome || require('./perfis').nomeMoldura(r.descricao) || r.descricao}` : r.descricao }));
-  const p = perfilDeMoedas(dono);
-  if (BOAS_VINDAS[p] && linhas.length < 30) linhas.push({ origem: 'boas_vindas', valor: BOAS_VINDAS[p], descricao: `Moedas de boas-vindas (conta de ${NOME_BOAS_VINDAS[p]})`, created_at: null });
   return linhas;
 }
 
@@ -142,8 +171,19 @@ const MISSOES = [
 ];
 const ROTULO_PERIODO = { dia: 'Diária', semana: 'Semanal', unica: 'Única' };
 const refMissao = (m, ctx) => `missao:${m.id}:${m.periodo === 'dia' ? ctx.dia : m.periodo === 'semana' ? ctx.sem : 'unica'}`;
+// Missão completa = moedas creditadas na hora (sem precisar resgatar)
+function creditarMissoes(dono) {
+  if (!/^[uc]:\d+$/.test(dono || '')) return;
+  const ctx = { dia: hoje(), sem: inicioSemana() };
+  for (const m of MISSOES) {
+    try {
+      if ((Number(m.progresso(dono, ctx)) || 0) >= m.meta) creditar(dono, 'missao', refMissao(m, ctx), m.moedas, `Missão: ${m.nome}`);
+    } catch { /* tabela da missão ainda não existe */ }
+  }
+}
 function missoes(dono) {
   registrarPresenca(dono);
+  creditarMissoes(dono);
   const ctx = { dia: hoje(), sem: inicioSemana() };
   return MISSOES.map(m => {
     const atual = Math.min(m.meta, Number(m.progresso(dono, ctx)) || 0);
@@ -253,6 +293,6 @@ function painel(dono) {
 }
 
 module.exports = {
-  ITENS, BOAS_VINDAS, saldo, painel, missoes, resgatarMissao, videos, iniciarVideo, resgatarVideo, registrarPresenca,
+  ITENS, saldo, painel, missoes, resgatarMissao, videos, iniciarVideo, resgatarVideo, registrarPresenca,
   listarVideosAdmin, salvarVideo, excluirVideo, itensDe, comprar, equipar, emUso, youtubeId, VIDEOS_POR_DIA,
 };

@@ -668,3 +668,22 @@ Para levar à VPS: `atualizar-vps.bat`.
 - **Diagnóstico:** a janela do site mostra `[LENTO] 2345 ms GET /api/...` quando um pedido passa de 1,5 s e `[LENTO] servidor ficou travado...` quando algum processo pesado segura o servidor. Mande essas linhas para investigar.
 - **Configuração no `.env`** (lido sozinho ao ligar): `PORT`, `DATA_DIR`, `DISABLE_MINER`... O atualizador usa a mesma porta.
 - **Cloudflare:** o site reconhece o IP real de cada visitante (necessário para o bloqueio de login e a varredura de IP).
+
+## 38. Alertas de ofertas no WhatsApp particular
+
+**Para o usuário (tela de ofertas):** aparece a pergunta **"Deseja receber ofertas no seu WhatsApp particular?"** acima das ofertas ("Agora não" esconde). Em **Sim, quero** (ou no menu da foto → **Alertas no WhatsApp**), a pessoa:
+- vê para qual número vai (o **celular cadastrado** em Meus dados, mascarado);
+- escolhe até **10 termos** (ex.: iphone 15, air fryer, tênis nike), com sugestões prontas;
+- escolhe o **desconto mínimo** e o **máximo de mensagens por dia** (1 a 10);
+- marca o **aceite** (LGPD; fica registrado com data) e ativa. Pode **Parar de receber** quando quiser (pela mesma janela ou pelo link `/?alertas=1` que vai em cada mensagem).
+
+**Como o site envia** (a cada 10 minutos, `src/alertas-whatsapp.js`):
+- confere as **ofertas novas** desde a última rodada e, para cada pessoa, procura o 1º termo com oferta nova (todas as palavras do termo no nome do produto);
+- ignora acessórios ("capa **para** iphone", "mouse **para** notebook") e prefere as ofertas em que o termo está no começo do nome;
+- manda **uma mensagem com até 3 ofertas** (nome, preço antigo riscado, preço novo, desconto e link), nunca repete a mesma oferta e respeita o limite diário;
+- só das **8h às 22h** (Brasília), no máximo 40 pessoas por rodada e 4 s entre um envio e outro, para o número não ser banido;
+- se o envio falhar 3 vezes seguidas (número sem WhatsApp), pausa os alertas da pessoa e avisa no sino.
+
+**Para você (Painel → Redes sociais):** o quadro **Alertas de ofertas no WhatsApp particular** liga/desliga o recurso e mostra quantas pessoas estão recebendo e quantas mensagens saíram hoje. Usa o **mesmo WhatsApp das postagens** (Z-API ou Evolution); sem ele configurado, a opção não aparece para os usuários. Preencha o **endereço do site** em Painel → Site para os links das mensagens passarem pelo site (`/o/123`, contando os cliques).
+
+**Tela "Como você quer usar o Ofertou!?"** (primeiro acesso): os planos ficaram compactos e saíram o título "Assine um plano" e o aviso de acesso imediato.

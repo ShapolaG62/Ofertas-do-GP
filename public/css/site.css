@@ -2555,3 +2555,22 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   .conta-pop, .sino-pop { left: 8px !important; right: 8px !important; width: auto !important; max-width: none; }
   .sino-item { font-size: 13px; padding: 10px 12px; }
 }
+
+/* Primeiro acesso (Como você quer usar o Ofertou!?): planos compactos, para caberem na tela */
+#view-perfil.perfil-wrap { gap: 18px; max-width: 980px; }
+#view-perfil .perfil-head h1 { font-size: clamp(22px, 2.6vw, 30px); }
+#view-perfil .planos-grid { gap: 14px; padding-top: 10px; }
+#view-perfil .plano-card { padding: 18px 16px 16px; gap: 8px; border-radius: 16px; }
+#view-perfil .plano-card:hover { transform: none; }
+#view-perfil .plano-selo { top: -11px; padding: 3px 12px; font-size: 11px; }
+#view-perfil .plano-ico { width: 30px; height: 30px; border-radius: 9px; }
+#view-perfil .plano-ico svg { width: 17px; height: 17px; }
+#view-perfil .plano-chamada { font-size: 12px; }
+#view-perfil .plano-card h3 { font-size: 18px; margin-top: 2px; }
+#view-perfil .plano-preco b { font-size: 26px; }
+#view-perfil .plano-preco span { font-size: 13px; }
+#view-perfil .plano-ideal { padding: 8px 10px; font-size: 12.5px; }
+#view-perfil .plano-card ul { gap: 5px; margin: 2px 0 6px; font-size: 13px; line-height: 1.4; }
+#view-perfil .plano-card li::before { width: 16px; height: 16px; font-size: 10px; }
+#view-perfil .plano-card .btn { height: 38px; font-size: 13.5px; }
+@media (max-width: 900px) { #view-perfil .planos-grid { max-width: 420px; gap: 18px; } }

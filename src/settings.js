@@ -87,6 +87,8 @@ const DEFAULTS = {
   evolution_instance: '',
   whatsapp_groups: '[]',        // grupos de destino: [{ id, nome }]
   whatsapp_intervalo_s: '90',   // espera entre uma oferta e outra no WhatsApp
+  alertas_wa_ativo: '1',        // alertas de ofertas no WhatsApp particular de quem pedir (src/alertas-whatsapp.js)
+  alertas_wa_ultimo: '',        // até quando as ofertas novas já foram conferidas (UTC)
 
   // Planos pagos (página de login) — nome, preço (R$) e dias de acesso de cada um
   plano_consumidor_nome: 'Caçador de Ofertas',

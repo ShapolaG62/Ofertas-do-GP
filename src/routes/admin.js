@@ -262,6 +262,13 @@ router.get('/api/admin/atendimento', (req, res) => {
       app_ok: Boolean(String(require('../settings').get('mp_mkt_client_id') || '').trim() && require('../settings').get('mp_mkt_client_secret')) } });
 });
 // Vídeos patrocinados (as pessoas assistem e ganham moedas para a Loja de cosméticos)
+// ── Alertas de ofertas no WhatsApp particular ──
+router.get('/api/admin/alertas-whatsapp', (req, res) => res.json(require('../alertas-whatsapp').resumo()));
+router.post('/api/admin/alertas-whatsapp', (req, res) => {
+  settings.set('alertas_wa_ativo', req.body?.ativo ? '1' : '0');
+  res.json(require('../alertas-whatsapp').resumo());
+});
+
 // ── Acessos suspeitos (varredura de IP) ──
 router.get('/api/admin/acessos/varredura', (req, res) => {
   res.json(require('../varredura-ip').varrer({ horas: req.query.horas, km: req.query.km, maxHoras: req.query.max_horas }));

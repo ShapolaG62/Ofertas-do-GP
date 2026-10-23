@@ -141,6 +141,12 @@ router.post('/api/conta/perfil-inicial', (req, res) => {
   } catch (err) { sendError(res, err); }
 });
 
+// Alertas de ofertas no WhatsApp particular (termos escolhidos pela pessoa)
+router.get('/api/conta/alertas-whatsapp', (req, res) => res.json(require('../alertas-whatsapp').deUsuario(req.user)));
+router.put('/api/conta/alertas-whatsapp', (req, res) => {
+  try { res.json(require('../alertas-whatsapp').salvar(req.user, req.body || {}, req)); } catch (err) { sendError(res, err); }
+});
+
 router.post('/api/conta/aceite-parceiro', (req, res) => {
   try { res.json(require('../consentimento').aceitarParceiro({ dono: `u:${req.user.id}`, email: req.user.email, papeis: papeisConta(req.user), b: req.body || {}, req })); } catch (err) { sendError(res, err); }
 });

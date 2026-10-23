@@ -271,12 +271,12 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261190"></script>
-<script src="/js/dialogo.js?v=20261190"></script>
-<script src="/js/avisos-entrada.js?v=20261190"></script>
-<script src="/js/capi-minerando.js?v=20261190" defer></script>
-<script src="/js/cadastro-auto.js?v=20261190" defer></script>
-<script src="/js/seletor.js?v=20261190" defer></script>
+<script src="/js/tema.js?v=20261191"></script>
+<script src="/js/dialogo.js?v=20261191"></script>
+<script src="/js/avisos-entrada.js?v=20261191"></script>
+<script src="/js/capi-minerando.js?v=20261191" defer></script>
+<script src="/js/cadastro-auto.js?v=20261191" defer></script>
+<script src="/js/seletor.js?v=20261191" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -949,6 +949,15 @@
         </div>
       </form>
 
+      <div class="panel">
+        <h2>Alertas de ofertas no WhatsApp particular</h2>
+        <p class="hint">Quem pedir (na tela de ofertas → <b>Alertas no WhatsApp</b>) escolhe termos como "iphone" ou "air fryer" e recebe no <b>celular cadastrado</b> as ofertas novas com esses termos, pelo mesmo número configurado acima. Para o número não ser banido: só com o aceite da pessoa, das 8h às 22h, no máximo uma mensagem por pessoa a cada 10 minutos (até 3 ofertas) e o limite por dia que a pessoa escolher (até 10). Cada mensagem tem o link para parar de receber.</p>
+        <div class="grid" style="align-items:end">
+          <label class="field">Alertas no WhatsApp <select id="awa-ativo"><option value="1">Ligado</option><option value="0">Desligado</option></select></label>
+          <div class="hint" id="awa-resumo" style="margin:0"></div>
+        </div>
+      </div>
+
       <form class="settings-form">
         <div class="panel">
           <h2>Postagens agendadas</h2>
@@ -1485,7 +1494,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'ads') loadAds();
   if (t.dataset.tab === 'acessos') { loadAcessosBase().catch(() => {}); $('#ac-form').requestSubmit(); }
   if (t.dataset.tab === 'avisos') loadAvisos().catch(e => globalMsg(e.message, false));
-  if (t.dataset.tab === 'social') loadSocialLog();
+  if (t.dataset.tab === 'social') { loadSocialLog(); loadAwa(); }
   if (t.dataset.tab === 'clientes') loadClientes();
   if (t.dataset.tab === 'ganhos') loadGanhos();
   if (t.dataset.tab === 'atendimento') loadAtendimento().catch(e => globalMsg(e.message, false));
@@ -2755,6 +2764,17 @@ $('#ac-ip-form').addEventListener('submit', async e => {
     $('#ac-ip-res').innerHTML = `<p><b>${esc(d.ip)}</b>: ${esc(d.local?.texto || 'local desconhecido (base sem esse IP ou ainda não baixada)')}</p>`
       + (d.contas.length ? `<div class="table-wrap"><table><thead><tr><th>Conta que usou este IP</th><th>Registros</th><th>Último</th></tr></thead><tbody>${d.contas.map(c => `<tr><td>${acConta(c)}</td><td class="num">${c.n}</td><td>${fmtHora(c.ultimo)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="hint">Nenhuma conta usou este IP nos últimos 6 meses.</p>');
   } catch (err) { globalMsg(err.message, false); }
+});
+
+// Alertas de ofertas no WhatsApp particular
+function mostrarAwa(d) {
+  $('#awa-ativo').value = d.ativo ? '1' : '0';
+  $('#awa-resumo').innerHTML = `<b>${d.pessoas}</b> pessoa(s) recebendo · <b>${d.enviados_hoje}</b> mensagem(ns) hoje${d.ativo && !d.disponivel ? ' · <span style="color:var(--red)">configure o WhatsApp acima para funcionar</span>' : ''}`;
+}
+async function loadAwa() { try { mostrarAwa(await api('/api/admin/alertas-whatsapp')); } catch { /* sem permissão */ } }
+$('#awa-ativo').addEventListener('change', async e => {
+  try { mostrarAwa(await api('/api/admin/alertas-whatsapp', { method: 'POST', body: { ativo: e.target.value === '1' } })); globalMsg('Alertas no WhatsApp ' + (e.target.value === '1' ? 'ligados.' : 'desligados.')); }
+  catch (err) { globalMsg(err.message, false); }
 });
 
 // Avisos na entrada (janelas da tela de ofertas)

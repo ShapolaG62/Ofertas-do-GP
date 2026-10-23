@@ -18,8 +18,7 @@
     --radius: 14px;
     color-scheme: light;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
+  :root[data-theme="dark"] {
       --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d; --surface-3: #222924;
       --border: #262d28; --border-strong: #343c36;
       --text: #edf1ee; --muted: #a3ada7; --dim: #7a847e;
@@ -27,7 +26,16 @@
       --red: #ff7a6b; --yellow: #e6b143; --blue: #7aa7ff;
       color-scheme: dark;
     }
-  }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+      --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d; --surface-3: #222924;
+      --border: #262d28; --border-strong: #343c36;
+      --text: #edf1ee; --muted: #a3ada7; --dim: #7a847e;
+      --green: #2bb673; --green-soft: #16301f; --green-line: #2b6a47;
+      --red: #ff7a6b; --yellow: #e6b143; --blue: #7aa7ff;
+      color-scheme: dark;
+    }
+}
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--text); font-family: Figtree, system-ui, sans-serif; font-size: 14px; }
   a { color: var(--green); }
@@ -263,11 +271,12 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/dialogo.js?v=20261181"></script>
-<script src="/js/avisos-entrada.js?v=20261181"></script>
-<script src="/js/capi-minerando.js?v=20261181" defer></script>
-<script src="/js/cadastro-auto.js?v=20261181" defer></script>
-<script src="/js/seletor.js?v=20261181" defer></script>
+<script src="/js/tema.js?v=20261188"></script>
+<script src="/js/dialogo.js?v=20261188"></script>
+<script src="/js/avisos-entrada.js?v=20261188"></script>
+<script src="/js/capi-minerando.js?v=20261188" defer></script>
+<script src="/js/cadastro-auto.js?v=20261188" defer></script>
+<script src="/js/seletor.js?v=20261188" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -308,6 +317,7 @@
       <div class="spacer"></div>
       <button class="btn small" type="button" id="sino" title="Avisos de saldo para sacar">🔔<span class="count-badge hidden" id="sino-badge">0</span></button>
       <a class="btn small" href="/perfil" target="_blank">🏅 Meu perfil</a>
+      <div data-tema-controle class="so-icones" style="margin-right:2px"></div>
       <a class="btn small" href="/" target="_blank">Ver site ↗</a>
       <button class="btn small" id="logout">Sair</button>
     </header>

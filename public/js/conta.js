@@ -481,6 +481,8 @@
     currentTab = tab;
     $$('.tab-pane').forEach(p => { p.hidden = p.dataset.pane !== tab; });
     $$('#account-nav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab));
+    // No celular o menu é uma faixa que rola para o lado: deixa a aba escolhida à vista
+    $('#account-nav button[aria-current="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
     if (tab === 'anuncios') { closeEditor(); loadProducts(); }
     // Na aba Mensagens o botão flutuante some (a conversa já está na tela)
     document.body.classList.toggle('aba-mensagens', tab === 'mensagens');

@@ -30,7 +30,12 @@
   .ck-botoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
   .ck-botoes button { font: inherit; font-size: 14px; font-weight: 700; padding: 9px 16px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line-strong, #cfd5cf); background: var(--surface, #fff); color: var(--ink, #161b18); }
   .ck-botoes button.ck-sim { background: var(--brand, #0c8f4f); border-color: var(--brand, #0c8f4f); color: #fff; }
-  .ck-botoes button:focus-visible { outline: 3px solid var(--brand, #0c8f4f); outline-offset: 2px; }`;
+  .ck-botoes button:focus-visible { outline: 3px solid var(--brand, #0c8f4f); outline-offset: 2px; }
+  @media (max-width: 720px) {
+    .ck-aviso { left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); padding: 10px 12px; gap: 8px; font-size: 12.5px; line-height: 1.45; border-radius: 14px; }
+    .ck-botoes { flex-wrap: nowrap; }
+    .ck-botoes button { flex: 1; font-size: 13px; padding: 8px 10px; }
+  }`;
   document.head.appendChild(css);
 
   let aviso = null;

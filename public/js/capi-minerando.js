@@ -32,7 +32,7 @@
   @keyframes cm-entra { from { transform: translateY(120%) scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes cm-sai { to { transform: translateY(120%) scale(.85); opacity: 0; } }
   @keyframes cm-pop { from { transform: scale(0); opacity: 0; } to { transform: none; opacity: 1; } }
-  @media (max-width: 480px) { .cm-quadro { width: 160px; height: 160px; } .cm.cenario .cm-quadro { width: 120px; height: 120px; } }
+  @media (max-width: 480px) { .cm { width: 170px; } .cm-quadro { width: 120px; height: 120px; } .cm.cenario .cm-quadro { width: 96px; height: 96px; } .cm-balao { font-size: 12px; padding: 5px 9px; margin-left: 14px; } }
   @media (prefers-reduced-motion: reduce) { .cm, .cm * { animation-duration: 1ms !important; } }`;
   document.head.appendChild(css);
 
@@ -40,11 +40,11 @@
   let meta = null;
   const folhas = {};
   async function carregar(nome) {
-    meta ||= await fetch(`${PASTA}animacoes.json?v=20261181`).then(r => r.json());
+    meta ||= await fetch(`${PASTA}animacoes.json?v=20261188`).then(r => r.json());
     const m = meta[nome];
     if (!folhas[nome]) {
       const img = new Image();
-      img.src = PASTA + m.arquivo + '?v=20261181';
+      img.src = PASTA + m.arquivo + '?v=20261188';
       // onload em vez de img.decode(): o decode() pode ficar pendurado em alguns navegadores
       folhas[nome] = new Promise((ok, erro) => {
         img.onload = () => ok(img);

@@ -1,15 +1,15 @@
 /* Ofertou! — folha de estilos do site público */
 
 :root {
-  --bg: #f4f5f2;
+  --bg: #eef2ee;
   --surface: #ffffff;
-  --surface-2: #f7f8f6;
-  --surface-3: #eef0ec;
+  --surface-2: #f6f8f6;
+  --surface-3: #e8ede8;
   --ink: #161b18;
-  --ink-2: #48514c;
-  --ink-3: #7a837e;
-  --line: #e2e6e1;
-  --line-strong: #cfd5cf;
+  --ink-2: #3f4843;
+  --ink-3: #646d68;
+  --line: #dce2db;
+  --line-strong: #c3ccc3;
   --brand: #0c8f4f;
   --brand-strong: #087340;
   --brand-soft: #e5f3eb;
@@ -18,16 +18,37 @@
   --gold: #b97d00;
   --gold-soft: #fff4d6;
   --focus: #0c8f4f;
-  --shadow-sm: 0 1px 2px rgba(20, 30, 25, .06);
-  --shadow-md: 0 6px 24px -8px rgba(20, 30, 25, .16);
+  --shadow-sm: 0 1px 2px rgba(16, 40, 26, .07), 0 1px 1px rgba(16, 40, 26, .04);
+  --shadow-md: 0 10px 28px -10px rgba(16, 40, 26, .22);
   --radius: 12px;
   --radius-sm: 8px;
   --header-h: 68px;
   color-scheme: light;
 }
 
+:root[data-theme="dark"] {
+    --bg: #0e1210;
+    --surface: #161b18;
+    --surface-2: #1b211d;
+    --surface-3: #222924;
+    --ink: #edf1ee;
+    --ink-2: #b7c0ba;
+    --ink-3: #87918b;
+    --line: #262d28;
+    --line-strong: #343c36;
+    --brand: #2bb673;
+    --brand-strong: #49c98a;
+    --brand-soft: #16301f;
+    --deal: #ff6b5a;
+    --deal-soft: #3a1c18;
+    --gold: #e6b143;
+    --gold-soft: #33290f;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+    --shadow-md: 0 8px 28px -10px rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0e1210;
     --surface: #161b18;
     --surface-2: #1b211d;
@@ -84,7 +105,8 @@ body:not(.is-admin) .admin-only { display: none !important; }
 .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
 .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
 .btn-wa { color: #128c4a; }
-@media (prefers-color-scheme: dark) { .btn-wa { color: #4ade80; } }
+:root[data-theme="dark"] .btn-wa { color: #4ade80; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn-wa { color: #4ade80; } }
 
 /* ── Cabeçalho ──────────────────────────────────────────── */
 .site-header {
@@ -1462,6 +1484,10 @@ body.pf-body {
 .conta-pop span { display: grid; gap: 1px; }
 .conta-pop b { font-size: 14px; }
 .conta-pop small { font-size: 12px; color: var(--ink-3); }
+.conta-pop .conta-tema { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--line); margin-top: 4px; }
+.conta-pop .conta-tema > span { font-size: 14px; font-weight: 700; }
+.conta-pop .conta-tema button { width: auto; padding: 0 9px; }
+.conta-pop .conta-tema span span { display: none; }
 .conta-pop #logout-site { border-top: 1px solid var(--line); border-radius: 0 0 10px 10px; margin-top: 4px; }
 .conta-pop #logout-site svg { stroke: var(--deal); }
 
@@ -2389,3 +2415,107 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 .pf-previa .pv-bloco:last-child { padding-bottom: 16px; }
 .pf-previa .pv-bio { font-size: 13.5px; }
 .pf-previa .pv-vitrine .vit-emoji { width: 44px; height: 44px; font-size: 22px; }
+
+/* ── Celular no tamanho de app (proporções como as dos apps de loja, ex.: Magalu): textos de 13–14 px, topo
+   compacto com a busca em largura inteira, apresentação curta e cartões enxutos em 2 colunas ── */
+.card { box-shadow: var(--shadow-sm); }
+@media (max-width: 720px) {
+  html, body { overflow-x: clip; } /* nada deixa a página mais larga que a tela */
+  body { font-size: 14px; }
+  .container { padding: 0 12px; }
+  .vit-pop { width: min(200px, calc(100vw - 32px)); }
+  :root { --header-h: 54px; }
+
+  /* Topo: marca e ícones na 1ª linha; a busca ocupa a 2ª linha inteira (só nas páginas com busca) */
+  .header-row { gap: 8px; }
+  .header-row:has(> .search) { height: auto; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "marca acoes" "busca busca";
+    row-gap: 6px; padding-top: 7px; padding-bottom: 8px; }
+  .header-row:has(> .search) > .brand { grid-area: marca; }
+  .header-row:has(> .search) > .header-actions { grid-area: acoes; justify-self: end; }
+  .header-row:has(> .search) > .search { grid-area: busca; max-width: none; }
+  .brand img { width: 34px; height: 34px; }
+  .header-actions { gap: 6px; }
+  .header-actions .btn { height: 36px; padding: 0 11px; font-size: 13px; }
+  .header-actions .btn-wa, .header-actions .comu-btn { width: 36px; padding: 0; }
+  .header-actions .pf-atalho img { width: 24px; height: 24px; }
+  #conta-nome { display: none; }
+  .search input { height: 40px; font-size: 14px; padding-left: 38px; border-radius: 12px; }
+  .search svg { left: 13px; width: 16px; height: 16px; }
+  .store-tabs { padding-block: 6px; gap: 2px; }
+  .store-tab { height: 30px; padding: 0 10px; font-size: 13px; gap: 6px; }
+  .store-tab .count { font-size: 11px; }
+
+  /* Apresentação da tela de ofertas: só o essencial, para as ofertas aparecerem logo */
+  .hero { padding: 12px 0 0; }
+  .hero-meta { font-size: 12px; }
+  /* o título continua na página (Google e leitores de tela), só não ocupa a tela */
+  .hero h1 { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .hero p.lead { display: none; }
+  .hero-stats { margin-top: 8px; border-radius: 10px; }
+  .hero-stat { padding: 6px 10px; display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap; }
+  .hero-stat strong { font-size: 14px; display: inline; }
+  .hero-stat span { font-size: 11px; }
+  .featured { gap: 10px; padding: 8px 10px; margin-top: 10px; }
+  .featured img { width: 52px; height: 52px; }
+  .featured-label { font-size: 11px; }
+  .featured-title { font-size: 13px; }
+  .featured-price { font-size: 12.5px; }
+  .featured-price b { font-size: 14px; }
+  .ad-invite { flex-wrap: nowrap; padding: 10px 12px; gap: 10px; }
+  .ad-invite-tag, .ad-invite-sub { display: none; }
+  .ad-invite strong { font-size: 14px; }
+  .ad-invite-cta { margin-left: auto; width: auto; }
+  .ad-invite-icon { width: 36px; height: 36px; border-radius: 10px; }
+  .ad-invite-icon svg { width: 20px; height: 20px; }
+  .ad-invite-cta { padding: 7px 12px; font-size: 12.5px; }
+  .ad-top .ad-slot { margin-top: 10px; }
+
+  /* Lista e cartões das ofertas */
+  .catalog { padding-block: 14px 40px; gap: 14px; }
+  .results-head { margin-bottom: 10px; gap: 8px; }
+  .results-head h2 { font-size: 17px; }
+  .grid { gap: 8px; }
+  .card { border-radius: 10px; }
+  .card-media img { padding: 6px; }
+  .card-off { top: 6px; left: 6px; padding: 2px 6px; font-size: 11.5px; border-radius: 5px; }
+  .card-select { width: 28px; height: 28px; }
+  .card-body { padding: 8px 10px 10px; gap: 4px; }
+  .card-store { font-size: 11.5px; }
+  .card-title { font-size: 13px; line-height: 1.3; }
+  .card-old { font-size: 12px; }
+  .card-price { font-size: 17px; }
+  .card-price small { font-size: 12px; }
+  .card-foot { font-size: 11px; }
+
+  /* Botões, cartões de conteúdo e títulos */
+  .btn { height: 38px; padding: 0 14px; font-size: 13.5px; }
+  .btn-sm { height: 32px; font-size: 12.5px; }
+  .btn-lg { height: 44px; padding: 0 18px; font-size: 14.5px; }
+  .btn-block { height: 44px; font-size: 14.5px; }
+  .page { padding: 18px 0 48px; }
+  .panel-card { padding: 16px; border-radius: 14px; }
+  .panel-card h1 { font-size: 21px; }
+  .panel-card h2 { font-size: 16px; }
+  .muted { font-size: 13px; }
+
+  /* Minha conta: o menu vira uma faixa de abas que rola para o lado (como nos apps) */
+  .account-grid { gap: 12px; grid-template-columns: minmax(0, 1fr); }
+  .account-grid > * { min-width: 0; }
+  .account-side { padding: 12px; }
+  .account-side .who { font-size: 15px; }
+  .account-nav { display: flex; gap: 6px; margin: 10px -12px 0; padding: 0 12px 2px; overflow-x: auto; scrollbar-width: none; scroll-padding-inline: 12px; }
+  .account-nav::-webkit-scrollbar { display: none; }
+  .account-nav button { flex: none; white-space: nowrap; padding: 7px 12px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 13px; }
+  .account-nav button[aria-current="true"] { border-color: var(--brand); }
+  .account-side .guia-btn { display: none; }
+
+  /* Página inicial (sem login) */
+  .lp-hero { padding: 20px 0 24px; gap: 24px; }
+  .lp-hero h1 { font-size: 27px; margin: 12px 0 10px; }
+  .lp-lead { font-size: 14.5px; line-height: 1.55; margin-bottom: 18px; }
+  .lp-stats { margin-top: 18px; gap: 10px 22px; }
+  .lp-stats b { font-size: 20px; }
+  .lp-stats span { font-size: 12px; }
+  .lp-sec { padding: 32px 0; gap: 18px; }
+  .lp-head h2 { font-size: 22px; }
+}

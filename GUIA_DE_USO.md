@@ -642,3 +642,21 @@ Contas de risco alto nas últimas 24 h aparecem em **Precisa da sua atenção** 
 **Consultar um IP:** mostra a cidade do IP e todas as contas que o usaram.
 
 **Base de localização:** IP to City Lite da DB-IP (gratuita, CC BY 4.0, crédito "IP Geolocation by DB-IP" no painel), em `data/geoip.db`. Atualize uma vez por mês em **Atualizar a base agora** ou com `npm run geoip` no servidor (baixa ~86 MB e leva menos de um minuto). Na VPS, rode `npm run geoip` uma vez depois de instalar.
+
+## 36. Tema claro / escuro e o site no celular
+
+**Tema:** cada pessoa escolhe **Claro**, **Escuro** ou **Automático** (segue o aparelho). A escolha fica salva no navegador e vale em todas as páginas, inclusive no painel. Onde trocar:
+- no **menu da foto da conta**, no topo da tela de ofertas (linha "Tema", com sol, lua e tela);
+- no **rodapé** de todas as páginas;
+- no **topo do painel admin**.
+
+Os **perfis** (estilo Steam) e o palco da Loja de cosméticos continuam escuros de propósito, para as molduras e os efeitos aparecerem bem. O tema claro ganhou fundo levemente esverdeado, cartões brancos com sombra, bordas mais definidas e textos cinza mais legíveis.
+
+**Celular (até 720 px), nas proporções dos apps de loja:**
+- topo compacto: marca e ícones (sino, comunidade, conta, grupo) na 1ª linha e a **busca em largura inteira** na 2ª;
+- tela de ofertas: a apresentação ficou curta (números numa linha fina, "Anuncie aqui" em uma faixa) para as ofertas aparecerem logo; o título continua na página para o Google;
+- textos de 13–14 px, botões de 38 px, cartões de oferta mais enxutos em 2 colunas;
+- **Minha conta:** o menu virou uma faixa de abas que rola para o lado;
+- aviso de cookies e a Capi minerando menores; nenhuma página rola mais para o lado.
+
+Para levar à VPS: `atualizar-vps.bat`.

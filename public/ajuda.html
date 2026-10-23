@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="/js/app-nativo.js?v=20261181"></script>
+<script src="/js/app-nativo.js?v=20261188"></script>
 <style>
 /* Guia do usuário: índice fixo à esquerda no computador, coluna única no celular; cores da marca Ofertou! */
 :root {
@@ -22,14 +22,24 @@
   --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) { :root {
+:root[data-theme="dark"] {
   --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d;
   --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #8b958f;
   --line: #262d28; --line-strong: #343c36;
   --brand: #2bb673; --brand-strong: #49c98a; --brand-soft: #16301f;
   --gold: #e6b143; --gold-soft: #33290f;
   --deal: #ff7b6b; --deal-soft: #3a1c18; color-scheme: dark;
-} }
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d;
+  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #8b958f;
+  --line: #262d28; --line-strong: #343c36;
+  --brand: #2bb673; --brand-strong: #49c98a; --brand-soft: #16301f;
+  --gold: #e6b143; --gold-soft: #33290f;
+  --deal: #ff7b6b; --deal-soft: #3a1c18; color-scheme: dark;
+}
+}
 * { box-sizing: border-box; }
 html { scroll-padding-top: 80px; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
@@ -91,6 +101,7 @@ li { margin-bottom: 5px; }
 li::marker { color: var(--brand); }
 b { font-weight: 700; }
 .caminho { font-weight: 700; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; white-space: nowrap; }
+@media (max-width: 600px) { .caminho { white-space: normal; } }
 
 .passos { list-style: none; padding: 0; margin: 10px 0 18px; counter-reset: p; }
 .passos li { counter-increment: p; position: relative; padding: 0 0 16px 46px; max-width: none; margin: 0; }
@@ -120,9 +131,10 @@ details p { color: var(--ink-2); }
 
 .rodape { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 14px; display: grid; gap: 6px; }
 </style>
-<script src="/js/rodape-legal.js?v=20261181" defer></script>
-<script src="/js/cookies.js?v=20261181"></script>
-<script src="/js/seletor.js?v=20261181" defer></script>
+<script src="/js/tema.js?v=20261188"></script>
+<script src="/js/rodape-legal.js?v=20261188" defer></script>
+<script src="/js/cookies.js?v=20261188"></script>
+<script src="/js/seletor.js?v=20261188" defer></script>
 </head>
 <body>
 <header class="topo">

@@ -145,6 +145,13 @@
     }).join('');
   }
 
+  // Foto do produto em PNG (único formato de imagem que a área de transferência aceita)
+  const fotoPng = o => fetch(o.imagem_url || `/api/img/${o.id}`).then(r => r.blob()).then(createImageBitmap).then(bmp => {
+    const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+    c.getContext('2d').drawImage(bmp, 0, 0);
+    return new Promise((ok, erro) => c.toBlob(b => (b ? ok(b) : erro(new Error('sem imagem'))), 'image/png'));
+  });
+
   const offerOf = el => OFFERS.find(o => o.id === Number(el.closest('[data-id]').dataset.id));
 
   $('#posts-list').addEventListener('input', e => {
@@ -173,12 +180,7 @@
         return;
       }
       if (share.dataset.share === 'wa' && !celular && window.ClipboardItem && navigator.clipboard?.write) {
-        const png = fetch(o.imagem_url || `/api/img/${o.id}`).then(r => r.blob()).then(createImageBitmap).then(bmp => {
-          const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
-          c.getContext('2d').drawImage(bmp, 0, 0);
-          return new Promise((ok, erro) => c.toBlob(b => (b ? ok(b) : erro(new Error('sem imagem'))), 'image/png'));
-        });
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': fotoPng(o) })])
           .then(() => toast('Foto copiada! Na conversa do WhatsApp, aperte Ctrl+V antes de enviar: a foto entra e o texto vira a legenda.', 9000))
           .catch(() => toast('Não consegui copiar a foto. Use "Baixar imagem" e anexe na conversa.', 7000));
       }
@@ -190,7 +192,14 @@
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.copy) {
-      navigator.clipboard.writeText(textOf(offerOf(b))).then(() => toast('Texto copiado.'));
+      // Copia o texto e a foto juntos: onde se cola, entra o que o programa aceita (no WhatsApp, a foto com o texto).
+      const o = offerOf(b), text = textOf(o);
+      const soTexto = () => navigator.clipboard.writeText(text).then(() => toast('Texto copiado (a foto não pôde ser copiada).', 5000));
+      if (window.ClipboardItem && navigator.clipboard?.write) {
+        navigator.clipboard.write([new ClipboardItem({ 'text/plain': new Blob([text], { type: 'text/plain' }), 'image/png': fotoPng(o) })])
+          .then(() => toast('Texto e foto copiados. Cole (Ctrl+V) na conversa.', 5000))
+          .catch(soTexto);
+      } else soTexto();
     } else if (b.dataset.reset) {
       delete textos[b.dataset.reset]; save(TXT_KEY, textos);
       b.closest('article').querySelector('textarea').value = textOf(offerOf(b));

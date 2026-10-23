@@ -149,6 +149,23 @@ app.use((req, res, next) => {
   res.send(html);
 });
 
+// Arquivo de instalação do app (manifest) com as cores do tema da pessoa: o Android pinta a barra de navegação de
+// baixo (e a tela de abertura) com essas cores, e não deixa a página pintar essa área. Tema escolhido no site
+// (cookie ofertou_tema, gravado por tema.js) ou, no automático, o tema do celular (Sec-CH-Prefers-Color-Scheme).
+const MANIFEST_BASE = JSON.parse(fs.readFileSync(path.join(PUBLIC_DIR, 'site.webmanifest'), 'utf8'));
+app.use((req, res, next) => { // pede ao Chrome para informar o tema do aparelho nos próximos pedidos
+  if (req.method === 'GET' && req.accepts('html')) res.setHeader('Accept-CH', 'Sec-CH-Prefers-Color-Scheme');
+  next();
+});
+app.get('/site.webmanifest', (req, res) => {
+  const tema = auth.parseCookies(req.headers.cookie).ofertou_tema;
+  const escuro = tema === 'escuro' || (tema !== 'claro' && /dark/i.test(String(req.get('sec-ch-prefers-color-scheme') || '')));
+  const cor = escuro ? '#0e1210' : '#eef2ee';
+  res.setHeader('Cache-Control', 'private, no-cache');
+  res.setHeader('Vary', 'Cookie, Sec-CH-Prefers-Color-Scheme');
+  res.type('application/manifest+json').send(JSON.stringify({ ...MANIFEST_BASE, background_color: cor, theme_color: cor }));
+});
+
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.
 // Cache no navegador: CSS/JS com ?v= (o número muda a cada versão) ficam guardados por 1 ano; imagens por 7 dias;
 // páginas HTML são sempre conferidas (ETag), para as mudanças aparecerem na hora.

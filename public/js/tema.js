@@ -18,6 +18,8 @@
     else if (t === 'escuro') raiz.dataset.theme = 'dark';
     else delete raiz.dataset.theme;
     document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.content = escuro() ? '#0e1210' : '#ffffff'; });
+    // O servidor usa esta escolha para a cor da barra de baixo do app instalado (site.webmanifest)
+    try { document.cookie = `ofertou_tema=${t}; path=/; max-age=31536000; SameSite=Lax`; } catch { /* sem cookies */ }
     document.querySelectorAll('[data-tema-controle] [data-tema]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tema === t)));
     document.dispatchEvent(new CustomEvent('ofertou:tema', { detail: { tema: t, escuro: escuro() } }));
   }

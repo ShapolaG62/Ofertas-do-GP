@@ -96,14 +96,28 @@
   // ── Cartão na lateral ──────────────────────────────────────────────────────
   let buscaCardTimer;
   let grupoCard = 'consumidores'; // categoria do quadro: consumidores ou empresas
+  // Mostra 3 perfis de cada vez; os outros aparecem rolando a lista. Recalcula quando o quadro aparece ou muda de
+  // tamanho (escondido, a altura dos itens é zero).
+  function ajustarAltura() {
+    const lista = $('#comu-lista-card');
+    const terceiro = lista.children[2];
+    if (lista.children.length <= 3 || !terceiro) { lista.style.maxHeight = ''; return; }
+    if (!terceiro.offsetHeight) return;
+    lista.style.maxHeight = `${terceiro.getBoundingClientRect().bottom - lista.getBoundingClientRect().top + lista.scrollTop + 2}px`;
+  }
+  if (window.ResizeObserver) new ResizeObserver(() => ajustarAltura()).observe($('#comu-card'));
+
   async function carregarCard(q = '') {
     try {
       const d = await api(`/api/perfis?grupo=${grupoCard}&q=${encodeURIComponent(q)}`);
       $('#comu-card').hidden = false;
       $('#comu-abrir').hidden = false;
       $('#comu-lista-card').classList.toggle('comu-parceiros', grupoCard === 'empresas');
-      $('#comu-lista-card').innerHTML = d.itens.slice(0, grupoCard === 'empresas' ? 3 : 6).map(grupoCard === 'empresas' ? parceiro : item).join('')
+      const lista = $('#comu-lista-card');
+      lista.innerHTML = d.itens.map(grupoCard === 'empresas' ? parceiro : item).join('')
         || `<li class="comu-vazio">${q ? 'Nenhum perfil com esse nome.' : grupoCard === 'empresas' ? 'Ainda não há parceiros.' : 'Ainda não há perfis.'}</li>`;
+      lista.scrollTop = 0;
+      ajustarAltura();
     } catch { /* sem login: a comunidade não aparece */ }
   }
   $('#comu-busca-card').addEventListener('input', e => {

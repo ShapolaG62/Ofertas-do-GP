@@ -2595,3 +2595,8 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
     background: linear-gradient(to bottom, color-mix(in srgb, var(--barra-app, var(--bg)) 0%, transparent), color-mix(in srgb, var(--barra-app, var(--bg)) 70%, transparent) 50%, var(--barra-app, var(--bg)) 80%);
     pointer-events: none; z-index: 90; }
 }
+
+/* Comunidade (quadro da lateral): 3 perfis visíveis, o resto rolando (altura calculada em comunidade.js) */
+#comu-lista-card { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+#comu-lista-card::-webkit-scrollbar { width: 6px; }
+#comu-lista-card::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 6px; }

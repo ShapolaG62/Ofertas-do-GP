@@ -175,6 +175,20 @@ for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);
 }
 
+// Termos de mineração acrescentados depois da instalação: entram uma única vez na lista já salva no banco
+// (a lista do painel pode ter sido editada; nada é apagado, e quem tirar o termo depois não o vê voltar).
+const TERMOS_NOVOS = [
+  ['termos_2026_10_23', ['conjunto | moda', 'infantil | moda', 'mauricinho | moda', 'camisa | moda', 'gola padre | moda']],
+];
+for (const [marca, termos] of TERMOS_NOVOS) {
+  if (db.get('SELECT 1 FROM settings WHERE key = ?', marca)) continue;
+  const atual = String(db.get('SELECT value FROM settings WHERE key = ?', 'search_terms')?.value || '');
+  const tem = new Set(atual.split('\n').map(l => l.split('|')[0].trim().toLowerCase()).filter(Boolean));
+  const faltam = termos.filter(l => !tem.has(l.split('|')[0].trim().toLowerCase()));
+  if (faltam.length) db.run('UPDATE settings SET value = ? WHERE key = ?', `${atual.replace(/\s+$/, '')}\n${faltam.join('\n')}`, 'search_terms');
+  db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', marca, '1');
+}
+
 function getAll() {
   const map = {};
   for (const row of db.all('SELECT key, value FROM settings')) map[row.key] = row.value;

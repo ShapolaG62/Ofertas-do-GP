@@ -69,7 +69,7 @@ const GRUPOS = {
     'camiseta', 'camisa social', 'calca jeans', 'bermuda', 'shorts', 'vestido', 'saia', 'moletom', 'jaqueta', 'casaco',
     'roupa intima', 'meias', 'tenis', 'tenis esportivo', 'tenis casual', 'sapato social', 'sandalia', 'chinelo', 'bota',
     'coturno', 'oculos de sol', 'bolsa feminina', 'mochila', 'mochila para notebook', 'mala de viagem', 'carteira',
-    'cinto', 'joias', 'brinco', 'colar',
+    'cinto', 'joias', 'brinco', 'colar', 'conjunto', 'infantil', 'mauricinho', 'camisa', 'gola padre',
   ],
   brinquedos: [
     'carrinho de bebe', 'bebe conforto', 'cadeirinha para carro', 'berco', 'fralda descartavel', 'baba eletronica',

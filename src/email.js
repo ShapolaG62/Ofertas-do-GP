@@ -18,6 +18,8 @@ function rodapeLegal(s) {
 const esc = v => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 async function enviar({ para, assunto, texto, html }) {
+  // Conta do cadastro rápido ainda sem e-mail (endereço provisório .invalid): não há para onde mandar
+  if (/\.invalid$/i.test(String(para || '').trim())) return { ignorado: true };
   const s = settings.getAll();
   if (!configurado(s)) throw new Error('E-mail (SMTP) não configurado no painel.');
   const porta = Number(s.smtp_port) || 587;

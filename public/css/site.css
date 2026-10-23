@@ -1484,6 +1484,10 @@ body.pf-body {
 .conta-pop span { display: grid; gap: 1px; }
 .conta-pop b { font-size: 14px; }
 .conta-pop small { font-size: 12px; color: var(--ink-3); }
+.completar-aviso { margin: 4px 0 12px; padding: 12px 14px; border-radius: 12px; background: var(--gold-soft); color: var(--ink); font-size: 13.5px; line-height: 1.5; }
+.completar-aviso[hidden] { display: none; }
+.completar-aviso b:first-child { display: block; margin-bottom: 2px; }
+.aceites-curto .aceite { font-size: 12.5px; }
 .conta-pop .conta-tema { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--line); margin-top: 4px; }
 .conta-pop .conta-tema > span { font-size: 14px; font-weight: 700; }
 .conta-pop .conta-tema button { width: auto; padding: 0 9px; }

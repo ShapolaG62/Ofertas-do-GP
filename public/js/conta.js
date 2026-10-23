@@ -342,6 +342,7 @@
     $$('[data-auth]').forEach(b => b.setAttribute('aria-selected', b.dataset.auth === tab));
     $('#form-entrar').hidden = tab !== 'entrar';
     $('#form-criar').hidden = tab !== 'criar';
+    $('#form-rapido').hidden = tab !== 'rapido';
     $('#google-label').textContent = tab === 'criar' ? 'Criar conta com Google' : 'Entrar com Google';
     const closed = INFO.consumidor === 'fechado' && INFO.empresa === 'fechado';
     if (tab === 'criar' && closed) msg($('#form-criar'), 'Os cadastros estão fechados no momento.');
@@ -355,6 +356,15 @@
     location.hash = '';
     const me = await api('/api/conta/me');
     if (me.user?.status === 'active') return goToSite(me.user.tipo === 'afiliado' && me.user.ferramenta ? '/cliente' : '/');
+    route();
+  });
+
+  // Cadastro rápido: nome, celular e senha (o resto em Meus dados)
+  bind('#form-rapido', async (form, d) => {
+    if (!form.reportValidity()) return;
+    const r = await api('/api/conta/cadastro-rapido', { method: 'POST', body: d });
+    toast(r.status === 'active' ? 'Conta criada! Bem-vindo(a) ao Ofertou!' : 'Conta criada! Ela será liberada após a aprovação.');
+    if (r.status === 'active') return setTimeout(() => goToSite(), 600);
     route();
   });
 
@@ -457,7 +467,16 @@
 
     fillFields($('#form-perfil'), ME);
     window.OfertouCadastro?.aplicarTipo($('#form-perfil'));
-    $('#form-perfil').email.value = ME.email;
+    // Cadastro rápido: o e-mail (provisório) e o CPF ainda faltam e podem ser preenchidos aqui
+    const fp = $('#form-perfil');
+    fp.email.value = ME.email_provisorio ? '' : ME.email;
+    fp.email.disabled = !ME.email_provisorio;
+    fp.email.placeholder = ME.email_provisorio ? 'voce@email.com' : '';
+    if (fp.cpf) { fp.cpf.disabled = Boolean(ME.cpf); if (!ME.cpf) fp.cpf.placeholder = '000.000.000-00'; }
+    $('#completar-aviso').hidden = !ME.cadastro_simplificado;
+    $('#perfil-aviso-fixos').textContent = ME.cadastro_simplificado
+      ? 'Depois de salvos, o e-mail e o CPF só podem ser trocados pelo administrador.'
+      : 'E-mail, CPF e CNPJ não podem ser alterados por aqui. Se precisar, fale com o administrador.';
 
     // Conta só com Google: pode definir senha sem a atual; exclusão confirma digitando EXCLUIR.
     $('#senha-title').textContent = ME.tem_senha ? 'Trocar senha' : 'Definir senha';

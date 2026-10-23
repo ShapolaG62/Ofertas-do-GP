@@ -13,19 +13,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261200">
-<script src="/js/tema.js?v=20261200"></script>
-<script src="/js/app-nativo.js?v=20261200"></script>
-<script src="/js/dialogo.js?v=20261200"></script>
-<script src="/js/aceite-parceiro.js?v=20261200"></script>
-<script src="/js/cosmeticos.js?v=20261200" defer></script>
-<script src="/js/cartoes.js?v=20261200" defer></script>
-<script src="/js/capi-minerando.js?v=20261200" defer></script>
-<script src="/js/cadastro-auto.js?v=20261200" defer></script>
-<script src="/js/rodape-legal.js?v=20261200" defer></script>
-<script src="/js/instalar-app.js?v=20261200" defer></script>
-<script src="/js/cookies.js?v=20261200"></script>
-<script src="/js/seletor.js?v=20261200" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261201">
+<script src="/js/tema.js?v=20261201"></script>
+<script src="/js/app-nativo.js?v=20261201"></script>
+<script src="/js/dialogo.js?v=20261201"></script>
+<script src="/js/aceite-parceiro.js?v=20261201"></script>
+<script src="/js/cosmeticos.js?v=20261201" defer></script>
+<script src="/js/cartoes.js?v=20261201" defer></script>
+<script src="/js/capi-minerando.js?v=20261201" defer></script>
+<script src="/js/cadastro-auto.js?v=20261201" defer></script>
+<script src="/js/rodape-legal.js?v=20261201" defer></script>
+<script src="/js/instalar-app.js?v=20261201" defer></script>
+<script src="/js/cookies.js?v=20261201"></script>
+<script src="/js/seletor.js?v=20261201" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -74,6 +74,7 @@
           <div class="tabs-line" role="tablist">
             <button type="button" role="tab" data-auth="entrar" aria-selected="true">Entrar</button>
             <button type="button" role="tab" data-auth="criar" aria-selected="false">Criar conta</button>
+            <button type="button" role="tab" data-auth="rapido" aria-selected="false">Cadastro rápido</button>
           </div>
           <div class="form-msg err" id="auth-error" hidden></div>
 
@@ -84,7 +85,7 @@
           <div class="divider so-web" id="google-divider"><span>ou</span></div>
 
           <form class="form" id="form-entrar">
-            <label class="field"><span>E-mail</span><input type="text" name="email" autocomplete="username" inputmode="email" autocapitalize="off" spellcheck="false" required></label>
+            <label class="field"><span>E-mail ou celular</span><input type="text" name="email" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="voce@email.com ou (62) 99999-9999" required></label>
             <label class="field"><span>Senha</span><input type="password" name="senha" autocomplete="current-password" required></label>
             <div class="form-msg" hidden></div>
             <button class="btn btn-primary btn-block" type="submit">Entrar</button>
@@ -100,6 +101,21 @@
             <div class="form-msg" hidden></div>
             <button class="btn btn-primary btn-block" type="submit">Criar conta</button>
             <p class="muted" style="margin:0;font-size:13px">No próximo passo você escolhe se a conta é de consumidor ou de empresa.</p>
+          </form>
+          <form class="form" id="form-rapido" hidden>
+            <p class="muted" style="margin:0">Só o básico para começar. O resto (e-mail, CPF e endereço) você completa depois, em <b>Minha conta → Meus dados</b>.</p>
+            <label class="field"><span>Nome</span><input type="text" name="nome" autocomplete="name" maxlength="100" placeholder="Como você se chama" required></label>
+            <label class="field"><span>Celular / WhatsApp</span><input type="text" name="telefone" inputmode="tel" data-mask="tel" maxlength="15" autocomplete="tel" placeholder="(62) 99999-9999" required></label>
+            <label class="field"><span>Senha</span><input type="password" name="senha" autocomplete="new-password" minlength="8" required></label>
+            <div class="aceites aceites-curto" role="group" aria-label="Aceites obrigatórios">
+              <label class="aceite"><input type="checkbox" name="aceite_privacidade" required>
+                <span>Li a <a href="/privacidade#privacidade" target="_blank" rel="noopener">Política de Privacidade</a> e estou ciente de como os meus dados são tratados (LGPD).</span></label>
+              <label class="aceite"><input type="checkbox" name="aceite_termos" required>
+                <span>Li e aceito os <a href="/privacidade#termos" target="_blank" rel="noopener">Termos de Uso</a>: o Ofertou! divulga ofertas e não vende, não entrega e não garante produtos. Tenho 18 anos ou mais.</span></label>
+            </div>
+            <div class="form-msg" hidden></div>
+            <button class="btn btn-primary btn-block" type="submit">Criar conta rápida</button>
+            <p class="muted" style="margin:0;font-size:13px">Depois é só entrar com o <b>celular e a senha</b>.</p>
           </form>
           <p class="auth-aprovacao"><b>Conta gratuita:</b> ao criar a conta ou entrar com o Google <b>sem escolher um plano</b>, seu perfil passa por uma <b>avaliação da nossa equipe</b> e o acesso é liberado depois da aprovação. Quer acesso na hora? <a class="link-btn" href="#planos">Escolha um plano</a>.</p>
           <a class="btn btn-block guia-btn" href="/ajuda"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5V5.5M8 7h8M8 11h6"/></svg>Guia do usuário: como usar o Ofertou!</a>
@@ -550,7 +566,8 @@
           <div class="tab-pane" data-pane="perfil" hidden>
             <div class="panel-card">
               <h2>Meus dados</h2>
-              <p class="muted">E-mail, CPF e CNPJ não podem ser alterados por aqui. Se precisar, fale com o administrador.</p>
+              <div class="completar-aviso" id="completar-aviso" hidden><b>Complete o seu cadastro</b>Você entrou pelo cadastro rápido. Informe o seu <b>e-mail</b>, o <b>CPF</b> e o endereço para assinar planos, receber avisos por e-mail e comprar das lojas parceiras.</div>
+              <p class="muted" id="perfil-aviso-fixos">E-mail, CPF e CNPJ não podem ser alterados por aqui. Se precisar, fale com o administrador.</p>
               <form class="form" id="form-perfil" novalidate>
                 <div data-fields="pessoa" data-mode="perfil"></div>
                 <div data-fields="empresa" data-mode="perfil" data-empresa hidden></div>
@@ -664,8 +681,8 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/loja-painel.js?v=20261200" defer></script>
-<script src="/js/conta.js?v=20261200" defer></script>
-<script src="/js/chat-topo.js?v=20261200" defer></script>
+<script src="/js/loja-painel.js?v=20261201" defer></script>
+<script src="/js/conta.js?v=20261201" defer></script>
+<script src="/js/chat-topo.js?v=20261201" defer></script>
 </body>
 </html>

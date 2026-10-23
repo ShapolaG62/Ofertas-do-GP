@@ -695,3 +695,12 @@ Para levar à VPS: `atualizar-vps.bat`.
 - **Android (Chrome):** o botão abre a instalação na hora. **iPhone (Safari)** e outros navegadores: mostra o passo a passo (Compartilhar → Adicionar à Tela de Início).
 - **Barra de baixo (navegação do Android):** o Android pinta essa barra com a cor do arquivo de instalação, e o site não consegue desenhar por baixo dela. Por isso o servidor gera esse arquivo com a cor do tema da pessoa: o escolhido no site (claro/escuro) ou, no automático, o tema do celular. O topo segue o tema na hora. Quem já tinha instalado vê a mudança quando o celular atualizar o app (pode levar até 1 dia) ou na hora, desinstalando e instalando de novo.
 - Ícones: `public/images/icon-192.png`, `icon-512.png` e `icon-maskable-512.png` (para o Android recortar em círculo).
+
+## 40. Cadastro rápido (nome, celular e senha)
+
+Na tela de entrar (`/conta`), ao lado de **Entrar** e **Criar conta**, a aba **Cadastro rápido** pede só **nome, celular/WhatsApp e senha**, mais as duas caixas obrigatórias (Privacidade/LGPD e Termos de Uso).
+- A conta nasce como **consumidor** e segue a regra de liberação dos consumidores (Painel → Usuários → Cadastros): "aberto" libera na hora; "com aprovação" vai para a fila.
+- **Entrar:** o campo agora aceita **e-mail ou celular** (com ou sem DDD 55). Não pode haver duas contas com o mesmo celular.
+- **Completar depois:** em **Minha conta → Meus dados** aparece "Complete o seu cadastro": a pessoa informa **e-mail, CPF** e o endereço. Depois de salvos, e-mail e CPF só são trocados pelo admin.
+- Enquanto não informa o e-mail, a conta guarda um endereço provisório que **nunca recebe e-mails**; no painel aparece como "sem e-mail · cadastro rápido". Para **assinar um plano** o site pede antes o e-mail (o comprovante chega por ele). Pedidos às lojas parceiras funcionam normalmente.
+- O celular **não é confirmado por código**: se quiser exigir confirmação por SMS/WhatsApp no futuro, é uma melhoria à parte.

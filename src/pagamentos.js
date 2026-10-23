@@ -66,6 +66,7 @@ function perfilDaConta(p, b, u) {
 
 // Quem já está logado no site (e-mail/senha ou Google) compra para a própria conta, sem digitar e-mail e senha.
 function validarLogado(p, b, u) {
+  if (/\.invalid$/i.test(u.email || '')) throw fail('Antes de assinar, informe o seu e-mail em Minha conta → Meus dados: o comprovante e os avisos do plano chegam por ele.', 409);
   if (!['onboarding', 'pending', 'active', 'suspended'].includes(u.status)) throw fail('Esta conta não pode assinar. Fale com o administrador.', 403);
   require('./consentimento').validar(b); // LGPD + Termos de Uso (duas caixas obrigatórias)
   // Conta sem perfil ainda: os dados pessoais (e da empresa) vêm do formulário.

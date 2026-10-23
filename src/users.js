@@ -11,6 +11,12 @@ const PESSOA_FIELDS = ['nome', 'data_nascimento', 'telefone', 'cep', 'logradouro
 const EMPRESA_FIELDS = ['empresa_tipo', 'razao_social', 'empresa_nome', 'inscricao_estadual', 'telefone_empresa', 'ramo', 'site_empresa',
   'emp_cep', 'emp_logradouro', 'emp_numero', 'emp_complemento', 'emp_bairro', 'emp_cidade', 'emp_uf'];
 
+// Cadastro rápido (nome, celular e senha): a conta nasce com um e-mail provisório que nunca recebe mensagens
+// (termina em .invalid, domínio reservado). A pessoa informa o e-mail de verdade e o CPF depois, em Meus dados.
+try { db.db.exec('ALTER TABLE users ADD COLUMN email_provisorio INTEGER NOT NULL DEFAULT 0'); } catch { /* já existe */ }
+const EMAIL_PROVISORIO = /@cadastro\.ofertou\.invalid$/;
+const emailProvisorio = tel => `tel-${tel}@cadastro.ofertou.invalid`;
+
 const COOKIE = 'gp_user';
 const SESSION_DAYS = 180; // "lembrar de mim": renovado a cada uso (ver renovarSessao)
 const MIN_PASSWORD = 8;
@@ -41,6 +47,8 @@ function publicUser(u) {
     created_at: u.created_at,
     avatar_url: u.avatar_url, google: Boolean(u.google_id), tem_senha: Boolean(u.senha_hash),
     ferramenta: Boolean(u.cliente_id),
+    cadastro_simplificado: Boolean(u.email_provisorio) || !u.cpf,
+    email_provisorio: Boolean(u.email_provisorio),
   };
   for (const k of [...PESSOA_FIELDS, ...(u.tipo === 'empresa' ? EMPRESA_FIELDS : [])]) out[k] = u[k] ?? null;
   return out;
@@ -69,6 +77,30 @@ function register(body) {
   }
   const res = db.run(`INSERT INTO users (email, senha_hash, status) VALUES (?, ?, 'onboarding')`, email, hashPassword(senha));
   return getById(Number(res.lastInsertRowid));
+}
+
+// Cadastro rápido: só nome, celular (WhatsApp) e senha, mais os dois aceites (LGPD e Termos). A conta é de
+// consumidor e segue a regra de liberação dos consumidores (Painel → Usuários). O resto vem depois, em Meus dados.
+function registerRapido(body) {
+  const modo = signupMode('consumidor');
+  if (modo === 'fechado') throw new Error('Os cadastros estão fechados no momento.');
+  const nome = String(body.nome || '').trim().replace(/\s+/g, ' ');
+  if (nome.length < 3 || nome.length > 100) throw new Error('Informe o seu nome.');
+  const tel = cadastro.digits(body.telefone);
+  if (tel.length < 10 || tel.length > 11 || tel[0] === '0') throw new Error('Celular inválido: use DDD + número (ex.: 62 99999-9999).');
+  const senha = String(body.senha || '');
+  require('./senha').validar(senha, { nome });
+  require('./consentimento').validar(body); // LGPD + Termos de Uso (duas caixas obrigatórias)
+  if (isBlocked(`tel:${tel}`)) throw new Error('Não é possível criar uma conta com este número. Fale com o administrador.');
+  if (db.get('SELECT 1 FROM users WHERE telefone = ?', tel)) throw new Error('Já existe uma conta com este celular. Use "Entrar" com o celular e a senha.');
+  const email = emailProvisorio(tel);
+  if (db.get('SELECT 1 FROM users WHERE email = ?', email)) throw new Error('Já existe uma conta com este celular. Use "Entrar".');
+  const status = modo === 'aberto' ? 'active' : 'pending';
+  const res = db.run(`INSERT INTO users (email, senha_hash, nome, telefone, tipo, status, email_provisorio, aceite_termos_em)
+    VALUES (?, ?, ?, ?, 'consumidor', ?, 1, datetime('now'))`, email, hashPassword(senha), nome, tel, status);
+  const u = getById(Number(res.lastInsertRowid));
+  logAction(u, 'cadastro_rapido', `cadastro rápido (nome, celular e senha)${status === 'pending' ? ', aguardando aprovação' : ''}`);
+  return u;
 }
 
 // Login/cadastro com Google: acha pela conta Google, depois pelo e-mail (vincula) ou cria uma conta nova.
@@ -135,10 +167,22 @@ function blockedReason(u) {
   return null;
 }
 
+// Entrar com o e-mail ou com o celular (sem @: procura pelo celular cadastrado; aceita com ou sem o 55 do Brasil)
+function acharParaLogin(entrada) {
+  const e = String(entrada || '').trim();
+  if (e.includes('@')) return db.get('SELECT * FROM users WHERE email = ?', normalizeEmail(e));
+  let tel = cadastro.digits(e);
+  if (tel.length === 13 && tel.startsWith('55')) tel = tel.slice(2);
+  if (tel.length < 10 || tel.length > 11) return null;
+  const achados = db.all('SELECT * FROM users WHERE telefone = ? ORDER BY id', tel);
+  if (achados.length > 1) throw new Error('Há mais de uma conta com este celular. Entre com o e-mail.');
+  return achados[0] || null;
+}
+
 function login(email, senha) {
-  const u = db.get('SELECT * FROM users WHERE email = ?', normalizeEmail(email));
+  const u = acharParaLogin(email);
   if (u && !u.senha_hash) throw new Error('Esta conta foi criada com o Google. Use "Entrar com Google".');
-  if (!u || !verifyPassword(String(senha || ''), u.senha_hash)) throw new Error('E-mail ou senha incorretos.');
+  if (!u || !verifyPassword(String(senha || ''), u.senha_hash)) throw new Error('E-mail/celular ou senha incorretos.');
   const reason = blockedReason(u);
   if (reason) throw Object.assign(new Error(reason), { status: 403 });
   if (planoVencido(u)) throw erroPlanoVencido(u); // plano pago vencido: avisa e manda reativar
@@ -252,6 +296,26 @@ function updateProfile(u, body) {
     ...cadastro.dadosPessoa(body, { exigirDocumento: false }),
     ...(u.tipo === 'empresa' ? cadastro.dadosEmpresa({ ...body, empresa_tipo: u.empresa_tipo || 'pj' }, { exigirDocumento: false }) : {}),
   };
+  // Cadastro rápido: completa o e-mail (que ainda é o provisório) e o CPF (que ainda não existe)
+  if (u.email_provisorio || EMAIL_PROVISORIO.test(u.email || '')) {
+    const email = normalizeEmail(body.email);
+    if (email) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120 || EMAIL_PROVISORIO.test(email)) throw new Error('Informe um e-mail válido.');
+      if (isBlocked(email)) throw new Error('Não é possível usar este e-mail. Fale com o administrador.');
+      if (db.get('SELECT 1 FROM users WHERE email = ? AND id <> ?', email, u.id)) throw new Error('Este e-mail já é usado por outra conta.');
+      dados.email = email; dados.email_provisorio = 0;
+    }
+  }
+  if (!u.cpf && body.cpf) {
+    const cpf = cadastro.digits(body.cpf);
+    if (!cadastro.validCpf(cpf)) throw new Error('CPF inválido.');
+    if (isBlocked(`cpf:${cpf}`)) throw new Error('Não é possível usar este CPF. Fale com o administrador.');
+    if (db.get('SELECT 1 FROM users WHERE cpf = ? AND id <> ?', cpf, u.id)) throw new Error('Já existe uma conta com este CPF.');
+    dados.cpf = cpf;
+  }
+  if (db.get('SELECT 1 FROM users WHERE telefone = ? AND id <> ?', dados.telefone, u.id) && u.email_provisorio) {
+    throw new Error('Este celular já é usado por outra conta.');
+  }
   const cols = Object.keys(dados);
   db.run(`UPDATE users SET ${cols.map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(dados), u.id);
 }
@@ -415,7 +479,7 @@ function detailForAdmin(id) {
 module.exports = {
   planoVencido, erroPlanoVencido,
   renovarSessao,
-  TIPOS, SIGNUP_MODES, signupMode, register, login, createSession, destroySession, currentUser,
+  TIPOS, SIGNUP_MODES, signupMode, register, registerRapido, login, createSession, destroySession, currentUser,
   requireUser, requireActive, loginWithGoogle, completeProfile, publicUser, updateProfile, changePassword, deleteOwnAccount, moderate, listForAdmin, detailForAdmin,
   getById, logAction,
 };

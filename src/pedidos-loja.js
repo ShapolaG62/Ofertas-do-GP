@@ -207,7 +207,8 @@ async function criar(dono, b) {
   const ref = `ofertou-pd-${id}`;
   const notif = sitePublico() ? { notification_url: `${siteUrl()}/api/pedidos/mp-webhook?pedido=${id}` } : {};
   const taxaSite = taxa > 0 ? { application_fee: taxa } : {};
-  const email = chat.emailDe(dono) || `cliente${id}@ofertou.app`;
+  const emailConta = chat.emailDe(dono); // cadastro rápido ainda sem e-mail: endereço provisório .invalid, que o Mercado Pago recusa
+  const email = emailConta && !/\.invalid$/i.test(emailConta) ? emailConta : `cliente${id}@ofertou.app`;
   const [primeiro, ...resto] = (chat.pessoa(dono).nome || 'Cliente').split(' ');
   let pay;
   try {

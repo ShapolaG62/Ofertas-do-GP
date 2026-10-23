@@ -85,6 +85,18 @@ router.post('/api/conta/cadastro', (req, res) => {
   } catch (err) { sendError(res, err); }
 });
 
+// Cadastro rápido: nome, celular (WhatsApp) e senha; o resto a pessoa completa depois em Minha conta → Meus dados
+router.post('/api/conta/cadastro-rapido', (req, res) => {
+  const wait = signupLimiter.hit(req.ip);
+  if (wait) return res.status(429).json({ error: `Muitos cadastros deste endereço. Tente de novo em ${wait} min.` });
+  try {
+    const u = users.registerRapido(req.body || {});
+    require('../consentimento').registrar({ dono: `u:${u.id}`, email: null, origem: 'cadastro_rapido', req });
+    users.createSession(req, res, u.id);
+    res.json({ ok: true, status: u.status });
+  } catch (err) { sendError(res, err); }
+});
+
 router.post('/api/conta/entrar', (req, res) => {
   const wait = loginLimiter.hit(req.ip);
   if (wait) return res.status(429).json({ error: `Muitas tentativas. Tente de novo em ${wait} min.` });

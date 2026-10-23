@@ -272,12 +272,12 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261200"></script>
-<script src="/js/dialogo.js?v=20261200"></script>
-<script src="/js/avisos-entrada.js?v=20261200"></script>
-<script src="/js/capi-minerando.js?v=20261200" defer></script>
-<script src="/js/cadastro-auto.js?v=20261200" defer></script>
-<script src="/js/seletor.js?v=20261200" defer></script>
+<script src="/js/tema.js?v=20261201"></script>
+<script src="/js/dialogo.js?v=20261201"></script>
+<script src="/js/avisos-entrada.js?v=20261201"></script>
+<script src="/js/capi-minerando.js?v=20261201" defer></script>
+<script src="/js/cadastro-auto.js?v=20261201" defer></script>
+<script src="/js/seletor.js?v=20261201" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1823,7 +1823,7 @@ async function loadUsers() {
   setPendingBadge(data.pending);
   $('#users-body').innerHTML = data.rows.length ? data.rows.map(u => `
     <tr>
-      <td><b>${esc(u.tipo === 'empresa' ? (u.empresa_nome || u.nome) : u.nome)}</b><br><span class="hint" style="margin:0">${esc(u.email)}</span></td>
+      <td><b>${esc(u.tipo === 'empresa' ? (u.empresa_nome || u.nome) : u.nome)}</b><br><span class="hint" style="margin:0">${emailUsuario(u)}</span></td>
       <td>${tipoLabel(u.tipo)}</td>
       <td><span class="badge b-${u.status}">${esc(U_STATUS[u.status] || u.status)}</span>${u.bloqueio_publicacao ? ' <span class="tag">sem publicar</span>' : ''}${u.pode_postar ? ' <span class="tag">posta nas redes</span>' : ''}${u.pode_sac ? ' <span class="tag">atendente SAC</span>' : ''}</td>
       <td class="hide-sm">${u.loja_nome ? `<a href="/loja/${esc(u.loja_slug)}" target="_blank">${esc(u.loja_nome)}</a>${u.loja_oculta ? ' <span class="tag">oculta</span>' : ''}<br><span class="hint" style="margin:0">${u.produtos} produto(s)</span>` : '—'}</td>
@@ -1946,6 +1946,8 @@ function ligarPlano(u, preencher, l) {
 }
 
 let PLANOS_UD = []; // planos carregados na ficha do usuário (para avisar se a conta muda de tipo)
+// Cadastro rápido ainda sem e-mail: o endereço guardado é provisório (.invalid); mostra o celular no lugar
+const emailUsuario = u => (/\.invalid$/i.test(u.email || '') ? `<i>sem e-mail · cadastro rápido</i>${u.telefone ? ` · ${esc(u.telefone)}` : ''}` : esc(u.email));
 async function openUser(id) {
   const d = await api(`/api/admin/users/${id}`);
   const u = d.user, l = d.loja;
@@ -1980,7 +1982,7 @@ async function openUser(id) {
       <dt>Nome completo</dt><dd>${esc(u.nome)}</dd>
       <dt>CPF</dt><dd>${fmtDoc(u.cpf, 'cpf')}</dd>
       <dt>Nascimento</dt><dd>${fmtBirth(u.data_nascimento)}</dd>
-      <dt>E-mail</dt><dd>${esc(u.email)}</dd>
+      <dt>E-mail</dt><dd>${emailUsuario(u)}</dd>
       <dt>Celular</dt><dd>${fmtPhone(u.telefone)}</dd>
       <dt>Endereço</dt><dd>${fmtAddr(u, '')}</dd>
       ${u.tipo === 'empresa' ? `

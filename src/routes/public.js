@@ -75,38 +75,6 @@ async function fotoDaOferta(req, res) {
 router.get('/img/o/:id.jpg', fotoDaOferta);
 router.get('/api/img/:id', fotoDaOferta);
 
-// Foto da prévia do link curto (WhatsApp, Telegram, Facebook): quadrada (1080×1080), com o produto inteiro centralizado
-// num fundo branco. Foto comprida (em pé ou deitada) faz o WhatsApp mostrar só uma miniatura pequena ao lado do texto.
-router.get('/img/previa/:id.jpg', async (req, res) => {
-  const id = Number(req.params.id) || 0;
-  const row = id && db.get('SELECT imagem FROM offers WHERE id = ?', id);
-  if (!row || !row.imagem) return res.redirect('/images/icon-512.png');
-  try {
-    const foto = await require('../img-cache').obter(`previa-${id}`, async () => {
-      let original;
-      const upload = /^\/uploads\/([a-f0-9]{32}\.(jpg|png|webp))$/.exec(row.imagem);
-      if (upload) original = await require('fs').promises.readFile(require('path').join(require('../db').UPLOADS_DIR, upload[1]));
-      else {
-        if (!/^https:\/\//i.test(row.imagem)) throw new Error('sem foto');
-        const img = await safeGet(row.imagem, { responseType: 'arraybuffer', timeout: 8000, maxContentLength: 5 * 1024 * 1024,
-          headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' } });
-        if (img.status !== 200 || !IMAGE_TYPES.test(String(img.headers['content-type'] || ''))) throw new Error('não é imagem');
-        original = Buffer.from(img.data);
-      }
-      const dados = await require('sharp')(original).flatten({ background: '#ffffff' })
-        .resize(1000, 1000, { fit: 'contain', background: '#ffffff' })
-        .extend({ top: 40, bottom: 40, left: 40, right: 40, background: '#ffffff' })
-        .jpeg({ quality: 82, mozjpeg: true }).toBuffer();
-      return { tipo: 'image/jpeg', dados };
-    });
-    res.setHeader('Content-Type', 'image/jpeg');
-    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
-    res.send(foto.dados);
-  } catch {
-    res.redirect(`/api/img/${id}`);
-  }
-});
-
 // Endereço antigo da foto com marca d'água (recurso retirado): leva para a foto original da oferta.
 router.get('/img/marca/:id.jpg', (req, res) => res.redirect(301, `/api/img/${Number(req.params.id) || 0}`));
 
@@ -129,8 +97,8 @@ router.get('/img/recorte/:id.webp', async (req, res) => {
 });
 
 // Link curto das postagens: /o/<id> (vai para /oferta, que conta o clique e manda para a loja)
-// Para o WhatsApp/Telegram/Facebook (robôs que montam a prévia do link): devolve a foto grande do produto (e, se
-// ligado no painel, o título e o preço). Pessoas vão direto para a loja (pelo /oferta, que conta o clique).
+// Para o WhatsApp/Telegram/Facebook (robôs que montam a prévia do link): devolve a foto grande do produto com a
+// o título e o preço. Pessoas vão direto para a loja (pelo /oferta, que conta o clique).
 const ROBO_PREVIA = /whatsapp|facebookexternalhit|facebot|telegrambot|twitterbot|slackbot|discordbot|linkedinbot|skypeuripreview|googlebot|bingbot|pinterest|vkshare|embedly|iframely|redditbot|applebot/i;
 router.get('/o/:id', (req, res) => {
   const id = Number(req.params.id) || 0;
@@ -143,17 +111,14 @@ router.get('/o/:id', (req, res) => {
   const h = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const titulo = social.tituloCurto(o.produto);
   const desc = `De R$ ${brl(o.preco_anterior)} por R$ ${brl(o.preco_atual)} (${Math.round(o.desconto_pct)}% off) — oferta conferida pelo Ofertou!`;
-  // Padrão: só a foto e o endereço (o texto da postagem já traz título e preço). Painel → Redes sociais muda isso.
-  const completa = require('../settings').get('previa_link_completa') === '1';
   res.set('Cache-Control', 'public, max-age=600');
   res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
-${completa ? `<title>${h(titulo)}</title>
+<title>${h(titulo)}</title>
 <meta property="og:type" content="product"><meta property="og:site_name" content="Ofertou!">
-<meta property="og:title" content="${h(titulo)}"><meta property="og:description" content="${h(desc)}">` : '<meta property="og:type" content="website">'}
-<meta property="og:image" content="${h(`${site}/img/previa/${o.id}.jpg`)}">
-<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1080"><meta property="og:image:height" content="1080">
+<meta property="og:title" content="${h(titulo)}"><meta property="og:description" content="${h(desc)}">
+<meta property="og:image" content="${h(`${site}/api/img/${o.id}`)}">
 <meta property="og:url" content="${h(`${site}/o/${o.id}`)}"><meta name="twitter:card" content="summary_large_image">
-<meta http-equiv="refresh" content="0;url=/oferta/${o.id}"></head><body><a href="/oferta/${o.id}">${completa ? h(titulo) : ''}</a></body></html>`);
+<meta http-equiv="refresh" content="0;url=/oferta/${o.id}"></head><body><a href="/oferta/${o.id}">${h(titulo)}</a></body></html>`);
 });
 
 // Redireciona para a loja (link de afiliado). Só funciona para ofertas válidas e visíveis.

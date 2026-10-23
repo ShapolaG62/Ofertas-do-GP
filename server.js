@@ -158,7 +158,8 @@ app.use((req, res, next) => { // pede ao Chrome para informar o tema do aparelho
   next();
 });
 app.get('/site.webmanifest', (req, res) => {
-  const tema = auth.parseCookies(req.headers.cookie).ofertou_tema;
+  // ?tema= vem da página (tema.js); o cookie e o aviso do Chrome ficam de reserva
+  const tema = ['claro', 'escuro'].includes(req.query.tema) ? req.query.tema : auth.parseCookies(req.headers.cookie).ofertou_tema;
   const escuro = tema === 'escuro' || (tema !== 'claro' && /dark/i.test(String(req.get('sec-ch-prefers-color-scheme') || '')));
   const cor = escuro ? '#0e1210' : '#eef2ee';
   res.setHeader('Cache-Control', 'private, no-cache');

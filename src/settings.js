@@ -33,6 +33,7 @@ const DEFAULTS = {
   min_discount_pct: '5',
   // Capi minerando (animação no site): '1' = só durante a mineração, '0' = o tempo todo; intervalo entre um clipe e outro
   capi_so_mineracao: '0',
+  previa_link_completa: '0',   // prévia do link /o/<id> no WhatsApp etc.: '0' = só a foto e o endereço; '1' = foto, título e preço
   capi_intervalo_seg: '10',
   stores_enabled: JSON.stringify({ amazon: true, mercadolivre: true, aliexpress: true, shopee: true, kabum: true }),
 

@@ -660,3 +660,11 @@ Os **perfis** (estilo Steam) e o palco da Loja de cosméticos continuam escuros 
 - aviso de cookies e a Capi minerando menores; nenhuma página rola mais para o lado.
 
 Para levar à VPS: `atualizar-vps.bat`.
+
+## 37. Velocidade do site e diagnóstico de lentidão
+
+- **Fotos das ofertas guardadas:** o servidor baixa cada foto da loja uma vez e guarda em `data/cache-img` (até 3 dias; acima de 600 MB as mais antigas saem sozinhas). Antes, cada foto era baixada de novo a cada visita.
+- **Fotos na Cloudflare:** as páginas usam o endereço `/img/o/<número>.jpg`, que a Cloudflare guarda perto do visitante (São Paulo). O endereço antigo `/api/img/<número>` continua funcionando.
+- **Diagnóstico:** a janela do site mostra `[LENTO] 2345 ms GET /api/...` quando um pedido passa de 1,5 s e `[LENTO] servidor ficou travado...` quando algum processo pesado segura o servidor. Mande essas linhas para investigar.
+- **Configuração no `.env`** (lido sozinho ao ligar): `PORT`, `DATA_DIR`, `DISABLE_MINER`... O atualizador usa a mesma porta.
+- **Cloudflare:** o site reconhece o IP real de cada visitante (necessário para o bloqueio de login e a varredura de IP).

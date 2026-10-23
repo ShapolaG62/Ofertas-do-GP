@@ -117,7 +117,7 @@
       <div class="grid">${lista.length ? lista.map(card).join('') : '<div class="empty"><img src="/images/pet-capi.png" alt="" width="110"><h3>Nenhum produto aqui ainda</h3></div>'}</div>`;
   }
   const card = o => `<button class="card card-btn" type="button" data-oferta="${o.id}">
-      <div class="card-media"><img src="/api/img/${o.id}" alt="" loading="lazy" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
+      <div class="card-media"><img src="/img/o/${o.id}.jpg" alt="" loading="lazy" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
         ${o.desconto_pct > 0 ? `<span class="card-off">-${Math.round(o.desconto_pct)}%</span>` : ''}</div>
       <div class="card-body"><h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
         <div class="card-prices">${o.preco_anterior > o.preco_atual ? `<div class="card-old num">R$ ${brl(o.preco_anterior)}</div>` : ''}<div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div></div></div>

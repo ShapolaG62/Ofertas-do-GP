@@ -225,7 +225,7 @@
         <div class="row-actions" style="margin-top:6px">${P.proprio ? '' : '<button class="btn btn-sm btn-primary" type="button" id="pf-falar-loja"><svg class="ico-btn" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 11.5h5"/></svg>Conversar com a loja</button>'}
           <a class="btn btn-sm" href="/loja/${esc(loja.slug)}">Ver loja completa</a></div>
         ${itens.length ? `<div class="grid">${itens.map(o => `<button class="card card-btn" type="button" data-oferta="${o.id}">
-          <div class="card-media"><img src="/api/img/${o.id}" alt="" loading="lazy"><span class="card-off">-${Math.round(o.desconto_pct)}%</span></div>
+          <div class="card-media"><img src="/img/o/${o.id}.jpg" alt="" loading="lazy"><span class="card-off">-${Math.round(o.desconto_pct)}%</span></div>
           <div class="card-body"><h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
           <div class="card-prices"><div class="card-old num">R$ ${brl(o.preco_anterior)}</div><div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div></div></div>
         </button>`).join('')}</div>` : '<p class="pf-vazio">Nenhum produto publicado ainda.</p>'}`;

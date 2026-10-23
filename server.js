@@ -32,6 +32,16 @@ offers.reclassifyAll();
 
 const app = express();
 app.disable('x-powered-by');
+
+// Pedidos lentos aparecem na janela do site, para achar gargalos na VPS (fotos baixadas pela 1ª vez não contam)
+app.use((req, res, next) => {
+  const inicio = process.hrtime.bigint();
+  res.on('finish', () => {
+    const ms = Number(process.hrtime.bigint() - inicio) / 1e6;
+    if (ms > 1500 && !/^\/(img\/o|api\/img)\//.test(req.path)) console.log(`[LENTO] ${Math.round(ms)} ms  ${req.method} ${req.originalUrl.slice(0, 120)}`);
+  });
+  next();
+});
 // Quem fica na frente do site e informa o IP real do visitante (X-Forwarded-For) e se ele veio por https:
 // Nginx/IIS na própria máquina (loopback) e a Cloudflare (faixas oficiais em cloudflare.com/ips). Sem isso, todo
 // visitante apareceria com o IP da Cloudflare (bloqueio de login, registros de acesso e varredura de IP errados).
@@ -225,5 +235,16 @@ if (process.env.VERCEL) {
     };
     limparVitrine();
     setInterval(limparVitrine, 24 * 3600 * 1000); // cartões da vitrine gerados há mais de 3 dias
+    // Fotos das ofertas guardadas em data/cache-img: vencidas e excesso saem de hora em hora
+    const imgCache = require('./src/img-cache');
+    imgCache.limpar(); setInterval(() => imgCache.limpar(), 3600 * 1000);
+    // Servidor travado (código pesado segurando os outros pedidos): avisa na janela do site
+    const { monitorEventLoopDelay } = require('perf_hooks');
+    const atraso = monitorEventLoopDelay({ resolution: 20 }); atraso.enable();
+    setInterval(() => {
+      const ms = atraso.max / 1e6;
+      if (ms > 300) console.log(`[LENTO] servidor ficou travado por até ${Math.round(ms)} ms no último minuto`);
+      atraso.reset();
+    }, 60 * 1000).unref();
   });
 }

@@ -39,8 +39,11 @@ router.get('/api/mineracao/status', (req, res) => {
   res.json(require('../miner').statusPublico());
 });
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.
-router.get('/api/img/:id', async (req, res) => {
-  const row = db.get('SELECT imagem FROM offers WHERE id = ?', Number(req.params.id));
+// /img/o/:id.jpg é o endereço usado nas páginas: termina em .jpg para a Cloudflare guardar a foto perto do visitante.
+// No servidor, a foto fica guardada em disco (src/img-cache.js) e não é baixada da loja a cada visita.
+async function fotoDaOferta(req, res) {
+  const id = Number(req.params.id) || 0;
+  const row = db.get('SELECT imagem FROM offers WHERE id = ?', id);
   if (row && /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(row.imagem || '')) return res.redirect(row.imagem);
   if (!row || !/^https:\/\//i.test(row.imagem || '')) return res.redirect('/images/pet-capi-head.png');
   // Fotos da Magalu: o servidor de imagens dela bloqueia o IP de quem baixa muitas fotos seguidas.
@@ -50,21 +53,27 @@ router.get('/api/img/:id', async (req, res) => {
     return res.redirect(302, row.imagem);
   }
   try {
-    const img = await safeGet(row.imagem, {
-      responseType: 'arraybuffer',
-      timeout: 8000,
-      maxContentLength: 5 * 1024 * 1024,
-      headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' },
+    const foto = await require('../img-cache').obter(id, async () => {
+      const img = await safeGet(row.imagem, {
+        responseType: 'arraybuffer',
+        timeout: 8000,
+        maxContentLength: 5 * 1024 * 1024,
+        headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' },
+      });
+      const tipo = String(img.headers['content-type'] || '');
+      if (img.status !== 200 || !IMAGE_TYPES.test(tipo)) throw new Error('não é imagem');
+      return { tipo, dados: Buffer.from(img.data) };
     });
-    const type = String(img.headers['content-type'] || '');
-    if (img.status !== 200 || !IMAGE_TYPES.test(type)) throw new Error('não é imagem');
-    res.setHeader('Content-Type', type);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.send(Buffer.from(img.data));
+    res.setHeader('Content-Type', foto.tipo);
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+    res.send(foto.dados);
   } catch {
+    res.setHeader('Cache-Control', 'public, max-age=600');
     res.redirect('/images/pet-capi-head.png');
   }
-});
+}
+router.get('/img/o/:id.jpg', fotoDaOferta);
+router.get('/api/img/:id', fotoDaOferta);
 
 // Endereço antigo da foto com marca d'água (recurso retirado): leva para a foto original da oferta.
 router.get('/img/marca/:id.jpg', (req, res) => res.redirect(301, `/api/img/${Number(req.params.id) || 0}`));

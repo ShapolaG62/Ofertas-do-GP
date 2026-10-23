@@ -2519,3 +2519,39 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   .lp-sec { padding: 32px 0; gap: 18px; }
   .lp-head h2 { font-size: 22px; }
 }
+
+/* ── Celular: filtros em folha de baixo, ferramentas da lista menores e menus do topo centralizados ── */
+@media (max-width: 720px) {
+  #filters-dialog { position: fixed; inset: auto 0 0 0; margin: 0; width: 100%; max-width: 100%; height: auto; max-height: 88dvh; }
+  #filters-dialog .drawer { width: 100%; height: auto; max-height: 88dvh; margin: 0; border-radius: 18px 18px 0 0; border-top: 1px solid var(--line-strong);
+    box-shadow: 0 -12px 40px -12px rgba(0, 0, 0, .45); animation: folha-sobe .22s ease-out; }
+  #filters-dialog .drawer::before { content: ""; align-self: center; width: 40px; height: 4px; border-radius: 4px; background: var(--line-strong); margin: 8px 0 0; flex: none; }
+  @keyframes folha-sobe { from { transform: translateY(40px); } }
+  #filters-dialog .modal-head { padding: 8px 16px 10px; }
+  #filters-dialog .modal-head h3 { font-size: 16px; }
+  #filters-dialog .modal-foot { padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .drawer .filters { padding: 12px 16px; scrollbar-width: none; }
+  .drawer .filters::-webkit-scrollbar { display: none; }
+  .drawer .filter-group { padding-bottom: 14px; margin-bottom: 14px; }
+  .drawer .filter-title { font-size: 11px; margin-bottom: 8px; }
+  .drawer .filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .drawer .filter-option { padding: 8px 10px; font-size: 13px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+  .drawer .filter-option > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drawer .filter-option[aria-pressed="true"] { border-color: var(--brand); }
+  .drawer .filter-option .count { font-size: 11px; }
+  .drawer .price-inputs input { height: 36px; }
+  .drawer .chip { height: 30px; font-size: 12.5px; }
+
+  /* Ordenar, filtros e subcategorias */
+  .results-tools { width: 100%; gap: 6px; }
+  .results-tools .btn, .results-tools .select { height: 34px; font-size: 13px; }
+  .results-tools .select { flex: 1; min-width: 0; padding: 0 30px 0 12px; background-position: right 11px center; }
+  .btn-filters svg { width: 16px; height: 16px; }
+  .sub-chips { gap: 6px; padding-bottom: 10px; }
+  .sub-chips .chip, .active-filters .chip { height: 28px; padding: 0 10px; font-size: 12.5px; }
+  .results-count { font-size: 12.5px; }
+
+  /* Menus que abrem no topo: largura da tela, com margens iguais */
+  .conta-pop, .sino-pop { left: 8px !important; right: 8px !important; width: auto !important; max-width: none; }
+  .sino-item { font-size: 13px; padding: 10px 12px; }
+}

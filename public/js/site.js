@@ -208,7 +208,7 @@
     const link = o.fonte === 'empresa' ? `href="/anuncio/${o.id}"` : `href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"`;
     return `<a class="card${isSel ? ' is-selected' : ''}" ${link} data-id="${o.id}">
       <div class="card-media">
-        <img src="/api/img/${o.id}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
+        <img src="/img/o/${o.id}.jpg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
         <span class="card-off">-${Math.round(o.desconto_pct)}%</span>
         <button class="card-select poster-only" type="button" data-select="${o.id}" aria-label="Escolher para postar"><svg><use href="#i-check"/></svg></button>
       </div>
@@ -393,7 +393,7 @@
     const el = $('#featured');
     if (!best) { el.hidden = true; return; }
     el.href = `/oferta/${slug(best)}`;
-    el.innerHTML = `<img src="/api/img/${best.id}" alt="">
+    el.innerHTML = `<img src="/img/o/${best.id}.jpg" alt="">
       <div class="featured-body">
         <div class="featured-label">Maior desconto agora · -${Math.round(best.desconto_pct)}%</div>
         <div class="featured-title">${esc(best.produto)}</div>

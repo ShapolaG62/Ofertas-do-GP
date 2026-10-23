@@ -91,6 +91,9 @@
     sinoPop.style.top = `${Math.round(r.bottom + 8)}px`;
     sinoPop.style.right = `${Math.max(8, Math.round(document.documentElement.clientWidth - r.right))}px`;
     sinoPop.hidden = false;
+    // Nunca sai pela esquerda da tela (no celular o sino fica longe da borda direita)
+    const p = sinoPop.getBoundingClientRect();
+    if (p.left < 8) sinoPop.style.right = `${Math.max(8, Math.round(document.documentElement.clientWidth - 8 - p.width))}px`;
     sinoPop.innerHTML = '<p class="sino-vazio">Carregando…</p>';
     try {
       const d = await api('/api/notificacoes');
@@ -186,7 +189,7 @@
     const pg = p.pagamento;
     return `<div class="chatf-pedido${pedidoFoco === p.id ? ' is-foco' : ''}" data-pedido="${p.id}">
       <div class="chatf-pedido-topo"><b>Pedido ${esc(p.codigo)}</b><span class="status-pill st-${esc(p.status)}">${esc(p.status_nome)}</span></div>
-      <div class="chatf-pedido-prod"><img src="/api/img/${p.oferta_id}" alt="" referrerpolicy="no-referrer">
+      <div class="chatf-pedido-prod"><img src="/img/o/${p.oferta_id}.jpg" alt="" referrerpolicy="no-referrer">
         <div><b>${esc(p.produto)}</b><span>${p.quantidade}x ${brl(p.preco_unit)}${p.taxa_valor ? ` + taxa do site ${brl(p.taxa_valor)}` : ''}</span>
         <span><b>Total ${brl(p.total)}</b> · ${esc(p.metodo_nome)}</span>${p.observacao ? `<span class="muted">Obs.: ${esc(p.observacao)}</span>` : ''}</div></div>
       ${pg && pg.pix ? `<div class="chatf-pix pix-pagar">

@@ -859,7 +859,7 @@
         const status = p.oculto ? ['Oculto pelo administrador', 'err'] : p.no_prazo ? ['No ar', 'ok'] : ['Expirado', ''];
         const isAd = p.fonte === 'empresa';
         return `<div class="prod-row">
-          <img src="/api/img/${p.id}" alt="" loading="lazy">
+          <img src="/img/o/${p.id}.jpg" alt="" loading="lazy">
           <div style="min-width:0">
             <div class="t" title="${esc(p.produto)}">${esc(p.produto)}</div>
             <div class="s"><s>R$ ${brl(p.preco_anterior)}</s> R$ ${brl(p.preco_atual)} · -${p.desconto_pct}% ·

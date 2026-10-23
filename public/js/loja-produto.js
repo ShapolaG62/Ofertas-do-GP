@@ -69,7 +69,7 @@
       try { a = { ...a, ...(await fetch(`/api/anuncios/${o.id}`).then(r => (r.ok ? r.json() : {}))) }; } catch { /* usa o básico */ }
     }
     const imgs = (a.imagens || []).filter(okImg);
-    const fotos = imgs.length ? imgs : [`/api/img/${o.id}`];
+    const fotos = imgs.length ? imgs : [`/img/o/${o.id}.jpg`];
     const ped = loja.pedidos || { aceita_pedidos: false, metodos: [] };
     const fatos = [
       a.condicao && ['Condição', a.condicao], a.marca && ['Marca', a.marca], a.modelo && ['Modelo', a.modelo],
@@ -79,7 +79,7 @@
     corpo().innerHTML = `
       <div class="prod-grid">
         <div class="prod-galeria">
-          <div class="prod-foto"><img id="prod-img" src="${esc(fotos[0])}" alt="${esc(a.produto)}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/api/img/${o.id}'">
+          <div class="prod-foto"><img id="prod-img" src="${esc(fotos[0])}" alt="${esc(a.produto)}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/img/o/${o.id}.jpg'">
             ${a.desconto_pct ? `<span class="card-off">-${Math.round(a.desconto_pct)}%</span>` : ''}</div>
           ${fotos.length > 1 ? `<div class="prod-miniaturas">${fotos.map((src, i) => `<button type="button" data-foto="${esc(src)}" ${i ? '' : 'aria-current="true"'}><img src="${esc(src)}" alt="" referrerpolicy="no-referrer"></button>`).join('')}</div>` : ''}
         </div>
@@ -125,7 +125,7 @@
     corpo().innerHTML = `
       <form class="prod-pedido" id="prod-pedido">
         <h2>Fazer pedido</h2>
-        <div class="prod-resumo"><img src="/api/img/${o.id}" alt="" referrerpolicy="no-referrer"><div><b>${esc(o.produto)}</b>
+        <div class="prod-resumo"><img src="/img/o/${o.id}.jpg" alt="" referrerpolicy="no-referrer"><div><b>${esc(o.produto)}</b>
           <span class="muted">${esc(loja.nome)} · R$ ${brl(o.preco_atual)} cada</span></div></div>
         <label class="field"><span>Quantidade</span><input type="text" name="quantidade" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="1" required></label>
         ${ped.metodos.length ? `<fieldset class="prod-metodos"><legend>Como você quer pagar?</legend>

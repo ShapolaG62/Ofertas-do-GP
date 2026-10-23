@@ -2588,6 +2588,6 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 @media (display-mode: standalone) {
   /* termina na cor que a barra recebeu na instalação (--barra-app, de tema.js); passa 4px da borda para não sobrar fresta */
   body::after { content: ""; position: fixed; left: 0; right: 0; bottom: -4px; height: calc(30px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to bottom, color-mix(in srgb, var(--barra-app, var(--bg)) 0%, transparent), color-mix(in srgb, var(--barra-app, var(--bg)) 70%, transparent) 55%, var(--barra-app, var(--bg)));
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--barra-app, var(--bg)) 0%, transparent), color-mix(in srgb, var(--barra-app, var(--bg)) 70%, transparent) 50%, var(--barra-app, var(--bg)) 80%);
     pointer-events: none; z-index: 90; }
 }

@@ -687,3 +687,11 @@ Para levar à VPS: `atualizar-vps.bat`.
 **Para você (Painel → Redes sociais):** o quadro **Alertas de ofertas no WhatsApp particular** liga/desliga o recurso e mostra quantas pessoas estão recebendo e quantas mensagens saíram hoje. Usa o **mesmo WhatsApp das postagens** (Z-API ou Evolution); sem ele configurado, a opção não aparece para os usuários. Preencha o **endereço do site** em Painel → Site para os links das mensagens passarem pelo site (`/o/123`, contando os cliques).
 
 **Tela "Como você quer usar o Ofertou!?"** (primeiro acesso): os planos ficaram compactos e saíram o título "Assine um plano" e o aviso de acesso imediato.
+
+## 39. App instalado pelo site (celular e computador)
+
+- **Botão "Baixar app":** no topo (ícone de celular com seta), no menu da foto da conta e no rodapé. Só aparece enquanto o site não está instalado naquele aparelho.
+- **Aviso rápido no celular:** 3 segundos depois de abrir o site (e depois do aviso de cookies), aparece "Baixe o app do Ofertou!". Em "×" ele volta só depois de 3 dias.
+- **Android (Chrome):** o botão abre a instalação na hora. **iPhone (Safari)** e outros navegadores: mostra o passo a passo (Compartilhar → Adicionar à Tela de Início).
+- **Barra branca embaixo:** o app instalado agora usa cor escura no topo e na barra de navegação, e o site vai até a borda de baixo, respeitando a barra de gestos. Quem já tinha instalado vê a mudança quando o celular atualizar o app (pode levar até 1 dia) ou na hora, desinstalando e instalando de novo.
+- Ícones: `public/images/icon-192.png`, `icon-512.png` e `icon-maskable-512.png` (para o Android recortar em círculo).

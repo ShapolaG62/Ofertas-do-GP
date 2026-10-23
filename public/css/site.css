@@ -2574,3 +2574,11 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
 #view-perfil .plano-card li::before { width: 16px; height: 16px; font-size: 10px; }
 #view-perfil .plano-card .btn { height: 38px; font-size: 13.5px; }
 @media (max-width: 900px) { #view-perfil .planos-grid { max-width: 420px; gap: 18px; } }
+
+/* Celular com o site instalado como app (tela até a borda): nada fica embaixo da barra de gestos do Android/iPhone */
+html { background: var(--bg); }
+body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.chatf { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+.toast { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.posts-dock { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 720px) { .chatf { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); } }

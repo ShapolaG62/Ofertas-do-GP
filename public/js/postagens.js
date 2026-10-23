@@ -23,10 +23,10 @@
   let stopRequested = false;
 
   let toastTimer;
-  function toast(msg) {
+  function toast(msg, ms = 2800) {
     const t = $('#toast');
     t.textContent = msg; t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
   }
 
   // Título: no máximo ~2 linhas na tela do celular (corta na palavra e põe "…")
@@ -161,14 +161,26 @@
       const o = offerOf(share);
       const text = textOf(o);
       // WhatsApp: manda a FOTO do produto com o texto de legenda (o link fica só no texto, sem o quadro de prévia).
-      // Usa o "Compartilhar" do aparelho (celular, Windows); sem ele, abre o WhatsApp só com o texto.
-      if (share.dataset.share === 'wa' && navigator.canShare && fotoPronta[o.id]
+      // Celular: "Compartilhar" do aparelho com foto + texto. Computador: copia a foto e abre o WhatsApp com o texto;
+      // ao colar (Ctrl+V) a foto na conversa, o texto digitado vira a legenda.
+      const celular = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (share.dataset.share === 'wa' && celular && navigator.canShare && fotoPronta[o.id]
         && navigator.canShare({ files: [fotoPronta[o.id]], text })) {
         e.preventDefault();
         navigator.share({ files: [fotoPronta[o.id]], text }).catch(err => {
           if (err.name !== 'AbortError') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
         });
         return;
+      }
+      if (share.dataset.share === 'wa' && !celular && window.ClipboardItem && navigator.clipboard?.write) {
+        const png = fetch(o.imagem_url || `/api/img/${o.id}`).then(r => r.blob()).then(createImageBitmap).then(bmp => {
+          const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+          c.getContext('2d').drawImage(bmp, 0, 0);
+          return new Promise((ok, erro) => c.toBlob(b => (b ? ok(b) : erro(new Error('sem imagem'))), 'image/png'));
+        });
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+          .then(() => toast('Foto copiada! Na conversa do WhatsApp, aperte Ctrl+V antes de enviar: a foto entra e o texto vira a legenda.', 9000))
+          .catch(() => toast('Não consegui copiar a foto. Use "Baixar imagem" e anexe na conversa.', 7000));
       }
       share.href = share.dataset.share === 'wa'
         ? `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`

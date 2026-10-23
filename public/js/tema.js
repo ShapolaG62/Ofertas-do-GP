@@ -18,11 +18,9 @@
     else if (t === 'escuro') raiz.dataset.theme = 'dark';
     else delete raiz.dataset.theme;
     document.querySelectorAll('meta[name="theme-color"]').forEach(m => { m.content = escuro() ? '#0e1210' : '#ffffff'; });
-    // Cor da barra de baixo do app instalado: o arquivo de instalação (site.webmanifest) é pedido sem cookies,
-    // então o tema vai no próprio endereço (no automático, já resolvido pelo tema do aparelho)
-    const tema = escuro() ? 'escuro' : 'claro';
-    document.querySelectorAll('link[rel="manifest"]').forEach(l => { l.href = `/site.webmanifest?tema=${tema}`; });
-    try { document.cookie = `ofertou_tema=${t}; path=/; max-age=31536000; SameSite=Lax`; } catch { /* sem cookies */ }
+    // Cor da barra de baixo do app instalado: o arquivo de instalação (site.webmanifest, pedido com
+    // crossorigin="use-credentials") leva este cookie; no automático, já com o tema do aparelho resolvido
+    try { document.cookie = `ofertou_tema=${escuro() ? 'escuro' : 'claro'}; path=/; max-age=31536000; SameSite=Lax`; } catch { /* sem cookies */ }
     document.querySelectorAll('[data-tema-controle] [data-tema]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tema === t)));
     document.dispatchEvent(new CustomEvent('ofertou:tema', { detail: { tema: t, escuro: escuro() } }));
   }

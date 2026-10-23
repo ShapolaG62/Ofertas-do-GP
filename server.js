@@ -164,7 +164,8 @@ app.get('/site.webmanifest', (req, res) => {
   const cor = escuro ? '#0e1210' : '#eef2ee';
   res.setHeader('Cache-Control', 'private, no-cache');
   res.setHeader('Vary', 'Cookie, Sec-CH-Prefers-Color-Scheme');
-  res.type('application/manifest+json').send(JSON.stringify({ ...MANIFEST_BASE, background_color: cor, theme_color: cor }));
+  res.type('application/manifest+json').send(JSON.stringify({ ...MANIFEST_BASE, background_color: cor, theme_color: cor,
+    start_url: `/?origem=app&barra=${escuro ? 'escuro' : 'claro'}` }));
 });
 
 // Somente a pasta public/ é servida. Banco de dados e código ficam inacessíveis.

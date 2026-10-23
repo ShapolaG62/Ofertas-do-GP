@@ -2586,7 +2586,8 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 /* App instalado: a barra de navegação do Android só aceita uma cor sólida (a do fundo do tema). Um degradê
    esfumaçado no pé da tela leva o conteúdo suavemente até essa cor, sem "corte" entre a página e a barra. */
 @media (display-mode: standalone) {
-  body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: calc(26px + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 0%, transparent), color-mix(in srgb, var(--bg) 70%, transparent) 55%, var(--bg));
+  /* termina na cor que a barra recebeu na instalação (--barra-app, de tema.js); passa 4px da borda para não sobrar fresta */
+  body::after { content: ""; position: fixed; left: 0; right: 0; bottom: -4px; height: calc(30px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--barra-app, var(--bg)) 0%, transparent), color-mix(in srgb, var(--barra-app, var(--bg)) 70%, transparent) 55%, var(--barra-app, var(--bg)));
     pointer-events: none; z-index: 90; }
 }

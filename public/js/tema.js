@@ -26,6 +26,19 @@
   }
   aplicar();
 
+  // App instalado: a barra de navegação do Android tem a cor gravada na instalação (o app abre com ?barra=claro|escuro).
+  // O degradê do pé da tela (site.css) termina nessa cor, mesmo que o tema escolhido seja outro.
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.has('barra')) {
+      localStorage.setItem('ofertou-barra', q.get('barra') === 'escuro' ? 'escuro' : 'claro');
+      q.delete('barra'); q.delete('origem');
+      history.replaceState(null, '', location.pathname + (q.toString() ? `?${q}` : '') + location.hash);
+    }
+    const barra = localStorage.getItem('ofertou-barra');
+    if (barra) raiz.style.setProperty('--barra-app', barra === 'escuro' ? '#0e1210' : '#eef2ee');
+  } catch { /* sem armazenamento */ }
+
   const ICONES = {
     claro: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
     escuro: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',

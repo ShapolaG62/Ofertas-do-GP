@@ -79,6 +79,7 @@
   .b-blocked, .b-error { color: var(--red); border-color: currentColor; background: transparent; }
   .b-not_configured, .b-manual, .b-disabled, .b-none { color: var(--muted); border-color: var(--border-strong); }
   .b-running { color: var(--yellow); border-color: currentColor; background: transparent; }
+  .b-stopped { color: var(--muted); border-color: currentColor; background: transparent; }
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   th { color: var(--muted); font-size: 12px; font-weight: 700; }
@@ -274,12 +275,12 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261203"></script>
-<script src="/js/dialogo.js?v=20261203"></script>
-<script src="/js/avisos-entrada.js?v=20261203"></script>
-<script src="/js/capi-minerando.js?v=20261203" defer></script>
-<script src="/js/cadastro-auto.js?v=20261203" defer></script>
-<script src="/js/seletor.js?v=20261203" defer></script>
+<script src="/js/tema.js?v=20261204"></script>
+<script src="/js/dialogo.js?v=20261204"></script>
+<script src="/js/avisos-entrada.js?v=20261204"></script>
+<script src="/js/capi-minerando.js?v=20261204" defer></script>
+<script src="/js/cadastro-auto.js?v=20261204" defer></script>
+<script src="/js/seletor.js?v=20261204" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -471,7 +472,10 @@
             <h2>Situação das lojas</h2>
             <p class="hint" id="last-run">—</p>
           </div>
-          <button class="btn primary" id="mine-now">⛏️ Minerar agora</button>
+          <div class="row" style="gap:8px">
+            <button class="btn danger hidden" id="mine-stop" type="button">■ Parar mineração</button>
+            <button class="btn primary" id="mine-now">⛏️ Minerar agora</button>
+          </div>
         </div>
         <div class="grid" id="store-cards" style="margin-top:8px"></div>
       </div>
@@ -1669,7 +1673,7 @@ async function loadDashboard() {
 // ── Painel / lojas ────────────────────────────────────────────────────────────
 const STATUS_LABEL = {
   ok: 'Funcionando', blocked: 'Bloqueada pela loja', error: 'Erro', not_configured: 'Falta configurar',
-  manual: 'Somente manual', disabled: 'Desativada', running: 'Minerando...',
+  manual: 'Somente manual', disabled: 'Desativada', running: 'Minerando...', stopped: 'Parada',
 };
 let pollTimer = null;
 
@@ -1686,9 +1690,12 @@ async function loadStores() {
     </div>`;
   }).join('');
   const lr = st.lastRun;
-  $('#last-run').textContent = st.running ? 'Mineração em andamento...' :
-    lr ? `Última mineração terminou em ${new Date(lr.finishedAt).toLocaleString('pt-BR')}.` : 'Nenhuma mineração desde que o servidor iniciou.';
+  $('#last-run').textContent = st.parando ? 'Parando a mineração… (termina a busca que está no meio)' : st.running ? 'Mineração em andamento...' :
+    lr ? `Última mineração ${lr.parada ? 'parada' : 'terminou'} em ${new Date(lr.finishedAt).toLocaleString('pt-BR')}.` : 'Nenhuma mineração desde que o servidor iniciou.';
   $('#mine-now').disabled = st.running;
+  $('#mine-stop').classList.toggle('hidden', !st.running);
+  $('#mine-stop').disabled = Boolean(st.parando);
+  $('#mine-stop').textContent = st.parando ? 'Parando…' : '■ Parar mineração';
   clearTimeout(pollTimer);
   if (st.running) pollTimer = setTimeout(loadStores, 4000);
 
@@ -1703,6 +1710,15 @@ async function loadStores() {
   $('#enabled-stores').innerHTML = st.stores.filter(s => s.automatic).map(s => `
     <label class="check"><input type="checkbox" data-store="${s.id}" ${st.enabled[s.id] !== false ? 'checked' : ''}> ${esc(s.name)}</label>`).join('');
 }
+
+$('#mine-stop').addEventListener('click', async () => {
+  if (!await OfertouUI.confirmar('Parar a mineração que está acontecendo agora? As ofertas já encontradas continuam gravadas; os termos que faltaram ficam para a próxima rodada.', { ok: 'Parar', perigo: true })) return;
+  try {
+    const r = await api('/api/admin/mine/parar', { method: 'POST' });
+    globalMsg(r.parando ? 'Parando a mineração…' : r.motivo, r.parando);
+    loadStores();
+  } catch (err) { globalMsg(err.message, false); }
+});
 
 $('#mine-now').addEventListener('click', async () => {
   try { await api('/api/admin/mine', { method: 'POST', body: {} }); globalMsg('Mineração iniciada. Acompanhe o status abaixo.'); }

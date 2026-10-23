@@ -10,6 +10,18 @@ const DELAY_BETWEEN_QUERIES_MS = 2500;
 let running = null;
 let runningSince = null; // quando a mineração em andamento começou (para a animação da Capi no site)
 let lastRun = null;
+// Parar a mineração em andamento (Painel → Mineração → Parar): cada loja confere antes de cada termo e durante a
+// pausa entre as buscas, então para em poucos segundos, sem cortar uma oferta no meio da gravação.
+let parar = false;
+async function esperar(ms) {
+  for (let t = 0; t < ms && !parar; t += 250) await sleep(Math.min(250, ms - t));
+}
+function pararMineracao() {
+  if (!running) return { parando: false, motivo: 'Nenhuma mineração em andamento.' };
+  parar = true;
+  console.log('[MINER] Parada pedida pelo administrador.');
+  return { parando: true };
+}
 let timer = null;
 
 function setStatus(storeId, fields) {
@@ -36,6 +48,7 @@ async function mineStore(store, terms, s, log) {
   setStatus(store.id, { status: 'running', message: 'Minerando...', last_run_at: now() });
   let found = 0, saved = 0, lastStatus = 'ok', lastMessage = '';
   for (let i = 0; i < terms.length; i++) {
+    if (parar) { lastStatus = 'stopped'; lastMessage = `Parada pelo administrador (${i} de ${terms.length} termos)`; break; }
     const term = terms[i];
     let result;
     try {
@@ -61,12 +74,12 @@ async function mineStore(store, terms, s, log) {
         log(`[${store.name}] falha ao gravar: ${err.message}`);
       }
     }
-    if (i < terms.length - 1) await sleep(DELAY_BETWEEN_QUERIES_MS);
+    if (i < terms.length - 1) await esperar(DELAY_BETWEEN_QUERIES_MS);
   }
 
   const ok = lastStatus === 'ok' || saved > 0;
   setStatus(store.id, {
-    status: ok && lastStatus !== 'blocked' ? 'ok' : lastStatus,
+    status: lastStatus === 'stopped' ? 'stopped' : ok && lastStatus !== 'blocked' ? 'ok' : lastStatus,
     message: lastMessage || (ok ? '' : 'Nenhuma oferta encontrada'),
     found, saved,
     ...(saved > 0 ? { last_success_at: now() } : {}),
@@ -90,6 +103,7 @@ function nextBatch(all) {
 // options.escolhidas: na busca pontual, as lojas marcadas são mineradas mesmo se estiverem desligadas na automática.
 async function runMining(options = {}) {
   if (running) return { alreadyRunning: true };
+  parar = false;
   const s = settings.getAll();
   const enabled = settings.getEnabledStores();
   const terms = options.query ? [{ query: options.query, cat: null }] : nextBatch(settings.getSearchTerms());
@@ -108,8 +122,8 @@ async function runMining(options = {}) {
       return mineStore(store, terms, s, log);
     }));
     const purged = offers.purgeOld();
-    lastRun = { startedAt, finishedAt: new Date().toISOString(), results, purged, query: options.query || null };
-    log(`Mineração concluída. ${results.reduce((a, r) => a + r.saved, 0)} ofertas gravadas.`);
+    lastRun = { startedAt, finishedAt: new Date().toISOString(), results, purged, query: options.query || null, parada: parar };
+    log(`Mineração ${parar ? 'parada pelo administrador' : 'concluída'}. ${results.reduce((a, r) => a + r.saved, 0)} ofertas gravadas.`);
     return lastRun;
   })();
 
@@ -118,6 +132,7 @@ async function runMining(options = {}) {
   } finally {
     running = null;
     runningSince = null;
+    parar = false;
   }
 }
 
@@ -130,6 +145,7 @@ const statusPublico = () => {
 function getState() {
   return {
     running: Boolean(running),
+    parando: Boolean(running) && parar,
     lastRun,
     stores: STORES.map(st => ({
       id: st.id,
@@ -154,4 +170,4 @@ function startScheduler() {
   schedule(10 * 1000);
 }
 
-module.exports = { statusPublico, runMining, getState, startScheduler };
+module.exports = { statusPublico, runMining, pararMineracao, getState, startScheduler };

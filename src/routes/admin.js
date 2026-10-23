@@ -99,6 +99,8 @@ router.get('/api/admin/stores', (req, res) => {
   res.json({ ...miner.getState(), enabled: settings.getEnabledStores(), categories: CATEGORIES });
 });
 
+router.post('/api/admin/mine/parar', (req, res) => res.json(miner.pararMineracao()));
+
 router.post('/api/admin/mine', async (req, res) => {
   const query = String(req.body?.query || '').trim().slice(0, 100);
   const storeIds = Array.isArray(req.body?.stores) ? req.body.stores : undefined;

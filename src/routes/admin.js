@@ -275,6 +275,13 @@ router.post('/api/admin/alertas-whatsapp', (req, res) => {
 router.get('/api/admin/acessos/varredura', (req, res) => {
   res.json(require('../varredura-ip').varrer({ horas: req.query.horas, km: req.query.km, maxHoras: req.query.max_horas }));
 });
+router.post('/api/admin/acessos/visto', (req, res) => { require('../varredura-ip').marcarVisto(); res.json({ ok: true }); });
+router.post('/api/admin/acessos/dispensar', (req, res) => {
+  const dono = String(req.body?.dono || '').slice(0, 40);
+  if (!/^(admin|[uc]:\d+)$/.test(dono)) return res.status(400).json({ error: 'Conta inválida.' });
+  require('../varredura-ip').dispensar(dono);
+  res.json({ ok: true });
+});
 router.get('/api/admin/acessos/historico', (req, res) => res.json(require('../varredura-ip').historico(req.query.dono, req.query.horas)));
 router.get('/api/admin/acessos/ip', (req, res) => {
   const ip = String(req.query.ip || '').trim().slice(0, 64);

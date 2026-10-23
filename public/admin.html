@@ -1514,7 +1514,10 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'equipe' && !$('#eq-quadro').src) $('#eq-quadro').src = '/equipe?embed=1';
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
   if (t.dataset.tab === 'ads') loadAds();
-  if (t.dataset.tab === 'acessos') { loadAcessosBase().catch(() => {}); $('#ac-form').requestSubmit(); }
+  if (t.dataset.tab === 'acessos') {
+    loadAcessosBase().catch(() => {}); $('#ac-form').requestSubmit();
+    api('/api/admin/acessos/visto', { method: 'POST' }).then(() => $('#acessos-badge').classList.add('hidden')).catch(() => {});
+  }
   if (t.dataset.tab === 'avisos') loadAvisos().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'social') { loadSocialLog(); loadAwa(); }
   if (t.dataset.tab === 'clientes') loadClientes();
@@ -2828,7 +2831,6 @@ $('#ac-form').addEventListener('submit', async e => {
     const d = await api(`/api/admin/acessos/varredura?${q}`);
     $('#ac-geo').innerHTML = d.geo.pronta ? '' : '<b style="color:var(--yellow)">A base de localização ainda não foi baixada (veja embaixo): sem ela, nenhuma cidade é identificada.</b>';
     const altas = d.contas.filter(c => c.gravidade === 'alta').length;
-    $('#acessos-badge').textContent = altas; $('#acessos-badge').classList.toggle('hidden', !altas);
     $('#ac-resumo').innerHTML = `<p class="hint">${d.analisados.toLocaleString('pt-BR')} registros analisados${d.limite ? ' (limite atingido: escolha um período menor)' : ''} · <b>${d.contas.length}</b> conta(s) com acessos distantes · <b>${altas}</b> de risco alto.</p>`;
     $('#ac-body').innerHTML = d.contas.length ? d.contas.map(c => {
       const ex = c.exemplos[0];
@@ -2840,13 +2842,20 @@ $('#ac-form').addEventListener('submit', async e => {
         <td class="ac-ex">${fmtHora(ex.de.em)} · ${esc(ex.de.texto)}<br>→ ${fmtHora(ex.para.em)} · ${esc(ex.para.texto)}<br><span class="hint" style="margin:0">${ex.km != null ? `${ex.km.toLocaleString('pt-BR')} km em ${acTempo(ex.minutos)}` : `outro país em ${acTempo(ex.minutos)}`}</span></td>
         <td>${fmtHora(c.ultimo_acesso)}</td>
         <td class="num" style="white-space:nowrap"><button class="btn small" type="button" data-ac-hist="${esc(c.dono)}">Histórico</button>
-          ${c.id && !c.cliente ? `<button class="btn small" type="button" data-ac-ficha="${c.id}">Ficha</button>` : ''}</td></tr>`;
+          ${c.id && !c.cliente ? `<button class="btn small" type="button" data-ac-ficha="${c.id}">Ficha</button>` : ''}
+          <button class="btn small danger" type="button" data-ac-dispensar="${esc(c.dono)}" title="Tira esta conta da lista; ela só volta se tiver acessos distantes de novo">Dispensar</button></td></tr>`;
     }).join('') : '<tr><td colspan="7" class="hint">Nenhuma conta com acessos distantes nesse período.</td></tr>';
   } catch (err) { $('#ac-body').innerHTML = `<tr><td colspan="7" class="hint">${esc(err.message)}</td></tr>`; }
 });
 $('#ac-body').addEventListener('click', async e => {
-  const h = e.target.closest('[data-ac-hist]'), f = e.target.closest('[data-ac-ficha]');
+  const h = e.target.closest('[data-ac-hist]'), f = e.target.closest('[data-ac-ficha]'), x = e.target.closest('[data-ac-dispensar]');
   if (f) return openUser(Number(f.dataset.acFicha));
+  if (x) {
+    if (!await OfertouUI.confirmar('Dispensar este alerta? A conta sai da lista e só volta se tiver acessos de lugares distantes de novo, a partir de agora.', { ok: 'Dispensar' })) return;
+    try { await api('/api/admin/acessos/dispensar', { method: 'POST', body: { dono: x.dataset.acDispensar } }); x.closest('tr').remove(); globalMsg('Alerta dispensado.'); }
+    catch (err) { globalMsg(err.message, false); }
+    return;
+  }
   if (!h) return;
   try {
     const d = await api(`/api/admin/acessos/historico?dono=${encodeURIComponent(h.dataset.acHist)}&horas=${$('#ac-form').horas.value}`);

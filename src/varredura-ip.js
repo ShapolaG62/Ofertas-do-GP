@@ -4,6 +4,23 @@
 // e a localização aproximada dos IPs (src/geoip.js).
 const db = require('./db');
 const geoip = require('./geoip');
+const settings = require('./settings');
+
+// Contas dispensadas pelo admin (botão "Dispensar"): { dono: 'AAAA-MM-DD HH:MM:SS' }. Os acessos até esse momento
+// deixam de contar; a conta só volta à lista se tiver acessos distantes de novo depois disso.
+const lerDispensados = () => { try { return JSON.parse(settings.get('acessos_dispensados') || '{}') || {}; } catch { return {}; } };
+const agoraSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+function dispensar(dono) {
+  const d = lerDispensados();
+  d[String(dono)] = agoraSql();
+  settings.set('acessos_dispensados', JSON.stringify(d));
+}
+// O número vermelho do menu conta só as contas de risco alto com ocorrência nova desde a última vez que a aba foi aberta
+function marcarVisto() { settings.set('acessos_visto_em', agoraSql()); }
+function novosAltos() {
+  const visto = settings.get('acessos_visto_em') || '';
+  return varrer({ horas: 24 }).contas.filter(c => c.gravidade === 'alta' && c.ultima_ocorrencia > visto).length;
+}
 
 const VELOCIDADE_IMPOSSIVEL = 900; // km/h: mais rápido que um avião comercial
 const MAX_LINHAS = 200000;
@@ -32,11 +49,16 @@ function varrer({ horas = 168, km = 300, maxHoras = 3 } = {}) {
     WHERE dono IS NOT NULL AND created_at >= datetime('now', ?) ORDER BY dono, created_at LIMIT ?`, `-${Math.round(horas * 60)} minutes`, MAX_LINHAS);
 
   const contas = [];
+  const dispensados = lerDispensados();
   let i = 0;
   while (i < linhas.length) {
     const dono = linhas[i].dono;
     const meus = [];
-    while (i < linhas.length && linhas[i].dono === dono) meus.push(linhas[i++]);
+    while (i < linhas.length && linhas[i].dono === dono) {
+      if (!dispensados[dono] || linhas[i].created_at > dispensados[dono]) meus.push(linhas[i]);
+      i++;
+    }
+    if (!meus.length) continue;
     const pontos = meus.map(ponto);
     const ocorrencias = [];
     const lugares = new Map(); // texto → vezes
@@ -71,7 +93,7 @@ function varrer({ horas = 168, km = 300, maxHoras = 3 } = {}) {
     contas.push({
       dono, ...quem(dono), gravidade, ocorrencias: ocorrencias.length, alternancias, velocidade_max: Math.round(maxVel) || null,
       lugares: [...lugares.entries()].sort((a, b) => b[1] - a[1]).map(([l, n]) => ({ lugar: l, vezes: n })),
-      ips: new Set(meus.map(r => r.ip)).size, ultimo_acesso: meus.at(-1).created_at,
+      ips: new Set(meus.map(r => r.ip)).size, ultimo_acesso: meus.at(-1).created_at, ultima_ocorrencia: ocorrencias.at(-1).para.em,
       exemplos: ocorrencias.slice(-5).reverse().map(o => ({ ...o, de: resumo(o.de), para: resumo(o.para) })),
     });
   }
@@ -89,4 +111,4 @@ function historico(dono, horas = 720) {
   return { dono, ...quem(dono), acessos: linhas.map(r => { const p = ponto(r); return { ...resumo(p), evento: p.evento, navegador: p.navegador }; }) };
 }
 
-module.exports = { varrer, historico, quem };
+module.exports = { varrer, historico, quem, dispensar, marcarVisto, novosAltos };

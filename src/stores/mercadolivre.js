@@ -1,6 +1,6 @@
 // Mercado Livre — duas fontes:
 //  1) API oficial (se o App ID e a Chave secreta do Mercado Livre Developers estiverem no painel):
-//     mais vendidos da categoria do termo, só os anúncios com preço riscado pelo próprio ML;
+//     produtos do catálogo com a palavra + mais vendidos da categoria, só os anúncios com preço riscado pelo próprio ML;
 //  2) leitura da busca pública (o ML costuma bloquear com "verificação de conta" quando detecta robô).
 const cheerio = require('cheerio');
 const { http, parseBRL } = require('../util');
@@ -51,16 +51,23 @@ async function inBatches(list, size, fn) {
 }
 
 // A busca comum (/sites/MLB/search) é recusada para aplicativos (403). Caminho usado:
-// termo → categoria (domain_discovery) → mais vendidos da categoria (highlights) → anúncios de cada produto.
+// termo → produtos do catálogo com a palavra (products/search) + mais vendidos da categoria (highlights) → anúncios de cada produto.
 // Entra só o anúncio mais barato que tenha preço anterior (riscado) informado pelo próprio Mercado Livre.
 async function searchApi(query, s) {
   const token = await getToken(s);
-  const disc = await apiGet('/sites/MLB/domain_discovery/search', token, { q: query, limit: 2 });
-  if (disc.status !== 200) throw new Error(`categoria não encontrada (${disc.status})`);
-  const categorias = [...new Set((disc.data || []).map(d => d.category_id).filter(Boolean))];
-  if (!categorias.length) return [];
-
   const produtos = [];
+  // 1º) Busca por palavra no catálogo (products/search): traz os produtos do termo, não só os mais vendidos
+  const porPalavra = await cached(`q:${query}`, async () => {
+    const r = await apiGet('/products/search', token, { status: 'active', site_id: 'MLB', q: query, limit: 20 });
+    return r.status === 200 ? (r.data.results || []).map(p => p.id).filter(Boolean) : [];
+  });
+  for (const id of porPalavra) if (!produtos.includes(id)) produtos.push(id);
+
+  // 2º) Mais vendidos da categoria do termo (completa a lista)
+  const disc = await apiGet('/sites/MLB/domain_discovery/search', token, { q: query, limit: 2 });
+  if (disc.status !== 200 && !produtos.length) throw new Error(`categoria não encontrada (${disc.status})`);
+  const categorias = disc.status === 200 ? [...new Set((disc.data || []).map(d => d.category_id).filter(Boolean))] : [];
+
   for (const cat of categorias) {
     const ids = await cached(`cat:${cat}`, async () => {
       const h = await apiGet(`/highlights/MLB/category/${cat}`, token);
@@ -177,7 +184,7 @@ async function search(query, s) {
 module.exports = {
   id: 'mercadolivre',
   name: 'Mercado Livre',
-  method: 'API oficial (mais vendidos com desconto) ou leitura da busca pública',
+  method: 'API oficial (catálogo por palavra + mais vendidos com desconto) ou leitura da busca pública',
   automatic: true,
   isReady: () => ({ ready: true }),
   search,

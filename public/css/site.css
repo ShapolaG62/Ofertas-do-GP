@@ -2582,3 +2582,11 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .toast { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 .posts-dock { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 720px) { .chatf { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); } }
+
+/* App instalado: a barra de navegação do Android só aceita uma cor sólida (a do fundo do tema). Um degradê
+   esfumaçado no pé da tela leva o conteúdo suavemente até essa cor, sem "corte" entre a página e a barra. */
+@media (display-mode: standalone) {
+  body::after { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: calc(26px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 0%, transparent), color-mix(in srgb, var(--bg) 70%, transparent) 55%, var(--bg));
+    pointer-events: none; z-index: 90; }
+}

@@ -190,7 +190,10 @@ module.exports = {
   search,
   affiliateLink(offer, s) {
     const url = new URL(offer.original_url);
+    // Links /up/ (produto com vários vendedores) precisam do pdp_filters para abrir o mesmo anúncio da oferta.
+    const filtro = url.searchParams.get('pdp_filters');
     url.search = '';
+    if (filtro) url.searchParams.set('pdp_filters', filtro);
     if (s.ml_matt_word) url.searchParams.set('matt_word', s.ml_matt_word.trim());
     if (s.ml_matt_tool) url.searchParams.set('matt_tool', s.ml_matt_tool.trim());
     return url.toString();

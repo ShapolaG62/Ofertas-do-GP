@@ -152,6 +152,20 @@
     return new Promise((ok, erro) => c.toBlob(b => (b ? ok(b) : erro(new Error('sem imagem'))), 'image/png'));
   });
 
+  // Onde o botão WhatsApp abre no computador (escolha salva neste navegador): WhatsApp Web, app instalado ou a
+  // página do WhatsApp que pergunta. No celular, abre sempre o app.
+  const WA_ABRIR_KEY = 'gp_wa_abrir';
+  const waAbrir = () => { try { return localStorage.getItem(WA_ABRIR_KEY) || 'web'; } catch { return 'web'; } };
+  function linkWhatsapp(text) {
+    const t = encodeURIComponent(text);
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return `https://api.whatsapp.com/send?text=${t}`;
+    return { web: `https://web.whatsapp.com/send?text=${t}`, app: `whatsapp://send?text=${t}` }[waAbrir()] || `https://api.whatsapp.com/send?text=${t}`;
+  }
+  if ($('#wa-abrir')) {
+    $('#wa-abrir').value = waAbrir();
+    $('#wa-abrir').addEventListener('change', e => { try { localStorage.setItem(WA_ABRIR_KEY, e.target.value); } catch { /* sem armazenamento */ } });
+  }
+
   const offerOf = el => OFFERS.find(o => o.id === Number(el.closest('[data-id]').dataset.id));
 
   $('#posts-list').addEventListener('input', e => {
@@ -175,7 +189,7 @@
         && navigator.canShare({ files: [fotoPronta[o.id]], text })) {
         e.preventDefault();
         navigator.share({ files: [fotoPronta[o.id]], text }).catch(err => {
-          if (err.name !== 'AbortError') window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+          if (err.name !== 'AbortError') window.open(linkWhatsapp(text), '_blank', 'noopener');
         });
         return;
       }
@@ -185,7 +199,7 @@
           .catch(() => toast('Não consegui copiar a foto. Use "Baixar imagem" e anexe na conversa.', 7000));
       }
       share.href = share.dataset.share === 'wa'
-        ? `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`
+        ? linkWhatsapp(text)
         : `https://t.me/share/url?url=${encodeURIComponent(o.link)}&text=${encodeURIComponent(text)}`;
       return;
     }

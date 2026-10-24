@@ -2617,3 +2617,7 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 /* Comunidade (quadro da lateral): 3 perfis visíveis, o resto rolando sem barra aparente (altura calculada em comunidade.js) */
 #comu-lista-card { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
 #comu-lista-card::-webkit-scrollbar { display: none; }
+
+/* Postagens: onde o botão WhatsApp abre (Web, app ou perguntar) */
+.wa-abrir { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13.5px; color: var(--ink-2); font-weight: 600; flex-wrap: wrap; }
+.wa-abrir select { height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 13.5px; }

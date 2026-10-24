@@ -201,6 +201,17 @@
       share.href = share.dataset.share === 'wa'
         ? linkWhatsapp(text)
         : `https://t.me/share/url?url=${encodeURIComponent(o.link)}&text=${encodeURIComponent(text)}`;
+      if (share.dataset.share === 'wa' && !celular) {
+        // Sem abrir uma aba nova a cada clique:
+        //  • app: o link whatsapp:// vai para o app que já está aberto (a página do site continua onde está);
+        //  • Web: usa sempre a mesma aba ("ofertou-whatsapp"). Se ela ainda estiver aberta, o WhatsApp Web carrega ali
+        //    a conversa nova e a aba vem para a frente. (Uma aba do WhatsApp Web aberta à mão, fora do site, o navegador
+        //    não deixa o site encontrar.)
+        e.preventDefault();
+        if (waAbrir() === 'app') { location.href = share.href; return; }
+        const w = window.open(share.href, 'ofertou-whatsapp');
+        if (w) { try { w.opener = null; } catch { /* outra origem */ } w.focus(); }
+      }
       return;
     }
     const b = e.target.closest('button');

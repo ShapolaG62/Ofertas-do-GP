@@ -192,14 +192,23 @@
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.copy) {
-      // Copia o texto e a foto juntos: onde se cola, entra o que o programa aceita (no WhatsApp, a foto com o texto).
+      // A área de transferência só cola uma coisa por vez no WhatsApp (com foto e texto juntos, ele fica só com a foto).
+      // Por isso são dois cliques no mesmo botão: 1º copia a FOTO (cole na conversa: abre a tela da foto);
+      // 2º copia o TEXTO (cole na legenda). Depois de 2 minutos sem o 2º clique, o botão volta ao começo.
       const o = offerOf(b), text = textOf(o);
-      const soTexto = () => navigator.clipboard.writeText(text).then(() => toast('Texto copiado (a foto não pôde ser copiada).', 5000));
-      if (window.ClipboardItem && navigator.clipboard?.write) {
-        navigator.clipboard.write([new ClipboardItem({ 'text/plain': new Blob([text], { type: 'text/plain' }), 'image/png': fotoPng(o) })])
-          .then(() => toast('Texto e foto copiados. Cole (Ctrl+V) na conversa.', 5000))
-          .catch(soTexto);
-      } else soTexto();
+      const voltar = () => { clearTimeout(b._timer); delete b.dataset.etapa; b.textContent = 'Copiar texto'; b.classList.remove('btn-primary'); };
+      const copiarTexto = () => navigator.clipboard.writeText(text);
+      if (b.dataset.etapa === 'texto' || !window.ClipboardItem || !navigator.clipboard?.write) {
+        const tinhaFoto = b.dataset.etapa === 'texto';
+        voltar();
+        copiarTexto().then(() => toast(tinhaFoto ? 'Texto copiado! Cole (Ctrl+V) na legenda da foto e envie.' : 'Texto copiado.', 6000));
+        return;
+      }
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': fotoPng(o) })]).then(() => {
+        b.dataset.etapa = 'texto'; b.textContent = '2º: copiar a legenda'; b.classList.add('btn-primary');
+        b._timer = setTimeout(voltar, 120000);
+        toast('1º: foto copiada! Cole (Ctrl+V) na conversa do WhatsApp. Depois volte aqui e clique em "2º: copiar a legenda".', 9000);
+      }).catch(() => copiarTexto().then(() => toast('Texto copiado (a foto não pôde ser copiada).', 5000)));
     } else if (b.dataset.reset) {
       delete textos[b.dataset.reset]; save(TXT_KEY, textos);
       b.closest('article').querySelector('textarea').value = textOf(offerOf(b));

@@ -32,7 +32,16 @@ async function getToken(s) {
   return tokenCache.token;
 }
 
+// Erro de rede ou demora (timeout) volta como resposta com status 0, em vez de derrubar a busca do termo inteiro.
+// Tenta de novo uma vez.
 async function apiGet(path, token, params) {
+  for (let tentativa = 1; ; tentativa++) {
+    try { return await apiGetUmaVez(path, token, params); } catch (err) {
+      if (tentativa >= 2) return { status: 0, data: {}, erro: err.message };
+    }
+  }
+}
+async function apiGetUmaVez(path, token, params) {
   const res = await http.get(`${API}${path}`, {
     params,
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
@@ -76,7 +85,7 @@ async function searchApi(query, s) {
     for (const id of ids) if (!produtos.includes(id)) produtos.push(id);
   }
 
-  const deals = await inBatches(produtos.slice(0, 40), 5, productId => cached(`prod:${productId}`, () => dealFor(productId, token)));
+  const deals = await inBatches(produtos.slice(0, 40), 5, productId => cached(`prod:${productId}`, () => dealFor(productId, token)).catch(() => null));
   return deals.filter(Boolean);
 }
 
@@ -170,12 +179,12 @@ async function searchHtml(query) {
 
 async function search(query, s) {
   if (s.ml_client_id && s.ml_client_secret) {
+    // Com a API configurada, uma falha dela fica só neste termo (a mineração segue para os próximos). Não tenta a
+    // busca pública: o ML a bloqueia para servidores, e o bloqueio fazia a loja inteira parar.
     try {
       return { status: 'ok', deals: await searchApi(query, s), message: 'via API oficial' };
     } catch (err) {
-      const fallback = await searchHtml(query);
-      fallback.message = `API oficial falhou: ${err.message}. ${fallback.message || ''}`.trim();
-      return fallback;
+      return { status: 'error', deals: [], message: `API oficial falhou neste termo: ${err.message}` };
     }
   }
   return searchHtml(query);

@@ -343,7 +343,7 @@ dialog::backdrop { background: rgba(10, 14, 12, .5); }
 @media (max-width: 1024px) {
   .hero-grid { grid-template-columns: minmax(0, 1fr) 240px; }
   .hero-art .hero-pet { width: 220px; }
-  .catalog { grid-template-columns: 1fr; }
+  .catalog { grid-template-columns: minmax(0, 1fr); } /* minmax: a fileira de subcategorias (comprida) não estica a coluna */
   .catalog > .side-col { display: none; }
   .btn-filters { display: inline-flex; }
 }
@@ -2621,3 +2621,6 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 /* Postagens: onde o botão WhatsApp abre (Web, app ou perguntar) */
 .wa-abrir { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13.5px; color: var(--ink-2); font-weight: 600; flex-wrap: wrap; }
 .wa-abrir select { height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 13.5px; }
+
+/* A coluna das ofertas nunca estica além da tela (fileiras roláveis de chips, títulos longos) */
+.catalog > * { min-width: 0; }

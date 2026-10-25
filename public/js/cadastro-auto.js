@@ -142,7 +142,9 @@
     ['Um número', s => /\d/.test(s)],
     ['Um símbolo (ex.: ! @ # $ %)', s => /[^A-Za-zÀ-ÿ0-9\s]/.test(s)],
   ];
-  const ehSenhaNova = el => el.type === 'password' && el.autocomplete === 'new-password' && !/confirm/i.test(el.name) && !el.classList.contains('oui-campo');
+  // Campo de senha, mesmo quando a pessoa clicou no olho para ver o que digitou (aí o tipo vira texto)
+  const ehSenha = el => el.type === 'password' || el.dataset.senha === '1';
+  const ehSenhaNova = el => ehSenha(el) && el.autocomplete === 'new-password' && !/confirm/i.test(el.name) && !el.classList.contains('oui-campo');
 
   function listaSenha(input) {
     // Senha e confirmação lado a lado (.senha-par): a lista vai embaixo das duas
@@ -178,12 +180,12 @@
     if (!el.name) return;
     if (/(^|_)cep$/.test(el.name)) aoDigitarCep(el);
     else if (el.name === 'cnpj') aoDigitarCnpj(el);
-    else if (el.type === 'password') conferirSenha(el);
+    else if (ehSenha(el)) conferirSenha(el);
   });
   document.addEventListener('focusin', e => {
-    if (e.target.type !== 'password') return;
+    if (!ehSenha(e.target)) return;
     // Clicar na confirmação também mostra as regras da senha do mesmo par
-    const principal = [...(e.target.closest('.senha-par')?.querySelectorAll('input[type=password]') || [])].find(ehSenhaNova);
+    const principal = [...(e.target.closest('.senha-par')?.querySelectorAll('input[type=password], input[data-senha]') || [])].find(ehSenhaNova);
     conferirSenha(principal || e.target);
   });
   document.addEventListener('change', e => { if (e.target.name === 'empresa_tipo') aplicarTipo(e.target.form); });

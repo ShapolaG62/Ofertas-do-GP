@@ -48,7 +48,7 @@
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)}-${o.id}`;
 
   // ── Estado (espelhado na URL para links compartilháveis) ─────────────────
-  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, ordem: 'recentes', pagina: 1 };
+  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, ordem: 'destaques', pagina: 1 };
   // Resposta do servidor para os filtros atuais: { total, pagina, paginas, itens, contagens, grupos, resumo }
   let DATA = { total: 0, pagina: 1, paginas: 1, itens: [], contagens: { lojas: {}, parceiros: 0, categorias: {}, categorias_total: 0, subcategorias: {} }, grupos: null, resumo: null };
   let carregou = false;
@@ -67,7 +67,7 @@
     state.min = p.has('min') ? Number(p.get('min')) : null;
     state.max = p.has('max') ? Number(p.get('max')) : null;
     state.desc = Number(p.get('desc')) || 0;
-    state.ordem = p.get('ordem') || 'recentes';
+    state.ordem = p.get('ordem') || 'destaques';
     state.pagina = Math.max(1, Number(p.get('pagina')) || 1);
   }
 
@@ -77,7 +77,7 @@
     if (state.min != null) p.set('min', state.min);
     if (state.max != null) p.set('max', state.max);
     if (state.desc) p.set('desc', state.desc);
-    if (state.ordem !== 'recentes') p.set('ordem', state.ordem);
+    if (state.ordem !== 'destaques') p.set('ordem', state.ordem);
     if (state.pagina > 1) p.set('pagina', state.pagina);
     const qs = p.toString();
     history.replaceState(null, '', qs ? `?${qs}` : location.pathname);

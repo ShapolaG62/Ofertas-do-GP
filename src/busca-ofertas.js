@@ -43,6 +43,7 @@ function montar() {
     loja_slug: o.loja_slug || null, menor_preco_30d: o.menor_preco_30d || 0,
     _n: normalizar(o.produto), _c: quando(o.created_at),
   }));
+  for (const o of rows) o._s = atratividade(o);
   // Resumo do topo da página: total, lojas, maior desconto, última conferência e a oferta de maior desconto
   let maior = 0, ultima = 0, melhor = null;
   const lojas = new Set();
@@ -66,7 +67,7 @@ function ler(q) {
   const num = v => (v === undefined || v === '' || v === null || !Number.isFinite(Number(v)) ? null : Number(v));
   return {
     loja: String(q.loja || ''), cat: String(q.cat || ''), tipo: String(q.tipo || ''), q: String(q.q || '').slice(0, 120),
-    min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, ordem: String(q.ordem || 'recentes'),
+    min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, ordem: String(q.ordem || 'destaques'),
     pagina: Math.max(1, parseInt(q.pagina, 10) || 1), por: Math.min(Math.max(parseInt(q.por, 10) || POR_PAGINA, 1), 96),
   };
 }
@@ -91,6 +92,7 @@ function ordemSub(a, b) {
   return collator.compare(a || '', b || '');
 }
 const ORDENS = {
+  destaques: (a, b) => (b._s - a._s) || (b._c - a._c),
   recentes: (a, b) => (b._c - a._c) || b.id - a.id,
   desconto: (a, b) => b.desconto_pct - a.desconto_pct,
   'menor-preco': (a, b) => a.preco_atual - b.preco_atual,
@@ -115,13 +117,17 @@ function relevancia(o, frase, palavras) {
 function buscar(query) {
   const f = ler(query);
   const { lista: todas, resumo } = lista();
-  const l = todas.filter(filtro(f));
-  if (f.q && f.ordem === 'recentes') {
+  let l = todas.filter(filtro(f));
+  if (f.q && (f.ordem === 'recentes' || f.ordem === 'destaques')) {
+    // Busca: primeiro o que mais combina com o termo; empate → a mais atrativa (ou a mais nova)
     const frase = normalizar(f.q).trim().replace(/\s+/g, ' ');
     const palavras = frase.split(' ');
     const nota = new Map(l.map(o => [o.id, relevancia(o, frase, palavras)]));
-    l.sort((a, b) => nota.get(b.id) - nota.get(a.id) || ORDENS.recentes(a, b));
-  } else l.sort(ORDENS[f.ordem] || ORDENS.recentes);
+    l.sort((a, b) => nota.get(b.id) - nota.get(a.id) || ORDENS[f.ordem](a, b));
+  } else {
+    l.sort(ORDENS[f.ordem] || ORDENS.destaques);
+    if (f.ordem === 'destaques') l = variar(l, f.por);
+  }
 
   const paginas = Math.max(1, Math.ceil(l.length / f.por));
   const pagina = Math.min(f.pagina, paginas);
@@ -144,6 +150,60 @@ function buscar(query) {
     for (const o of l) { const k = `${o.categoria}|${o.subcategoria}`; grupos[k] = (grupos[k] || 0) + 1; }
   }
   return { total: l.length, pagina, paginas, por: f.por, itens: itens.map(publico), contagens, grupos, resumo };
+}
+
+// ── "Mais atrativas" (ordem padrão da página de ofertas) ──
+// Nota de cada oferta: a chance de venda (pontuacao, abaixo) + produto muito procurado/viral + interesse no site
+// (cliques) + novidade. Assim a 1ª página mostra o que mais chama atenção, e não só o que entrou por último.
+// Produtos em alta no Brasil (muita busca e muita venda): sobem na lista
+const EM_ALTA = [
+  'iphone', 'galaxy', 'redmi', 'xiaomi', 'poco ', 'motorola', 'airpods', 'fone bluetooth', 'fone de ouvido', 'jbl', 'caixa de som',
+  'smart tv', 'televisao', 'tv 4k', 'tv 50', 'tv 55', 'fire tv', 'chromecast', 'echo dot', 'alexa', 'kindle', 'smartwatch', 'apple watch',
+  'notebook', 'macbook', 'ssd', 'monitor', 'mouse gamer', 'teclado mecanico', 'headset', 'playstation', 'ps5', 'xbox', 'nintendo switch',
+  'air fryer', 'airfryer', 'fritadeira', 'cafeteira', 'nespresso', 'dolce gusto', 'liquidificador', 'robo aspirador', 'aspirador',
+  'geladeira', 'micro-ondas', 'microondas', 'maquina de lavar', 'lava e seca', 'ar condicionado', 'ventilador', 'climatizador',
+  'perfume', 'protetor solar', 'secador', 'chapinha', 'barbeador', 'tenis', 'nike', 'adidas', 'whey', 'creatina',
+  'mochila', 'colchao', 'jogo de panelas', 'panela eletrica', 'lego', 'boneca', 'carrinho de bebe', 'fralda',
+];
+const ACESSORIO = /\b(capa|capinha|pelicula|suporte|cabo|adesivo|organizador|refil|peca|reposicao|kit \d+ pecas de reposicao)\b/;
+function atratividade(o) {
+  let s = pontuacao(o);
+  const n = o._n;
+  if (EM_ALTA.some(k => n.includes(k))) s += 18;            // procurado/viral
+  s += LOJA_CONFIANCA[o.store_id] ?? 2;                      // loja conhecida pesa de novo (confiança de quem compra)
+  if (ACESSORIO.test(n.slice(0, 40))) s -= 12;               // acessório no começo do nome chama menos atenção
+  if (o.desconto_pct > 85 || o.desconto_pct < 5) s -= 20;    // desconto suspeito ou pequeno demais
+  else if (o.desconto_pct >= 30) s += 6;
+  const idadeH = (Date.now() - (o._c || 0)) / 3600000;
+  s += idadeH < 24 ? 8 : idadeH < 72 ? 4 : 0;                // novidade
+  if (o.loja_slug) s += 4;                                   // loja parceira do site
+  return Math.round(s * 10) / 10;
+}
+// Não deixa uma página inteira de uma categoria só: nas primeiras páginas, no máximo 1/4 da página por categoria,
+// metade por loja e um só de cada produto (variações de cor/tamanho do mesmo item). O resto vem logo depois.
+function variar(l, por) {
+  const LIMITE = por * 5;
+  const topo = l.slice(0, LIMITE), resto = l.slice(LIMITE);
+  const saida = [];
+  let fila = topo;
+  while (fila.length) {
+    const cat = {}, loja = {}, vistos = new Set(), adiadas = [];
+    const pagina = [];
+    for (const o of fila) {
+      const chave = o._n.slice(0, 28);
+      if (pagina.length < por && !vistos.has(chave) && (cat[o.categoria] || 0) < Math.ceil(por / 4) && (loja[o.store_id] || 0) < Math.ceil(por / 2)) {
+        pagina.push(o); vistos.add(chave); cat[o.categoria] = (cat[o.categoria] || 0) + 1; loja[o.store_id] = (loja[o.store_id] || 0) + 1;
+      } else adiadas.push(o);
+    }
+    if (!pagina.length) { saida.push(...adiadas); break; }
+    if (pagina.length < por) { // poucas categorias/lojas: completa a página com as melhores que sobraram
+      const falta = por - pagina.length;
+      pagina.push(...adiadas.splice(0, falta));
+    }
+    saida.push(...pagina);
+    fila = adiadas;
+  }
+  return saida.concat(resto);
 }
 
 // "Mix" das postagens: a oferta com mais chance de venda de cada categoria (mesma pontuação de antes)

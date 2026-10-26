@@ -90,8 +90,13 @@ router.put('/api/admin/settings', (req, res) => {
 });
 
 // ── Dashboard (resumo do site) ───────────────────────────────────────────────
+// Resumo do painel: varre o site inteiro (~0,5 s); guardado por 1 min para não travar o site a cada abertura do painel
+let dashCache = { at: 0, dados: null };
 router.get('/api/admin/dashboard', (req, res) => {
-  try { res.json(require('../admin-painel').dashboard()); } catch (err) { console.error('[DASH]', err); res.status(500).json({ error: 'Não foi possível montar o resumo.' }); }
+  try {
+    if (!dashCache.dados || Date.now() - dashCache.at > 60 * 1000) dashCache = { at: Date.now(), dados: require('../admin-painel').dashboard() };
+    res.json(dashCache.dados);
+  } catch (err) { console.error('[DASH]', err); res.status(500).json({ error: 'Não foi possível montar o resumo.' }); }
 });
 
 // ── Lojas e mineração ─────────────────────────────────────────────────────────

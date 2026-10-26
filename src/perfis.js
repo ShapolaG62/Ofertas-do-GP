@@ -205,6 +205,17 @@ function incrementar(dono, chave, n = 1) {
           ON CONFLICT(dono, chave) DO UPDATE SET valor = valor + excluded.valor`, dono, chave, n);
 }
 
+let TOTAIS = { at: 0, v: null };
+function totaisSite() {
+  if (TOTAIS.v && Date.now() - TOTAIS.at < 5 * 60 * 1000) return TOTAIS.v;
+  const r = db.get(`SELECT MIN(created_at) desde,
+      COALESCE(SUM(CASE WHEN loja_id IS NULL THEN link_clicks END), 0) cliques_lojas,
+      COUNT(loja_id) anuncios, COALESCE(SUM(CASE WHEN loja_id IS NOT NULL THEN link_clicks END), 0) cliques_anuncios
+    FROM offers`);
+  TOTAIS = { at: Date.now(), v: r };
+  return r;
+}
+
 function metricas(ctx, perfil) {
   const m = {
     idas_loja: contador(ctx.dono, 'idas_loja'),
@@ -219,11 +230,14 @@ function metricas(ctx, perfil) {
   if (ctx.tipo === 'admin') {
     // O admin acompanha o site inteiro.
     m.admin = 1; m.assinante = 1; m.ferramenta = 1; m.pioneiro = 1;
-    m.dias_conta = dias(db.get('SELECT MIN(created_at) d FROM offers').d);
-    m.idas_loja += db.get('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers WHERE loja_id IS NULL').n;
+    // Números do site inteiro: somar 100 mil ofertas a cada página aberta pelo admin levava ~250 ms (servidor parado);
+    // guardados por 5 min
+    const g = totaisSite();
+    m.dias_conta = dias(g.desde);
+    m.idas_loja += g.cliques_lojas;
     m.postagens = db.get(`SELECT COUNT(*) n FROM social_posts WHERE ok = 1 AND cliente_id IS NULL AND autor = 'admin'`).n;
-    m.anuncios = db.get('SELECT COUNT(*) n FROM offers WHERE loja_id IS NOT NULL').n;
-    m.cliques_anuncios = db.get('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers WHERE loja_id IS NOT NULL').n;
+    m.anuncios = g.anuncios;
+    m.cliques_anuncios = g.cliques_anuncios;
     // Vendas confirmadas nos programas de afiliados (Painel → Ganhos) contam para as conquistas do admin
     try { m.vendas_afiliado += require('./ganhos').vendasConfirmadas(); } catch { /* sem ganhos */ }
     return m;
@@ -291,7 +305,7 @@ function montar(perfil, ctx, { proprio = false, admin = false, visitante = null 
   if (ctx.tipo === 'admin') selos.push({ id: 'admin', nome: 'Equipe Ofertou!' });
   if (lim.selo && pl !== 'admin' && pl !== 'gratis') selos.push({ id: { ferramenta: 'pro', empresa: 'loja' }[lim.tipo] || 'assinante', nome: lim.selo });
   else if (loja && pl !== 'gratis' && pl !== 'admin') selos.push({ id: 'loja', nome: 'Loja verificada' });
-  const desde = ctx.tipo === 'admin' ? db.get('SELECT MIN(created_at) d FROM offers').d : (ctx.user || ctx.cliente).created_at;
+  const desde = ctx.tipo === 'admin' ? totaisSite().desde : (ctx.user || ctx.cliente).created_at;
   const out = {
     slug: perfil.slug, nome: perfil.nome, titulo: perfil.titulo || '', bio: perfil.bio || '', cidade: perfil.cidade || '',
     avatar: perfil.avatar || null, capa: lim.capa ? perfil.capa || null : null,

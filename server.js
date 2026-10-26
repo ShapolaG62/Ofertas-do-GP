@@ -28,7 +28,7 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 
 auth.initFromEnv();
 auth.purgeExpiredSessions();
-offers.reclassifyAll();
+offers.reclassifyAll().then(n => { if (n) console.log(`[CATEGORIAS] ${n} oferta(s) reclassificada(s)`); });
 
 const app = express();
 app.disable('x-powered-by');
@@ -299,7 +299,7 @@ if (process.env.VERCEL) {
     if (process.env.DISABLE_MINER !== '1') require('./src/comissao-shopee').iniciar(); // comissão das ofertas antigas da Shopee
     if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar();
     if (process.env.DISABLE_AGENDA !== '1') require('./src/alertas-whatsapp').iniciar(); // alertas de ofertas no WhatsApp particular
-    require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)
+    require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); require('./src/vitrine').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)
     require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
     if (process.env.DISABLE_AGENDA !== '1') require('./src/ganhos-sync').iniciar(); // busca as vendas na Shopee e na Awin a cada 6 h
     const acessos = require('./src/registro-acesso');

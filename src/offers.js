@@ -178,16 +178,28 @@ function reclassifyOne(id) {
 }
 
 // Reaplica as regras de categoria e tipo de produto (rodado ao iniciar, para valer também para ofertas antigas).
+// Grava só as que mudaram e roda em partes de 3 mil, deixando o servidor atender entre uma parte e outra
+// (antes regravava todas as ofertas de uma vez, antes de o site ligar: ~4 s parado a cada reinício).
 function reclassifyAll() {
-  const rows = db.all('SELECT id, produto, categoria, fonte FROM offers');
-  db.transaction(() => {
-    for (const r of rows) {
-      const categoria = r.fonte === 'auto' || r.fonte === 'feed' ? classifyCategory(r.produto, r.categoria) : r.categoria;
-      db.run('UPDATE offers SET categoria = ?, subcategoria = ? WHERE id = ?',
-        categoria, classifySubcategory(r.produto, categoria), r.id);
-    }
+  const rows = db.all('SELECT id, produto, categoria, subcategoria, fonte FROM offers');
+  let i = 0, mudadas = 0;
+  return new Promise(resolve => {
+    const parte = () => {
+      const fim = Math.min(i + 3000, rows.length);
+      db.transaction(() => {
+        for (; i < fim; i++) {
+          const r = rows[i];
+          const categoria = r.fonte === 'auto' || r.fonte === 'feed' ? classifyCategory(r.produto, r.categoria) : r.categoria;
+          const sub = classifySubcategory(r.produto, categoria);
+          if (categoria === r.categoria && sub === r.subcategoria) continue;
+          db.run('UPDATE offers SET categoria = ?, subcategoria = ? WHERE id = ?', categoria, sub, r.id);
+          mudadas++;
+        }
+      });
+      if (i < rows.length) setImmediate(parte); else resolve(mudadas);
+    };
+    parte();
   });
-  return rows.length;
 }
 
 module.exports = {

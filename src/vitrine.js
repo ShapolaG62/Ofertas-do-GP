@@ -9,18 +9,26 @@ const db = require('./db');
 const offers = require('./offers');
 const { baixarFoto } = require('./fotos');
 const ia = require('./ia-recorte');
+const ativas = () => require('./busca-ofertas').ativas();
 
 const CACHE_DIR = path.join(path.dirname(db.UPLOADS_DIR), 'recorte');
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 
-// Monta o filtro SQL de um tipo: categoria/subcategoria, palavras no nome (alguma delas), preço mínimo
-// (evita acessórios) e palavras que excluem (capa, suporte, controle…).
-const q = t => `'${String(t).replace(/'/g, "''")}'`;
+// Filtro de um tipo: categoria/subcategoria, palavras no nome (alguma delas, no formato do LIKE: "notebook%" =
+// começa com, "%tv%" = contém), preço mínimo (evita acessórios) e palavras que excluem (capa, suporte, controle…).
+// Roda sobre a lista de ofertas que já fica na memória (busca-ofertas.js): as 19 consultas com LIKE no banco
+// levavam ~20 s e travavam o site a cada 10 min.
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const comoLike = p => new RegExp(`^${String(p).split('%').map(escRe).join('.*')}$`, 's');
 function filtro({ cat, subs, nomes = [], min = 0, sem = [] }) {
-  const partes = [`o.categoria = ${q(cat)}`, `o.subcategoria IN (${subs.map(q).join(', ')})`, `o.preco_atual >= ${Number(min)}`];
-  if (nomes.length) partes.push(`(${nomes.map(n => `lower(o.produto) LIKE ${q(n)}`).join(' OR ')})`);
-  for (const n of sem) partes.push(`lower(o.produto) NOT LIKE ${q(`%${n}%`)}`);
-  return partes.join(' AND ');
+  const padroes = nomes.map(comoLike);
+  const subsSet = new Set(subs);
+  return o => {
+    if (o.categoria !== cat || !subsSet.has(o.subcategoria) || !(o.preco_atual >= min)) return false;
+    const nome = String(o.produto).toLowerCase();
+    if (padroes.length && !padroes.some(r => r.test(nome))) return false;
+    return !sem.some(s => nome.includes(s));
+  };
 }
 const ACESSORIOS = ['capa', 'capinha', 'película', 'pelicula', 'suporte', 'case ', 'cabo', 'carregador', 'controle remoto', 'adesivo'];
 
@@ -160,11 +168,15 @@ async function montar() {
   const vistos = new Set();
   const chaveProduto = t => String(t).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').slice(0, 5).join(' ');
   for (const t of TIPOS) {
-    const candidatos = db.all(
-      `SELECT o.id, o.produto, o.imagem, o.preco_atual, o.preco_anterior, o.desconto_pct, o.store_id FROM offers o
-       WHERE ${t.where} AND o.oculto = 0 AND o.desconto_pct BETWEEN 8 AND 75 AND o.imagem LIKE 'https://%'
-         AND o.imagem NOT LIKE '%mlcdn.com.br%' AND o.last_seen_at > datetime('now', '-24 hours')
-       ORDER BY o.desconto_pct DESC LIMIT ${CANDIDATOS * 2}`);
+    // Ofertas no ar do tipo (lista em memória), maior desconto primeiro; a foto vem do banco só para as escolhidas
+    const melhores = ativas().filter(o => o.desconto_pct >= 8 && o.desconto_pct <= 75 && t.where(o))
+      .sort((a, b) => b.desconto_pct - a.desconto_pct).slice(0, 300); // sobra para as fotos que não servem (ex.: do ML)
+    const candidatos = [];
+    for (const m of melhores) {
+      if (candidatos.length >= CANDIDATOS * 2) break;
+      const o = db.get('SELECT id, produto, imagem, preco_atual, preco_anterior, desconto_pct, store_id FROM offers WHERE id = ?', m.id);
+      if (o && /^https:\/\//.test(o.imagem || '') && !/mlcdn\.com\.br/.test(o.imagem)) candidatos.push(o);
+    }
     let n = 0;
     for (const o of candidatos) {
       if (n >= POR_TIPO) break;
@@ -178,14 +190,24 @@ async function montar() {
     }
   }
   cache = { at: Date.now(), itens: intercalar(achados) };
+  // Guarda a vitrine pronta: depois de reiniciar (atualização), aparece na hora em vez de esperar as fotos
+  fs.promises.writeFile(SALVA, JSON.stringify(cache)).catch(() => {});
   return cache.itens;
 }
+
+// Vitrine salva da última vez (só as ofertas que continuam no ar); conta como "velha" para ser renovada logo
+const SALVA = path.join(CACHE_DIR, 'vitrine.json');
+try {
+  const s = JSON.parse(fs.readFileSync(SALVA, 'utf8'));
+  const vivos = (s.itens || []).filter(it => offers.isActive(it.id));
+  if (vivos.length && Date.now() - s.at < 2 * 86400000) cache = { at: 0, itens: vivos };
+} catch { /* primeira vez */ }
 
 async function itens() {
   if (!cache.itens || Date.now() - cache.at >= VALIDADE_MS) montando ||= montar().finally(() => { montando = null; });
   if (cache.itens) return cache.itens; // devolve a anterior enquanto renova em segundo plano
-  // Primeira vez (sem nada pronto): espera até 6 s e devolve o que já deu para recortar.
-  await Promise.race([montando, new Promise(r => setTimeout(r, 6000))]);
+  // Primeira vez (sem nada pronto): espera no máximo 1,5 s e devolve o que já deu para recortar (antes eram 6 s)
+  await Promise.race([montando, new Promise(r => setTimeout(r, 1500))]);
   return cache.itens || intercalar(parcial);
 }
 
@@ -202,4 +224,7 @@ function limparCache() {
   }
 }
 
-module.exports = { itens, arquivoRecorte, recortar, recortarSimples, limparCache, TIPOS };
+// Começa a montar assim que o servidor liga, antes do primeiro visitante pedir
+function aquecer() { setTimeout(() => { itens().catch(err => console.error('[VITRINE]', err.message)); }, 5000); }
+
+module.exports = { aquecer, itens, arquivoRecorte, recortar, recortarSimples, limparCache, TIPOS };

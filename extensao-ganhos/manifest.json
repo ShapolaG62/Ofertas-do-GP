@@ -2,14 +2,33 @@
   "manifest_version": 3,
   "name": "Ofertou! Ganhos",
   "short_name": "Ofertou Ganhos",
-  "version": "1.0.0",
-  "description": "Lê o saldo dos seus programas de afiliados (Mercado Livre, Amazon, Shopee, Magalu, AliExpress e Awin) quando você abre o portal e envia para o painel do Ofertou!.",
-  "icons": { "16": "icone.png", "48": "icone.png", "128": "icone.png" },
-  "action": { "default_title": "Ofertou! Ganhos", "default_popup": "popup.html", "default_icon": "icone.png" },
-  "background": { "service_worker": "background.js" },
-  "permissions": ["storage"],
-  "host_permissions": ["https://tanoofertou.com.br/*", "http://localhost/*", "http://127.0.0.1/*"],
-  "optional_host_permissions": ["https://*/*"],
+  "version": "1.1.0",
+  "description": "Sincroniza sozinho, em segundo plano, o saldo dos seus programas de afiliados (Mercado Livre, Amazon, Magalu, Shopee, AliExpress e Awin) com o painel do Ofertou!.",
+  "icons": {
+    "16": "icone.png",
+    "48": "icone.png",
+    "128": "icone.png"
+  },
+  "action": {
+    "default_title": "Ofertou! Ganhos",
+    "default_popup": "popup.html",
+    "default_icon": "icone.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://tanoofertou.com.br/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
   "content_scripts": [
     {
       "matches": [
@@ -22,7 +41,9 @@
         "https://portals.aliexpress.com/*",
         "https://ui.awin.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ]

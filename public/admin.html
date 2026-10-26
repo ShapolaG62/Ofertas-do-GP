@@ -329,13 +329,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261228"></script>
-<script src="/js/dialogo.js?v=20261228"></script>
-<script src="/js/modelo-post.js?v=20261228"></script>
-<script src="/js/avisos-entrada.js?v=20261228"></script>
-<script src="/js/capi-minerando.js?v=20261228" defer></script>
-<script src="/js/cadastro-auto.js?v=20261228" defer></script>
-<script src="/js/seletor.js?v=20261228" defer></script>
+<script src="/js/tema.js?v=20261229"></script>
+<script src="/js/dialogo.js?v=20261229"></script>
+<script src="/js/modelo-post.js?v=20261229"></script>
+<script src="/js/avisos-entrada.js?v=20261229"></script>
+<script src="/js/capi-minerando.js?v=20261229" defer></script>
+<script src="/js/cadastro-auto.js?v=20261229" defer></script>
+<script src="/js/seletor.js?v=20261229" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -863,12 +863,12 @@
 
       <div class="panel">
         <h2>Extensão do Chrome: saldo direto dos portais</h2>
-        <p class="hint">Mercado Livre, Amazon, Magalu e AliExpress não têm API de ganhos. A extensão <b>Ofertou! Ganhos</b> lê o saldo na tela do portal quando você o abre (logado) no Chrome e manda para cá: os cartões acima passam a mostrar o valor do portal. Na 1ª vez em cada portal, marque no quadrinho qual valor é o <b>Disponível</b> e qual está <b>A liberar</b>; depois o envio é sozinho a cada visita.</p>
+        <p class="hint">Mercado Livre, Amazon e Magalu não têm API de ganhos para afiliados. A extensão <b>Ofertou! Ganhos</b> resolve: depois de colar a chave, ela <b>sincroniza sozinha a cada 3 horas, em segundo plano</b> — abre os portais numa janela minimizada, lê o saldo disponível e o valor a liberar da sua conta e fecha. Os cartões acima passam a mostrar o valor do portal. Precisa só estar logado nos portais no Chrome do computador (e o Chrome aberto).</p>
         <ol class="hint gn-passos">
           <li><a class="btn small" href="/extensao/ofertou-ganhos.zip" download>Baixar a extensão (.zip)</a> e descompacte numa pasta.</li>
           <li>No Chrome, abra <b>chrome://extensions</b>, ligue o <b>Modo do desenvolvedor</b> (canto superior direito) e clique em <b>Carregar sem compactação</b>, escolhendo a pasta.</li>
           <li><button class="btn small primary" type="button" id="gn-ext-chave">Gerar chave da extensão</button> <span id="gn-ext-info"></span></li>
-          <li>Clique no ícone do Ofertou! na barra do Chrome, cole a chave e toque em <b>Salvar e testar</b>. Pronto: abra os portais pelos atalhos da própria extensão.</li>
+          <li>Clique no ícone do Ofertou! na barra do Chrome, cole a chave e toque em <b>Salvar e sincronizar</b>. Pronto: a partir daí é automático. No ícone você vê a situação de cada loja e pode escolher quais sincronizar.</li>
         </ol>
         <div id="gn-ext-chave-box" hidden class="gn-ext-chave"><code id="gn-ext-chave-txt"></code><button class="btn small" type="button" id="gn-ext-copiar">Copiar</button>
           <span class="hint" style="margin:0">Guarde agora: por segurança, ela não aparece de novo (gerar outra desliga a anterior).</span></div>
@@ -2834,14 +2834,14 @@ async function loadGanhos() {
   $('#gn-sync-lista').innerHTML = Object.entries(GN.sync.plataformas).map(([id, x]) => `<div class="gn-sync-item">
     <span class="gn-ponto ${!x.automatica ? 'manual' : x.ok === true ? 'ok' : x.ok === false ? 'erro' : ''}"></span>
     <div><b>${esc(nomes[id] || id)}</b><small>${esc(x.mensagem || '')}</small>
-    <span class="gn-tag">${x.automatica ? `🔄 Automática${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : '📄 Pela planilha do portal'}</span></div></div>`).join('');
+    <span class="gn-tag">${x.automatica ? `${x.extensao ? '🧩 Pela extensão' : '🔄 Automática'}${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : '📄 Pela planilha do portal'}</span></div></div>`).join('');
   // Cartões das plataformas
   $('#gn-plataformas').innerHTML = GN.plataformas.map(p => {
     const pct = p.minimo > 0 ? Math.min(100, Math.round((p.disponivel / p.minimo) * 100)) : (p.disponivel > 0 ? 100 : 0);
     return `<div class="gn-card${p.pode_sacar ? ' is-pronto' : ''}${p.ativo ? '' : ' is-off'}">
       <div class="gn-card-topo"><b>${esc(p.nome)}</b>${p.pode_sacar ? '<span class="badge b-active">Pode sacar</span>' : ''}</div>
       <div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div>
-      ${p.portal ? `<div class="gn-portal" title="${esc(p.portal.url || '')}">📡 Lido no portal em ${fmtDate(p.portal.em)}${p.portal.total != null ? ` · total ${gnMoeda(p.portal.total, p.moeda)}` : ''}<button type="button" data-gn-portal-limpar="${p.id}" title="Voltar a usar a soma das vendas registradas">usar as vendas</button></div>` : ''}
+      ${p.leitura_portal ? `<div class="gn-portal" title="${esc(p.leitura_portal.url || '')}">📡 Lido no portal em ${fmtDate(p.leitura_portal.em)}${p.leitura_portal.total != null ? ` · total ${gnMoeda(p.leitura_portal.total, p.moeda)}` : ''}<button type="button" data-gn-portal-limpar="${p.id}" title="Voltar a usar a soma das vendas registradas">usar as vendas</button></div>` : ''}
       <div class="gn-barra" title="${pct}% do mínimo"><span style="width:${pct}%"></span></div>
       <div class="hint" style="margin:6px 0 0">Mínimo: <b>${p.minimo ? gnMoeda(p.minimo, p.moeda) : 'não informado'}</b>${p.falta > 0 ? ` · faltam ${gnMoeda(p.falta, p.moeda)}` : ''}</div>
       <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>

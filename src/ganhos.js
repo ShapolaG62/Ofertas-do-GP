@@ -133,11 +133,12 @@ function resumo(id) {
     FROM ganhos_vendas WHERE plataforma = ?`, agora, agora, agora, p.id);
   const sacado = db.get('SELECT COALESCE(SUM(valor), 0) n FROM ganhos_saques WHERE plataforma = ?', p.id).n;
   // Saldo lido no portal (extensão do Chrome): é o número oficial do programa, então substitui a soma das vendas
-  const portal = db.get('SELECT * FROM ganhos_portal WHERE plataforma = ?', p.id) || null;
-  const disponivel = portal?.disponivel != null ? r2(portal.disponivel) : r2(Math.max(0, v.liberado - sacado));
-  const aLiberar = portal?.a_liberar != null ? r2(portal.a_liberar) : r2(v.a_liberar);
+  // (leitura_portal, e não "portal": esse nome já é o endereço do portal do programa)
+  const lido = db.get('SELECT * FROM ganhos_portal WHERE plataforma = ?', p.id) || null;
+  const disponivel = lido?.disponivel != null ? r2(lido.disponivel) : r2(Math.max(0, v.liberado - sacado));
+  const aLiberar = lido?.a_liberar != null ? r2(lido.a_liberar) : r2(v.a_liberar);
   return {
-    ...p, ativo: Boolean(p.ativo), portal,
+    ...p, ativo: Boolean(p.ativo), leitura_portal: lido,
     disponivel, a_liberar: aLiberar, recebido: r2(v.pago + sacado), vendas: v.vendas,
     proxima_liberacao: v.proxima_liberacao,
     pode_sacar: disponivel > 0 && disponivel >= p.minimo,

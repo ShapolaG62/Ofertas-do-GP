@@ -4,38 +4,41 @@
 <meta charset="utf-8">
 <title>Ofertou! Ganhos</title>
 <style>
-  body { width: 320px; margin: 0; padding: 14px; font: 13px/1.45 system-ui, sans-serif; background: #121714; color: #eef3f0; }
+  body { width: 330px; margin: 0; padding: 14px; font: 13px/1.45 system-ui, sans-serif; background: #121714; color: #eef3f0; }
   h1 { font-size: 15px; margin: 0 0 4px; display: flex; gap: 8px; align-items: center; }
   h1 img { width: 22px; height: 22px; border-radius: 6px; }
   p { margin: 0 0 10px; color: #a3ada7; }
-  label { display: grid; gap: 4px; margin-bottom: 10px; font-weight: 600; }
-  input { font: inherit; padding: 8px 10px; border-radius: 9px; border: 1px solid #343c36; background: #1b211d; color: inherit; }
+  label.campo { display: grid; gap: 4px; margin-bottom: 10px; font-weight: 600; }
+  input[type=text], input[type=password] { font: inherit; padding: 8px 10px; border-radius: 9px; border: 1px solid #343c36; background: #1b211d; color: inherit; }
   input:focus { outline: none; border-color: #2bb673; }
   button { font: inherit; font-weight: 700; padding: 9px 14px; border-radius: 999px; border: 0; background: #2bb673; color: #fff; cursor: pointer; width: 100%; }
-  #msg { margin-top: 8px; font-size: 12.5px; min-height: 18px; }
+  button.sec { background: #1b211d; border: 1px solid #343c36; margin-top: 8px; }
+  button:disabled { opacity: .6; cursor: default; }
+  .msg { margin-top: 8px; font-size: 12.5px; min-height: 18px; }
   .bom { color: #4ade80; } .ruim { color: #ff8a8a; }
-  ul { margin: 12px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  a { display: block; padding: 7px 8px; border-radius: 8px; background: #1b211d; color: #eef3f0; text-decoration: none; font-size: 12.5px; text-align: center; }
-  a:hover { background: #223028; }
-  h2 { font-size: 12.5px; margin: 14px 0 0; color: #a3ada7; font-weight: 600; }
+  h2 { font-size: 12.5px; margin: 14px 0 6px; color: #a3ada7; font-weight: 600; }
+  .lista { display: grid; gap: 6px; }
+  .item { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: start; padding: 8px 10px; border-radius: 10px; background: #1b211d; }
+  .item input { margin: 3px 0 0; accent-color: #2bb673; }
+  .item b { font-size: 13px; }
+  .item small { grid-column: 2; color: #a3ada7; font-size: 12px; }
+  .item small.ok { color: #4ade80; } .item small.erro { color: #ff8a8a; }
+  details summary { cursor: pointer; color: #a3ada7; margin-top: 12px; }
 </style>
 </head>
 <body>
   <h1><img src="icone.png" alt="">Ofertou! Ganhos</h1>
-  <p>Abra o portal de afiliados logado: a extensão lê o saldo da tela e manda para <b>Painel → Ganhos de afiliados</b>.</p>
-  <label>Endereço do site <input id="site" placeholder="https://tanoofertou.com.br"></label>
-  <label>Chave da extensão <input id="chave" type="password" placeholder="ofg_…" autocomplete="off"></label>
-  <button id="salvar">Salvar e testar</button>
-  <div id="msg"></div>
-  <h2>Abrir os portais</h2>
-  <ul>
-    <li><a href="https://www.mercadolivre.com.br/afiliados" target="_blank">Mercado Livre</a></li>
-    <li><a href="https://associados.amazon.com.br" target="_blank">Amazon</a></li>
-    <li><a href="https://affiliate.shopee.com.br" target="_blank">Shopee</a></li>
-    <li><a href="https://www.parceiromagalu.com.br" target="_blank">Magalu</a></li>
-    <li><a href="https://portals.aliexpress.com" target="_blank">AliExpress</a></li>
-    <li><a href="https://ui.awin.com" target="_blank">KaBuM! (Awin)</a></li>
-  </ul>
+  <p>Sincroniza sozinha, a cada 3 horas, o saldo dos portais marcados com <b>Painel → Ganhos de afiliados</b>. Basta estar logado nos portais neste Chrome.</p>
+  <div class="lista" id="portais"></div>
+  <button class="sec" id="agora">Sincronizar agora</button>
+  <div class="msg" id="msg-sync"></div>
+  <details id="config">
+    <summary>Configuração (site e chave)</summary>
+    <label class="campo" style="margin-top:10px">Endereço do site <input type="text" id="site" placeholder="https://tanoofertou.com.br"></label>
+    <label class="campo">Chave da extensão <input type="password" id="chave" placeholder="ofg_…" autocomplete="off"></label>
+    <button id="salvar">Salvar e sincronizar</button>
+    <div class="msg" id="msg"></div>
+  </details>
   <script src="popup.js"></script>
 </body>
 </html>

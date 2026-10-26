@@ -206,6 +206,18 @@
   .modelo-previa { margin: 6px 0 0; padding: 12px 14px; min-height: 220px; border-radius: 12px; background: #0b141a; color: #e9edef; border: 1px solid var(--line, #333);
     font: 13.5px/1.5 system-ui, sans-serif; white-space: pre-wrap; word-break: break-word; }
   .modelo-vars code { margin-right: 4px; }
+  textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5; min-height: 260px; }
+  .modelos-escolha { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 10px 0 4px; }
+  .modelo-card { display: grid; gap: 4px; align-content: start; text-align: left; padding: 12px; border-radius: 12px; cursor: pointer; font: inherit; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border-strong); }
+  .modelo-card:hover { border-color: var(--green-line); }
+  .modelo-card.on { border-color: var(--green); box-shadow: 0 0 0 2px rgba(43, 182, 115, .25); }
+  .modelo-card-tit { font-weight: 800; font-size: 14px; }
+  .modelo-card-tit em { font-style: normal; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--green); color: #fff; margin-left: 6px; }
+  .modelo-card-desc { color: var(--muted); font-size: 12.5px; }
+  .modelo-card-ex { margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: #0b141a; color: #e9edef; font-size: 11.5px; line-height: 1.45; white-space: pre-wrap; max-height: 150px; overflow: hidden; }
+  .modelo-proprio { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 900px) { .modelos-escolha { grid-template-columns: minmax(0, 1fr); } }
   .termos-total { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--green-soft); color: var(--green); border: 1px solid var(--green-line); }
   .av-imagem { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
   .av-imagem img { width: 160px; aspect-ratio: 1200 / 630; object-fit: cover; border-radius: 10px; border: 1px solid var(--line, #262d28); }
@@ -300,13 +312,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261223"></script>
-<script src="/js/dialogo.js?v=20261223"></script>
-<script src="/js/modelo-post.js?v=20261223"></script>
-<script src="/js/avisos-entrada.js?v=20261223"></script>
-<script src="/js/capi-minerando.js?v=20261223" defer></script>
-<script src="/js/cadastro-auto.js?v=20261223" defer></script>
-<script src="/js/seletor.js?v=20261223" defer></script>
+<script src="/js/tema.js?v=20261225"></script>
+<script src="/js/dialogo.js?v=20261225"></script>
+<script src="/js/modelo-post.js?v=20261225"></script>
+<script src="/js/avisos-entrada.js?v=20261225"></script>
+<script src="/js/capi-minerando.js?v=20261225" defer></script>
+<script src="/js/cadastro-auto.js?v=20261225" defer></script>
+<script src="/js/seletor.js?v=20261225" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1001,14 +1013,16 @@
         <div class="panel">
           <h2>Modelo da mensagem</h2>
           <p class="hint">O texto das postagens (tela Postagens e postagens agendadas). Use as variáveis abaixo; a linha com uma variável vazia some sozinha (ex.: a do cupom, quando não há cupom). Deixe vazio para usar o modelo padrão.</p>
+          <div class="modelos-escolha" id="modelos-escolha" role="radiogroup" aria-label="Modelos prontos"></div>
+          <p class="hint" style="margin-top:4px">Escolha um dos 3 modelos prontos acima e ajuste o texto se quiser. Variáveis:</p>
           <p class="hint modelo-vars"><code>{{produto}}</code> <code>{{preco_de}}</code> <code>{{preco}}</code> <code>{{desconto}}</code> <code>{{economia}}</code> <code>{{loja}}</code> <code>{{link}}</code> <code>{{cupom}}</code> <code>{{conferido}}</code></p>
           <div class="grid-2col">
-            <label class="field">Modelo <textarea name="post_modelo" id="modelo-texto" rows="12" style="font-family:ui-monospace,monospace;font-size:13px" placeholder="Vazio = modelo padrão"></textarea></label>
+            <label class="field">Modelo <textarea name="post_modelo" id="modelo-texto" class="modelo-texto" rows="12" placeholder="Vazio = modelo padrão"></textarea></label>
             <div class="field">Como fica (exemplo)<pre id="modelo-previa" class="modelo-previa"></pre></div>
           </div>
           <div class="actions" style="justify-content:flex-start">
             <button class="btn primary" type="submit">Salvar modelo</button>
-            <button class="btn" type="button" id="modelo-padrao">Começar do modelo padrão</button>
+
           </div>
         </div>
       </form>
@@ -1106,8 +1120,8 @@
           <div class="grid">
             <label class="field">Como postar
               <select name="agenda_modo"><option value="horarios">Nos horários acima (várias ofertas por vez)</option><option value="continuo">O dia todo, com intervalo aleatório (modo contínuo)</option></select></label>
-            <label class="field">Modo contínuo: começa às <input type="time" name="agenda_inicio"></label>
-            <label class="field">Termina às <input type="time" name="agenda_fim"></label>
+            <label class="field">Modo contínuo: começa às <select name="agenda_inicio"><option value="00:00">00:00</option><option value="00:30">00:30</option><option value="01:00">01:00</option><option value="01:30">01:30</option><option value="02:00">02:00</option><option value="02:30">02:30</option><option value="03:00">03:00</option><option value="03:30">03:30</option><option value="04:00">04:00</option><option value="04:30">04:30</option><option value="05:00">05:00</option><option value="05:30">05:30</option><option value="06:00">06:00</option><option value="06:30">06:30</option><option value="07:00">07:00</option><option value="07:30">07:30</option><option value="08:00" selected>08:00</option><option value="08:30">08:30</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option><option value="19:30">19:30</option><option value="20:00">20:00</option><option value="20:30">20:30</option><option value="21:00">21:00</option><option value="21:30">21:30</option><option value="22:00">22:00</option><option value="22:30">22:30</option><option value="23:00">23:00</option><option value="23:30">23:30</option></select></label>
+            <label class="field">Termina às <select name="agenda_fim"><option value="00:00">00:00</option><option value="00:30">00:30</option><option value="01:00">01:00</option><option value="01:30">01:30</option><option value="02:00">02:00</option><option value="02:30">02:30</option><option value="03:00">03:00</option><option value="03:30">03:30</option><option value="04:00">04:00</option><option value="04:30">04:30</option><option value="05:00">05:00</option><option value="05:30">05:30</option><option value="06:00">06:00</option><option value="06:30">06:30</option><option value="07:00">07:00</option><option value="07:30">07:30</option><option value="08:00">08:00</option><option value="08:30">08:30</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option><option value="19:30">19:30</option><option value="20:00">20:00</option><option value="20:30">20:30</option><option value="21:00">21:00</option><option value="21:30">21:30</option><option value="22:00" selected>22:00</option><option value="22:30">22:30</option><option value="23:00">23:00</option><option value="23:30">23:30</option><option value="23:59">23:59</option></select></label>
             <label class="field">Intervalo entre envios: de (min) <input type="number" name="agenda_intervalo_min" min="5" max="720"></label>
             <label class="field">até (min) <input type="number" name="agenda_intervalo_max" min="5" max="720"></label>
             <label class="field">Ofertas em cada envio <input type="number" name="agenda_por_vez" min="1" max="5"></label>
@@ -1931,6 +1945,7 @@ async function loadSettings() {
   $$('[data-agenda-rede]').forEach(c => { c.checked = redesAgenda.includes(c.dataset.agendaRede); });
   if (typeof updateWaProvider === 'function') updateWaProvider();
   contarTermos();
+  if ($('#modelo-texto') && !$('#modelo-texto').value.trim() && window.OfertouModelo) $('#modelo-texto').value = OfertouModelo.PADRAO; // vazio = padrão: mostra o texto dele
   previaModelo();
   carregarGruposConvite();
   carregarGrupoAutomacao();
@@ -2012,13 +2027,33 @@ document.addEventListener('click', e => { if (!e.target.closest('.top-busca-area
 
 // Modelo da mensagem: prévia com uma oferta de exemplo
 const EXEMPLO_MODELO = { produto: 'Air Fryer Mondial 4L Family Inox', preco_de: '499,90', preco: '289,90', desconto: '42', economia: '210,00',
-  loja: 'Mercado Livre', link: 'https://tanoofertou.com.br/o/123456', cupom: '', conferido: '26/10, 09:30' };
+  loja: 'Mercado Livre', link: 'https://tanoofertou.com.br/o/123456', cupom: 'OFERTOU10', conferido: '26/10, 09:30' };
 function previaModelo() {
   if (!$('#modelo-previa') || !window.OfertouModelo) return;
   $('#modelo-previa').textContent = OfertouModelo.aplicar($('#modelo-texto').value, EXEMPLO_MODELO);
+  montarModelos();
 }
 document.addEventListener('input', e => { if (e.target.id === 'modelo-texto') previaModelo(); });
-$('#modelo-padrao')?.addEventListener('click', () => { $('#modelo-texto').value = OfertouModelo.PADRAO; previaModelo(); });
+
+  // Os 3 modelos prontos: cartões com a prévia; tocar num deles coloca o texto na caixa (depois é só salvar)
+  function montarModelos() {
+    const box = document.getElementById('modelos-escolha');
+    if (!box || !window.OfertouModelo) return;
+    const atual = (document.getElementById('modelo-texto').value || '').trim();
+    const escolhido = OfertouModelo.MODELOS.find(m => m.texto.trim() === atual || (!atual && m.id === 'padrao'));
+    box.innerHTML = OfertouModelo.MODELOS.map(m => `<button type="button" class="modelo-card${escolhido && escolhido.id === m.id ? ' on' : ''}" role="radio" aria-checked="${escolhido && escolhido.id === m.id}" data-modelo="${m.id}">
+      <span class="modelo-card-tit">${m.nome}${escolhido && escolhido.id === m.id ? ' <em>em uso</em>' : ''}</span><span class="modelo-card-desc">${m.desc}</span>
+      <span class="modelo-card-ex">${OfertouModelo.aplicar(m.texto, EXEMPLO_MODELO).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span></button>`).join('')
+      + (atual && !escolhido ? '<p class="modelo-proprio">✏️ Você está usando um modelo próprio (editado).</p>' : '');
+  }
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-modelo]');
+    if (!c) return;
+    const m = OfertouModelo.MODELOS.find(x => x.id === c.dataset.modelo);
+    document.getElementById('modelo-texto').value = m.texto;
+    previaModelo(); montarModelos();
+  });
+
 
 // Página do grupo: contagem de entradas de cada link
 async function carregarGruposConvite(d) {

@@ -172,6 +172,7 @@
       ? `Ainda sem link de afiliado seu: <b>${falta.map(esc).join(', ')}</b>. Produtos dessas lojas vão <b>sem comissão</b> até você configurar em "Links de afiliado".`
       : '';
     atualizarWa();
+    if (!$('#modelo-texto').value.trim() && window.OfertouModelo) $('#modelo-texto').value = OfertouModelo.PADRAO; // vazio = padrão: mostra o texto dele
     previaModelo();
     carregarGrupoAutomacao();
   }
@@ -202,13 +203,33 @@
 
   // Modelo da mensagem: prévia com uma oferta de exemplo
   const EXEMPLO_MODELO = { produto: 'Air Fryer Mondial 4L Family Inox', preco_de: '499,90', preco: '289,90', desconto: '42', economia: '210,00',
-    loja: 'Mercado Livre', link: 'https://tanoofertou.com.br/o/123456', cupom: '', conferido: '26/10, 09:30' };
+    loja: 'Mercado Livre', link: 'https://tanoofertou.com.br/o/123456', cupom: 'OFERTOU10', conferido: '26/10, 09:30' };
   function previaModelo() {
     if (!$('#modelo-previa') || !window.OfertouModelo) return;
     $('#modelo-previa').textContent = OfertouModelo.aplicar($('#modelo-texto').value, EXEMPLO_MODELO);
+    montarModelos();
   }
   document.addEventListener('input', e => { if (e.target.id === 'modelo-texto') previaModelo(); });
-  $('#modelo-padrao')?.addEventListener('click', () => { $('#modelo-texto').value = OfertouModelo.PADRAO; previaModelo(); });
+
+  // Os 3 modelos prontos: cartões com a prévia; tocar num deles coloca o texto na caixa (depois é só salvar)
+  function montarModelos() {
+    const box = document.getElementById('modelos-escolha');
+    if (!box || !window.OfertouModelo) return;
+    const atual = (document.getElementById('modelo-texto').value || '').trim();
+    const escolhido = OfertouModelo.MODELOS.find(m => m.texto.trim() === atual || (!atual && m.id === 'padrao'));
+    box.innerHTML = OfertouModelo.MODELOS.map(m => `<button type="button" class="modelo-card${escolhido && escolhido.id === m.id ? ' on' : ''}" role="radio" aria-checked="${escolhido && escolhido.id === m.id}" data-modelo="${m.id}">
+      <span class="modelo-card-tit">${m.nome}${escolhido && escolhido.id === m.id ? ' <em>em uso</em>' : ''}</span><span class="modelo-card-desc">${m.desc}</span>
+      <span class="modelo-card-ex">${OfertouModelo.aplicar(m.texto, EXEMPLO_MODELO).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span></button>`).join('')
+      + (atual && !escolhido ? '<p class="modelo-proprio">✏️ Você está usando um modelo próprio (editado).</p>' : '');
+  }
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-modelo]');
+    if (!c) return;
+    const m = OfertouModelo.MODELOS.find(x => x.id === c.dataset.modelo);
+    document.getElementById('modelo-texto').value = m.texto;
+    previaModelo(); montarModelos();
+  });
+
 
   // Abas
   $('.tabs-line').addEventListener('click', e => {

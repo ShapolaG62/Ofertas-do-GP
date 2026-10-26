@@ -17,6 +17,29 @@
     '_Preço conferido em {{conferido}}. Pode mudar a qualquer momento._',
   ].join('\n');
   const VARIAVEIS = ['produto', 'preco_de', 'preco', 'desconto', 'economia', 'loja', 'link', 'cupom', 'conferido'];
+  // Os 3 modelos prontos para escolher (Painel → Redes sociais → Modelo da mensagem)
+  const MODELOS = [
+    { id: 'padrao', nome: 'Padrão', desc: 'Completo: preço de antes e de agora, loja e quando foi conferido.', texto: PADRAO },
+    { id: 'direto', nome: 'Direto ao ponto', desc: 'Curto, para quem posta muitas ofertas por dia.', texto: [
+      '🔥 *{{produto}}*',
+      '💰 *R$ {{preco}}* ({{desconto}}% off) · {{loja}}',
+      '🎟️ Cupom: *{{cupom}}*',
+      '👉 {{link}}',
+    ].join('\n') },
+    { id: 'chamativo', nome: 'Chamativo', desc: 'Destaca a economia e passa urgência.', texto: [
+      '🚨 *BAIXOU O PREÇO!* 🚨',
+      '',
+      '🛍️ {{produto}}',
+      '',
+      '~De R$ {{preco_de}}~',
+      '🤑 *Por apenas R$ {{preco}}*',
+      '💸 Economia de *R$ {{economia}}* ({{desconto}}% OFF)',
+      '🎟️ Use o cupom: *{{cupom}}*',
+      '',
+      '🏃 Corre que acaba! Compre aqui ({{loja}}):',
+      '👉 {{link}}',
+    ].join('\n') },
+  ];
 
   // valores: { produto, preco_de, preco, ... } já formatados como texto
   function aplicar(modelo, valores) {
@@ -35,7 +58,7 @@
     return linhas.join('\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
-  const api = { PADRAO, VARIAVEIS, aplicar };
+  const api = { PADRAO, VARIAVEIS, MODELOS, aplicar };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else raiz.OfertouModelo = api;
 })(typeof window !== 'undefined' ? window : globalThis);

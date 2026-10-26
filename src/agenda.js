@@ -74,16 +74,34 @@ const removerDaFila = (id, cid = null) => db.run(`DELETE FROM post_queue WHERE i
 const limparFila = (cid = null) => db.run(`DELETE FROM post_queue WHERE status = 'pendente' AND cliente_id IS ?`, cid).changes;
 const pendentes = (cid = null) => db.get(`SELECT COUNT(*) AS n FROM post_queue WHERE status = 'pendente' AND cliente_id IS ?`, cid).n;
 
+// Filtros das ofertas automáticas (Painel → Redes sociais → Agendamento): lojas escolhidas, palavras que nunca
+// entram (ex.: capinha, película) e, se preenchidas, palavras obrigatórias (só entra o que tiver pelo menos uma).
+const semAcento = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const listaPalavras = v => String(v || '').split(/[,;\n]+/).map(semAcento).map(x => x.trim()).filter(Boolean);
+function filtroDoDono(s) {
+  const lojas = String(s.agenda_lojas || '').split(/[,;\s]+/).filter(Boolean);
+  const bloqueadas = listaPalavras(s.agenda_palavras_bloqueadas);
+  const permitidas = listaPalavras(s.agenda_palavras_permitidas);
+  return o => {
+    if (lojas.length && !lojas.includes(o.store_id)) return false;
+    const nome = semAcento(o.produto);
+    if (bloqueadas.some(w => nome.includes(w))) return false;
+    if (permitidas.length && !permitidas.some(w => nome.includes(w))) return false;
+    return true;
+  };
+}
+
 // Melhores ofertas do momento: maior desconto (até 80% — acima disso costuma ser erro de preço da loja),
-// categorias variadas, nada que o mesmo dono tenha postado nos últimos 7 dias.
-function melhoresOfertas(qtd, excluir, cid = null) {
+// categorias variadas, nada que o mesmo dono tenha postado nos últimos 7 dias, respeitando os filtros do dono.
+function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid)) {
+  const passa = filtroDoDono(s);
   const rows = db.all(
-    `SELECT o.id, o.categoria FROM offers o
+    `SELECT o.id, o.categoria, o.store_id, o.produto FROM offers o
      WHERE o.oculto = 0 AND o.fonte = 'auto' AND o.desconto_pct BETWEEN 15 AND 80 AND o.last_seen_at > datetime('now', '-12 hours')
        AND o.imagem LIKE 'https://%'
        AND NOT EXISTS (SELECT 1 FROM social_posts p WHERE p.offer_id = o.id AND p.ok = 1 AND p.cliente_id IS ?
                        AND p.created_at > datetime('now', '-7 days'))
-     ORDER BY o.desconto_pct DESC, o.link_clicks DESC LIMIT 400`, cid);
+     ORDER BY o.desconto_pct DESC, o.link_clicks DESC LIMIT 1500`, cid).filter(passa);
   const out = [], cats = new Set();
   for (const r of rows) {           // primeiro uma por categoria
     if (out.length >= qtd) break;
@@ -98,14 +116,14 @@ function melhoresOfertas(qtd, excluir, cid = null) {
 }
 
 // ── Execução ─────────────────────────────────────────────────────────────────
-async function executar(motivo = 'agendado', cid = null) {
+async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
   const d = dono(cid);
   if (rodando.has(d)) return { erro: 'Já existe uma postagem agendada em andamento.' };
   const s = configDe(cid);
   const prontas = redesAgenda(s).filter(id => !social.REDES[id].pronta(s));
   if (!prontas.length) return { erro: 'Nenhuma rede do agendamento está configurada.' };
   rodando.add(d);
-  const qtd = Math.min(Math.max(parseInt(s.agenda_qtd, 10) || 5, 1), 20);
+  const qtd = qtdForcada || Math.min(Math.max(parseInt(s.agenda_qtd, 10) || 5, 1), 20);
   const intervalo = prontas.includes('whatsapp') ? Math.min(Math.max(Number(s.whatsapp_intervalo_s) || 90, 20), 900) * 1000 : 5000;
   const feitos = [];
   const quem = cid ? `cliente ${cid}` : 'site';
@@ -122,7 +140,7 @@ async function executar(motivo = 'agendado', cid = null) {
     }
     // 2) completa com as melhores ofertas do momento
     if (lote.length < qtd && s.agenda_completar !== '0') {
-      const ids = melhoresOfertas(qtd - lote.length, new Set(lote.map(l => l.offer_id)), cid);
+      const ids = melhoresOfertas(qtd - lote.length, new Set(lote.map(l => l.offer_id)), cid, s);
       lote.push(...ids.map(id => ({ offer_id: id, texto: null })));
     }
     log(`${quem} — ${motivo}: ${lote.length} oferta(s) em ${prontas.join(', ')}`);
@@ -154,9 +172,33 @@ async function executar(motivo = 'agendado', cid = null) {
 
 // Confere a cada minuto se chegou a hora de cada dono (site e clientes com acesso válido); cada horário roda
 // uma vez por dia (até 2 horas de atraso, caso o computador estivesse desligado na hora).
+// Modo contínuo: entre o início e o fim do dia, uma rodada pequena (agenda_por_vez) a cada X a Y minutos, com
+// intervalo sorteado a cada vez (ritmo de gente, não de robô).
+const proximoContinuo = new Map(); // dono → hora (ms) do próximo envio
+const hhmm = v => { const m = /^(\d{1,2}):(\d{2})$/.exec(String(v || '').trim()); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+function sortearIntervalo(s) {
+  const a = Math.min(Math.max(parseInt(s.agenda_intervalo_min, 10) || 20, 5), 720);
+  const b = Math.max(a, Math.min(parseInt(s.agenda_intervalo_max, 10) || a, 720));
+  return (a + Math.random() * (b - a)) * 60000;
+}
+function verificarContinuo(cid, s) {
+  const { minutos } = agoraBrasilia();
+  const ini = hhmm(s.agenda_inicio) ?? 8 * 60, fim = hhmm(s.agenda_fim) ?? 22 * 60;
+  const dentro = ini <= fim ? minutos >= ini && minutos < fim : minutos >= ini || minutos < fim; // fim depois da meia-noite
+  const d = dono(cid);
+  if (!dentro) { proximoContinuo.delete(d); return; }
+  const prox = proximoContinuo.get(d);
+  if (prox === undefined) { proximoContinuo.set(d, Date.now() + Math.random() * 60000); return; } // começa no 1º minuto
+  if (Date.now() < prox) return;
+  proximoContinuo.set(d, Date.now() + sortearIntervalo(s));
+  const porVez = Math.min(Math.max(parseInt(s.agenda_por_vez, 10) || 1, 1), 5);
+  executar('modo contínuo', cid, porVez).catch(err => log(`erro: ${err.message}`));
+}
+
 function verificarDono(cid) {
   const s = configDe(cid);
   if (s.agenda_ativa !== '1' || rodando.has(dono(cid))) return;
+  if (s.agenda_modo === 'continuo') return verificarContinuo(cid, s);
   const { dia, minutos } = agoraBrasilia();
   const feitas = lerFeitas(cid);
   for (const h of horarios(s)) {
@@ -187,10 +229,15 @@ function estado(cid = null) {
   const feitas = lerFeitas(cid);
   const lista = horarios(s);
   const proximo = lista.find(h => { const [a, b] = h.split(':').map(Number); return a * 60 + b > minutos && feitas[h] !== dia; }) || lista[0] || null;
+  const continuo = s.agenda_modo === 'continuo';
+  const prox = proximoContinuo.get(dono(cid));
+  const proxTxt = prox ? new Date(prox - 3 * 3600 * 1000).toISOString().slice(11, 16) : null;
   return {
-    ativa: s.agenda_ativa === '1', horarios: lista, proximo, rodando: rodando.has(dono(cid)), pendentes: pendentes(cid),
+    ativa: s.agenda_ativa === '1', modo: continuo ? 'continuo' : 'horarios',
+    horarios: continuo ? [`${s.agenda_inicio || '08:00'}–${s.agenda_fim || '22:00'}, a cada ${s.agenda_intervalo_min || 20}–${s.agenda_intervalo_max || 40} min`] : lista,
+    proximo: continuo ? proxTxt : proximo, rodando: rodando.has(dono(cid)), pendentes: pendentes(cid),
     ultimaExecucao: ultimaExecucao.get(dono(cid)) || null, redes: redesAgenda(s),
   };
 }
 
-module.exports = { enfileirar, listarFila, removerDaFila, limparFila, pendentes, executar, iniciar, estado, horarios, melhoresOfertas };
+module.exports = { enfileirar, listarFila, removerDaFila, limparFila, pendentes, executar, iniciar, estado, horarios, melhoresOfertas, filtroDoDono };

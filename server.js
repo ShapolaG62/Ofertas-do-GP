@@ -171,11 +171,19 @@ app.get('/site.webmanifest', (req, res) => {
 // Google e outros buscadores: o que pode ser indexado (robots.txt) e a lista de páginas públicas (sitemap.xml).
 // Áreas internas, a API e os links de redirecionamento (/o/:id) ficam de fora.
 const baseUrl = req => `${req.protocol}://${req.get('host')}`;
+// Página do grupo: um link só para divulgar; cada pessoa vai para o próximo grupo que ainda não lotou (src/grupos-convite.js)
+app.get(['/grupo', '/grupos'], (req, res) => {
+  const g = require('./src/grupos-convite').proximo();
+  if (!g) return res.redirect('/');
+  res.set('Cache-Control', 'no-store');
+  res.redirect(302, g.link);
+});
+
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send([
     'User-agent: *',
     'Allow: /',
-    ...['/admin', '/api/', '/o/', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
+    ...['/admin', '/api/', '/o/', '/grupo', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
     '',
     `Sitemap: ${baseUrl(req)}/sitemap.xml`,
     '',

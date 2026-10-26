@@ -181,6 +181,9 @@
   .ac-ex { font-size: 12.5px; line-height: 1.45; min-width: 220px; }
   #av-form textarea { min-height: 100px; font-family: inherit; font-size: 14.5px; }
   .termos-titulo { display: flex; align-items: center; gap: 8px; }
+  .modelo-previa { margin: 6px 0 0; padding: 12px 14px; min-height: 220px; border-radius: 12px; background: #0b141a; color: #e9edef; border: 1px solid var(--line, #333);
+    font: 13.5px/1.5 system-ui, sans-serif; white-space: pre-wrap; word-break: break-word; }
+  .modelo-vars code { margin-right: 4px; }
   .termos-total { font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: var(--green-soft); color: var(--green); border: 1px solid var(--green-line); }
   .av-imagem { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
   .av-imagem img { width: 160px; aspect-ratio: 1200 / 630; object-fit: cover; border-radius: 10px; border: 1px solid var(--line, #262d28); }
@@ -275,12 +278,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261219"></script>
-<script src="/js/dialogo.js?v=20261219"></script>
-<script src="/js/avisos-entrada.js?v=20261219"></script>
-<script src="/js/capi-minerando.js?v=20261219" defer></script>
-<script src="/js/cadastro-auto.js?v=20261219" defer></script>
-<script src="/js/seletor.js?v=20261219" defer></script>
+<script src="/js/tema.js?v=20261220"></script>
+<script src="/js/dialogo.js?v=20261220"></script>
+<script src="/js/modelo-post.js?v=20261220"></script>
+<script src="/js/avisos-entrada.js?v=20261220"></script>
+<script src="/js/capi-minerando.js?v=20261220" defer></script>
+<script src="/js/cadastro-auto.js?v=20261220" defer></script>
+<script src="/js/seletor.js?v=20261220" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -931,6 +935,35 @@
 
       <form class="settings-form">
         <div class="panel">
+          <h2>Modelo da mensagem</h2>
+          <p class="hint">O texto das postagens (tela Postagens e postagens agendadas). Use as variáveis abaixo; a linha com uma variável vazia some sozinha (ex.: a do cupom, quando não há cupom). Deixe vazio para usar o modelo padrão.</p>
+          <p class="hint modelo-vars"><code>{{produto}}</code> <code>{{preco_de}}</code> <code>{{preco}}</code> <code>{{desconto}}</code> <code>{{economia}}</code> <code>{{loja}}</code> <code>{{link}}</code> <code>{{cupom}}</code> <code>{{conferido}}</code></p>
+          <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start">
+            <label class="field">Modelo <textarea name="post_modelo" id="modelo-texto" rows="12" style="font-family:ui-monospace,monospace;font-size:13px" placeholder="Vazio = modelo padrão"></textarea></label>
+            <div class="field">Como fica (exemplo)<pre id="modelo-previa" class="modelo-previa"></pre></div>
+          </div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn primary" type="submit">Salvar modelo</button>
+            <button class="btn" type="button" id="modelo-padrao">Começar do modelo padrão</button>
+          </div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Página do grupo (links de convite em rodízio)</h2>
+          <p class="hint">Divulgue um link só: <b><span id="grupo-endereco">/grupo</span></b>. Cada pessoa vai para o primeiro grupo que ainda não chegou no limite; quando todos lotam, vai para o último da lista. Um grupo por linha: <code>Nome | link de convite | limite de entradas</code> (limite 0 = sem limite).</p>
+          <label class="field">Grupos <textarea name="grupos_convite" rows="5" placeholder="Ofertou! #1 | https://chat.whatsapp.com/AbCdEf... | 900&#10;Ofertou! #2 | https://chat.whatsapp.com/GhIjKl... | 900&#10;Canal no Telegram | https://t.me/ofertou | 0"></textarea></label>
+          <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Grupo</th><th>Entradas</th><th>Limite</th><th>Situação</th></tr></thead><tbody id="grupos-convite-body"><tr><td colspan="4" class="hint">Nenhum grupo cadastrado.</td></tr></tbody></table></div>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn primary" type="submit">Salvar grupos</button>
+            <button class="btn" type="button" id="grupos-zerar">Zerar contagem de entradas</button>
+          </div>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
           <h2>WhatsApp (número separado para as postagens)</h2>
           <p class="hint">O WhatsApp não tem API oficial para grupos. A postagem automática usa um serviço que conecta um número ao WhatsApp Web: <b>Z-API</b> (pago, na nuvem, funciona sem servidor) ou <b>Evolution API</b> (grátis, roda no seu computador ou VPS com Docker). <b>Use um número só para isso</b>: o WhatsApp pode banir números automatizados. Para reduzir o risco, use um chip com algumas semanas de uso, mantenha o intervalo entre mensagens e poste só em grupos onde as pessoas entraram por vontade própria.</p>
           <div class="grid">
@@ -954,6 +987,15 @@
             <label class="field">Nome da instância <input type="text" name="evolution_instance" placeholder="ofertou"></label>
           </div>
           <p class="hint wa-evolution">Na Evolution API (v2): crie uma instância, leia o QR code com o WhatsApp do número separado e informe aqui o endereço, a chave global (AUTHENTICATION_API_KEY) e o nome da instância.</p>
+          <h3>Número de contingência (opcional)</h3>
+          <p class="hint">Um segundo número que assume sozinho se o principal cair (desconectado, banido ou fora do ar), sem parar as postagens. Ele também precisa estar nos grupos de destino.</p>
+          <div class="grid wa-zapi">
+            <label class="field">ID da instância reserva <input type="text" name="zapi2_instance"></label>
+            <label class="field">Token da instância reserva <input type="password" name="zapi2_token" autocomplete="off" data-secret></label>
+          </div>
+          <div class="grid wa-evolution">
+            <label class="field">Nome da instância reserva (no mesmo servidor) <input type="text" name="evolution2_instance" placeholder="ofertou-reserva"></label>
+          </div>
           <div class="actions" style="justify-content:flex-start">
             <button class="btn primary" type="submit">Salvar WhatsApp</button>
             <button class="btn" type="button" id="wa-test">Testar conexão</button>
@@ -991,6 +1033,24 @@
             <label class="field">Se a fila não tiver ofertas suficientes
               <select name="agenda_completar"><option value="1">Completar com as melhores ofertas</option><option value="0">Postar só o que estiver na fila</option></select></label>
           </div>
+          <h3>Ritmo</h3>
+          <div class="grid">
+            <label class="field">Como postar
+              <select name="agenda_modo"><option value="horarios">Nos horários acima (várias ofertas por vez)</option><option value="continuo">O dia todo, com intervalo aleatório (modo contínuo)</option></select></label>
+            <label class="field">Modo contínuo: começa às <input type="time" name="agenda_inicio"></label>
+            <label class="field">Termina às <input type="time" name="agenda_fim"></label>
+            <label class="field">Intervalo entre envios: de (min) <input type="number" name="agenda_intervalo_min" min="5" max="720"></label>
+            <label class="field">até (min) <input type="number" name="agenda_intervalo_max" min="5" max="720"></label>
+            <label class="field">Ofertas em cada envio <input type="number" name="agenda_por_vez" min="1" max="5"></label>
+          </div>
+          <p class="hint">No modo contínuo o site posta sozinho entre o início e o fim do dia, sorteando a espera entre um envio e outro dentro do intervalo (ritmo de gente, não de robô). A fila continua tendo prioridade.</p>
+          <h3>O que pode entrar nas ofertas automáticas</h3>
+          <div class="grid">
+            <label class="field">Só destas lojas (vazio = todas) <input type="text" name="agenda_lojas" placeholder="mercadolivre, amazon, shopee, magalu, kabum, aliexpress"></label>
+            <label class="field">Palavras proibidas (nunca posta) <input type="text" name="agenda_palavras_bloqueadas" placeholder="capinha, película, cabo usb"></label>
+            <label class="field">Palavras obrigatórias (vazio = qualquer produto) <input type="text" name="agenda_palavras_permitidas" placeholder="air fryer, iphone, smart tv"></label>
+          </div>
+          <p class="hint">Separe por vírgula. Valem para as ofertas que o site escolhe sozinho; o que você coloca na fila é postado como está.</p>
           <h3>Redes do agendamento</h3>
           <div class="row" style="gap:18px">
             <label class="check"><input type="checkbox" data-agenda-rede="whatsapp"> WhatsApp</label>
@@ -1802,7 +1862,36 @@ async function loadSettings() {
   $$('[data-agenda-rede]').forEach(c => { c.checked = redesAgenda.includes(c.dataset.agendaRede); });
   if (typeof updateWaProvider === 'function') updateWaProvider();
   contarTermos();
+  previaModelo();
+  carregarGruposConvite();
 }
+
+// Modelo da mensagem: prévia com uma oferta de exemplo
+const EXEMPLO_MODELO = { produto: 'Air Fryer Mondial 4L Family Inox', preco_de: '499,90', preco: '289,90', desconto: '42', economia: '210,00',
+  loja: 'Mercado Livre', link: 'https://tanoofertou.com.br/o/123456', cupom: '', conferido: '26/10, 09:30' };
+function previaModelo() {
+  if (!$('#modelo-previa') || !window.OfertouModelo) return;
+  $('#modelo-previa').textContent = OfertouModelo.aplicar($('#modelo-texto').value, EXEMPLO_MODELO);
+}
+document.addEventListener('input', e => { if (e.target.id === 'modelo-texto') previaModelo(); });
+$('#modelo-padrao')?.addEventListener('click', () => { $('#modelo-texto').value = OfertouModelo.PADRAO; previaModelo(); });
+
+// Página do grupo: contagem de entradas de cada link
+async function carregarGruposConvite(d) {
+  if (!$('#grupos-convite-body')) return;
+  $('#grupo-endereco').textContent = `${(SETTINGS.site_url || location.origin).replace(/\/+$/, '')}/grupo`;
+  try {
+    const { grupos } = d || await api('/api/admin/grupos-convite');
+    $('#grupos-convite-body').innerHTML = grupos.length ? grupos.map(g => `<tr><td><b>${esc(g.nome)}</b><br><span class="hint" style="margin:0">${esc(g.link)}</span></td>
+      <td class="num">${g.entradas.toLocaleString('pt-BR')}</td><td class="num">${g.limite ? g.limite.toLocaleString('pt-BR') : 'sem limite'}</td>
+      <td>${g.lotado ? '<span class="badge b-banned">Lotado</span>' : '<span class="badge b-active">Recebendo</span>'}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="hint">Nenhum grupo cadastrado (use links https://chat.whatsapp.com/… ou https://t.me/…).</td></tr>';
+  } catch { /* sem permissão */ }
+}
+$('#grupos-zerar')?.addEventListener('click', async () => {
+  if (!await OfertouUI.confirmar('Zerar a contagem de entradas de todos os grupos? O rodízio recomeça do primeiro grupo.', { ok: 'Zerar' })) return;
+  try { carregarGruposConvite(await api('/api/admin/grupos-convite/zerar', { method: 'POST' })); globalMsg('Contagem zerada.'); } catch (err) { globalMsg(err.message, false); }
+});
 
 // Quantos termos estão cadastrados (e quanto tempo a mineração leva para passar por todos)
 function contarTermos() {

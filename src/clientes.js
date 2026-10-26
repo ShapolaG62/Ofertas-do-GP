@@ -17,11 +17,13 @@ const AFILIADO_KEYS = ['amazon_tag', 'ml_matt_word', 'ml_matt_tool', 'kabum_afil
 const REDES_KEYS = ['telegram_bot_token', 'telegram_chat_id', 'facebook_page_id', 'facebook_page_token', 'instagram_business_id',
   'x_api_key', 'x_api_secret', 'x_access_token', 'x_access_secret',
   'whatsapp_provider', 'zapi_instance', 'zapi_token', 'zapi_client_token', 'evolution_url', 'evolution_api_key', 'evolution_instance',
-  'whatsapp_groups', 'whatsapp_intervalo_s'];
-const AGENDA_KEYS = ['agenda_ativa', 'agenda_horarios', 'agenda_qtd', 'agenda_redes', 'agenda_completar'];
+  'whatsapp_groups', 'whatsapp_intervalo_s', 'zapi2_instance', 'zapi2_token', 'evolution2_instance'];
+const AGENDA_KEYS = ['agenda_ativa', 'agenda_horarios', 'agenda_qtd', 'agenda_redes', 'agenda_completar', 'agenda_modo', 'agenda_inicio',
+  'agenda_fim', 'agenda_intervalo_min', 'agenda_intervalo_max', 'agenda_por_vez', 'agenda_lojas', 'agenda_palavras_bloqueadas',
+  'agenda_palavras_permitidas', 'post_modelo'];
 const CLIENT_KEYS = [...AFILIADO_KEYS, ...REDES_KEYS, ...AGENDA_KEYS];
 const SECRET_KEYS = ['aliexpress_app_secret', 'shopee_app_secret', 'telegram_bot_token', 'facebook_page_token', 'x_api_secret',
-  'x_access_token', 'x_access_secret', 'zapi_token', 'zapi_client_token', 'evolution_api_key'];
+  'x_access_token', 'x_access_secret', 'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token'];
 // Padrões próprios do cliente
 const CLIENT_DEFAULTS = { agenda_ativa: '0' };
 

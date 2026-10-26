@@ -98,7 +98,18 @@
       ? `Ainda sem link de afiliado seu: <b>${falta.map(esc).join(', ')}</b>. Produtos dessas lojas vão <b>sem comissão</b> até você configurar em "Links de afiliado".`
       : '';
     atualizarWa();
+    previaModelo();
   }
+
+  // Modelo da mensagem: prévia com uma oferta de exemplo
+  const EXEMPLO_MODELO = { produto: 'Air Fryer Mondial 4L Family Inox', preco_de: '499,90', preco: '289,90', desconto: '42', economia: '210,00',
+    loja: 'Mercado Livre', link: 'https://tanoofertou.com.br/o/123456', cupom: '', conferido: '26/10, 09:30' };
+  function previaModelo() {
+    if (!$('#modelo-previa') || !window.OfertouModelo) return;
+    $('#modelo-previa').textContent = OfertouModelo.aplicar($('#modelo-texto').value, EXEMPLO_MODELO);
+  }
+  document.addEventListener('input', e => { if (e.target.id === 'modelo-texto') previaModelo(); });
+  $('#modelo-padrao')?.addEventListener('click', () => { $('#modelo-texto').value = OfertouModelo.PADRAO; previaModelo(); });
 
   // Abas
   $('.tabs-line').addEventListener('click', e => {
@@ -106,6 +117,7 @@
     if (!b) return;
     $$('.tabs-line [data-tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
     $$('.cli-tab').forEach(t => { t.hidden = t.dataset.body !== b.dataset.tab; });
+    if (b.dataset.tab === 'redes') previaModelo();
     if (b.dataset.tab === 'agenda') carregarAgenda().catch(err => toast(err.message));
     if (b.dataset.tab === 'historico') carregarHistorico().catch(err => toast(err.message));
   });

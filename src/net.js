@@ -71,4 +71,21 @@ async function safeGet(raw, opts = {}) {
   throw new Error('Redirecionamentos demais.');
 }
 
-module.exports = { safeGet, assertPublicUrl, isPrivateIp };
+// Endereço final de um link encurtado (meli.la, amzn.to, s.shopee.com.br…), seguindo os redirecionamentos com as
+// mesmas proteções do safeGet. Usado pelo conversor de links das Postagens.
+async function resolverLink(raw) {
+  let current = raw;
+  for (let i = 0; i < 6; i++) {
+    assertPublicUrl(current);
+    const res = await client.get(current, { httpAgent, httpsAgent, maxRedirects: 0, maxContentLength: 2 * 1024 * 1024,
+      validateStatus: () => true, timeout: 10000, responseType: 'text' });
+    if (res.status >= 300 && res.status < 400 && res.headers.location) { current = new URL(res.headers.location, current).href; continue; }
+    // Alguns encurtadores redirecionam pela página (meta refresh ou location.href)
+    const m = /http-equiv=["']?refresh[^>]*url=([^"'>\s]+)/i.exec(String(res.data || '').slice(0, 20000));
+    if (m) { current = new URL(m[1].replace(/&amp;/g, '&'), current).href; continue; }
+    return current;
+  }
+  return current;
+}
+
+module.exports = { safeGet, assertPublicUrl, isPrivateIp, resolverLink };

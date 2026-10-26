@@ -11,18 +11,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261219">
-<script src="/js/tema.js?v=20261219"></script>
-<script src="/js/app-nativo.js?v=20261219"></script>
-<script src="/js/dialogo.js?v=20261219"></script>
-<script src="/js/aceite-parceiro.js?v=20261219"></script>
-<script src="/js/capi-minerando.js?v=20261219" defer></script>
-<script src="/js/cadastro-auto.js?v=20261219" defer></script>
-<script src="/js/voltar.js?v=20261219" data-padrao="/" defer></script>
-<script src="/js/rodape-legal.js?v=20261219" defer></script>
-<script src="/js/instalar-app.js?v=20261219" defer></script>
-<script src="/js/cookies.js?v=20261219"></script>
-<script src="/js/seletor.js?v=20261219" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261220">
+<script src="/js/tema.js?v=20261220"></script>
+<script src="/js/app-nativo.js?v=20261220"></script>
+<script src="/js/dialogo.js?v=20261220"></script>
+<script src="/js/modelo-post.js?v=20261220"></script>
+<script src="/js/aceite-parceiro.js?v=20261220"></script>
+<script src="/js/capi-minerando.js?v=20261220" defer></script>
+<script src="/js/cadastro-auto.js?v=20261220" defer></script>
+<script src="/js/voltar.js?v=20261220" data-padrao="/" defer></script>
+<script src="/js/rodape-legal.js?v=20261220" defer></script>
+<script src="/js/instalar-app.js?v=20261220" defer></script>
+<script src="/js/cookies.js?v=20261220"></script>
+<script src="/js/seletor.js?v=20261220" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -143,6 +144,9 @@
           <label class="field wa-evolution">Endereço do servidor <input name="evolution_url" placeholder="https://..."></label>
           <label class="field wa-evolution">Chave (apikey) <input name="evolution_api_key" type="password" autocomplete="off" data-secret></label>
           <label class="field wa-evolution">Nome da instância <input name="evolution_instance"></label>
+          <label class="field wa-zapi">Contingência: ID da instância reserva <input name="zapi2_instance"></label>
+          <label class="field wa-zapi">Contingência: token da instância reserva <input name="zapi2_token" type="password" autocomplete="off" data-secret></label>
+          <label class="field wa-evolution">Contingência: instância reserva (mesmo servidor) <input name="evolution2_instance"></label>
         </div>
         <div class="cli-actions">
           <button class="btn btn-primary" type="submit">Salvar WhatsApp</button>
@@ -193,6 +197,21 @@
 
     </div>
 
+    <div class="cli-tab" data-body="redes" hidden data-extra="modelo">
+      <form class="cfg-form panel-card">
+        <h2>Modelo da mensagem</h2>
+        <p class="cli-hint">O texto das suas postagens. Variáveis: <code>{{produto}}</code> <code>{{preco_de}}</code> <code>{{preco}}</code> <code>{{desconto}}</code> <code>{{economia}}</code> <code>{{loja}}</code> <code>{{link}}</code> <code>{{cupom}}</code> <code>{{conferido}}</code>. A linha com uma variável vazia some sozinha. Vazio = modelo padrão.</p>
+        <div class="cli-grid2" style="align-items:start">
+          <label class="field">Modelo <textarea name="post_modelo" id="modelo-texto" rows="12" style="font-family:ui-monospace,monospace;font-size:13px" placeholder="Vazio = modelo padrão"></textarea></label>
+          <div class="field">Como fica (exemplo)<pre id="modelo-previa" class="modelo-previa"></pre></div>
+        </div>
+        <div class="cli-actions">
+          <button class="btn btn-primary" type="submit">Salvar modelo</button>
+          <button class="btn" type="button" id="modelo-padrao">Começar do modelo padrão</button>
+        </div>
+      </form>
+    </div>
+
     <!-- AGENDAMENTO -->
     <div class="cli-tab" data-body="agenda" hidden>
       <form class="cfg-form panel-card">
@@ -204,7 +223,18 @@
           <label class="field">Ofertas por horário <input name="agenda_qtd" type="number" min="1" max="20"></label>
           <label class="field">Se a fila não tiver ofertas suficientes
             <select name="agenda_completar"><option value="1">Completar com as melhores ofertas</option><option value="0">Postar só o que estiver na fila</option></select></label>
+          <label class="field">Como postar
+            <select name="agenda_modo"><option value="horarios">Nos horários acima</option><option value="continuo">O dia todo, intervalo aleatório</option></select></label>
+          <label class="field">Modo contínuo: das <input name="agenda_inicio" type="time"></label>
+          <label class="field">até as <input name="agenda_fim" type="time"></label>
+          <label class="field">Intervalo: de (min) <input name="agenda_intervalo_min" type="number" min="5" max="720"></label>
+          <label class="field">até (min) <input name="agenda_intervalo_max" type="number" min="5" max="720"></label>
+          <label class="field">Ofertas em cada envio <input name="agenda_por_vez" type="number" min="1" max="5"></label>
+          <label class="field">Só destas lojas (vazio = todas) <input name="agenda_lojas" placeholder="mercadolivre, amazon, shopee"></label>
+          <label class="field">Palavras proibidas <input name="agenda_palavras_bloqueadas" placeholder="capinha, película, cabo usb"></label>
+          <label class="field">Palavras obrigatórias (vazio = qualquer) <input name="agenda_palavras_permitidas" placeholder="air fryer, iphone"></label>
         </div>
+        <p class="cli-hint">Modo contínuo: o site posta sozinho entre o início e o fim do dia, sorteando a espera entre um envio e outro (ritmo de gente). Palavras e lojas valem para as ofertas que o site escolhe; separe por vírgula.</p>
         <h3 class="cli-h3">Redes do agendamento</h3>
         <div class="cli-checks cli-inline">
           <label class="check-line"><input type="checkbox" data-agenda-rede="whatsapp"> WhatsApp</label>

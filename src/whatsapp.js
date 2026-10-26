@@ -77,8 +77,24 @@ async function listarGrupos(s) {
 
 // Envia foto com legenda (ou só texto, sem foto) para um grupo.
 // imagem: endereço https da foto ou o arquivo (Buffer JPEG).
-async function enviar(s, grupoId, { imagem, texto }) {
-  const c = config(s);
+// Número de contingência: outra instância do mesmo serviço (Z-API: ID e token; Evolution: outra instância no mesmo
+// servidor). Se o envio pelo número principal falhar (desconectado, banido, fora do ar), tenta por ele.
+function configReserva(s) {
+  if (s.whatsapp_provider === 'zapi' && s.zapi2_instance && s.zapi2_token) {
+    return config({ ...s, zapi_instance: s.zapi2_instance, zapi_token: s.zapi2_token });
+  }
+  if (s.whatsapp_provider === 'evolution' && s.evolution2_instance) return config({ ...s, evolution_instance: s.evolution2_instance });
+  return null;
+}
+async function enviar(s, grupoId, msg) {
+  try { return await enviarPor(config(s), grupoId, msg); } catch (err) {
+    const r = configReserva(s);
+    if (!r || r.erro) throw err;
+    console.warn('[WHATSAPP] número principal falhou (' + err.message + '); enviando pelo número de contingência');
+    return enviarPor(r, grupoId, msg);
+  }
+}
+async function enviarPor(c, grupoId, { imagem, texto }) {
   if (c.erro) throw new Error(c.erro);
   if (Buffer.isBuffer(imagem)) {
     const b64 = imagem.toString('base64');
@@ -119,4 +135,4 @@ function gruposEscolhidos(s) {
   } catch { return []; }
 }
 
-module.exports = { PROVEDORES, config, status, listarGrupos, enviar, gruposEscolhidos };
+module.exports = { PROVEDORES, config, configReserva, status, listarGrupos, enviar, gruposEscolhidos };

@@ -290,6 +290,10 @@ router.post('/api/admin/alertas-whatsapp', (req, res) => {
   res.json(require('../alertas-whatsapp').resumo());
 });
 
+// ── Página do grupo (rodízio de links de convite) ──
+router.get('/api/admin/grupos-convite', (req, res) => res.json({ grupos: require('../grupos-convite').resumo() }));
+router.post('/api/admin/grupos-convite/zerar', (req, res) => { require('../grupos-convite').zerar(); res.json({ grupos: require('../grupos-convite').resumo() }); });
+
 // ── Acessos suspeitos (varredura de IP) ──
 router.get('/api/admin/acessos/varredura', (req, res) => {
   res.json(require('../varredura-ip').varrer({ horas: req.query.horas, km: req.query.km, maxHoras: req.query.max_horas }));

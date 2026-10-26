@@ -44,6 +44,7 @@ router.get('/api/postagens/redes', (req, res) => {
   res.json({
     redes: social.listarRedes(req.cfg),
     whatsapp_intervalo_s: Number(req.cfg.whatsapp_intervalo_s) || 90,
+    modelo: req.cfg.post_modelo || '',
     agenda: agenda.estado(cid),
     admin: req.poster.key === 'admin',
     cliente: cid ? { nome: req.poster.cliente.nome, sem_afiliado: clientes.lojasSemAfiliado(req.cfg) } : null,
@@ -60,6 +61,33 @@ router.post('/api/postagens/fila', (req, res) => {
 });
 
 // Dados das ofertas escolhidas (com o link e a imagem que vão nas postagens).
+// Conversor de link: cola o link de um produto (de qualquer pessoa ou grupo) e recebe o link com o SEU código de
+// afiliado (o do site para o admin; o do cliente na ferramenta). Não precisa a oferta estar no site.
+const converterLimiter = createLimiter(120, 60);
+router.post('/api/postagens/converter', async (req, res) => {
+  const wait = converterLimiter.hit(req.poster.key);
+  if (wait) return res.status(429).json({ error: `Muitas conversões seguidas. Tente de novo em ${wait} min.` });
+  let url;
+  try { url = new URL(String(req.body?.url || '').trim()); } catch { return res.status(400).json({ error: 'Cole o link completo do produto (começando com https://).' }); }
+  if (!/^https?:$/.test(url.protocol)) return res.status(400).json({ error: 'Link inválido.' });
+  const { storeFromUrl } = require('../stores');
+  let store = storeFromUrl(url.href);
+  if (!store) { // link encurtado (meli.la, amzn.to, s.shopee.com.br…): segue até o produto
+    try { url = new URL(await require('../net').resolverLink(url.href)); store = storeFromUrl(url.href); } catch { /* não abriu */ }
+  }
+  if (!store) return res.status(400).json({ error: 'Esse link não é de uma loja com programa de afiliados ligado no site (Mercado Livre, Amazon, Shopee, Magalu, KaBuM!, AliExpress).' });
+  const s = req.cfg;
+  const o = { id: null, store_id: store.id, original_url: url.href, fonte: 'auto', store_product_id: store.productIdFromUrl ? store.productIdFromUrl(url.href) : null };
+  let link = url.href, aviso = '';
+  try {
+    const apiPronta = store.id === 'aliexpress' ? s.aliexpress_app_key && s.aliexpress_app_secret && s.aliexpress_tracking_id
+      : store.id === 'shopee' ? s.shopee_app_id && s.shopee_app_secret : false;
+    link = apiPronta && typeof store.gerarLink === 'function' ? await store.gerarLink(url.href, s) : (store.affiliateLink(o, s) || url.href);
+  } catch (err) { aviso = `Não consegui gerar pela API da loja (${err.message}); usei o link com o seu código.`; link = store.affiliateLink(o, s) || url.href; }
+  if (link === url.href) aviso = aviso || `Seu código de afiliado da ${store.name} não está configurado: o link saiu sem comissão.`;
+  res.json({ loja: store.name, link: require('../encurtador').curto(link), aviso });
+});
+
 router.get('/api/postagens/ofertas', async (req, res) => {
   const ids = [...new Set(String(req.query.ids || '').split(',').map(Number).filter(n => Number.isInteger(n) && n > 0))].slice(0, 200);
   if (!ids.length) return res.json([]);

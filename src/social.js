@@ -225,22 +225,20 @@ function tituloCurto(t) {
   return `${corte || t.slice(0, TITULO_MAX)}…`;
 }
 
-// Texto padrão de uma oferta (mesmo modelo da tela de postagens), usado nas postagens agendadas.
-function textoPadrao(o, s = settings.getAll()) {
-  const LOJAS = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', kabum: 'KaBuM!', temu: 'Temu' };
-  const lines = [
-    `*${tituloCurto(o.produto)}*`, '',
-    `❌ De ~R$ ${brl(o.preco_anterior)}~`,
-    `✅ *Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
-    `🏬 Loja: ${LOJAS[o.store_id] || o.plataforma}`, '',
-    `🛒 Compre aqui: ${postLink(o, s)}`,
-  ];
+// Texto de uma oferta pelo modelo do dono (Painel → Redes sociais → Modelo da mensagem; vazio = padrão).
+// O mesmo modelo é usado na tela de postagens (public/js/modelo-post.js) e nas postagens agendadas.
+const LOJAS_NOME = { mercadolivre: 'Mercado Livre', amazon: 'Amazon', shopee: 'Shopee', magalu: 'Magalu', shein: 'Shein', aliexpress: 'AliExpress', kabum: 'KaBuM!', temu: 'Temu' };
+function valoresDoModelo(o, link) {
   const seen = o.last_seen_at && new Date(String(o.last_seen_at).replace(' ', 'T') + 'Z');
-  if (seen && !isNaN(seen)) {
-    const quando = seen.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    lines.push('', `_Preço conferido em ${quando}. Pode mudar a qualquer momento._`);
-  }
-  return lines.join('\n');
+  return {
+    produto: tituloCurto(o.produto), preco_de: brl(o.preco_anterior), preco: brl(o.preco_atual),
+    desconto: String(Math.round(o.desconto_pct)), economia: brl(Math.max(0, o.preco_anterior - o.preco_atual)),
+    loja: LOJAS_NOME[o.store_id] || o.plataforma, link, cupom: o.cupom || '',
+    conferido: seen && !isNaN(seen) ? seen.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '',
+  };
+}
+function textoPadrao(o, s = settings.getAll()) {
+  return require('../public/js/modelo-post').aplicar(s.post_modelo, valoresDoModelo(o, postLink(o, s)));
 }
 
 // Publica uma oferta nas redes pedidas; cada rede responde independentemente.

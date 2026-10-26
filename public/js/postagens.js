@@ -37,18 +37,16 @@
     const corte = t.slice(0, TITULO_MAX + 1).replace(/\s+\S*$/, '').replace(/[\s,;:.\-–—|/(]+$/, '');
     return `${corte || t.slice(0, TITULO_MAX)}…`;
   }
+  // Texto pelo modelo do dono (Painel ou Meu painel → Modelo da mensagem); vazio = padrão do site
+  let MODELO = '';
   function defaultText(o) {
-    const store = STORES[o.store_id] || o.plataforma;
-    const lines = [
-      `*${tituloCurto(o.produto)}*`, '',
-      `❌ De ~R$ ${brl(o.preco_anterior)}~`,
-      `✅ *Por R$ ${brl(o.preco_atual)}* (${Math.round(o.desconto_pct)}% off)`,
-      `🏬 Loja: ${store}`, '',
-      `🛒 Compre aqui: ${o.link}`,
-    ];
     const seen = parseDate(o.last_seen_at);
-    if (seen && !isNaN(seen)) lines.push('', `_Preço conferido em ${fmtWhen(seen)}. Pode mudar a qualquer momento._`);
-    return lines.join('\n');
+    return window.OfertouModelo.aplicar(MODELO, {
+      produto: tituloCurto(o.produto), preco_de: brl(o.preco_anterior), preco: brl(o.preco_atual),
+      desconto: String(Math.round(o.desconto_pct)), economia: brl(Math.max(0, o.preco_anterior - o.preco_atual)),
+      loja: STORES[o.store_id] || o.plataforma, link: o.link, cupom: o.cupom || '',
+      conferido: seen && !isNaN(seen) ? fmtWhen(seen) : '',
+    });
   }
   const textOf = o => textos[o.id] ?? defaultText(o);
 
@@ -337,6 +335,22 @@
     } catch (err) { toast(err.message); }
   });
 
+  // ── Conversor de link ──────────────────────────────────────────────────────
+  $('#conv-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button'), res = $('#conv-res');
+    btn.disabled = true; res.hidden = false; res.textContent = 'Convertendo…';
+    try {
+      const r = await fetch('/api/postagens/converter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: $('#conv-url').value }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `Erro ${r.status}`);
+      res.innerHTML = `<div class="conv-linha"><code>${esc(d.link)}</code><button class="btn btn-sm" type="button" data-conv-copiar>Copiar</button></div>
+        <small>${esc(d.loja)}${d.aviso ? ` · <span class="conv-aviso">${esc(d.aviso)}</span>` : ''}</small>`;
+      res.querySelector('[data-conv-copiar]').addEventListener('click', () => navigator.clipboard.writeText(d.link).then(() => toast('Link copiado.')));
+    } catch (err) { res.textContent = err.message; }
+    btn.disabled = false;
+  });
+
   // ── Início ─────────────────────────────────────────────────────────────────
   (async () => {
     try {
@@ -345,6 +359,7 @@
         return r.json();
       });
       REDES = info.redes;
+      MODELO = info.modelo || '';
       $('#painel-cliente').hidden = !info.cliente;
       WA_INTERVALO = Math.max(20, Number(info.whatsapp_intervalo_s) || 90);
       renderNets(info);

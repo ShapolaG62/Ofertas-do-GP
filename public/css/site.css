@@ -2624,3 +2624,16 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 
 /* A coluna das ofertas nunca estica além da tela (fileiras roláveis de chips, títulos longos) */
 .catalog > * { min-width: 0; }
+
+/* Painel → Redes sociais: prévia do modelo da mensagem */
+.modelo-previa { margin: 6px 0 0; padding: 12px 14px; min-height: 220px; border-radius: 12px; background: #0b141a; color: #e9edef; border: 1px solid var(--line-strong);
+  font: 13.5px/1.5 ui-sans-serif, system-ui, sans-serif; white-space: pre-wrap; word-break: break-word; }
+.modelo-vars code { margin-right: 4px; }
+
+/* Postagens: conversor de link */
+.conv-form { display: flex; gap: 8px; margin-top: 8px; }
+.conv-form input { flex: 1; min-width: 0; height: 42px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink); font: inherit; }
+.conv-res { margin-top: 10px; display: grid; gap: 4px; font-size: 13.5px; }
+.conv-linha { display: flex; gap: 8px; align-items: center; }
+.conv-linha code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); }
+.conv-aviso { color: var(--gold, #b8860b); }

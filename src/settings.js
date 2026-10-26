@@ -157,6 +157,21 @@ const DEFAULTS = {
   agenda_qtd: '5',
   agenda_redes: '["whatsapp"]',
   agenda_completar: '1',        // completa a fila com as melhores ofertas do momento
+  // Modo contínuo: entre o início e o fim, uma postagem a cada X a Y minutos (intervalo aleatório, parece gente)
+  agenda_modo: 'horarios',      // 'horarios' (nos horários fixos) ou 'continuo'
+  agenda_inicio: '08:00',
+  agenda_fim: '22:00',
+  agenda_intervalo_min: '20',   // minutos
+  agenda_intervalo_max: '40',
+  agenda_por_vez: '1',          // ofertas em cada envio do modo contínuo
+  agenda_lojas: '',             // lojas das ofertas automáticas (vazio = todas), ex.: mercadolivre,amazon
+  agenda_palavras_bloqueadas: 'capinha, capa para celular, pelicula, cabo usb, suporte para celular', // nunca postar ofertas com estas palavras
+  agenda_palavras_permitidas: '', // se preenchido: só ofertas com pelo menos uma destas palavras
+  post_modelo: '',              // modelo do texto das postagens (public/js/modelo-post.js); vazio = padrão
+  zapi2_instance: '',           // WhatsApp de contingência (assume se o principal falhar)
+  zapi2_token: '',
+  evolution2_instance: '',
+  grupos_convite: '',           // página /grupo: um grupo por linha "Nome | link de convite | limite" (src/grupos-convite.js)
 };
 
 // Chaves que o site público pode ler.
@@ -166,7 +181,7 @@ const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsens
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
   'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret',
-  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
+  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
 const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas'];

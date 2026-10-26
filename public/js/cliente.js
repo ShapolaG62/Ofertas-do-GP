@@ -70,12 +70,86 @@
     if (!me.cliente) return mostrarLogin();
     $('#view-login').hidden = true; $('#view-app').hidden = false;
     ['#go-offers', '#go-posts', '#logout'].forEach(s => { $(s).hidden = false; });
-    $('#cli-nome').textContent = `Olá, ${me.cliente.nome.split(' ')[0]}`;
+    $('#cli-nome').textContent = me.cliente.nome.split(' ').slice(0, 2).join(' ');
+    $('#cli-avatar').textContent = (me.cliente.nome.trim()[0] || '?').toUpperCase();
+    $('#cli-plano').textContent = me.cliente.plano || 'Afiliado';
     $('#cli-validade').textContent = String(me.cliente.validade).startsWith('9999') ? 'Acesso sem vencimento.' : `Acesso válido até ${fmtDay(me.cliente.validade)}.`;
     // Termos do Afiliado ainda não aceitos (acesso criado pelo painel ou antes dos Termos): pede antes de abrir o painel
     await OfertouAceiteParceiro.pedir(me.parceiro_pendente, '/api/cliente/aceite-parceiro', '/api/cliente/sair');
     await carregarConfig();
+    carregarPainel().catch(() => {});
   }
+
+  // ── Dashboard ──────────────────────────────────────────────────────────────
+  let DIAS = 7;
+  const num = n => Number(n || 0).toLocaleString('pt-BR');
+  const ICONE_KPI = {
+    enviados: '<path d="M3 11l18-8-8 18-2-8z"/>',
+    conexoes: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+    fila: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/>',
+    cliques: '<path d="M9 3v4M3 9h4M5.6 5.6l2.8 2.8M12 12l9 3-4 2-2 4z"/>',
+  };
+  const kpi = (id, titulo, valor, sub, cor) => `<div class="cli-kpi cli-kpi-${cor}">
+      <span class="cli-kpi-ico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONE_KPI[id]}</svg></span>
+      <div><small>${titulo}</small><b>${valor}</b><em>${sub}</em></div></div>`;
+  async function carregarPainel() {
+    const d = await api(`/api/cliente/painel?dias=${DIAS}`);
+    const prontas = d.redes.filter(r => r.pronta);
+    const periodo = DIAS === 1 ? 'hoje' : `nos últimos ${DIAS} dias`;
+    $('#cli-kpis').innerHTML = [
+      kpi('enviados', 'Mensagens enviadas', num(d.enviados), d.falhas ? `${num(d.falhas)} com falha ${periodo}` : periodo, 'verde'),
+      kpi('conexoes', 'Redes conectadas', `${prontas.length}/${d.redes.length}`, prontas.length ? prontas.map(r => r.nome).join(', ') : 'nenhuma ainda', 'azul'),
+      kpi('fila', 'Na fila', num(d.fila), d.agenda.ativa ? `agendamento ligado${d.agenda.proximo ? ` · próximo ${d.agenda.proximo}` : ''}` : 'agendamento desligado', 'laranja'),
+      kpi('cliques', 'Cliques nos seus links', num(d.cliques), 'desde o começo', 'roxo'),
+    ].join('');
+    // Gráfico de barras (enviadas e falhas por dia)
+    const max = Math.max(1, ...d.serie.map(x => x.ok + x.erro));
+    const rot = s => new Date(s + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    $('#cli-graf-sub').textContent = `Volume de mensagens ${periodo}${d.ultimo_envio ? ` · último envio em ${fmtDate(d.ultimo_envio)}` : ''}`;
+    $('#cli-graf').innerHTML = `<div class="cli-barras" style="--n:${d.serie.length}">${d.serie.map(x => `
+      <div class="cli-barra" title="${rot(x.dia)}: ${x.ok} enviada(s)${x.erro ? `, ${x.erro} com falha` : ''}">
+        <span class="cli-barra-pilha"><i class="ok" style="height:${(x.ok / max) * 100}%"></i><i class="erro" style="height:${(x.erro / max) * 100}%"></i></span>
+        <small>${d.serie.length > 10 ? (x.dia.endsWith('01') || x.dia.endsWith('15') ? rot(x.dia) : '') : rot(x.dia)}</small>
+      </div>`).join('')}</div>
+      <div class="cli-legenda"><span><i class="ok"></i>Enviadas</span><span><i class="erro"></i>Com falha</span></div>`;
+    // Conexões
+    const linha = (ok, nome, det) => `<li class="${ok ? 'on' : 'off'}"><span class="cli-ponto"></span><div><b>${esc(nome)}</b><small>${esc(det)}</small></div></li>`;
+    $('#cli-conexoes').innerHTML = d.redes.map(r => r.id === 'whatsapp'
+      ? linha(r.pronta, 'WhatsApp', r.pronta ? `${d.grupos_whatsapp} grupo(s)${d.contingencia ? ' · com número de contingência' : ' · sem contingência'}` : r.motivo || 'não configurado')
+      : linha(r.pronta, r.nome, r.pronta ? 'Conectado' : r.motivo || 'não configurado')).join('')
+      + (d.sem_afiliado.length ? linha(false, 'Links de afiliado', `faltam: ${d.sem_afiliado.join(', ')}`) : linha(true, 'Links de afiliado', 'todas as lojas configuradas'));
+  }
+  $('#cli-periodo').addEventListener('click', e => {
+    const b = e.target.closest('[data-dias]');
+    if (!b) return;
+    DIAS = Number(b.dataset.dias);
+    $$('#cli-periodo [data-dias]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    carregarPainel().catch(err => toast(err.message));
+  });
+
+  // ── Barra "cole o link" (gera o link de afiliado do cliente) ────────────────
+  $('#cli-busca').addEventListener('submit', async e => {
+    e.preventDefault();
+    const url = $('#cli-busca-url').value.trim(), box = $('#cli-busca-res');
+    if (!url) return;
+    box.hidden = false; box.innerHTML = '<p class="cli-hint">Gerando o seu link…</p>';
+    try {
+      const r = await fetch('/api/postagens/converter', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || `Erro ${r.status}`);
+      box.innerHTML = `<div class="cli-busca-card"><div><small>${esc(d.loja)} · seu link de afiliado</small><code>${esc(d.link)}</code>
+        ${d.aviso ? `<em>${esc(d.aviso)}</em>` : ''}</div>
+        <div class="cli-busca-acoes"><button class="btn btn-primary btn-sm" type="button" data-copiar>Copiar link</button>
+        <button class="btn btn-sm" type="button" data-fechar>Fechar</button></div></div>`;
+      box.querySelector('[data-copiar]').addEventListener('click', () => navigator.clipboard.writeText(d.link).then(() => toast('Link copiado.')));
+      box.querySelector('[data-fechar]').addEventListener('click', () => { box.hidden = true; $('#cli-busca-url').value = ''; });
+    } catch (err) { box.innerHTML = `<p class="form-msg err">${esc(err.message)}</p>`; }
+  });
+  // Colou um link: gera na hora
+  $('#cli-busca-url').addEventListener('paste', () => setTimeout(() => $('#cli-busca').requestSubmit(), 50));
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !$('#view-app').hidden) { e.preventDefault(); $('#cli-busca-url').focus(); }
+  });
 
   async function carregarConfig() {
     const d = await api('/api/cliente/config');
@@ -119,6 +193,7 @@
     $$('.cli-tab').forEach(t => { t.hidden = t.dataset.body !== b.dataset.tab; });
     if (b.dataset.tab === 'redes') previaModelo();
     if (b.dataset.tab === 'agenda') carregarAgenda().catch(err => toast(err.message));
+    if (b.dataset.tab === 'inicio') carregarPainel().catch(() => {});
     if (b.dataset.tab === 'historico') carregarHistorico().catch(err => toast(err.message));
   });
 

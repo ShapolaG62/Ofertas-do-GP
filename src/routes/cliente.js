@@ -4,6 +4,7 @@ const auth = require('../auth');
 const clientes = require('../clientes');
 const whatsapp = require('../whatsapp');
 const agenda = require('../agenda');
+const db = require('../db');
 const { createLimiter } = require('../ratelimit');
 
 const router = express.Router();
@@ -68,6 +69,32 @@ router.get('/api/cliente/whatsapp/status', async (req, res) => {
 router.get('/api/cliente/whatsapp/grupos', async (req, res) => {
   const s = clientes.config(req.cliente.id);
   try { res.json({ grupos: await whatsapp.listarGrupos(s), escolhidos: whatsapp.gruposEscolhidos(s) }); } catch (err) { sendError(res, err); }
+});
+
+// Dashboard do painel: envios no período (por dia, ok e falha), conexões, fila e cliques nos links do cliente
+router.get('/api/cliente/painel', (req, res) => {
+  const cid = req.cliente.id;
+  const dias = [1, 7, 30].includes(Number(req.query.dias)) ? Number(req.query.dias) : 7;
+  const desde = `-${dias - 1} days`;
+  const porDia = db.all(`SELECT date(created_at, '-3 hours') AS dia, SUM(ok) AS ok, SUM(1 - ok) AS erro FROM social_posts
+    WHERE cliente_id = ? AND date(created_at, '-3 hours') >= date('now', '-3 hours', ?) GROUP BY dia ORDER BY dia`, cid, desde);
+  const mapa = Object.fromEntries(porDia.map(r => [r.dia, r]));
+  const serie = [];
+  for (let i = dias - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - 3 * 3600000 - i * 86400000).toISOString().slice(0, 10);
+    serie.push({ dia: d, ok: mapa[d]?.ok || 0, erro: mapa[d]?.erro || 0 });
+  }
+  const s = clientes.config(cid);
+  const dono = db.get('SELECT id FROM users WHERE cliente_id = ?', cid);
+  const cliques = db.get('SELECT valor FROM metricas WHERE dono = ? AND chave = ?', dono ? `u:${dono.id}` : `c:${cid}`, 'cliques_links')?.valor || 0;
+  const ultimo = db.get('SELECT MAX(created_at) AS created_at FROM social_posts WHERE cliente_id = ? AND ok = 1', cid)?.created_at || null;
+  res.json({
+    dias, serie,
+    enviados: serie.reduce((a, d) => a + d.ok, 0), falhas: serie.reduce((a, d) => a + d.erro, 0),
+    redes: require('../social').listarRedes(s), contingencia: Boolean(whatsapp.configReserva(s) && !whatsapp.configReserva(s).erro),
+    grupos_whatsapp: whatsapp.gruposEscolhidos(s).length, fila: agenda.pendentes(cid), agenda: agenda.estado(cid),
+    cliques, ultimo_envio: ultimo, sem_afiliado: clientes.lojasSemAfiliado(s),
+  });
 });
 
 router.get('/api/cliente/agenda', (req, res) => {

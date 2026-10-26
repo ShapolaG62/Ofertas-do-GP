@@ -181,6 +181,19 @@
   .ac-ex { font-size: 12.5px; line-height: 1.45; min-width: 220px; }
   #av-form textarea { min-height: 100px; font-family: inherit; font-size: 14.5px; }
   .termos-titulo { display: flex; align-items: center; gap: 8px; }
+  /* Barra do topo: pesquisar oferta ou colar link (Ctrl K) */
+  .top-busca-area { position: relative; display: flex; justify-content: center; min-width: 0; }
+  .top-busca { width: min(520px, 100%); display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 12px;
+    border: 1px solid var(--line, #333); background: var(--panel, #161b18); color: var(--muted, #8a9a91); }
+  .top-busca:focus-within { border-color: var(--green, #2bb673); box-shadow: 0 0 0 3px rgba(43, 182, 115, .15); }
+  .top-busca svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+  .top-busca input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--text); font: inherit; font-size: 14px; }
+  .top-busca kbd { font: 700 11px ui-monospace, monospace; padding: 3px 7px; border-radius: 6px; border: 1px solid var(--line, #333); }
+  .top-busca-res { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: min(560px, 92vw); z-index: 30;
+    padding: 14px; border-radius: 14px; background: var(--panel, #161b18); border: 1px solid var(--green, #2bb673); box-shadow: 0 18px 50px rgba(0, 0, 0, .45); display: grid; gap: 10px; }
+  .top-busca-res code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .top-busca-res .row { gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 900px) { .top-busca-area { order: 10; flex-basis: 100%; } .top-busca kbd { display: none; } }
   .modelo-previa { margin: 6px 0 0; padding: 12px 14px; min-height: 220px; border-radius: 12px; background: #0b141a; color: #e9edef; border: 1px solid var(--line, #333);
     font: 13.5px/1.5 system-ui, sans-serif; white-space: pre-wrap; word-break: break-word; }
   .modelo-vars code { margin-right: 4px; }
@@ -278,13 +291,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261221"></script>
-<script src="/js/dialogo.js?v=20261221"></script>
-<script src="/js/modelo-post.js?v=20261221"></script>
-<script src="/js/avisos-entrada.js?v=20261221"></script>
-<script src="/js/capi-minerando.js?v=20261221" defer></script>
-<script src="/js/cadastro-auto.js?v=20261221" defer></script>
-<script src="/js/seletor.js?v=20261221" defer></script>
+<script src="/js/tema.js?v=20261222"></script>
+<script src="/js/dialogo.js?v=20261222"></script>
+<script src="/js/modelo-post.js?v=20261222"></script>
+<script src="/js/avisos-entrada.js?v=20261222"></script>
+<script src="/js/capi-minerando.js?v=20261222" defer></script>
+<script src="/js/cadastro-auto.js?v=20261222" defer></script>
+<script src="/js/seletor.js?v=20261222" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -322,7 +335,14 @@
     <header class="top">
       <button class="btn small btn-voltar-painel" type="button" id="painel-voltar" aria-label="Voltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Voltar</span></button>
       <div class="logo"><img src="/images/capi-76.png" alt=""><span>Ofertou<b>!</b> · Painel</span></div>
-      <div class="spacer"></div>
+      <div class="spacer top-busca-area">
+        <form class="top-busca" id="top-busca" autocomplete="off">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+          <input id="top-busca-q" placeholder="Pesquisar oferta ou colar link do produto…" aria-label="Pesquisar oferta ou colar link">
+          <kbd>Ctrl K</kbd>
+        </form>
+        <div class="top-busca-res" id="top-busca-res" hidden></div>
+      </div>
       <button class="btn small" type="button" id="sino" title="Avisos de saldo para sacar">🔔<span class="count-badge hidden" id="sino-badge">0</span></button>
       <a class="btn small" href="/perfil" target="_blank">🏅 Meu perfil</a>
       <div data-tema-controle class="so-icones" style="margin-right:2px"></div>
@@ -1870,6 +1890,38 @@ async function loadSettings() {
   previaModelo();
   carregarGruposConvite();
 }
+
+// Barra do topo: colar link → gera o link de afiliado (e pode virar oferta manual); texto → busca a oferta no site
+$('#top-busca').addEventListener('submit', async e => {
+  e.preventDefault();
+  const q = $('#top-busca-q').value.trim(), box = $('#top-busca-res');
+  if (!q) return;
+  if (!/^https?:\/\//i.test(q)) { window.open(`/?q=${encodeURIComponent(q)}`, '_blank'); return; }
+  box.hidden = false; box.innerHTML = '<p class="hint" style="margin:0">Gerando o link…</p>';
+  try {
+    const d = await api('/api/postagens/converter', { method: 'POST', body: { url: q } });
+    box.innerHTML = `<div><span class="hint" style="margin:0">${esc(d.loja)} · link de afiliado do site</span><code>${esc(d.link)}</code>${d.aviso ? `<span class="hint" style="margin:0;color:var(--yellow)">${esc(d.aviso)}</span>` : ''}</div>
+      <div class="row"><button class="btn primary small" type="button" data-tb="copiar">Copiar link</button>
+      <button class="btn small" type="button" data-tb="manual">Adicionar como oferta manual</button>
+      <button class="btn small" type="button" data-tb="fechar">Fechar</button></div>`;
+    box.onclick = ev => {
+      const a = ev.target.closest('[data-tb]')?.dataset.tb;
+      if (a === 'copiar') navigator.clipboard.writeText(d.link).then(() => globalMsg('Link copiado.'));
+      if (a === 'manual') {
+        document.querySelector('[data-tab="offers"]').click();
+        const f = $('#manual-form'); f.url.value = q; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.querySelector('input:not([name=url])')?.focus();
+        box.hidden = true;
+      }
+      if (a === 'fechar') { box.hidden = true; $('#top-busca-q').value = ''; }
+    };
+  } catch (err) { box.innerHTML = `<p class="hint" style="margin:0;color:var(--red)">${esc(err.message)}</p>`; }
+});
+$('#top-busca-q').addEventListener('paste', () => setTimeout(() => { if (/^https?:\/\//i.test($('#top-busca-q').value.trim())) $('#top-busca').requestSubmit(); }, 50));
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !$('#app').classList.contains('hidden')) { e.preventDefault(); $('#top-busca-q').focus(); }
+  if (e.key === 'Escape') $('#top-busca-res').hidden = true;
+});
+document.addEventListener('click', e => { if (!e.target.closest('.top-busca-area')) $('#top-busca-res').hidden = true; });
 
 // Modelo da mensagem: prévia com uma oferta de exemplo
 const EXEMPLO_MODELO = { produto: 'Air Fryer Mondial 4L Family Inox', preco_de: '499,90', preco: '289,90', desconto: '42', economia: '210,00',

@@ -277,7 +277,9 @@ function lojasSemAfiliado(s) {
 }
 
 function publico(c) {
-  return { id: c.id, nome: c.nome, email: c.email, validade: c.validade, status: c.status };
+  let plano = null;
+  try { plano = c.plano ? require('./planos').plano(c.plano)?.nome || null : null; } catch { /* sem planos */ }
+  return { id: c.id, nome: c.nome, email: c.email, validade: c.validade, status: c.status, plano };
 }
 
 module.exports = {

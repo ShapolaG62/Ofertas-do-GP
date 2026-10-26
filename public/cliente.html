@@ -11,19 +11,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261221">
-<script src="/js/tema.js?v=20261221"></script>
-<script src="/js/app-nativo.js?v=20261221"></script>
-<script src="/js/dialogo.js?v=20261221"></script>
-<script src="/js/modelo-post.js?v=20261221"></script>
-<script src="/js/aceite-parceiro.js?v=20261221"></script>
-<script src="/js/capi-minerando.js?v=20261221" defer></script>
-<script src="/js/cadastro-auto.js?v=20261221" defer></script>
-<script src="/js/voltar.js?v=20261221" data-padrao="/" defer></script>
-<script src="/js/rodape-legal.js?v=20261221" defer></script>
-<script src="/js/instalar-app.js?v=20261221" defer></script>
-<script src="/js/cookies.js?v=20261221"></script>
-<script src="/js/seletor.js?v=20261221" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261222">
+<script src="/js/tema.js?v=20261222"></script>
+<script src="/js/app-nativo.js?v=20261222"></script>
+<script src="/js/dialogo.js?v=20261222"></script>
+<script src="/js/modelo-post.js?v=20261222"></script>
+<script src="/js/aceite-parceiro.js?v=20261222"></script>
+<script src="/js/capi-minerando.js?v=20261222" defer></script>
+<script src="/js/cadastro-auto.js?v=20261222" defer></script>
+<script src="/js/voltar.js?v=20261222" data-padrao="/" defer></script>
+<script src="/js/rodape-legal.js?v=20261222" defer></script>
+<script src="/js/instalar-app.js?v=20261222" defer></script>
+<script src="/js/cookies.js?v=20261222"></script>
+<script src="/js/seletor.js?v=20261222" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -33,7 +33,7 @@
       <span class="brand-name">Ofertou<b>!</b> · Cliente</span>
     </a>
     <div class="header-actions">
-      <a class="btn btn-sm" href="/" id="go-offers" hidden>Ver ofertas e escolher</a>
+      <a class="btn btn-sm" href="/" id="go-offers" hidden>Ver ofertas</a>
       <a class="btn btn-sm" href="/postagens" id="go-posts" hidden>Postagens</a>
       <button class="btn btn-sm" type="button" id="logout" hidden>Sair</button>
     </div>
@@ -56,23 +56,51 @@
   </section>
 
   <!-- PAINEL -->
-  <section id="view-app" hidden>
-    <div class="cli-head">
-      <div><h1 id="cli-nome">Olá</h1><p class="cli-sub" id="cli-validade"></p></div>
-      <a class="btn" href="/perfil">🏅 Meu perfil</a>
+  <section id="view-app" class="cli-shell" hidden>
+    <aside class="cli-side">
+      <div class="cli-user"><span class="cli-avatar" id="cli-avatar">?</span><div><b id="cli-nome">Olá</b><small id="cli-validade"></small></div></div>
+      <nav class="tabs-line cli-nav" role="tablist" aria-label="Menu do painel">
+        <p class="cli-nav-tit">Essencial</p>
+        <button type="button" role="tab" data-tab="inicio" aria-selected="true"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg><span>Dashboard</span></button>
+        <a class="cli-nav-link" href="/"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>Escolher ofertas</span></a>
+        <a class="cli-nav-link" href="/postagens"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l18-8-8 18-2-8z"/></svg><span>Postagens</span></a>
+        <button type="button" role="tab" data-tab="agenda"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg><span>Agendamento</span></button>
+        <p class="cli-nav-tit">Relatórios</p>
+        <button type="button" role="tab" data-tab="historico"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Envios</span></button>
+        <p class="cli-nav-tit">Configurações</p>
+        <button type="button" role="tab" data-tab="afiliados"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg><span>Links de afiliado</span></button>
+        <button type="button" role="tab" data-tab="redes"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg><span>Redes e mensagem</span></button>
+        <button type="button" role="tab" data-tab="conta"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Minha conta</span></button>
+        <a class="cli-nav-link" href="/perfil"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6 6.5 1-4.7 4.6 1.1 6.4L12 17l-5.9 3 1.1-6.4L2.5 9 9 8z"/></svg><span>Meu perfil</span></a>
+      </nav>
+    </aside>
+    <div class="cli-main">
+    <div class="cli-top">
+      <form class="cli-busca" id="cli-busca" autocomplete="off">
+        <svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input type="url" id="cli-busca-url" placeholder="Cole o link de um produto para gerar o seu link de afiliado…" aria-label="Link do produto">
+        <kbd>Ctrl K</kbd>
+      </form>
+      <span class="cli-plano" id="cli-plano">Afiliado</span>
     </div>
-    <div class="tabs-line" role="tablist">
-      <button type="button" role="tab" data-tab="inicio" aria-selected="true">Início</button>
-      <button type="button" role="tab" data-tab="afiliados">Links de afiliado</button>
-      <button type="button" role="tab" data-tab="redes">Redes sociais</button>
-      <button type="button" role="tab" data-tab="agenda">Agendamento</button>
-      <button type="button" role="tab" data-tab="historico">Histórico</button>
-      <button type="button" role="tab" data-tab="conta">Minha conta</button>
-    </div>
+    <div class="cli-busca-res" id="cli-busca-res" hidden></div>
     <div class="form-msg" id="global-msg" hidden></div>
 
-    <!-- INÍCIO -->
+    <!-- INÍCIO (dashboard) -->
     <div class="cli-tab" data-body="inicio">
+      <div class="cli-dash-head">
+        <h2>Dashboard</h2>
+        <div class="cli-periodo" id="cli-periodo" role="group" aria-label="Período">
+          <button type="button" data-dias="1">Hoje</button>
+          <button type="button" data-dias="7" aria-pressed="true">7 dias</button>
+          <button type="button" data-dias="30">30 dias</button>
+        </div>
+      </div>
+      <div class="cli-kpis" id="cli-kpis"></div>
+      <div class="cli-dash-grid">
+        <div class="panel-card"><h3 class="cli-card-tit">Envio de mensagens</h3><p class="cli-hint" id="cli-graf-sub"></p><div class="cli-graf" id="cli-graf"></div></div>
+        <div class="panel-card"><h3 class="cli-card-tit">Conexões</h3><ul class="cli-conexoes" id="cli-conexoes"></ul></div>
+      </div>
       <div class="panel-card">
         <h2>Como usar</h2>
         <ol class="cli-steps">
@@ -270,11 +298,12 @@
         <div class="cli-actions"><button class="btn btn-primary" type="submit">Salvar nova senha</button></div>
       </form>
     </div>
+    </div>
   </section>
 </div>
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/cliente.js?v=20261035" defer></script>
+<script src="/js/cliente.js?v=20261222" defer></script>
 </body>
 </html>

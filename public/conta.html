@@ -13,19 +13,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261220">
-<script src="/js/tema.js?v=20261220"></script>
-<script src="/js/app-nativo.js?v=20261220"></script>
-<script src="/js/dialogo.js?v=20261220"></script>
-<script src="/js/aceite-parceiro.js?v=20261220"></script>
-<script src="/js/cosmeticos.js?v=20261220" defer></script>
-<script src="/js/cartoes.js?v=20261220" defer></script>
-<script src="/js/capi-minerando.js?v=20261220" defer></script>
-<script src="/js/cadastro-auto.js?v=20261220" defer></script>
-<script src="/js/rodape-legal.js?v=20261220" defer></script>
-<script src="/js/instalar-app.js?v=20261220" defer></script>
-<script src="/js/cookies.js?v=20261220"></script>
-<script src="/js/seletor.js?v=20261220" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261221">
+<script src="/js/tema.js?v=20261221"></script>
+<script src="/js/app-nativo.js?v=20261221"></script>
+<script src="/js/dialogo.js?v=20261221"></script>
+<script src="/js/aceite-parceiro.js?v=20261221"></script>
+<script src="/js/cosmeticos.js?v=20261221" defer></script>
+<script src="/js/cartoes.js?v=20261221" defer></script>
+<script src="/js/capi-minerando.js?v=20261221" defer></script>
+<script src="/js/cadastro-auto.js?v=20261221" defer></script>
+<script src="/js/rodape-legal.js?v=20261221" defer></script>
+<script src="/js/instalar-app.js?v=20261221" defer></script>
+<script src="/js/cookies.js?v=20261221"></script>
+<script src="/js/seletor.js?v=20261221" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -188,6 +188,43 @@
         </div>
         <div class="lp-pagamento so-web" id="lp-pagamento" hidden></div>
         <p class="planos-nota so-web">O plano vale pelo período contratado. Para renovar, assine de novo com o mesmo e-mail e senha: os dias são somados.</p>
+      </section>
+
+      <!-- Calculadora: quanto rende o grupo (para afiliados) -->
+      <section class="lp-sec" id="calculadora">
+        <div class="lp-head">
+          <p class="lp-kicker">Para afiliados</p>
+          <h2>Quanto o seu grupo de ofertas pode render?</h2>
+          <p>No mercado de afiliados a conta é por membro: algo entre R$ 1,50 e R$ 3,00 por pessoa, por mês. O que empurra esse número para cima é oferta boa no ar com frequência — e é isso que o Ofertou! faz por você. Coloque os seus números.</p>
+        </div>
+        <div class="calc">
+          <div class="calc-campos">
+            <label class="calc-campo"><span>Membros somando todos os grupos <b data-v="membros"></b></span>
+              <input type="range" name="membros" min="100" max="50000" step="100" value="5000"></label>
+            <label class="calc-campo"><span>Quanto rende cada membro hoje, por mês <b data-v="renda"></b></span>
+              <input type="range" name="renda" min="0.5" max="3" step="0.05" value="1.5"></label>
+            <label class="calc-campo"><span>Ofertas que você posta hoje, por dia <b data-v="hoje"></b></span>
+              <input type="range" name="hoje" min="1" max="60" step="1" value="10"></label>
+            <label class="calc-campo"><span>Ofertas por dia com o Ofertou! <b data-v="com"></b></span>
+              <input type="range" name="com" min="1" max="80" step="1" value="35"></label>
+          </div>
+          <div class="calc-res">
+            <div class="calc-linha">
+              <small>Hoje · por mês</small>
+              <strong data-r="atual"></strong>
+              <span class="calc-barra"><i data-b="atual"></i></span>
+              <small data-r="atual-membro"></small>
+            </div>
+            <div class="calc-linha calc-nova">
+              <small>Com mais ofertas no ar</small>
+              <strong data-r="nova"></strong>
+              <span class="calc-barra"><i data-b="nova"></i></span>
+              <small data-r="nova-membro"></small>
+            </div>
+            <a class="btn btn-primary btn-lg" href="#planos">Quero postar mais ofertas</a>
+            <p class="calc-nota">Simulação: o rendimento por membro sobe com o volume de ofertas, limitado a R$ 3,00, o teto que o mercado costuma citar. Não é promessa de resultado.</p>
+          </div>
+        </div>
       </section>
 
       <!-- Comparativo -->
@@ -681,8 +718,9 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/loja-painel.js?v=20261220" defer></script>
-<script src="/js/conta.js?v=20261220" defer></script>
-<script src="/js/chat-topo.js?v=20261220" defer></script>
+<script src="/js/loja-painel.js?v=20261221" defer></script>
+<script src="/js/conta.js?v=20261221" defer></script>
+<script src="/js/calculadora.js?v=20261221" defer></script>
+<script src="/js/chat-topo.js?v=20261221" defer></script>
 </body>
 </html>

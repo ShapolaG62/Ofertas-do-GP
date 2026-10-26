@@ -2637,3 +2637,24 @@ body { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .conv-linha { display: flex; gap: 8px; align-items: center; }
 .conv-linha code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); }
 .conv-aviso { color: var(--gold, #b8860b); }
+
+/* Página inicial: calculadora "quanto rende o seu grupo" */
+.calc { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; max-width: 980px; width: 100%; margin: 0 auto;
+  padding: 22px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-md, none); }
+.calc-campos { display: grid; gap: 18px; align-content: start; }
+.calc-campo { display: grid; gap: 8px; font-size: 14px; color: var(--ink-2); font-weight: 600; }
+.calc-campo span { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.calc-campo b { color: var(--ink); font-size: 18px; font-weight: 800; white-space: nowrap; }
+.calc-campo input[type=range] { width: 100%; accent-color: var(--brand); height: 22px; cursor: pointer; }
+.calc-res { display: grid; gap: 14px; align-content: start; padding: 18px; border-radius: 16px; background: var(--surface-2); }
+.calc-linha { display: grid; gap: 4px; }
+.calc-linha small { color: var(--ink-3); font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.calc-linha small:last-child { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.calc-linha strong { font-size: 30px; font-weight: 900; letter-spacing: -.02em; color: var(--ink); }
+.calc-nova strong { color: var(--brand); font-size: 38px; }
+.calc-barra { display: block; height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.calc-barra i { display: block; height: 100%; border-radius: inherit; background: var(--ink-3); transition: width .25s ease; }
+.calc-nova .calc-barra i { background: linear-gradient(90deg, var(--brand), #2bd47d); }
+.calc-res .btn { justify-self: stretch; text-align: center; }
+.calc-nota { margin: 0; font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+@media (max-width: 760px) { .calc { grid-template-columns: minmax(0, 1fr); padding: 16px; } .calc-nova strong { font-size: 32px; } }

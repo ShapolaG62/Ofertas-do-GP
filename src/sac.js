@@ -44,6 +44,14 @@ db.db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sac_msgs ON sac_mensagens (chamado_id, id);
 `);
 
+// Primeiro atendimento pela Capi, a assistente virtual (src/ia/assistente.js): ela responde com o Guia do usuário,
+// pergunta se há mais dúvidas e, quando não sabe ou a pessoa pede, chama um atendente (o chamado vai para a fila).
+for (const col of ['ia_estado TEXT', 'ia_respostas INTEGER NOT NULL DEFAULT 0']) {
+  try { db.db.exec(`ALTER TABLE sac_chamados ADD COLUMN ${col}`); } catch { /* já existe */ }
+}
+const IA = 'ia';
+const iaAtiva = () => require('./settings').get('ia_sac_ativa') !== '0';
+
 // ── Quem atende ─────────────────────────────────────────────────────────────
 function ehAtendente(dono) {
   if (dono === 'admin') return true;
@@ -53,12 +61,12 @@ function ehAtendente(dono) {
 function atendentes() {
   return ['admin', ...db.all(`SELECT id FROM users WHERE status = 'active' AND pode_sac = 1`).map(u => `u:${u.id}`)];
 }
-const nome = dono => (dono === 'admin' ? 'Equipe Ofertou!' : chat.pessoa(dono).nome);
+const nome = dono => (dono === 'admin' ? 'Equipe Ofertou!' : dono === IA ? 'Capi · assistente virtual' : chat.pessoa(dono).nome);
 
 // ── Mensagens ───────────────────────────────────────────────────────────────
 function msg(id, autor, texto) {
   // Mensagens de pessoas: xingamentos viram *** e ficam registrados (Painel → Moderação do chat)
-  const f = autor ? require('./moderacao-chat').filtrar(texto) : { texto, palavras: [] };
+  const f = autor && autor !== IA ? require('./moderacao-chat').filtrar(texto) : { texto, palavras: [] };
   const r = db.run('INSERT INTO sac_mensagens (chamado_id, autor, texto) VALUES (?, ?, ?)', id, autor, f.texto);
   db.run(`UPDATE sac_chamados SET ultima_msg_at = datetime('now') WHERE id = ?`, id);
   const msgId = Number(r.lastInsertRowid);
@@ -105,17 +113,70 @@ function abrir(dono, b) {
   const texto = txt(b.texto);
   if (texto.length < 3) throw fail('Escreva sua dúvida.');
   let c = aberto(dono);
-  if (c) { msg(c.id, dono, texto); return meu(dono); }
+  if (c) { msg(c.id, dono, texto); if (c.status === 'atendimento' && c.atendente === IA) turnoIa(c, texto); return meu(dono); }
   const assunto = ASSUNTOS[b.assunto] ? b.assunto : 'outro';
   const id = Number(db.run('INSERT INTO sac_chamados (cliente, assunto) VALUES (?, ?)', dono, assunto).lastInsertRowid);
   msg(id, dono, texto);
-  sistema(id, `Chamado ${codigo(id)} aberto (${ASSUNTOS[assunto]}). Você está na fila: um atendente vai assumir e responder aqui mesmo.`);
-  c = pegar(id);
-  for (const a of atendentes()) {
-    try { notificacoes.criar(a, { tipo: 'sac_fila', titulo: `Novo chamado no SAC: ${codigo(id)}`, texto: `${nome(dono)} — ${ASSUNTOS[assunto]}`, link: '/sac' }); } catch { /* opcional */ }
+  if (iaAtiva()) {
+    db.run(`UPDATE sac_chamados SET status = 'atendimento', atendente = ?, assumido_em = datetime('now') WHERE id = ?`, IA, id);
+    sistema(id, `Chamado ${codigo(id)} aberto (${ASSUNTOS[assunto]}). A Capi, nossa assistente virtual, faz o primeiro atendimento; se precisar, ela chama um atendente da equipe.`);
+    turnoIa(pegar(id), texto, true);
+    return meu(dono);
   }
+  sistema(id, `Chamado ${codigo(id)} aberto (${ASSUNTOS[assunto]}). Você está na fila: um atendente vai assumir e responder aqui mesmo.`);
+  avisarAtendentes(id, dono, assunto);
   return meu(dono);
 }
+function avisarAtendentes(id, dono, assunto) {
+  for (const a of atendentes()) {
+    try { notificacoes.criar(a, { tipo: 'sac_fila', titulo: `Novo chamado no SAC: ${codigo(id)}`, texto: `${nome(dono)} — ${ASSUNTOS[assunto] || assunto}`, link: '/sac' }); } catch { /* opcional */ }
+  }
+}
+
+// ── Capi: uma rodada da conversa ────────────────────────────────────────────
+const QUER_HUMANO = /\b(atendente|humano|humana|pessoa de verdade|pessoa real|alguem da equipe|falar com alguem|operador|suporte humano|quero falar com|me transfere|transferir)\b/;
+const SIM = /^(sim|s|quero|pode|pode sim|claro|ok|okay|isso|por favor|pfv|pf|aham|uhum|com certeza|bora|manda)\b/;
+const NAO = /^(nao|n|nada|so isso|era so isso|era isso|resolveu|resolvido|tudo certo|ta bom|beleza|blz|nao precisa|obrigad|valeu|vlw|tchau)\b/;
+const OI = /^(oi+|ola|opa|e ai|eai|bom dia|boa tarde|boa noite|hey|hello|salve)[!. ]*$/;
+const OBRIGADO = /^(obrigad[oa]|valeu|vlw|brigad[oa]|muito obrigad[oa]|agradeco)[!. ]*$/;
+function turnoIa(c, texto, primeira = false) {
+  const assistente = require('./ia/assistente');
+  const t = assistente.semAcento(texto).trim();
+  const estado = c.ia_estado || '';
+  const curto = t.split(/\s+/).length <= 4; // "sim", "não, obrigado"… (frase longa é uma nova pergunta)
+  const falar = s => msg(c.id, IA, s);
+  const definir = (e, mais = 0) => db.run('UPDATE sac_chamados SET ia_estado = ?, ia_respostas = ia_respostas + ? WHERE id = ?', e, mais, c.id);
+  const chamarHumano = () => {
+    db.run(`UPDATE sac_chamados SET status = 'fila', atendente = NULL, assumido_em = NULL, ia_estado = 'humano' WHERE id = ?`, c.id);
+    falar('Certo! Já chamei um atendente da nossa equipe: ele vai continuar a conversa aqui mesmo. Enquanto isso, se quiser, pode ir adiantando os detalhes (ex.: número do pedido). 😊');
+    avisarAtendentes(c.id, c.cliente, c.assunto);
+  };
+  if (QUER_HUMANO.test(t) || (estado === 'oferta_humano' && curto && SIM.test(t))) return chamarHumano();
+  if (estado === 'oferta_humano' && curto && NAO.test(t) && !OBRIGADO.test(t)) { definir(''); return falar('Tudo bem! Me conte a sua dúvida que eu procuro a resposta no Guia do usuário.'); }
+  if ((estado === 'mais_duvidas' || estado === 'oferta_humano') && curto && (NAO.test(t) || OBRIGADO.test(t))) {
+    db.run(`UPDATE sac_chamados SET status = 'resolvido', resolvido_em = datetime('now'), ia_estado = 'encerrado' WHERE id = ?`, c.id);
+    return falar('Que bom que pude ajudar! Vou encerrar este atendimento. Se surgir outra dúvida, é só escrever aqui de novo. Até mais! 🦫');
+  }
+  if (estado === 'mais_duvidas' && SIM.test(t) && t.split(' ').length <= 3) { definir(''); return falar('Claro! Qual é a sua dúvida?'); }
+  if (OI.test(t)) { definir(''); return falar(`Olá! Eu sou a Capi, a assistente virtual do Ofertou! 🦫 Me conte a sua dúvida que eu te ajudo${primeira ? '' : ' agora mesmo'}.`); }
+  if (OBRIGADO.test(t)) { definir('mais_duvidas'); return falar('Por nada! Posso ajudar em mais alguma coisa?'); }
+
+  const r = assistente.responder(texto);
+  if (r.interno) { definir('oferta_humano'); return falar(`${r.texto}\n\nDeseja falar com um atendente?`); }
+  if (r.confianca === 'baixa') {
+    definir('oferta_humano');
+    return falar('Não encontrei a resposta para isso no nosso Guia do usuário. 🤔 Você pode escrever de outro jeito ou, se preferir, eu chamo um atendente da equipe. Deseja falar com um atendente?');
+  }
+  const feitas = (c.ia_respostas || 0) + 1;
+  const abertura = primeira ? 'Olá! Eu sou a Capi, a assistente virtual do Ofertou! 🦫 Encontrei isto no nosso Guia do usuário:\n\n' : '';
+  if (feitas >= 3) {
+    definir('oferta_humano', 1);
+    return falar(`${abertura}${r.texto}\n\nAinda ficou alguma dúvida? Se preferir, posso chamar um atendente da equipe. Deseja falar com um atendente?`);
+  }
+  definir('mais_duvidas', 1);
+  return falar(`${abertura}${r.texto}\n\nIsso ajudou? Tem mais alguma dúvida?`);
+}
+
 // Chamado atual (aberto, ou o último resolvido há menos de 3 dias, para avaliar/ver), com as mensagens
 function meu(dono, depois = 0) {
   if (!dono) throw fail('Entre na sua conta.', 401);
@@ -133,6 +194,7 @@ function enviarCliente(dono, id, texto) {
   const t = txt(texto);
   if (!t) throw fail('Escreva a mensagem.');
   msg(c.id, dono, t);
+  if (c.status === 'atendimento' && c.atendente === IA) turnoIa(c, t);
   return meu(dono);
 }
 function encerrarCliente(dono, id) {
@@ -192,7 +254,7 @@ function assumir(dono, id) {
   const c = pegar(id);
   if (!c) throw fail('Chamado não encontrado.', 404);
   // Da fila: o primeiro que clicar fica com ele. Em atendimento com outra pessoa: só o administrador pode assumir.
-  const r = c.status === 'atendimento' && c.atendente !== dono && dono === 'admin'
+  const r = c.status === 'atendimento' && c.atendente !== dono && (dono === 'admin' || c.atendente === IA)
     ? db.run(`UPDATE sac_chamados SET atendente = ?, assumido_em = datetime('now') WHERE id = ? AND status = 'atendimento'`, dono, c.id)
     : db.run(`UPDATE sac_chamados SET status = 'atendimento', atendente = ?, assumido_em = datetime('now') WHERE id = ? AND status = 'fila'`, dono, c.id);
   if (!r.changes) throw fail(c.status === 'resolvido' ? 'Este chamado já foi resolvido.' : 'Outro atendente já assumiu este chamado.', 409);
@@ -247,7 +309,11 @@ function permitir(userId, sim) {
   db.run('UPDATE users SET pode_sac = ? WHERE id = ?', sim ? 1 : 0, Number(userId));
 }
 
+// Teste da Capi no painel (não grava nada)
+function perguntarIa(texto) { return require('./ia/assistente').responder(texto); }
+
 module.exports = {
+  perguntarIa,
   ASSUNTOS, STATUS, codigo, ehAtendente, abrir, meu, enviarCliente, encerrarCliente, avaliar, resumoCliente,
   fila, ver, assumir, responder, devolver, resolver, resumoAtendente, permitir,
 };

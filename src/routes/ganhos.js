@@ -14,7 +14,12 @@ router.get('/api/admin/ganhos', tentar(req => ({
   vendas: ganhos.listar({ plataforma: req.query.plataforma, status: req.query.status }),
   saques: ganhos.saques(),
   notificacoes: ganhos.notificacoes(),
+  sync: require('../ganhos-sync').estado(),
 })));
+// Busca agora as vendas nos programas com API (Shopee e KaBuM!/Awin)
+router.post('/api/admin/ganhos/sincronizar', async (req, res) => {
+  try { res.json(await require('../ganhos-sync').sincronizar()); } catch (err) { sendError(res, err); }
+});
 router.post('/api/admin/ganhos/vendas', tentar(req => { const r = ganhos.registrar(req.body || {}); ganhos.verificar(); return r; }));
 router.patch('/api/admin/ganhos/vendas/:id', tentar(req => { ganhos.atualizarStatus(req.params.id, req.body?.status); return { ok: true }; }));
 router.delete('/api/admin/ganhos/vendas/:id', tentar(req => { ganhos.excluir(req.params.id); return { ok: true }; }));

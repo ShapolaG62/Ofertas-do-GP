@@ -300,6 +300,7 @@ if (process.env.VERCEL) {
     if (process.env.DISABLE_AGENDA !== '1') require('./src/alertas-whatsapp').iniciar(); // alertas de ofertas no WhatsApp particular
     require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)
     require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
+    if (process.env.DISABLE_AGENDA !== '1') require('./src/ganhos-sync').iniciar(); // busca as vendas na Shopee e na Awin a cada 6 h
     const acessos = require('./src/registro-acesso');
     acessos.limpar(); setInterval(acessos.limpar, 24 * 3600 * 1000); // registros de acesso com mais de 6 meses
     // Conexões das lojas com o Mercado Pago (valem 180 dias): renova as que estão perto de vencer

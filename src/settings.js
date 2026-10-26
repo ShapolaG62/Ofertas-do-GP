@@ -172,7 +172,9 @@ const DEFAULTS = {
   zapi2_token: '',
   evolution2_instance: '',
   ia_sac_ativa: '1',
-  wa_grupo_controle: '',        // grupo de automação (src/grupo-automacao.js): ID do grupo que dá os comandos            // Capi faz o primeiro atendimento do SAC (src/ia/assistente.js)
+  wa_grupo_controle: '',
+  ganhos_awin_publisher: '',    // KaBuM! pela Awin: ID de publisher (sincronização dos ganhos, src/ganhos-sync.js)
+  ganhos_awin_token: '',        // chave da API da Awin        // grupo de automação (src/grupo-automacao.js): ID do grupo que dá os comandos            // Capi faz o primeiro atendimento do SAC (src/ia/assistente.js)
   grupo_titulo: '',             // página /grupo: título (vazio = padrão)
   grupo_texto: '',              // página /grupo: texto abaixo do título (vazio = padrão)
   grupo_pixel_meta: '',         // página /grupo: ID do Pixel da Meta (anúncios no Facebook/Instagram)
@@ -186,7 +188,7 @@ const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsens
 // Chaves que nunca saem do servidor em texto puro (nem para o painel).
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
   'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret',
-  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
+  'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token', 'ganhos_awin_token', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
 const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas'];

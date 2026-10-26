@@ -57,7 +57,7 @@
   .hint { color: var(--muted); font-size: 12.5px; line-height: 1.55; margin: 4px 0 12px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
   label.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 12.5px; color: var(--muted); }
-  input[type=text], input[type=search], input[type=password], input[type=url], input[type=number], input[type=date], input[type=email], select, textarea {
+  input:not([type]), input[type=text], input[type=search], input[type=password], input[type=url], input[type=number], input[type=date], input[type=email], input[type=tel], select, textarea {
     background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 12px; outline: none; width: 100%;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--green-line); }
@@ -106,8 +106,19 @@
   .gn-aviso { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--green-line); background: var(--green-soft); margin-bottom: 8px; }
   .gn-aviso-acoes { display: flex; gap: 6px; flex-shrink: 0; }
   .gn-status { font-size: 12px; padding: 4px 6px; border-radius: 8px; background: var(--surface-2); }
-  .gn-dlg { display: grid; gap: 8px; min-width: min(420px, 86vw); }
-  .gn-dlg h3 { margin: 0 0 4px; }
+  dialog.dlg-pequena { width: min(520px, calc(100vw - 24px)); }
+  .gn-dlg-campos { display: grid; gap: 12px; }
+  .gn-sync-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
+  .gn-sync-item { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+  .gn-sync-item b { display: block; font-size: 14px; }
+  .gn-sync-item small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.45; margin-top: 2px; }
+  .gn-ponto { flex: none; width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: var(--muted); }
+  .gn-ponto.ok { background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, .15); }
+  .gn-ponto.erro { background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, .15); }
+  .gn-ponto.manual { background: #e0a526; box-shadow: 0 0 0 4px rgba(224, 165, 38, .15); }
+  .gn-tag { display: inline-block; margin-top: 6px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+  .gn-dlg-campos .hint { margin: 0; }
+  .gn-dlg-campos .field { margin: 0 !important; }
   .count-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--red); color: #fff; font-size: 11px; font-weight: 800; }
   dialog { border: 0; padding: 0; border-radius: 16px; background: var(--surface); color: var(--text); width: min(860px, calc(100vw - 24px)); max-height: calc(100vh - 32px); }
   dialog::backdrop { background: rgba(0,0,0,.5); }
@@ -844,6 +855,23 @@
         </details>
       </div>
 
+      <form class="settings-form">
+        <div class="panel">
+          <div class="row" style="gap:10px;align-items:center"><h2 style="flex:1;margin:0">Sincronização das vendas</h2>
+            <button class="btn primary" type="button" id="gn-sync">Sincronizar agora</button></div>
+          <p class="hint">O site busca sozinho (a cada 6 horas) as vendas dos programas que têm API de relatório. Os outros não oferecem esse acesso: as vendas deles entram importando a planilha do portal, logo abaixo.</p>
+          <div class="gn-sync-lista" id="gn-sync-lista"></div>
+          <details class="hint" style="margin-top:10px"><summary><b>KaBuM! (Awin): ligar a sincronização</b></summary>
+            <p style="margin:8px 0">Na Awin, abra <b>Ferramentas → API</b> (ou <i>Toolbox → API Credentials</i>), gere a chave e copie também o seu <b>ID de publisher</b> (o número da sua conta).</p>
+            <div class="grid">
+              <label class="field">ID de publisher <input name="ganhos_awin_publisher" inputmode="numeric"></label>
+              <label class="field">Chave da API da Awin <input type="password" name="ganhos_awin_token" autocomplete="off" data-secret></label>
+            </div>
+            <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Salvar Awin</button></div>
+          </details>
+        </div>
+      </form>
+
       <div class="panel">
         <h2>Importar vendas do portal (planilha CSV)</h2>
         <p class="hint">No portal de cada programa, abra o relatório de comissões/conversões e <b>exporte em CSV</b> (Amazon: Relatórios → Relatório de ganhos; Shopee: Relatório de conversões; Magalu, Awin, AliExpress: relatório de pedidos). Importe aqui: vendas repetidas são atualizadas, não duplicadas.</p>
@@ -888,11 +916,13 @@
       </div>
     </div>
 
-    <dialog id="gn-dlg">
-      <form method="dialog" class="gn-dlg" id="gn-dlg-form">
-        <h3 id="gn-dlg-titulo"></h3>
-        <div id="gn-dlg-campos"></div>
-        <div class="actions"><button class="btn" value="cancel" type="button" id="gn-dlg-cancelar">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
+    <dialog id="gn-dlg" class="dlg-pequena">
+      <form method="dialog" id="gn-dlg-form">
+        <div class="dlg-head"><h3 id="gn-dlg-titulo"></h3><button class="btn small" type="button" id="gn-dlg-fechar">Fechar</button></div>
+        <div class="dlg-body">
+          <div id="gn-dlg-campos" class="gn-dlg-campos"></div>
+          <div class="actions"><button class="btn" value="cancel" type="button" id="gn-dlg-cancelar">Cancelar</button><button class="btn primary" type="submit">Salvar</button></div>
+        </div>
       </form>
     </dialog>
 
@@ -2778,6 +2808,14 @@ async function loadGanhos() {
     <div class="gn-aviso"><div><b>${esc(n.titulo)}</b><br><span class="hint" style="margin:0">${esc(n.texto || '')} · ${fmtDate(n.created_at)}</span></div>
       <div class="gn-aviso-acoes">${n.link ? `<a class="btn small primary" href="${esc(n.link)}" target="_blank" rel="noopener">Abrir portal ↗</a>` : ''}
       <button class="btn small" data-gn-lida="${n.id}">Ok</button></div></div>`).join('');
+  // Sincronização: situação de cada programa (automático pela API ou pela planilha)
+  const nomes = Object.fromEntries(GN.plataformas.map(p => [p.id, p.nome]));
+  $('#gn-sync').disabled = GN.sync.rodando;
+  $('#gn-sync').textContent = GN.sync.rodando ? 'Sincronizando…' : 'Sincronizar agora';
+  $('#gn-sync-lista').innerHTML = Object.entries(GN.sync.plataformas).map(([id, x]) => `<div class="gn-sync-item">
+    <span class="gn-ponto ${!x.automatica ? 'manual' : x.ok === true ? 'ok' : x.ok === false ? 'erro' : ''}"></span>
+    <div><b>${esc(nomes[id] || id)}</b><small>${esc(x.mensagem || '')}</small>
+    <span class="gn-tag">${x.automatica ? `🔄 Automática${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : '📄 Pela planilha do portal'}</span></div></div>`).join('');
   // Cartões das plataformas
   $('#gn-plataformas').innerHTML = GN.plataformas.map(p => {
     const pct = p.minimo > 0 ? Math.min(100, Math.round((p.disponivel / p.minimo) * 100)) : (p.disponivel > 0 ? 100 : 0);
@@ -2833,6 +2871,20 @@ function gnJanela(titulo, campos, aoSalvar) {
   $('#gn-dlg').showModal();
 }
 $('#gn-dlg-cancelar').addEventListener('click', () => $('#gn-dlg').close());
+$('#gn-dlg-fechar').addEventListener('click', () => $('#gn-dlg').close());
+$('#gn-sync').addEventListener('click', async () => {
+  const b = $('#gn-sync');
+  b.disabled = true; b.textContent = 'Sincronizando…';
+  try {
+    const r = await api('/api/admin/ganhos/sincronizar', { method: 'POST' });
+    if (r.erro) globalMsg(r.erro, false);
+    else {
+      const total = Object.values(r).reduce((a, x) => a + (x.novas || 0), 0);
+      globalMsg(`Sincronização concluída: ${total} venda(s) nova(s).`);
+    }
+  } catch (err) { globalMsg(err.message, false); }
+  loadGanhos();
+});
 
 $('[data-body="ganhos"]').addEventListener('click', async e => {
   const b = e.target.closest('button');

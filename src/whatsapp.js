@@ -78,7 +78,9 @@ async function listarGrupos(s) {
 // Envia foto com legenda (ou só texto, sem foto) para um grupo.
 // imagem: endereço https da foto ou o arquivo (Buffer JPEG).
 // Número de contingência: outra instância do mesmo serviço (Z-API: ID e token; Evolution: outra instância no mesmo
-// servidor). Se o envio pelo número principal falhar (desconectado, banido, fora do ar), tenta por ele.
+// servidor), nos mesmos grupos. Os dois números se revezam a cada mensagem (cada oferta sai uma vez só, por um deles;
+// o revezamento deixa o envio menos previsível e diminui o risco de bloqueio). Se um falhar (desconectado, banido,
+// fora do ar), a mensagem sai pelo outro.
 function configReserva(s) {
   if (s.whatsapp_provider === 'zapi' && s.zapi2_instance && s.zapi2_token) {
     return config({ ...s, zapi_instance: s.zapi2_instance, zapi_token: s.zapi2_token });
@@ -86,12 +88,17 @@ function configReserva(s) {
   if (s.whatsapp_provider === 'evolution' && s.evolution2_instance) return config({ ...s, evolution_instance: s.evolution2_instance });
   return null;
 }
+const vez = new Map(); // dono (site ou cliente) → quantas mensagens já saíram (para revezar os números)
 async function enviar(s, grupoId, msg) {
-  try { return await enviarPor(config(s), grupoId, msg); } catch (err) {
-    const r = configReserva(s);
-    if (!r || r.erro) throw err;
-    console.warn('[WHATSAPP] número principal falhou (' + err.message + '); enviando pelo número de contingência');
-    return enviarPor(r, grupoId, msg);
+  const principal = config(s), reserva = configReserva(s);
+  if (!reserva || reserva.erro) return enviarPor(principal, grupoId, msg);
+  const dono = s.cliente_id || 'site';
+  const n = (vez.get(dono) || 0) + 1;
+  vez.set(dono, n);
+  const [primeiro, segundo] = n % 2 ? [principal, reserva] : [reserva, principal];
+  try { return await enviarPor(primeiro, grupoId, msg); } catch (err) {
+    console.warn(`[WHATSAPP] um dos números falhou (${err.message}); enviando pelo outro`);
+    return enviarPor(segundo, grupoId, msg);
   }
 }
 async function enviarPor(c, grupoId, { imagem, texto }) {

@@ -952,7 +952,12 @@
       <form class="settings-form">
         <div class="panel">
           <h2>Página do grupo (links de convite em rodízio)</h2>
-          <p class="hint">Divulgue um link só: <b><span id="grupo-endereco">/grupo</span></b>. Cada pessoa vai para o primeiro grupo que ainda não chegou no limite; quando todos lotam, vai para o último da lista. Um grupo por linha: <code>Nome | link de convite | limite de entradas</code> (limite 0 = sem limite).</p>
+          <p class="hint">Divulgue um link só: <b><span id="grupo-endereco">/grupo</span></b>, uma página de captação com o botão "Entrar no grupo" (boa para anúncios pagos e bio). Cada pessoa vai para o primeiro grupo que ainda não chegou no limite; quando todos lotam, vai para o último da lista. Um grupo por linha: <code>Nome | link de convite | limite de entradas</code> (limite 0 = sem limite).</p>
+          <div class="grid">
+            <label class="field">Título da página <input type="text" name="grupo_titulo" maxlength="80" placeholder="Entre no grupo de ofertas do Ofertou!"></label>
+            <label class="field">Texto abaixo do título <input type="text" name="grupo_texto" maxlength="200" placeholder="Promoções de verdade das maiores lojas do Brasil…"></label>
+            <label class="field">Pixel da Meta (opcional, para anúncios) <input type="text" name="grupo_pixel_meta" inputmode="numeric" placeholder="ID numérico do pixel"></label>
+          </div>
           <label class="field">Grupos <textarea name="grupos_convite" rows="5" placeholder="Ofertou! #1 | https://chat.whatsapp.com/AbCdEf... | 900&#10;Ofertou! #2 | https://chat.whatsapp.com/GhIjKl... | 900&#10;Canal no Telegram | https://t.me/ofertou | 0"></textarea></label>
           <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Grupo</th><th>Entradas</th><th>Limite</th><th>Situação</th></tr></thead><tbody id="grupos-convite-body"><tr><td colspan="4" class="hint">Nenhum grupo cadastrado.</td></tr></tbody></table></div>
           <div class="actions" style="justify-content:flex-start">
@@ -988,7 +993,7 @@
           </div>
           <p class="hint wa-evolution">Na Evolution API (v2): crie uma instância, leia o QR code com o WhatsApp do número separado e informe aqui o endereço, a chave global (AUTHENTICATION_API_KEY) e o nome da instância.</p>
           <h3>Número de contingência (opcional)</h3>
-          <p class="hint">Um segundo número que assume sozinho se o principal cair (desconectado, banido ou fora do ar), sem parar as postagens. Ele também precisa estar nos grupos de destino.</p>
+          <p class="hint">Um segundo número nos mesmos grupos. Os dois <b>se revezam</b> a cada mensagem (cada oferta sai uma vez só, por um deles), o que deixa o envio menos previsível e diminui o risco de bloqueio. Se um cair (desconectado, banido ou fora do ar), o outro segue enviando sozinho. Deixe os dois números como <b>administradores</b> dos grupos de destino.</p>
           <div class="grid wa-zapi">
             <label class="field">ID da instância reserva <input type="text" name="zapi2_instance"></label>
             <label class="field">Token da instância reserva <input type="password" name="zapi2_token" autocomplete="off" data-secret></label>

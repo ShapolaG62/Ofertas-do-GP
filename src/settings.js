@@ -171,6 +171,9 @@ const DEFAULTS = {
   zapi2_instance: '',           // WhatsApp de contingência (assume se o principal falhar)
   zapi2_token: '',
   evolution2_instance: '',
+  grupo_titulo: '',             // página /grupo: título (vazio = padrão)
+  grupo_texto: '',              // página /grupo: texto abaixo do título (vazio = padrão)
+  grupo_pixel_meta: '',         // página /grupo: ID do Pixel da Meta (anúncios no Facebook/Instagram)
   grupos_convite: '',           // página /grupo: um grupo por linha "Nome | link de convite | limite" (src/grupos-convite.js)
 };
 

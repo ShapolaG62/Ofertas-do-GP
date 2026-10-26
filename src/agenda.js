@@ -136,6 +136,12 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
         db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Oferta saiu do ar antes de ser postada.' WHERE id = ?`, q.id);
         continue;
       }
+      // Antes de postar: oferta automática precisa ter o preço conferido na loja nas últimas 24 h
+      const v = db.get("SELECT fonte, last_seen_at < datetime('now', '-24 hours') AS velha FROM offers WHERE id = ?", q.offer_id);
+      if (v && v.fonte === 'auto' && v.velha) {
+        db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Preço não conferido na loja nas últimas 24 h (pode ter mudado).' WHERE id = ?`, q.id);
+        continue;
+      }
       lote.push({ fila: q.id, offer_id: q.offer_id, texto: q.texto });
     }
     // 2) completa com as melhores ofertas do momento

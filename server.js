@@ -171,12 +171,19 @@ app.get('/site.webmanifest', (req, res) => {
 // Google e outros buscadores: o que pode ser indexado (robots.txt) e a lista de páginas públicas (sitemap.xml).
 // Áreas internas, a API e os links de redirecionamento (/o/:id) ficam de fora.
 const baseUrl = req => `${req.protocol}://${req.get('host')}`;
-// Página do grupo: um link só para divulgar; cada pessoa vai para o próximo grupo que ainda não lotou (src/grupos-convite.js)
+// Página do grupo (captação): um link só para divulgar e para anúncios; o botão leva ao próximo grupo que ainda não
+// lotou (src/grupos-convite.js, src/paginas/grupo.js)
 app.get(['/grupo', '/grupos'], (req, res) => {
-  const g = require('./src/grupos-convite').proximo();
-  if (!g) return res.redirect('/');
+  const gc = require('./src/grupos-convite');
+  if (!gc.lista().length) return res.redirect('/');
+  const total = gc.resumo().reduce((a, g) => a + g.entradas, 0);
   res.set('Cache-Control', 'no-store');
-  res.redirect(302, g.link);
+  res.type('html').send(require('./src/paginas/grupo').pagina(require('./src/settings').getAll(), total));
+});
+app.get('/grupo/entrar', (req, res) => {
+  const g = require('./src/grupos-convite').proximo();
+  res.set('Cache-Control', 'no-store');
+  res.redirect(302, g ? g.link : '/');
 });
 
 app.get('/robots.txt', (req, res) => {

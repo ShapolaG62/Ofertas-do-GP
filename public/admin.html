@@ -869,6 +869,7 @@
           <li>No Chrome, abra <b>chrome://extensions</b>, ligue o <b>Modo do desenvolvedor</b> (canto superior direito) e clique em <b>Carregar sem compactação</b>, escolhendo a pasta.</li>
           <li><button class="btn small primary" type="button" id="gn-ext-chave">Gerar chave da extensão</button> <span id="gn-ext-info"></span></li>
           <li>Clique no ícone do Ofertou! na barra do Chrome, cole a chave e toque em <b>Salvar e sincronizar</b>. Pronto: a partir daí é automático. No ícone você vê a situação de cada loja e pode escolher quais sincronizar.</li>
+          <li>Para atualizar na hora: toque em <b>Portal ↗</b> no cartão da loja. O portal abre nesta guia, a extensão lê o saldo (e, no Mercado Livre, os produtos com comissão extra que estiverem na tela) e você volta para cá sozinho.</li>
         </ol>
         <div id="gn-ext-chave-box" hidden class="gn-ext-chave"><code id="gn-ext-chave-txt"></code><button class="btn small" type="button" id="gn-ext-copiar">Copiar</button>
           <span class="hint" style="margin:0">Guarde agora: por segurança, ela não aparece de novo (gerar outra desliga a anterior).</span></div>
@@ -1643,6 +1644,12 @@ async function showApp() {
   $('#manual-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
   $('#cat-list').textContent = CATEGORIES.join(', ');
   if ($('#nt-cat').options.length === 1) $('#nt-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
+  // Volta do portal pelo botão "Portal" (extensão do Chrome): avisa o resultado e limpa o endereço
+  const volta = new URLSearchParams(location.search);
+  if (volta.has('portal')) {
+    globalMsg(volta.get('ok') ? 'Saldo lido no portal e atualizado.' : 'Voltou do portal sem ler o saldo (abra a página de ganhos do portal e tente de novo).', Boolean(volta.get('ok')));
+    history.replaceState(null, '', `${location.pathname}${location.hash}`);
+  }
   const inicial = location.hash.slice(1);
   if (inicial && inicial !== 'dash' && document.querySelector(`.tab[data-tab="${inicial}"]`)) abrirAba(inicial); else loadDashboard();
 }
@@ -2849,7 +2856,7 @@ async function loadGanhos() {
       <div class="gn-card-acoes">
         <button class="btn small${p.pode_sacar ? ' primary' : ''}" data-gn-saque="${p.id}">Registrar saque</button>
         <button class="btn small" data-gn-regras="${p.id}">Regras</button>
-        ${p.portal ? `<a class="btn small" href="${esc(p.portal)}" target="_blank" rel="noopener">Portal ↗</a>` : ''}
+        ${p.portal ? `<a class="btn small" href="${esc(p.portal)}" data-gn-portal="${p.id}" rel="noopener" title="Abre o portal nesta guia; com a extensão do Chrome, o saldo é lido e você volta para cá">Portal ↗</a>` : ''}
       </div></div>`;
   }).join('');
   // Selects de plataforma

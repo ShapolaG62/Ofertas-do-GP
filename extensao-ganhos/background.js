@@ -45,16 +45,49 @@ async function guardarEstado(plataforma, dados) {
 }
 
 // Uma página de portal terminou de ler
+// Devolve { ok, mensagem } para a página do portal mostrar (quando foi aberta pelo botão "Portal" do painel)
+const brl = n => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 async function recebido(msg) {
+  // Produtos com comissão extra que estavam na página (Mercado Livre)
+  let extras = '';
+  if (Array.isArray(msg.comissoes) && msg.comissoes.length) {
+    try {
+      const c = await chamarSite('/api/ganhos/extensao/ml-comissoes', { method: 'POST', body: JSON.stringify({ itens: msg.comissoes }) });
+      extras = ` ${msg.comissoes.length} produto(s) com comissão lidos (${c.extras} com extra no site).`;
+    } catch { /* segue com o saldo */ }
+  }
   const v = msg.valores || {};
   if (!Object.keys(v).length) {
-    await guardarEstado(msg.plataforma, { ok: false, mensagem: msg.login ? 'Faça login no portal neste Chrome.' : 'Não encontrei o saldo na página.' });
-    return;
+    const mensagem = (msg.login ? 'Faça login no portal neste Chrome.' : 'Não encontrei o saldo nesta página: abra a página de ganhos/saldo do portal e toque em "Ler de novo".') + extras;
+    await guardarEstado(msg.plataforma, { ok: false, mensagem });
+    return { ok: false, mensagem };
   }
   const r = await postar({ plataforma: msg.plataforma, ...v, url: msg.url });
   await guardarEstado(msg.plataforma, r.ok
     ? { ok: true, mensagem: 'Sincronizado.', disponivel: r.disponivel, a_liberar: r.a_liberar }
     : { ok: false, mensagem: r.erro });
+  return r.ok
+    ? { ok: true, mensagem: `Saldo enviado: disponível ${brl(r.disponivel)}, a liberar ${brl(r.a_liberar)}.${extras}` }
+    : { ok: false, mensagem: r.erro };
+}
+
+// Botão "Portal" do painel: guarda, por guia, para onde voltar depois de ler (vale 15 min)
+async function guardarVolta(tabId, plataforma, voltar) {
+  const { voltas = {} } = await chrome.storage.local.get('voltas');
+  for (const [k, v] of Object.entries(voltas)) if (Date.now() - v.em > 15 * 60 * 1000) delete voltas[k];
+  voltas[tabId] = { plataforma, voltar, em: Date.now() };
+  await chrome.storage.local.set({ voltas });
+}
+async function pegarVolta(tabId, plataforma) {
+  const { voltas = {} } = await chrome.storage.local.get('voltas');
+  const v = voltas[tabId];
+  if (!v || v.plataforma !== plataforma || Date.now() - v.em > 15 * 60 * 1000) return null;
+  return v.voltar;
+}
+async function soltarVolta(tabId) {
+  const { voltas = {} } = await chrome.storage.local.get('voltas');
+  delete voltas[tabId];
+  await chrome.storage.local.set({ voltas });
 }
 
 let rodando = null;
@@ -166,15 +199,25 @@ async function comissaoAvulsa(msg) {
 }
 
 chrome.runtime.onMessage.addListener((msg, remetente, responder) => {
+  if (msg?.tipo === 'ir-portal') {
+    if (remetente.tab?.id != null) guardarVolta(remetente.tab.id, msg.plataforma, msg.voltar).then(() => responder({ ok: true }));
+    else responder({ ok: false });
+    return true;
+  }
   if (msg?.tipo === 'lido') {
-    recebido(msg).finally(async () => {
+    (async () => {
+      const r = await recebido(msg).catch(err => ({ ok: false, mensagem: err.message }));
+      const tabId = remetente.tab?.id;
+      const voltar = tabId != null ? await pegarVolta(tabId, msg.plataforma) : null;
+      if (voltar && r.ok) await soltarVolta(tabId);
+      responder({ ...r, voltar });
       const { janelaSync } = await chrome.storage.local.get('janelaSync');
       if (!janelaSync || remetente.tab?.windowId !== janelaSync) return; // você abriu o portal: não fecha nada
       if (pendentes) { pendentes.faltam.delete(msg.plataforma); pendentes.pronto(); }
       // Aba da sincronização: fecha assim que leu (a janela some quando a última aba fecha)
-      try { await chrome.tabs.remove(remetente.tab.id); } catch { /* já fechada */ }
-    });
-    return false;
+      try { await chrome.tabs.remove(tabId); } catch { /* já fechada */ }
+    })();
+    return true; // resposta assíncrona
   }
   if (msg?.tipo === 'comissao-ml') {
     if (conferindo && remetente.tab?.windowId === conferindo.janela) conferindo.receber(remetente.tab.id, msg);

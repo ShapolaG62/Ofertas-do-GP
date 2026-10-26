@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Ofertou! Ganhos",
   "short_name": "Ofertou Ganhos",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Sincroniza sozinho, em segundo plano, o saldo dos seus programas de afiliados (Mercado Livre, Amazon, Magalu, Shopee, AliExpress e Awin) com o painel do Ofertou!.",
   "icons": {
     "16": "icone.png",
@@ -58,6 +58,17 @@
       ],
       "js": [
         "content-ml.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://tanoofertou.com.br/admin*",
+        "http://localhost/admin*",
+        "http://127.0.0.1/admin*"
+      ],
+      "js": [
+        "content-site.js"
       ],
       "run_at": "document_idle"
     }

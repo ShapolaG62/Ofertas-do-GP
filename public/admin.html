@@ -193,7 +193,16 @@
     padding: 14px; border-radius: 14px; background: var(--panel, #161b18); border: 1px solid var(--green, #2bb673); box-shadow: 0 18px 50px rgba(0, 0, 0, .45); display: grid; gap: 10px; }
   .top-busca-res code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   .top-busca-res .row { gap: 8px; flex-wrap: wrap; }
-  @media (max-width: 900px) { .top-busca-area { order: 10; flex-basis: 100%; } .top-busca kbd { display: none; } }
+  .top-busca-res[hidden] { display: none; }
+  #ga-webhook { word-break: break-all; }
+  /* Duas colunas que viram uma no celular (modelo da mensagem e prévia) */
+  .grid-2col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  @media (max-width: 900px) {
+    header.top .top-busca-area { order: 10; flex: 1 1 100%; }
+    .top-busca kbd { display: none; }
+    .top-busca-res { left: 0; right: 0; transform: none; width: auto; }
+    .grid-2col { grid-template-columns: minmax(0, 1fr); }
+  }
   .modelo-previa { margin: 6px 0 0; padding: 12px 14px; min-height: 220px; border-radius: 12px; background: #0b141a; color: #e9edef; border: 1px solid var(--line, #333);
     font: 13.5px/1.5 system-ui, sans-serif; white-space: pre-wrap; word-break: break-word; }
   .modelo-vars code { margin-right: 4px; }
@@ -993,7 +1002,7 @@
           <h2>Modelo da mensagem</h2>
           <p class="hint">O texto das postagens (tela Postagens e postagens agendadas). Use as variáveis abaixo; a linha com uma variável vazia some sozinha (ex.: a do cupom, quando não há cupom). Deixe vazio para usar o modelo padrão.</p>
           <p class="hint modelo-vars"><code>{{produto}}</code> <code>{{preco_de}}</code> <code>{{preco}}</code> <code>{{desconto}}</code> <code>{{economia}}</code> <code>{{loja}}</code> <code>{{link}}</code> <code>{{cupom}}</code> <code>{{conferido}}</code></p>
-          <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start">
+          <div class="grid-2col">
             <label class="field">Modelo <textarea name="post_modelo" id="modelo-texto" rows="12" style="font-family:ui-monospace,monospace;font-size:13px" placeholder="Vazio = modelo padrão"></textarea></label>
             <div class="field">Como fica (exemplo)<pre id="modelo-previa" class="modelo-previa"></pre></div>
           </div>

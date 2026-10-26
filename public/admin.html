@@ -955,6 +955,41 @@
 
       <form class="settings-form">
         <div class="panel">
+          <h2>Grupo de automação (controle pelo WhatsApp)</h2>
+          <p class="hint">Crie um grupo no WhatsApp com você (e quem mais for postar), coloque o <b>número das postagens como administrador</b> e escolha o grupo abaixo. Daí em diante, quem mandar um <b>link de produto</b> nesse grupo (ou encaminhar a oferta de outro grupo) faz a Capi postar em todos os seus grupos de envio, com o seu link de afiliado e o seu modelo de mensagem. Mande os comandos de <b>outro número</b> (o seu pessoal): mensagens do próprio número das postagens são ignoradas.</p>
+          <div class="grid">
+            <label class="field">Grupo de automação
+              <select name="wa_grupo_controle" id="ga-grupo"><option value="">— carregue os grupos —</option></select></label>
+            <div class="field">Grupos do número <button class="btn" type="button" id="ga-carregar">Carregar grupos</button></div>
+          </div>
+          <p class="hint">Endereço de aviso (webhook) que o WhatsApp chama a cada mensagem: <code id="ga-webhook">…</code></p>
+          <div class="actions" style="justify-content:flex-start">
+            <button class="btn primary" type="submit">Salvar grupo</button>
+            <button class="btn" type="button" id="ga-ativar">Ativar no WhatsApp</button>
+            <button class="btn" type="button" id="ga-novo">Gerar novo endereço</button>
+          </div>
+          <p class="hint" id="ga-msg"></p>
+          <details><summary class="hint" style="cursor:pointer">Comandos que a Capi entende no grupo</summary><pre class="modelo-previa" id="ga-ajuda" style="min-height:0"></pre></details>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
+          <h2>Capi · assistente virtual do SAC</h2>
+          <p class="hint">A Capi faz o <b>primeiro atendimento</b> de quem abre um chamado no Suporte: responde com o <a href="/ajuda" target="_blank">Guia do usuário</a> (só com ele, nunca com informações internas), pergunta se há mais dúvidas e, quando não sabe ou a pessoa pede, chama um atendente (o chamado vai para a fila do SAC). Para ela saber mais, acrescente perguntas e respostas no Guia do usuário.</p>
+          <div class="grid">
+            <label class="field">Primeiro atendimento pela Capi
+              <select name="ia_sac_ativa"><option value="1">Ligado</option><option value="0">Desligado (vai direto para a fila)</option></select></label>
+          </div>
+          <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="submit">Salvar</button></div>
+          <h3>Teste a Capi</h3>
+          <div class="row" style="gap:8px"><input type="text" id="capi-pergunta" placeholder="Ex.: como cancelo meu plano?" style="flex:1;min-width:0"><button class="btn" type="button" id="capi-perguntar">Perguntar</button></div>
+          <pre class="modelo-previa" id="capi-resposta" style="min-height:0" hidden></pre>
+        </div>
+      </form>
+
+      <form class="settings-form">
+        <div class="panel">
           <h2>Modelo da mensagem</h2>
           <p class="hint">O texto das postagens (tela Postagens e postagens agendadas). Use as variáveis abaixo; a linha com uma variável vazia some sozinha (ex.: a do cupom, quando não há cupom). Deixe vazio para usar o modelo padrão.</p>
           <p class="hint modelo-vars"><code>{{produto}}</code> <code>{{preco_de}}</code> <code>{{preco}}</code> <code>{{desconto}}</code> <code>{{economia}}</code> <code>{{loja}}</code> <code>{{link}}</code> <code>{{cupom}}</code> <code>{{conferido}}</code></p>
@@ -1889,7 +1924,50 @@ async function loadSettings() {
   contarTermos();
   previaModelo();
   carregarGruposConvite();
+  carregarGrupoAutomacao();
 }
+
+// Grupo de automação
+async function carregarGrupoAutomacao() {
+  if (!$('#ga-webhook')) return;
+  try {
+    const d = await api('/api/admin/grupo-automacao');
+    $('#ga-webhook').textContent = d.webhook;
+    $('#ga-ajuda').textContent = d.ajuda.replace(/\*/g, '');
+    const sel = $('#ga-grupo');
+    if (d.controle && ![...sel.options].some(o => o.value === d.controle)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(d.controle)}">${esc(d.controle)} (escolhido)</option>`);
+    sel.value = d.controle;
+  } catch { /* sem permissão */ }
+}
+$('#ga-carregar')?.addEventListener('click', async () => {
+  $('#ga-msg').textContent = 'Carregando os grupos do número…';
+  try {
+    const d = await api('/api/admin/whatsapp/grupos');
+    const atual = SETTINGS.wa_grupo_controle || '';
+    $('#ga-grupo').innerHTML = '<option value="">— escolha o grupo de automação —</option>' + d.grupos.map(g => `<option value="${esc(g.id)}" ${g.id === atual ? 'selected' : ''}>${esc(g.nome)}</option>`).join('');
+    $('#ga-msg').textContent = `${d.grupos.length} grupo(s). Escolha um e clique em Salvar grupo.`;
+  } catch (err) { $('#ga-msg').textContent = err.message; }
+});
+$('#ga-ativar')?.addEventListener('click', async () => {
+  $('#ga-msg').textContent = 'Ativando…';
+  try { const d = await api('/api/admin/grupo-automacao/ativar', { method: 'POST' }); $('#ga-msg').textContent = `Pronto! O WhatsApp vai avisar o site em ${d.webhook}. Mande "ajuda" no grupo para testar.`; }
+  catch (err) { $('#ga-msg').textContent = err.message; }
+});
+$('#ga-novo')?.addEventListener('click', async () => {
+  if (!await OfertouUI.confirmar('Gerar um novo endereço de aviso? O antigo para de funcionar: depois clique em "Ativar no WhatsApp".', { ok: 'Gerar' })) return;
+  try { const d = await api('/api/admin/grupo-automacao/novo-endereco', { method: 'POST' }); $('#ga-webhook').textContent = d.webhook; } catch (err) { globalMsg(err.message, false); }
+});
+// Teste da Capi
+$('#capi-perguntar')?.addEventListener('click', async () => {
+  const q = $('#capi-pergunta').value.trim();
+  if (!q) return;
+  try {
+    const r = await api('/api/admin/capi/perguntar', { method: 'POST', body: { texto: q } });
+    $('#capi-resposta').hidden = false;
+    $('#capi-resposta').textContent = r.texto ? `[${r.confianca === 'alta' ? 'certeza alta' : r.confianca === 'media' ? 'certeza média' : 'não sabe'}]\n\n${r.texto}` : '[não sabe] Não encontrou no Guia do usuário: no SAC, ela oferece um atendente.';
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#capi-pergunta')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#capi-perguntar').click(); } });
 
 // Barra do topo: colar link → gera o link de afiliado (e pode virar oferta manual); texto → busca a oferta no site
 $('#top-busca').addEventListener('submit', async e => {

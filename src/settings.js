@@ -171,7 +171,8 @@ const DEFAULTS = {
   zapi2_instance: '',           // WhatsApp de contingência (assume se o principal falhar)
   zapi2_token: '',
   evolution2_instance: '',
-  ia_sac_ativa: '1',            // Capi faz o primeiro atendimento do SAC (src/ia/assistente.js)
+  ia_sac_ativa: '1',
+  wa_grupo_controle: '',        // grupo de automação (src/grupo-automacao.js): ID do grupo que dá os comandos            // Capi faz o primeiro atendimento do SAC (src/ia/assistente.js)
   grupo_titulo: '',             // página /grupo: título (vazio = padrão)
   grupo_texto: '',              // página /grupo: texto abaixo do título (vazio = padrão)
   grupo_pixel_meta: '',         // página /grupo: ID do Pixel da Meta (anúncios no Facebook/Instagram)

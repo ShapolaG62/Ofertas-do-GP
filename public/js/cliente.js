@@ -173,7 +173,32 @@
       : '';
     atualizarWa();
     previaModelo();
+    carregarGrupoAutomacao();
   }
+
+  // Grupo de automação
+  async function carregarGrupoAutomacao() {
+    try {
+      const d = await api('/api/cliente/grupo-automacao');
+      $('#ga-webhook').textContent = d.webhook;
+      const sel = $('#ga-grupo');
+      if (d.controle && ![...sel.options].some(o => o.value === d.controle)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(d.controle)}">${esc(d.controle)} (escolhido)</option>`);
+      sel.value = d.controle;
+    } catch { /* sem acesso */ }
+  }
+  $('#ga-carregar').addEventListener('click', async () => {
+    $('#ga-msg').textContent = 'Carregando os grupos do número…';
+    try {
+      const d = await api('/api/cliente/whatsapp/grupos');
+      $('#ga-grupo').innerHTML = '<option value="">— escolha o grupo de automação —</option>' + d.grupos.map(g => `<option value="${esc(g.id)}" ${g.id === CFG.wa_grupo_controle ? 'selected' : ''}>${esc(g.nome)}</option>`).join('');
+      $('#ga-msg').textContent = `${d.grupos.length} grupo(s). Escolha um e clique em Salvar grupo.`;
+    } catch (err) { $('#ga-msg').textContent = err.message; }
+  });
+  $('#ga-ativar').addEventListener('click', async () => {
+    $('#ga-msg').textContent = 'Ativando…';
+    try { const d = await api('/api/cliente/grupo-automacao/ativar', { method: 'POST' }); $('#ga-msg').textContent = `Pronto! Mande "ajuda" no grupo para testar.`; }
+    catch (err) { $('#ga-msg').textContent = err.message; }
+  });
 
   // Modelo da mensagem: prévia com uma oferta de exemplo
   const EXEMPLO_MODELO = { produto: 'Air Fryer Mondial 4L Family Inox', preco_de: '499,90', preco: '289,90', desconto: '42', economia: '210,00',

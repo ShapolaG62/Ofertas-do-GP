@@ -290,6 +290,20 @@ router.post('/api/admin/alertas-whatsapp', (req, res) => {
   res.json(require('../alertas-whatsapp').resumo());
 });
 
+// ── Grupo de automação (WhatsApp) e Capi ──
+router.get('/api/admin/grupo-automacao', (req, res) => {
+  const ga = require('../grupo-automacao');
+  res.json({ webhook: ga.enderecoWebhook(null), controle: settings.get('wa_grupo_controle') || '', ajuda: ga.AJUDA });
+});
+router.post('/api/admin/grupo-automacao/ativar', async (req, res) => {
+  try { res.json({ ok: true, webhook: await require('../grupo-automacao').ativarWebhook(null) }); }
+  catch (err) { res.status(400).json({ error: err.response?.data?.message || err.message }); }
+});
+router.post('/api/admin/grupo-automacao/novo-endereco', (req, res) => {
+  const ga = require('../grupo-automacao'); ga.novoSegredo(null); res.json({ webhook: ga.enderecoWebhook(null) });
+});
+router.post('/api/admin/capi/perguntar', (req, res) => res.json(require('../sac').perguntarIa(String(req.body?.texto || '').slice(0, 500))));
+
 // ── Página do grupo (rodízio de links de convite) ──
 router.get('/api/admin/grupos-convite', (req, res) => res.json({ grupos: require('../grupos-convite').resumo() }));
 router.post('/api/admin/grupos-convite/zerar', (req, res) => { require('../grupos-convite').zerar(); res.json({ grupos: require('../grupos-convite').resumo() }); });

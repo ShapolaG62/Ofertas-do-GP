@@ -97,6 +97,18 @@ router.get('/api/cliente/painel', (req, res) => {
   });
 });
 
+router.get('/api/cliente/grupo-automacao', (req, res) => {
+  const ga = require('../grupo-automacao');
+  res.json({ webhook: ga.enderecoWebhook(req.cliente.id), controle: clientes.config(req.cliente.id).wa_grupo_controle || '', ajuda: ga.AJUDA });
+});
+router.post('/api/cliente/grupo-automacao/ativar', async (req, res) => {
+  try { res.json({ ok: true, webhook: await require('../grupo-automacao').ativarWebhook(req.cliente.id) }); }
+  catch (err) { res.status(400).json({ error: err.response?.data?.message || err.message }); }
+});
+router.post('/api/cliente/grupo-automacao/novo-endereco', (req, res) => {
+  const ga = require('../grupo-automacao'); ga.novoSegredo(req.cliente.id); res.json({ webhook: ga.enderecoWebhook(req.cliente.id) });
+});
+
 router.get('/api/cliente/agenda', (req, res) => {
   res.json({ estado: agenda.estado(req.cliente.id), fila: agenda.listarFila(req.cliente.id) });
 });

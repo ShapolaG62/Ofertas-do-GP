@@ -227,6 +227,20 @@
 
     <div class="cli-tab" data-body="redes" hidden data-extra="modelo">
       <form class="cfg-form panel-card">
+        <h2>Grupo de automação</h2>
+        <p class="cli-hint">Crie um grupo no WhatsApp com você (e a sua equipe), coloque o <b>número das postagens como administrador</b> e escolha o grupo aqui. Quem mandar um <b>link de produto</b> no grupo (ou encaminhar a oferta de outro grupo) faz a Capi postar em todos os seus grupos, com o seu link e o seu modelo. Mande os comandos do seu número pessoal (mensagens do próprio número das postagens são ignoradas). Mande <b>ajuda</b> no grupo para ver os comandos.</p>
+        <div class="cli-grid2">
+          <label class="field">Grupo de automação <select name="wa_grupo_controle" id="ga-grupo"><option value="">— carregue os grupos —</option></select></label>
+          <div class="field">Grupos do número <button class="btn" type="button" id="ga-carregar">Carregar grupos</button></div>
+        </div>
+        <p class="cli-hint">Endereço de aviso (webhook): <code id="ga-webhook">…</code></p>
+        <div class="cli-actions">
+          <button class="btn btn-primary" type="submit">Salvar grupo</button>
+          <button class="btn" type="button" id="ga-ativar">Ativar no WhatsApp</button>
+        </div>
+        <p class="cli-hint" id="ga-msg"></p>
+      </form>
+      <form class="cfg-form panel-card">
         <h2>Modelo da mensagem</h2>
         <p class="cli-hint">O texto das suas postagens. Variáveis: <code>{{produto}}</code> <code>{{preco_de}}</code> <code>{{preco}}</code> <code>{{desconto}}</code> <code>{{economia}}</code> <code>{{loja}}</code> <code>{{link}}</code> <code>{{cupom}}</code> <code>{{conferido}}</code>. A linha com uma variável vazia some sozinha. Vazio = modelo padrão.</p>
         <div class="cli-grid2" style="align-items:start">

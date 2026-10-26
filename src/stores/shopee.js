@@ -75,6 +75,7 @@ async function gerarLink(url, s) {
 
 module.exports = {
   gerarLink,
+  gql,
   id: 'shopee',
   name: 'Shopee',
   method: 'API oficial Shopee Afiliados (relevância + mais vendidos, até 150 por termo)',

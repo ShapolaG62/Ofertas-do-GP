@@ -20,8 +20,8 @@ const quando = s => (s ? Date.parse(`${String(s).replace(' ', 'T')}Z`) || 0 : 0)
 // ── Lista em memória (refeita quando as ofertas mudam, no máximo a cada 30 s) ──
 let CACHE = { sig: null, at: 0, lista: [], resumo: null };
 const assinatura = () => {
-  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h FROM offers');
-  return `${r.n}|${r.u}|${r.s}|${r.h}`;
+  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h, COUNT(comissao_pct) AS c FROM offers');
+  return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}`;
 };
 // Quem visita nunca espera a lista ser refeita: recebe a lista pronta e a atualização roda logo depois, em segundo plano.
 let refazendo = false;
@@ -103,6 +103,7 @@ const ORDENS = {
   'maior-preco': (a, b) => b.preco_atual - a.preco_atual,
   nome: (a, b) => collator.compare(a.produto, b.produto),
   'nome-desc': (a, b) => collator.compare(b.produto, a.produto),
+  comissao: (a, b) => (b.comissao_extra_pct - a.comissao_extra_pct) || ((b.comissao_pct || 0) - (a.comissao_pct || 0)) || (b._s - a._s),
   populares: (a, b) => (b.link_clicks || 0) - (a.link_clicks || 0),
   tipo: (a, b) => collator.compare(CATEGORIAS[a.categoria] || '', CATEGORIAS[b.categoria] || '')
     || ordemSub(a.subcategoria, b.subcategoria) || collator.compare(a.produto, b.produto),
@@ -121,7 +122,7 @@ function relevancia(o, frase, palavras) {
 // comissao: true para o admin e os afiliados (veem a comissão e podem filtrar pela comissão extra)
 function buscar(query, { comissao = false } = {}) {
   const f = ler(query);
-  if (!comissao) f.extra = false;
+  if (!comissao) { f.extra = false; if (f.ordem === 'comissao') f.ordem = 'destaques'; }
   const { lista: todas, resumo } = lista();
   let l = todas.filter(filtro(f));
   if (f.q && (f.ordem === 'recentes' || f.ordem === 'destaques')) {
@@ -130,6 +131,10 @@ function buscar(query, { comissao = false } = {}) {
     const palavras = frase.split(' ');
     const nota = new Map(l.map(o => [o.id, relevancia(o, frase, palavras)]));
     l.sort((a, b) => nota.get(b.id) - nota.get(a.id) || ORDENS[f.ordem](a, b));
+  } else if (comissao && f.ordem === 'destaques') {
+    // Admin, equipe e afiliados: as de comissão extra vêm primeiro, junto das mais atrativas
+    l.sort((a, b) => (notaComissao(b) - notaComissao(a)) || (b._c - a._c));
+    l = variar(l, f.por);
   } else {
     l.sort(ORDENS[f.ordem] || ORDENS.destaques);
     if (f.ordem === 'destaques') l = variar(l, f.por);
@@ -173,6 +178,7 @@ const EM_ALTA = [
   'mochila', 'colchao', 'jogo de panelas', 'panela eletrica', 'lego', 'boneca', 'carrinho de bebe', 'fralda',
 ];
 const ACESSORIO = /\b(capa|capinha|pelicula|suporte|cabo|adesivo|organizador|refil|peca|reposicao|kit \d+ pecas de reposicao)\b/;
+const notaComissao = o => o._s + (o.comissao_extra_pct > 0 ? 45 + 2 * Math.min(o.comissao_extra_pct, 15) : 0);
 function atratividade(o) {
   let s = pontuacao(o);
   const n = o._n;
@@ -184,7 +190,6 @@ function atratividade(o) {
   const idadeH = (Date.now() - (o._c || 0)) / 3600000;
   s += idadeH < 24 ? 8 : idadeH < 72 ? 4 : 0;                // novidade
   if (o.loja_slug) s += 4;                                   // loja parceira do site
-  if (o.comissao_extra_pct > 0) s += 10 + 1.5 * Math.min(o.comissao_extra_pct, 12); // comissão extra do vendedor: sobe para a 1ª página, junto das mais atrativas
   return Math.round(s * 10) / 10;
 }
 // Não deixa uma página inteira de uma categoria só: nas primeiras páginas, no máximo 1/4 da página por categoria,

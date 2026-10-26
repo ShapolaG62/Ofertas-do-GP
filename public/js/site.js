@@ -172,7 +172,7 @@
       <div class="filter-group"><h3 class="filter-title">Desconto</h3><ul class="filter-list">
         <li><button class="filter-option" type="button" data-desc="0" aria-pressed="${!state.desc}"><span>Qualquer desconto</span></button></li>
         ${discounts}</ul></div>
-      <div class="filter-group poster-only"><h3 class="filter-title">Comissão de afiliado</h3><ul class="filter-list">
+      <div class="filter-group com-only"><h3 class="filter-title">Comissão de afiliado</h3><ul class="filter-list">
         <li><button class="filter-option" type="button" data-com="" aria-pressed="${!state.com}"><span>Todas as comissões</span></button></li>
         <li><button class="filter-option" type="button" data-com="extra" aria-pressed="${state.com === 'extra'}"><span><i class="com-ponto"></i>Só comissão extra</span><span class="count">${DATA.contagens.comissao_extra ?? ''}</span></button></li></ul></div>`;
   }
@@ -213,11 +213,11 @@
   function comissaoHtml(o) {
     if (!('comissao_pct' in o)) return '';
     if (o.comissao_extra_pct > 0) {
-      return `<span class="card-com extra poster-only" title="Comissão extra de ${pctTxt(o.comissao_extra_pct)}${o.comissao_pct ? ` (total de ${pctTxt(o.comissao_pct)})` : ''}">Extra +${pctTxt(o.comissao_extra_pct)}</span>`;
+      return `<span class="card-com extra com-only" title="Comissão extra de ${pctTxt(o.comissao_extra_pct)}${o.comissao_pct ? ` (total de ${pctTxt(o.comissao_pct)})` : ''}">Extra +${pctTxt(o.comissao_extra_pct)}</span>`;
     }
     return o.comissao_pct > 0
-      ? `<span class="card-com poster-only" title="Comissão normal de ${pctTxt(o.comissao_pct)}">Comissão ${pctTxt(o.comissao_pct)}</span>`
-      : '<span class="card-com poster-only" title="Comissão normal da loja (a loja não informa a porcentagem)">Comissão</span>';
+      ? `<span class="card-com com-only" title="Comissão normal de ${pctTxt(o.comissao_pct)}">Comissão ${pctTxt(o.comissao_pct)}</span>`
+      : '<span class="card-com com-only" title="Comissão normal da loja (a loja não informa a porcentagem)">Comissão</span>';
   }
 
   function cardHtml(o) {
@@ -737,6 +737,12 @@
   // Ferramentas de postagem: admin ou usuário liberado pelo admin.
   fetch('/api/postagens/permissao').then(r => r.json()).then(p => {
     document.body.classList.toggle('can-post', Boolean(p.pode));
+    // Admin, equipe e afiliados: selos de comissão, filtro e a ordem "Comissão extra"
+    document.body.classList.toggle('ve-comissao', Boolean(p.comissao));
+    if (p.comissao && !$('#sort option[value=comissao]')) {
+      $('#sort option[value=destaques]').insertAdjacentHTML('afterend', '<option value="comissao">Comissão extra primeiro</option>');
+      $('#sort').value = state.ordem;
+    }
     if (p.pode) updateSelection();
     if (p.cliente) { // cliente da ferramenta: atalho para o painel dele
       mostrarConta();

@@ -25,6 +25,13 @@ function poster(req) {
   return null;
 }
 
+// Quem vê a comissão de afiliado nas ofertas (selos, filtro e prioridade): quem posta + a equipe (staff)
+function veComissao(req) {
+  if (poster(req)) return true;
+  const u = users.currentUser(req);
+  return Boolean(u && u.staff && u.status === 'active');
+}
+
 function requirePoster(req, res, next) {
   req.poster = poster(req);
   if (!req.poster) return res.status(403).json({ error: 'Você não tem permissão para fazer postagens.' });
@@ -34,7 +41,7 @@ function requirePoster(req, res, next) {
 
 router.get('/api/postagens/permissao', (req, res) => {
   const p = poster(req);
-  res.json({ pode: Boolean(p), cliente: p?.clienteId ? clientes.publico(p.cliente) : null });
+  res.json({ pode: Boolean(p), comissao: veComissao(req), cliente: p?.clienteId ? clientes.publico(p.cliente) : null });
 });
 
 router.use('/api/postagens', requirePoster);
@@ -177,4 +184,4 @@ router.get('/api/postagens/historico', (req, res) => {
   res.json(db.all('SELECT * FROM social_posts WHERE cliente_id IS NULL ORDER BY id DESC LIMIT 100'));
 });
 
-module.exports = { router, poster };
+module.exports = { router, poster, veComissao };

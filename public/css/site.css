@@ -630,6 +630,7 @@ dialog::backdrop { background: rgba(10, 14, 12, .5); }
 
 /* Ferramentas de seleção: admin e usuários com permissão de postar */
 body:not(.can-post) .poster-only { display: none !important; }
+body:not(.ve-comissao) .com-only { display: none !important; }
 
 /* ── Barra de postagens (admin e usuários liberados) ────── */
 .posts-bar {

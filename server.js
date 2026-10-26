@@ -296,6 +296,7 @@ if (process.env.VERCEL) {
     console.log(`🔐 Painel: http://localhost:${PORT}/admin`);
     console.log('==================================================\n');
     if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
+    if (process.env.DISABLE_MINER !== '1') require('./src/comissao-shopee').iniciar(); // comissão das ofertas antigas da Shopee
     if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar();
     if (process.env.DISABLE_AGENDA !== '1') require('./src/alertas-whatsapp').iniciar(); // alertas de ofertas no WhatsApp particular
     require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)

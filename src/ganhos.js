@@ -47,6 +47,15 @@ db.db.exec(`
     data TEXT NOT NULL DEFAULT (datetime('now')),
     observacao TEXT
   );
+  -- Saldo lido no próprio portal do programa pela extensão do Chrome (extensao-ganhos/): vale mais que a soma das vendas
+  CREATE TABLE IF NOT EXISTS ganhos_portal (
+    plataforma TEXT PRIMARY KEY,
+    disponivel REAL,
+    a_liberar REAL,
+    total REAL,
+    url TEXT,
+    em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
   CREATE TABLE IF NOT EXISTS admin_notificacoes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chave TEXT UNIQUE,                        -- evita repetir o mesmo aviso
@@ -123,10 +132,13 @@ function resumo(id) {
       MIN(CASE WHEN status = 'confirmada' AND liberada_em > ? THEN liberada_em END) proxima_liberacao
     FROM ganhos_vendas WHERE plataforma = ?`, agora, agora, agora, p.id);
   const sacado = db.get('SELECT COALESCE(SUM(valor), 0) n FROM ganhos_saques WHERE plataforma = ?', p.id).n;
-  const disponivel = r2(Math.max(0, v.liberado - sacado));
+  // Saldo lido no portal (extensão do Chrome): é o número oficial do programa, então substitui a soma das vendas
+  const portal = db.get('SELECT * FROM ganhos_portal WHERE plataforma = ?', p.id) || null;
+  const disponivel = portal?.disponivel != null ? r2(portal.disponivel) : r2(Math.max(0, v.liberado - sacado));
+  const aLiberar = portal?.a_liberar != null ? r2(portal.a_liberar) : r2(v.a_liberar);
   return {
-    ...p, ativo: Boolean(p.ativo),
-    disponivel, a_liberar: r2(v.a_liberar), recebido: r2(v.pago + sacado), vendas: v.vendas,
+    ...p, ativo: Boolean(p.ativo), portal,
+    disponivel, a_liberar: aLiberar, recebido: r2(v.pago + sacado), vendas: v.vendas,
     proxima_liberacao: v.proxima_liberacao,
     pode_sacar: disponivel > 0 && disponivel >= p.minimo,
     falta: r2(Math.max(0, p.minimo - disponivel)),
@@ -334,7 +346,24 @@ function iniciar() {
   timer = setInterval(() => { try { verificar(); } catch (err) { console.error('[GANHOS]', err.message); } }, 60 * 60 * 1000);
 }
 
+// Valores enviados pela extensão do Chrome a partir da página do portal (null = não encontrado na página)
+function registrarPortal(b = {}) {
+  const p = plataforma(String(b.plataforma || ''));
+  if (!p) throw fail('Plataforma desconhecida.');
+  const n = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) || Number(v) < 0 || Number(v) > 1e7 ? null : r2(v));
+  const disponivel = n(b.disponivel), aLiberar = n(b.a_liberar), total = n(b.total);
+  if (disponivel == null && aLiberar == null && total == null) throw fail('Nenhum valor enviado.');
+  const url = /^https:\/\//i.test(String(b.url || '')) ? String(b.url).slice(0, 500) : null;
+  db.run(`INSERT INTO ganhos_portal (plataforma, disponivel, a_liberar, total, url, em) VALUES (?, ?, ?, ?, ?, datetime('now'))
+          ON CONFLICT(plataforma) DO UPDATE SET disponivel = excluded.disponivel, a_liberar = excluded.a_liberar,
+          total = excluded.total, url = excluded.url, em = excluded.em`, p.id, disponivel, aLiberar, total, url);
+  verificar();
+  return resumo(p.id);
+}
+function limparPortal(id) { db.run('DELETE FROM ganhos_portal WHERE plataforma = ?', String(id)); verificar(); }
+
 module.exports = {
+  registrarPortal, limparPortal,
   notificar, painel, resumo, verificar, iniciar, notificacoes, marcarLida, marcarTodasLidas,
   registrar, atualizarStatus, excluir, listar, registrarSaque, saques, excluirSaque, editarPlataforma,
   previa, importar, vendasConfirmadas, statusDe, numero, data, STATUS,

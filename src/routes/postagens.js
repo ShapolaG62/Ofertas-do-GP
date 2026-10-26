@@ -137,6 +137,37 @@ router.post('/api/postagens/publicar', async (req, res) => {
   }
 });
 
+// Botão "Enviar" do cartão da oferta (página de ofertas): manda a oferta, com o modelo da mensagem de quem está
+// usando, para todos os grupos de WhatsApp escolhidos no painel ou para um deles.
+router.get('/api/postagens/grupos', (req, res) => {
+  const motivo = social.REDES.whatsapp.pronta({ ...req.cfg, whatsapp_groups: '[{"id":"x"}]' }); // WhatsApp ligado?
+  res.json({ grupos: require('../whatsapp').gruposEscolhidos(req.cfg).map(g => ({ id: g.id, nome: g.nome || g.id })), erro: motivo || null });
+});
+router.post('/api/postagens/enviar-grupos', async (req, res) => {
+  const wait = postLimiter.hit(req.poster.key);
+  if (wait) return res.status(429).json({ error: `Limite de publicações atingido. Tente de novo em ${wait} min.` });
+  const cid = req.poster.clienteId;
+  const o = db.get('SELECT * FROM offers WHERE id = ?', Number(req.body?.offer_id));
+  if (!o) return res.status(404).json({ error: 'Oferta não encontrada.' });
+  const todos = require('../whatsapp').gruposEscolhidos(req.cfg);
+  const pedido = String(req.body?.grupo || 'todos');
+  const grupos = pedido === 'todos' ? todos : todos.filter(g => g.id === pedido);
+  if (!todos.length) return res.status(400).json({ error: cid ? 'Escolha os grupos de destino em Meu painel → WhatsApp.' : 'Escolha os grupos de destino em Painel → Redes sociais → WhatsApp.' });
+  if (!grupos.length) return res.status(400).json({ error: 'Esse grupo não está mais na sua lista de grupos.' });
+  const s = { ...req.cfg, whatsapp_groups: JSON.stringify(grupos) };
+  const motivo = social.REDES.whatsapp.pronta(s);
+  if (motivo) return res.status(400).json({ error: motivo });
+  // Texto pelo modelo da mensagem, com o link curto (do cliente: o link de afiliado dele)
+  const link = cid ? await clientes.linkParaPostar(cid, o, s) : null;
+  if (link) o.__link = link;
+  o.__link = await require('../encurtador').curto(social.postLink(o, s));
+  const texto = social.textoPadrao(o, s);
+  // Entre um grupo e outro há uma pausa: responde já e termina o envio em segundo plano (fica no histórico)
+  social.publicar(o.id, ['whatsapp'], texto, `${req.poster.autor} (botão Enviar)`, cid ? { s, clienteId: cid, link } : { s })
+    .catch(err => console.error('[ENVIAR GRUPOS]', err.message));
+  res.json({ ok: true, grupos: grupos.length });
+});
+
 // Histórico: o admin vê o do site; cada cliente, só o dele. Usuários liberados não veem o histórico.
 router.get('/api/postagens/historico', (req, res) => {
   if (req.poster.clienteId) {

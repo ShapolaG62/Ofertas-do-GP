@@ -41,6 +41,7 @@ function montar() {
     preco_anterior: o.preco_anterior, desconto_pct: o.desconto_pct, categoria: o.categoria, subcategoria: o.subcategoria,
     link_clicks: o.link_clicks || 0, fonte: o.fonte, created_at: o.created_at, last_seen_at: o.last_seen_at,
     loja_slug: o.loja_slug || null, menor_preco_30d: o.menor_preco_30d || 0,
+    comissao_pct: o.comissao_pct ?? null, comissao_extra_pct: o.comissao_extra_pct > 0 ? o.comissao_extra_pct : 0,
     _n: normalizar(o.produto), _c: quando(o.created_at),
   }));
   for (const o of rows) o._s = atratividade(o);
@@ -56,18 +57,20 @@ function montar() {
   CACHE = { sig, at: Date.now(), lista: rows, resumo: {
     total: rows.length, lojas: lojas.size, maior_desconto: maior,
     ultima_conferencia: ultima ? new Date(ultima).toISOString().replace('T', ' ').slice(0, 19) : null,
-    destaque: melhor ? publico(melhor) : null,
+    destaque: melhor ? semComissao(melhor) : null,
   } };
   return CACHE;
 }
 const publico = o => { const { _n, _c, ...r } = o; return r; };
+// Quem visita não vê a comissão de afiliado (só o admin e os afiliados com a ferramenta de postagem)
+const semComissao = o => { const { comissao_pct, comissao_extra_pct, ...r } = publico(o); return r; };
 
 // ── Filtros ──
 function ler(q) {
   const num = v => (v === undefined || v === '' || v === null || !Number.isFinite(Number(v)) ? null : Number(v));
   return {
     loja: String(q.loja || ''), cat: String(q.cat || ''), tipo: String(q.tipo || ''), q: String(q.q || '').slice(0, 120),
-    min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, ordem: String(q.ordem || 'destaques'),
+    min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, extra: q.com === 'extra', ordem: String(q.ordem || 'destaques'),
     pagina: Math.max(1, parseInt(q.pagina, 10) || 1), por: Math.min(Math.max(parseInt(q.por, 10) || POR_PAGINA, 1), 96),
   };
 }
@@ -81,6 +84,7 @@ function filtro(f, pular = '') {
     if (f.min != null && o.preco_atual < f.min) return false;
     if (f.max != null && o.preco_atual > f.max) return false;
     if (f.desc && o.desconto_pct < f.desc) return false;
+    if (pular !== 'extra' && f.extra && !(o.comissao_extra_pct > 0)) return false;
     return true;
   };
 }
@@ -114,8 +118,10 @@ function relevancia(o, frase, palavras) {
   return s;
 }
 
-function buscar(query) {
+// comissao: true para o admin e os afiliados (veem a comissão e podem filtrar pela comissão extra)
+function buscar(query, { comissao = false } = {}) {
   const f = ler(query);
+  if (!comissao) f.extra = false;
   const { lista: todas, resumo } = lista();
   let l = todas.filter(filtro(f));
   if (f.q && (f.ordem === 'recentes' || f.ordem === 'destaques')) {
@@ -143,13 +149,14 @@ function buscar(query) {
     categorias_total: semCat.length,
     subcategorias: f.cat ? contar(todas.filter(filtro(f, 'tipo')), 'subcategoria') : {},
   };
+  if (comissao) contagens.comissao_extra = todas.filter(filtro(f, 'extra')).filter(o => o.comissao_extra_pct > 0).length;
   // Ordem "por tipo": quantas ofertas cada grupo tem na lista inteira
   let grupos = null;
   if (f.ordem === 'tipo') {
     grupos = {};
     for (const o of l) { const k = `${o.categoria}|${o.subcategoria}`; grupos[k] = (grupos[k] || 0) + 1; }
   }
-  return { total: l.length, pagina, paginas, por: f.por, itens: itens.map(publico), contagens, grupos, resumo };
+  return { total: l.length, pagina, paginas, por: f.por, itens: itens.map(comissao ? publico : semComissao), contagens, grupos, resumo };
 }
 
 // ── "Mais atrativas" (ordem padrão da página de ofertas) ──
@@ -177,6 +184,7 @@ function atratividade(o) {
   const idadeH = (Date.now() - (o._c || 0)) / 3600000;
   s += idadeH < 24 ? 8 : idadeH < 72 ? 4 : 0;                // novidade
   if (o.loja_slug) s += 4;                                   // loja parceira do site
+  if (o.comissao_extra_pct > 0) s += 10 + 1.5 * Math.min(o.comissao_extra_pct, 12); // comissão extra do vendedor: sobe para a 1ª página, junto das mais atrativas
   return Math.round(s * 10) / 10;
 }
 // Não deixa uma página inteira de uma categoria só: nas primeiras páginas, no máximo 1/4 da página por categoria,

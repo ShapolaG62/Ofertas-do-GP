@@ -151,6 +151,9 @@ db.exec(`
 // Migrações simples: colunas adicionadas depois da primeira versão.
 const offerColumns = db.prepare('PRAGMA table_info(offers)').all().map(c => c.name);
 if (!offerColumns.includes('subcategoria')) db.exec('ALTER TABLE offers ADD COLUMN subcategoria TEXT');
+// Comissão de afiliado informada pela API da loja (Shopee/AliExpress), em %: a total e a extra paga pelo vendedor
+if (!offerColumns.includes('comissao_pct')) db.exec('ALTER TABLE offers ADD COLUMN comissao_pct REAL');
+if (!offerColumns.includes('comissao_extra_pct')) db.exec('ALTER TABLE offers ADD COLUMN comissao_extra_pct REAL');
 if (!offerColumns.includes('loja_id')) {
   db.exec('ALTER TABLE offers ADD COLUMN loja_id INTEGER REFERENCES lojas(id) ON DELETE CASCADE');
 }

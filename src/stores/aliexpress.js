@@ -46,6 +46,14 @@ function sign(params, secret) {
   return crypto.createHmac('sha256', secret).update(base, 'utf8').digest('hex').toUpperCase();
 }
 
+function comissaoAli(p) {
+  const n = v => { const x = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(x) ? x : null; };
+  const base = n(p.commission_rate), hot = n(p.hot_product_commission_rate);
+  if (base == null && hot == null) return {};
+  const total = Math.max(base || 0, hot || 0);
+  return { comissao_pct: total, comissao_extra_pct: base != null && hot != null && hot > base ? hot - base : 0 };
+}
+
 async function searchApi(query, s) {
   const params = {
     app_key: s.aliexpress_app_key,
@@ -60,7 +68,7 @@ async function searchApi(query, s) {
     target_language: 'PT',
     ship_to_country: 'BR',
     page_size: '50',
-    fields: 'product_id,product_title,target_sale_price,target_original_price,product_main_image_url,promotion_link,product_detail_url',
+    fields: 'product_id,product_title,target_sale_price,target_original_price,product_main_image_url,promotion_link,product_detail_url,commission_rate,hot_product_commission_rate',
   };
   params.sign = sign(params, s.aliexpress_app_secret);
   const res = await http.get('https://api-sg.aliexpress.com/sync', { params, validateStatus: () => true });
@@ -80,6 +88,8 @@ async function searchApi(query, s) {
     imagem: p.product_main_image_url,
     original_url: `${SITE}/item/${p.product_id}.html`,
     affiliate_url: p.promotion_link || null,
+    // Comissão ("7.0%"): produto em destaque (hot) paga mais que a comissão normal; a diferença é a extra
+    ...comissaoAli(p),
   }));
 }
 

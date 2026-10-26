@@ -253,10 +253,25 @@ body:not(.is-admin) .admin-only { display: none !important; }
 .card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .card-media { position: relative; aspect-ratio: 1; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
 .card-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 14px; }
+.card-tags { position: absolute; top: 10px; left: 10px; right: 46px; display: flex; flex-wrap: wrap; gap: 5px; align-items: flex-start; pointer-events: none; }
 .card-off {
   position: absolute; top: 10px; left: 10px; padding: 3px 8px; border-radius: 6px;
   background: var(--deal); color: #fff; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
+.card-tags .card-off { position: static; }
+/* Comissão de afiliado (só admin e afiliados): azul = extra do vendedor, amarelo = normal */
+.card-com { padding: 3px 8px; border-radius: 6px; background: #f5b70a; color: #2b2100; font-size: 12px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: auto; }
+.card-com.extra { background: #1d7bf2; color: #fff; }
+.com-ponto { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; background: #1d7bf2; vertical-align: 0; }
+.card-enviar {
+  display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 38px; margin-top: 4px;
+  border-radius: 10px; border: 1px solid var(--brand); background: var(--brand-soft, transparent); color: var(--brand);
+  font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; transition: background .15s, color .15s;
+}
+.card-enviar svg { width: 15px; height: 15px; flex: none; }
+.card-enviar:hover { background: var(--brand); color: #fff; }
+.card-enviar.is-enviado { border-color: var(--line-strong); background: transparent; color: var(--ink-3); }
+.card-enviar:disabled { cursor: default; }
 .card-select {
   position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 8px;
   border: 1.5px solid var(--line-strong); background: var(--surface); display: grid; place-items: center;
@@ -2499,7 +2514,10 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   .grid { gap: 8px; }
   .card { border-radius: 10px; }
   .card-media img { padding: 6px; }
+  .card-tags { top: 6px; left: 6px; right: 40px; gap: 4px; }
   .card-off { top: 6px; left: 6px; padding: 2px 6px; font-size: 11.5px; border-radius: 5px; }
+  .card-com { padding: 2px 6px; font-size: 10.5px; border-radius: 5px; }
+  .card-enviar { min-height: 34px; font-size: 12px; gap: 5px; border-radius: 8px; }
   .card-select { width: 28px; height: 28px; }
   .card-body { padding: 8px 10px 10px; gap: 4px; }
   .card-store { font-size: 11.5px; }

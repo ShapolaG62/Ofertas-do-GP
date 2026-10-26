@@ -18,7 +18,7 @@ async function search(query, s) {
     let d;
     try {
       d = await gql(`{ productOfferV2(keyword: ${JSON.stringify(query)}, sortType: ${l.sortType}, page: ${l.page}, limit: 50) {
-        nodes { itemId productName priceMin priceMax priceDiscountRate imageUrl productLink offerLink }
+        nodes { itemId productName priceMin priceMax priceDiscountRate imageUrl productLink offerLink commissionRate sellerCommissionRate }
         pageInfo { hasNextPage }
       } }`, s);
     } catch (err) {
@@ -41,6 +41,9 @@ async function search(query, s) {
         imagem: n.imageUrl,
         original_url: n.productLink,
         affiliate_url: n.offerLink || null,
+        // Comissão: commissionRate = total; sellerCommissionRate = a extra ("Comissão Xtra") paga pelo vendedor
+        comissao_pct: n.commissionRate != null ? Number(n.commissionRate) * 100 : null,
+        comissao_extra_pct: n.sellerCommissionRate != null ? Number(n.sellerCommissionRate) * 100 : null,
       });
     }
     if (l.page === 1 && !d.productOfferV2?.pageInfo?.hasNextPage) semPagina2 = true;

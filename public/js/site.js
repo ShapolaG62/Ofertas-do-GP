@@ -48,7 +48,7 @@
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)}-${o.id}`;
 
   // ── Estado (espelhado na URL para links compartilháveis) ─────────────────
-  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, ordem: 'destaques', pagina: 1 };
+  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', ordem: 'destaques', pagina: 1 };
   // Resposta do servidor para os filtros atuais: { total, pagina, paginas, itens, contagens, grupos, resumo }
   let DATA = { total: 0, pagina: 1, paginas: 1, itens: [], contagens: { lojas: {}, parceiros: 0, categorias: {}, categorias_total: 0, subcategorias: {} }, grupos: null, resumo: null };
   let carregou = false;
@@ -67,6 +67,7 @@
     state.min = p.has('min') ? Number(p.get('min')) : null;
     state.max = p.has('max') ? Number(p.get('max')) : null;
     state.desc = Number(p.get('desc')) || 0;
+    state.com = p.get('com') === 'extra' ? 'extra' : '';
     state.ordem = p.get('ordem') || 'destaques';
     state.pagina = Math.max(1, Number(p.get('pagina')) || 1);
   }
@@ -77,6 +78,7 @@
     if (state.min != null) p.set('min', state.min);
     if (state.max != null) p.set('max', state.max);
     if (state.desc) p.set('desc', state.desc);
+    if (state.com) p.set('com', state.com);
     if (state.ordem !== 'destaques') p.set('ordem', state.ordem);
     if (state.pagina > 1) p.set('pagina', state.pagina);
     const qs = p.toString();
@@ -169,7 +171,10 @@
         <div class="price-presets">${presets}</div></div>
       <div class="filter-group"><h3 class="filter-title">Desconto</h3><ul class="filter-list">
         <li><button class="filter-option" type="button" data-desc="0" aria-pressed="${!state.desc}"><span>Qualquer desconto</span></button></li>
-        ${discounts}</ul></div>`;
+        ${discounts}</ul></div>
+      <div class="filter-group poster-only"><h3 class="filter-title">Comissão de afiliado</h3><ul class="filter-list">
+        <li><button class="filter-option" type="button" data-com="" aria-pressed="${!state.com}"><span>Todas as comissões</span></button></li>
+        <li><button class="filter-option" type="button" data-com="extra" aria-pressed="${state.com === 'extra'}"><span><i class="com-ponto"></i>Só comissão extra</span><span class="count">${DATA.contagens.comissao_extra ?? ''}</span></button></li></ul></div>`;
   }
 
   function renderFilters() {
@@ -196,10 +201,23 @@
       items.push(['preco', state.max == null ? `Acima de R$ ${state.min}` : `R$ ${state.min ?? 0} a ${state.max}`]);
     }
     if (state.desc) items.push(['desc', `${state.desc}% ou mais`]);
+    if (state.com) items.push(['com', 'Comissão extra']);
     const any = items.length || state.loja || state.cat;
     $('#active-filters').innerHTML = items.map(([k, label]) =>
       `<button class="chip" type="button" data-remove="${k}">${esc(label)}<svg><use href="#i-x"/></svg></button>`).join('')
       + (any ? '<button class="link-btn" type="button" data-clear>Limpar filtros</button>' : '');
+  }
+
+  // Selo da comissão de afiliado (só admin e afiliados): azul = comissão extra do vendedor; amarelo = comissão normal
+  const pctTxt = v => `${String(Math.round(Number(v) * 10) / 10).replace('.', ',')}%`;
+  function comissaoHtml(o) {
+    if (!('comissao_pct' in o)) return '';
+    if (o.comissao_extra_pct > 0) {
+      return `<span class="card-com extra poster-only" title="Comissão extra de ${pctTxt(o.comissao_extra_pct)}${o.comissao_pct ? ` (total de ${pctTxt(o.comissao_pct)})` : ''}">Extra +${pctTxt(o.comissao_extra_pct)}</span>`;
+    }
+    return o.comissao_pct > 0
+      ? `<span class="card-com poster-only" title="Comissão normal de ${pctTxt(o.comissao_pct)}">Comissão ${pctTxt(o.comissao_pct)}</span>`
+      : '<span class="card-com poster-only" title="Comissão normal da loja (a loja não informa a porcentagem)">Comissão</span>';
   }
 
   function cardHtml(o) {
@@ -209,7 +227,7 @@
     return `<a class="card${isSel ? ' is-selected' : ''}" ${link} data-id="${o.id}">
       <div class="card-media">
         <img src="/img/o/${o.id}.jpg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
-        <span class="card-off">-${Math.round(o.desconto_pct)}%</span>
+        <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span>${comissaoHtml(o)}</div>
         <button class="card-select poster-only" type="button" data-select="${o.id}" aria-label="Escolher para postar"><svg><use href="#i-check"/></svg></button>
       </div>
       <div class="card-body">
@@ -221,12 +239,13 @@
           <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div>
         </div>
         <div class="card-foot"><span>${o.loja_slug ? 'Publicado pela loja' : o.fonte === 'manual' ? 'Oferta selecionada' : `Conferido ${timeAgo(o.last_seen_at)}`}</span></div>
+        <button class="card-enviar poster-only" type="button" data-enviar="${o.id}"><svg><use href="#i-enviar"/></svg>Enviar para os grupos</button>
       </div>
     </a>`;
   }
 
   function emptyHtml() {
-    const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc;
+    const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc || state.com;
     return `<div class="empty"><img src="/images/pet-capi.png" alt="" width="120">
       <h3>${DATA.resumo?.total ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
       <p>${DATA.resumo?.total ? 'Tente outra busca ou remova alguns filtros.' : 'O minerador está procurando descontos reais nas lojas. Volte em alguns minutos.'}</p>
@@ -422,6 +441,7 @@
     if (t.dataset.cat !== undefined) return setFilter({ cat: t.dataset.cat });
     if (t.dataset.tipo !== undefined) return setFilter({ tipo: t.dataset.tipo });
     if (t.dataset.desc !== undefined) return setFilter({ desc: Number(t.dataset.desc) });
+    if (t.dataset.com !== undefined) return setFilter({ com: t.dataset.com });
     if (t.dataset.min !== undefined) {
       const min = Number(t.dataset.min) || null, max = t.dataset.max ? Number(t.dataset.max) : null;
       const on = state.min === min && state.max === max;
@@ -432,7 +452,7 @@
       return setFilter(k === 'preco' ? { min: null, max: null } : { [k]: k === 'desc' ? 0 : '' });
     }
     if (t.dataset.clear !== undefined) {
-      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0 });
+      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '' });
     }
   }
 
@@ -507,6 +527,36 @@
     selected.has(id) ? selected.delete(id) : selected.add(id);
     b.closest('.card').classList.toggle('is-selected', selected.has(id));
     updateSelection();
+  });
+
+  // Botão "Enviar para os grupos" do cartão: todos os grupos de WhatsApp escolhidos no painel ou um deles
+  $('#grid').addEventListener('click', async e => {
+    const b = e.target.closest('[data-enviar]');
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (b.disabled) return;
+    const UI = window.OfertouUI;
+    let d;
+    try { d = await (await fetch('/api/postagens/grupos', { cache: 'no-store' })).json(); } catch { return toast('Sem conexão. Tente de novo.'); }
+    if (d.error || d.erro) return UI.avisar(d.error || d.erro, { titulo: 'WhatsApp não está pronto' });
+    if (!d.grupos?.length) return UI.avisar('Escolha os grupos de destino no painel (WhatsApp) para enviar as ofertas direto daqui.', { titulo: 'Nenhum grupo escolhido' });
+    const nome = b.closest('.card')?.querySelector('.card-title')?.textContent || 'esta oferta';
+    const opcoes = [{ valor: 'todos', nome: `Todos os grupos (${d.grupos.length})` }, ...d.grupos.map(g => ({ valor: g.id, nome: g.nome }))];
+    const grupo = d.grupos.length === 1 ? (await UI.confirmar(`Enviar “${nome}” para o grupo ${d.grupos[0].nome}?`, { titulo: 'Enviar para o grupo', ok: 'Enviar' }) ? 'todos' : null)
+      : await UI.escolher(`Para onde enviar “${nome}”? A mensagem sai com o seu modelo de mensagem e o seu link de afiliado.`, opcoes, { titulo: 'Enviar para os grupos', ok: 'Enviar' });
+    if (!grupo) return;
+    b.disabled = true;
+    try {
+      const r = await fetch('/api/postagens/enviar-grupos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ offer_id: Number(b.dataset.enviar), grupo }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return UI.avisar(j.error || 'Não foi possível enviar.', { titulo: 'Não enviou' });
+      b.classList.add('is-enviado');
+      b.lastChild.textContent = 'Enviando…';
+      toast(j.grupos > 1 ? `Enviando para ${j.grupos} grupos (com uma pausa entre eles).` : 'Enviando para o grupo.');
+      setTimeout(() => { b.lastChild.textContent = 'Enviado'; }, 4000);
+    } catch { toast('Sem conexão. Tente de novo.'); }
+    finally { setTimeout(() => { b.disabled = false; }, 4000); }
   });
 
   $('#sel-page').addEventListener('click', () => {
@@ -610,6 +660,7 @@
     if (state.min != null) p.set('min', state.min);
     if (state.max != null) p.set('max', state.max);
     if (state.desc) p.set('desc', state.desc);
+    if (state.com) p.set('com', state.com);
     p.set('pagina', state.pagina);
     p.set('por', PER_PAGE);
     if (carregou) $('#grid').classList.add('is-loading');

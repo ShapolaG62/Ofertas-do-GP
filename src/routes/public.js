@@ -15,7 +15,7 @@ const router = express.Router();
 // Página de ofertas: o servidor filtra e devolve só a página pedida (24 ofertas) + os números dos filtros
 router.get('/api/offers/busca', (req, res) => {
   res.setHeader('Cache-Control', 'private, no-cache');
-  res.json(require('../busca-ofertas').buscar(req.query));
+  res.json(require('../busca-ofertas').buscar(req.query, { comissao: Boolean(require('./postagens').poster(req)) }));
 });
 // Postagens: "melhor de cada categoria"
 router.get('/api/offers/mix', (req, res) => {

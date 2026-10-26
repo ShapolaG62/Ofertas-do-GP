@@ -46,6 +46,9 @@ function saveDeal(store, deal, opts = {}) {
   const categoria = deal.categoria || classifyCategory(produto, opts.catHint);
   const expiresAt = fonte === 'auto' ? null : opts.expiresAt;
   const lojaId = opts.lojaId || null;
+  // Comissão (%) só quando a API da loja informa; sem ela, fica a última conhecida
+  const pct = v => (v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
+  const comissao = pct(deal.comissao_pct), comissaoExtra = pct(deal.comissao_extra_pct);
 
   return db.transaction(() => {
     const existing = db.get(
@@ -56,10 +59,11 @@ function saveDeal(store, deal, opts = {}) {
       db.run(
         `UPDATE offers SET produto = ?, preco_atual = ?, preco_anterior = ?, desconto_pct = ?, imagem = COALESCE(?, imagem),
            original_url = ?, affiliate_url = ?, aff_fixed = ?, fonte = ?, expires_at = ?, subcategoria = ?,
+           comissao_pct = COALESCE(?, comissao_pct), comissao_extra_pct = COALESCE(?, comissao_extra_pct),
            updated_at = datetime('now'), last_seen_at = datetime('now')
          WHERE id = ?`,
         produto, atual, anterior, desconto, deal.imagem || null, deal.original_url, affiliate, affFixed,
-        fonte, expiresAt, classifySubcategory(produto, existing.categoria), existing.id
+        fonte, expiresAt, classifySubcategory(produto, existing.categoria), comissao, comissaoExtra, existing.id
       );
       if (Number(existing.preco_atual) !== atual) {
         db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', existing.id, atual);
@@ -68,11 +72,11 @@ function saveDeal(store, deal, opts = {}) {
     }
     const res = db.run(
       `INSERT INTO offers (store_id, store_product_id, plataforma, produto, preco_atual, preco_anterior, desconto_pct,
-         categoria, subcategoria, imagem, original_url, affiliate_url, aff_fixed, fonte, expires_at, loja_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         categoria, subcategoria, imagem, original_url, affiliate_url, aff_fixed, fonte, expires_at, loja_id, comissao_pct, comissao_extra_pct)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       store.id, String(deal.store_product_id), store.name, produto, atual, anterior, desconto,
       categoria, classifySubcategory(produto, categoria), deal.imagem || null, deal.original_url, affiliate, affFixed, fonte,
-      expiresAt, lojaId
+      expiresAt, lojaId, comissao, comissaoExtra
     );
     const id = Number(res.lastInsertRowid);
     db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', id, atual);
@@ -87,7 +91,7 @@ const PUBLIC_FIELDS = `o.id, o.store_id, o.plataforma, o.produto, o.preco_atual,
 function listActive(limit = 2000, lojaId = null) {
   const active = activeClause();
   return db.all(
-    `SELECT ${PUBLIC_FIELDS}, l.slug AS loja_slug, l.nome AS loja_nome,
+    `SELECT ${PUBLIC_FIELDS}, o.comissao_pct, o.comissao_extra_pct, l.slug AS loja_slug, l.nome AS loja_nome,
        CASE WHEN h.n >= 2 AND o.created_at <= datetime('now', '-7 days') AND o.preco_atual <= h.min30
             THEN 1 ELSE 0 END AS menor_preco_30d
      FROM offers o

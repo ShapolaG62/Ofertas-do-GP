@@ -25,7 +25,7 @@ const SINONIMOS = [
   ['plano', 'planos', 'assinatura', 'assinar', 'mensalidade'], ['gratis', 'gratuito', 'gratuita', 'free', 'de graca'],
   ['cancelar', 'cancelamento', 'desistir', 'arrependimento', 'devolver', 'devolucao', 'reembolso', 'estorno'],
   ['entrega', 'frete', 'chegou', 'chegar', 'rastreio', 'rastrear', 'envio'],
-  ['pedido', 'pedidos', 'compra', 'comprei', 'comprar', 'compras'],
+  ['pedido', 'pedidos', 'comprei', 'compras'],
   ['loja', 'lojista', 'empresa', 'empresarial', 'vendedor', 'vender', 'vendas'],
   ['afiliado', 'afiliados', 'comissao', 'divulgar', 'divulgacao'],
   ['preco', 'precos', 'valor', 'custa', 'caro'], ['oferta', 'ofertas', 'promocao', 'promocoes', 'desconto', 'descontos'],
@@ -33,21 +33,33 @@ const SINONIMOS = [
   ['perfil', 'foto', 'avatar'], ['moedas', 'moeda', 'cosmeticos', 'cosmetico', 'missoes', 'missao'],
   ['mensagem', 'mensagens', 'chat', 'conversa', 'conversar'], ['excluir', 'apagar', 'deletar', 'remover'],
   ['dados', 'lgpd', 'privacidade'], ['aprovacao', 'aprovar', 'aprovado', 'liberacao', 'liberar', 'aguardando', 'analise'],
-  ['aplicativo', 'app', 'instalar', 'baixar'], ['whatsapp', 'zap', 'wpp', 'whats'],
+  ['aplicativo', 'app', 'instalar', 'baixar', 'apk'], ['whatsapp', 'zap', 'wpp', 'whats', 'zapzap'],
+  ['entrega', 'mandam', 'manda', 'enviam', 'envia', 'despacham'], ['acho', 'achar'], ['escuro', 'dark', 'noturno', 'preto'],
+  ['trocar', 'troco', 'troca'], ['parcelar', 'parcela', 'parcelas', 'parcelado', 'parcelamento', 'vezes'],
   ['esqueci', 'esqueceu', 'esquecer', 'esquecida', 'esquecido', 'perdi', 'recuperar', 'redefinir'],
-  ['criar', 'crio', 'criei', 'abrir', 'fazer conta'], ['trocar', 'mudar', 'alterar', 'troco', 'mudo', 'altero', 'editar'],
+  ['criar', 'crio', 'criei', 'fazer conta'], ['voces', 'vcs', 'vc', 'voce'], ['o que', 'oq', 'oque'], ['usar', 'uso', 'utilizar', 'utilizo', 'mexer', 'mexo', 'navegar'],
+  ['comprar', 'compro', 'comprando', 'adquirir'], ['verdadeiro', 'verdadeira', 'verdadeiras', 'verdadeiros', 'verdade', 'real', 'reais', 'confiavel', 'confiaveis', 'confiar', 'golpe', 'seguro', 'segura', 'legitimo', 'falso', 'falsa', 'fake'],
+  ['receber', 'recebo', 'recebe', 'recebi'], ['ganhar', 'ganho', 'ganha', 'consigo', 'conseguir'], ['trocar', 'mudar', 'alterar', 'troco', 'mudo', 'altero', 'editar'],
 ];
 const SIN = new Map();
 for (const grupo of SINONIMOS) for (const p of grupo) SIN.set(semAcento(p), semAcento(grupo[0]));
 // Radical simples (português): tira plural e terminações comuns, para "cancelei" achar "cancelar"
 function radical(p) {
   if (p.length <= 3) return p;
-  const r = p.replace(/(amento|imento|acoes|icoes|acao|icao|mente|ando|endo|indo|aram|eram|iram|asse|esse|isse|ei|ou|ar|er|ir|as|es|os|is|s)$/, '') || p;
+  const r = p.replace(/(amento|imento|acoes|icoes|acao|icao|mente|ando|endo|indo|aram|eram|iram|asse|esse|isse|ei|ou|am|em|ar|er|ir|as|es|os|is|s)$/, '') || p;
   return r.length > 3 ? r.replace(/[aeo]$/, '') : r; // "cancelo", "cancela" e "cancelar" viram "cancel"
+}
+// Mapa de sinônimos pela raiz (feito depois de "radical" existir)
+let SIN_RAIZ = null;
+function sinonimo(p) {
+  if (SIN.has(p)) return SIN.get(p);
+  if (!SIN_RAIZ) { SIN_RAIZ = new Map(); for (const [de, para] of SIN) if (!de.includes(' ')) { const r = radical(de); if (r.length >= 4 && !SIN_RAIZ.has(r)) SIN_RAIZ.set(r, para); } }
+  const r = radical(p);
+  return r.length >= 4 && SIN_RAIZ.has(r) ? SIN_RAIZ.get(r) : p;
 }
 function termos(texto) {
   // 1) palavras sem acento, sem as vazias, já trocadas pelo sinônimo principal ("crio" → "criar")
-  const um = semAcento(texto).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(p => p && !STOP.has(p) && p.length > 1).map(p => SIN.get(p) || p);
+  const um = semAcento(texto).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(p => p && !STOP.has(p) && p.length > 1).map(sinonimo);
   // 2) expressões de duas palavras ("criar conta" → "cadastro")
   let t = ` ${um.join(' ')} `;
   for (const [de, para] of SIN) if (de.includes(' ') && t.includes(` ${de} `)) t = t.split(` ${de} `).join(` ${para} `);
@@ -118,18 +130,66 @@ const PROIBIDO = /\b(painel do admin|admin|administrador|senha do (admin|painel)
 // Endereço público do site (Painel → Site), para o link do guia na resposta
 const baseSite = () => { try { return String(require('../settings').get('site_url') || '').trim().replace(/\/+$/, '') || 'https://tanoofertou.com.br'; } catch { return 'https://tanoofertou.com.br'; } };
 
+// ── Respostas prontas (src/ia/conhecimento.js): compara a pergunta INTEIRA com as formas de perguntar de cada assunto ──
+// Aqui as palavras pequenas que mudam o sentido ("o que é", "como", "quando") contam; só artigos e preposições saem.
+const LEVES = new Set('a o os as e de da do das dos em no na nos nas um uma uns umas para pra pro por com ao aos me eu meu minha meus minhas mim te voce voces vcs vc se isso isto esse essa ai la aqui favor oi ola ola bom boa dia tarde noite tudo ja ne entao gostaria queria quero preciso'.split(' '));
+function termosLeves(texto) {
+  const um = semAcento(texto).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(p => p && !LEVES.has(p)).map(sinonimo);
+  let s = ` ${um.join(' ')} `;
+  for (const [de, para] of SIN) if (de.includes(' ') && s.includes(` ${de} `)) s = s.split(` ${de} `).join(` ${para} `);
+  return [...new Set(s.split(' ').filter(Boolean).map(radical))];
+}
+let INTENCOES = null;
+function intencoes() {
+  if (INTENCOES) return INTENCOES;
+  const lista = require('./conhecimento').map(i => ({ ...i, ex: i.exemplos.map(termosLeves), ch: new Set((i.chaves || []).flatMap(termosLeves)) }));
+  const df = new Map(); let n = 0;
+  for (const i of lista) for (const e of i.ex) { n++; for (const p of e) df.set(p, (df.get(p) || 0) + 1); }
+  const idf = p => Math.log(1 + n / (df.get(p) || 0.5));
+  INTENCOES = { lista, idf };
+  return INTENCOES;
+}
+// Semelhança (cosseno com pesos idf) entre a pergunta e o exemplo mais parecido de cada assunto
+function melhorIntencao(pergunta) {
+  const { lista, idf } = intencoes();
+  const q = termosLeves(pergunta);
+  if (!q.length) return null;
+  const nq = Math.sqrt(q.reduce((a, p) => a + idf(p) ** 2, 0));
+  let melhor = null;
+  for (const i of lista) {
+    for (const e of i.ex) {
+      if (!e.length) continue;
+      const comum = q.filter(p => e.includes(p));
+      if (!comum.length) continue;
+      const ne = Math.sqrt(e.reduce((a, p) => a + idf(p) ** 2, 0));
+      const temChave = q.some(p => i.ch.has(p));
+      const s = comum.reduce((a, p) => a + idf(p) ** 2, 0) / (nq * ne) + (temChave ? 0.25 : 0) - (i.ch.size && !temChave ? 0.1 : 0);
+      if (!melhor || s > melhor.s) melhor = { i, s };
+    }
+  }
+  return melhor;
+}
+
 // Resposta para uma pergunta: { texto, confianca: 'alta'|'media'|'baixa', fonte }
 function responder(pergunta) {
   const norm = semAcento(pergunta);
   if (PROIBIDO.test(norm)) {
     return { texto: 'Esse assunto eu não consigo tratar por aqui, porque envolve informações internas ou de segurança. Um atendente da nossa equipe pode te ajudar.', confianca: 'baixa', interno: true };
   }
+  // 1º) resposta pronta do assunto (quando a pergunta é bem parecida com uma das formas de perguntar)
+  const it = melhorIntencao(pergunta);
+  if (it && it.s >= 0.45) {
+    return { texto: `${it.i.resposta}\n\n📖 Mais detalhes no guia: ${baseSite()}/ajuda#${it.i.guia}`, confianca: it.s >= 0.7 ? 'alta' : 'media', fonte: it.i.id };
+  }
   const { q, itens } = buscar(pergunta, 3);
   const melhor = itens[0];
-  if (!melhor || !q.length) return { texto: '', confianca: 'baixa' };
+  const pronta = () => (it && it.s >= 0.38
+    ? { texto: `${it.i.resposta}\n\n📖 Mais detalhes no guia: ${baseSite()}/ajuda#${it.i.guia}`, confianca: 'media', fonte: it.i.id }
+    : { texto: '', confianca: 'baixa' });
+  if (!melhor || !q.length) return pronta();
   const conf = melhor.s >= 5 && melhor.cobertura >= 0.5 ? 'alta'
     : (melhor.cobertura >= 0.99 && melhor.s >= 1.5) || (melhor.s >= 2.5 && melhor.cobertura >= 0.5) ? 'media' : 'baixa';
-  if (conf === 'baixa') return { texto: '', confianca: 'baixa' };
+  if (conf === 'baixa' || (conf === 'media' && it && it.s >= 0.38)) return pronta();
   // Junta o 2º trecho se for da mesma seção e quase tão bom (passos seguidos de um mesmo assunto)
   const partes = [melhor.tr];
   const seg = itens[1];
@@ -141,4 +201,4 @@ function responder(pergunta) {
   };
 }
 
-module.exports = { responder, buscar, termos, semAcento, carregar };
+module.exports = { responder, buscar, termos, termosLeves, melhorIntencao, semAcento, carregar };

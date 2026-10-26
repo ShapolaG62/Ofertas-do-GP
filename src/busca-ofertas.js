@@ -24,8 +24,8 @@ let NOMES = new Map(); // id → { p: nome, n: nome normalizado }
 // Respostas prontas das buscas sem login (a página inicial é igual para todos): valem até a lista mudar
 const RESPOSTAS = new Map();
 const assinatura = () => {
-  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h, COUNT(comissao_pct) AS c FROM offers');
-  return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}`;
+  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h, COUNT(comissao_pct) AS c, MAX(comissao_em) AS ce FROM offers');
+  return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}|${r.ce}`;
 };
 // Quem visita nunca espera a lista ser refeita: recebe a lista pronta e a atualização roda logo depois, em segundo plano.
 let refazendo = false;

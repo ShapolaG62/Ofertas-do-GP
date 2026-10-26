@@ -67,6 +67,8 @@ async function sincronizar() {
     // Janela de uma sincronização anterior que ficou aberta (o Chrome pode ter pausado a extensão no meio)
     const { janelaSync } = await chrome.storage.local.get('janelaSync');
     if (janelaSync) { try { await chrome.windows.remove(janelaSync); } catch { /* já fechada */ } }
+    const { janelaMl } = await chrome.storage.local.get('janelaMl');
+    if (janelaMl) { try { await chrome.windows.remove(janelaMl); } catch { /* já fechada */ } }
     let janela;
     try {
       janela = await chrome.windows.create({ url: urls, state: 'minimized', focused: false });
@@ -86,10 +88,82 @@ async function sincronizar() {
     pendentes = null;
     try { await chrome.windows.remove(janela.id); } catch { /* já fechada */ }
     await chrome.storage.local.set({ ultima: Date.now(), janelaSync: null });
+    if (ativos.includes('mercadolivre')) await conferirComissoesMl();
   })().finally(() => { rodando = null; });
   return rodando;
 }
 let pendentes = null;
+
+// ── Comissão dos produtos do Mercado Livre ──
+// O Mercado Livre só mostra a comissão (e a comissão extra das campanhas) na página do produto, para quem está
+// logado como afiliado. A cada sincronização, confere um lote dos produtos do Ofertou! (os mais atrativos primeiro):
+// abre as páginas numa janela minimizada, 4 de cada vez, lê o ganho (content-ml.js) e manda ao site.
+const LOTE_ML = 24, JUNTAS = 4, ESPERA_ML_MS = 4 * 60 * 1000;
+let conferindo = null; // { janela, abas: Map(tabId → item), resultados: [] , proxima }
+
+async function chamarSite(caminho, opcoes = {}) {
+  const { site, chave } = await config();
+  const r = await fetch(`${site}${caminho}`, { ...opcoes, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${chave}` } });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `O site respondeu ${r.status}.`);
+  return j;
+}
+
+async function conferirComissoesMl() {
+  let lista;
+  try { lista = (await chamarSite(`/api/ganhos/extensao/ml-pendentes?n=${LOTE_ML}`)).itens || []; }
+  catch (err) { await guardarEstado('ml_comissao', { ok: false, mensagem: err.message }); return; }
+  if (!lista.length) { await guardarEstado('ml_comissao', { ok: true, mensagem: 'Todos os produtos do Mercado Livre já foram conferidos.' }); return; }
+  const fila = lista.slice();
+  const janela = await chrome.windows.create({ url: 'about:blank', state: 'minimized', focused: false })
+    .catch(() => chrome.windows.create({ url: 'about:blank', focused: false }));
+  await chrome.storage.local.set({ janelaMl: janela.id });
+  const resultados = [];
+  const manter = setInterval(() => chrome.runtime.getPlatformInfo(), 20000);
+  await new Promise(resolve => {
+    const fim = setTimeout(resolve, ESPERA_ML_MS);
+    const abas = new Map();
+    const abrir = async () => {
+      while (abas.size < JUNTAS && fila.length) {
+        const it = fila.shift();
+        try { const aba = await chrome.tabs.create({ windowId: janela.id, url: it.url, active: false }); abas.set(aba.id, it); } catch { /* segue */ }
+      }
+      if (!abas.size && !fila.length) { clearTimeout(fim); resolve(); }
+    };
+    conferindo = {
+      janela: janela.id,
+      receber: async (tabId, msg) => {
+        const it = abas.get(tabId);
+        if (!it) return;
+        abas.delete(tabId);
+        resultados.push({ id: it.id, item: it.item, comissao: msg.comissao, extra: msg.extra || 0 });
+        try { await chrome.tabs.remove(tabId); } catch { /* já fechada */ }
+        abrir();
+      },
+    };
+    abrir();
+  });
+  clearInterval(manter);
+  conferindo = null;
+  try { await chrome.windows.remove(janela.id); } catch { /* já fechada */ }
+  await chrome.storage.local.set({ janelaMl: null });
+  const lidos = resultados.filter(r => r.comissao != null);
+  if (!lidos.length) {
+    await guardarEstado('ml_comissao', { ok: false, mensagem: `Abri ${resultados.length} produto(s), mas não achei o ganho de afiliado na página. Entre no Mercado Livre com a sua conta de afiliado neste Chrome.` });
+    return;
+  }
+  try {
+    const r = await chamarSite('/api/ganhos/extensao/ml-comissoes', { method: 'POST', body: JSON.stringify({ itens: lidos }) });
+    await guardarEstado('ml_comissao', { ok: true, mensagem: `${lidos.length} produto(s) conferido(s), ${r.extras} com comissão extra.` });
+  } catch (err) { await guardarEstado('ml_comissao', { ok: false, mensagem: err.message }); }
+}
+
+// Produto do Mercado Livre que VOCÊ abriu: manda a comissão lida na hora
+async function comissaoAvulsa(msg) {
+  if (msg.comissao == null || !msg.item) return;
+  try { await chamarSite('/api/ganhos/extensao/ml-comissoes', { method: 'POST', body: JSON.stringify({ itens: [{ item: msg.item, comissao: msg.comissao, extra: msg.extra || 0 }] }) }); }
+  catch { /* sem chave ou site fora: tenta na próxima */ }
+}
 
 chrome.runtime.onMessage.addListener((msg, remetente, responder) => {
   if (msg?.tipo === 'lido') {
@@ -100,6 +174,11 @@ chrome.runtime.onMessage.addListener((msg, remetente, responder) => {
       // Aba da sincronização: fecha assim que leu (a janela some quando a última aba fecha)
       try { await chrome.tabs.remove(remetente.tab.id); } catch { /* já fechada */ }
     });
+    return false;
+  }
+  if (msg?.tipo === 'comissao-ml') {
+    if (conferindo && remetente.tab?.windowId === conferindo.janela) conferindo.receber(remetente.tab.id, msg);
+    else comissaoAvulsa(msg);
     return false;
   }
   if (msg?.tipo === 'testar') { postar({ teste: true }).then(responder); return true; }

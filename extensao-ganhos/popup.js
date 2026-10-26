@@ -25,6 +25,17 @@ async function desenhar() {
     }
     $('#portais').appendChild(div);
   }
+  // Comissão dos produtos do Mercado Livre (conferida junto, quando o Mercado Livre está ligado)
+  if (ativos.includes('mercadolivre')) {
+    const e = estado.ml_comissao;
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = '<span></span><b>Comissão dos produtos (Mercado Livre)</b><small></small>';
+    const s = div.querySelector('small');
+    s.textContent = e ? `${hora(e.em)} · ${e.mensagem}` : 'Confere um lote de produtos a cada sincronização.';
+    if (e) s.className = e.ok ? 'ok' : 'erro';
+    $('#portais').appendChild(div);
+  }
 }
 
 $('#portais').addEventListener('change', async e => {

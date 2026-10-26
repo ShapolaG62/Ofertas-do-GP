@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Ofertou! Ganhos",
   "short_name": "Ofertou Ganhos",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Sincroniza sozinho, em segundo plano, o saldo dos seus programas de afiliados (Mercado Livre, Amazon, Magalu, Shopee, AliExpress e Awin) com o painel do Ofertou!.",
   "icons": {
     "16": "icone.png",
@@ -43,6 +43,21 @@
       ],
       "js": [
         "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://produto.mercadolivre.com.br/*",
+        "https://www.mercadolivre.com.br/*/p/*",
+        "https://www.mercadolivre.com.br/p/*",
+        "https://www.mercadolivre.com.br/*MLB*"
+      ],
+      "exclude_matches": [
+        "https://www.mercadolivre.com.br/afiliados*"
+      ],
+      "js": [
+        "content-ml.js"
       ],
       "run_at": "document_idle"
     }

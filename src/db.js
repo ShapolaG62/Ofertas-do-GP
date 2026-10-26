@@ -154,6 +154,8 @@ if (!offerColumns.includes('subcategoria')) db.exec('ALTER TABLE offers ADD COLU
 // Comissão de afiliado informada pela API da loja (Shopee/AliExpress), em %: a total e a extra paga pelo vendedor
 if (!offerColumns.includes('comissao_pct')) db.exec('ALTER TABLE offers ADD COLUMN comissao_pct REAL');
 if (!offerColumns.includes('comissao_extra_pct')) db.exec('ALTER TABLE offers ADD COLUMN comissao_extra_pct REAL');
+// Quando a comissão foi lida na página do produto pela extensão do Chrome (Mercado Livre, que não informa por API)
+if (!offerColumns.includes('comissao_em')) db.exec('ALTER TABLE offers ADD COLUMN comissao_em TEXT');
 if (!offerColumns.includes('loja_id')) {
   db.exec('ALTER TABLE offers ADD COLUMN loja_id INTEGER REFERENCES lojas(id) ON DELETE CASCADE');
 }

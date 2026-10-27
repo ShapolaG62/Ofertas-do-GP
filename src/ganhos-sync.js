@@ -123,13 +123,7 @@ function estado() {
   const e = lerEstado();
   const lista = {};
   for (const id of Object.keys(FONTES)) lista[id] = { automatica: true, ...(e[id] || { ok: null, mensagem: 'Ainda não sincronizou.' }) };
-  const db = require('./db');
-  for (const [id, msg] of Object.entries(SEM_API)) {
-    // Saldo lido pela extensão do Chrome (sincroniza sozinha a cada 3 h)
-    const p = db.get('SELECT em FROM ganhos_portal WHERE plataforma = ?', id);
-    lista[id] = p ? { automatica: true, extensao: true, ok: true, em: p.em.replace(' ', 'T') + 'Z', mensagem: 'Saldo lido no portal pela extensão do Chrome.' }
-      : { automatica: false, ok: null, mensagem: `${msg} Ou instale a extensão do Chrome (logo acima), que lê o saldo sozinha.` };
-  }
+  for (const [id, msg] of Object.entries(SEM_API)) lista[id] = { automatica: false, ok: null, mensagem: msg };
   return { rodando, plataformas: lista };
 }
 

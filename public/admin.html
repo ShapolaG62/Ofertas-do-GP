@@ -108,12 +108,6 @@
   .gn-status { font-size: 12px; padding: 4px 6px; border-radius: 8px; background: var(--surface-2); }
   dialog.dlg-pequena { width: min(520px, calc(100vw - 24px)); }
   .gn-dlg-campos { display: grid; gap: 12px; }
-  .gn-passos { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 8px; }
-  .gn-ext-chave { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
-  .gn-ext-chave[hidden] { display: none; }
-  .gn-ext-chave code { flex: 1 1 220px; overflow-wrap: anywhere; font-size: 12.5px; }
-  .gn-portal { font-size: 12px; color: var(--brand, #2bb673); margin-top: 4px; }
-  .gn-portal button { border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 0 0 0 4px; }
   .gn-sync-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
   .gn-sync-item { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
   .gn-sync-item b { display: block; font-size: 14px; }
@@ -859,20 +853,6 @@
           <summary><b>Como fazer o dinheiro cair direto no Mercado Pago</b></summary>
           <p style="margin:8px 0 0">Nenhum programa envia para o Mercado Pago por integração, mas a sua conta Mercado Pago tem dados bancários próprios: no app do Mercado Pago, toque em <b>Seu perfil → Seus dados → Dados da conta</b> (banco 323 – Mercado Pago, agência e número da conta). Cadastre esses dados como <b>conta de recebimento</b> no portal de cada programa (Amazon, Shopee, Magalu, Awin…). Assim os pagamentos automáticos e os saques caem direto no Mercado Pago. O Mercado Livre Afiliados já paga na conta Mercado Pago.</p>
         </details>
-      </div>
-
-      <div class="panel">
-        <h2>Extensão do Chrome: saldo direto dos portais</h2>
-        <p class="hint">Mercado Livre, Amazon e Magalu não têm API de ganhos para afiliados. A extensão <b>Ofertou! Ganhos</b> resolve: depois de colar a chave, ela <b>sincroniza sozinha a cada 3 horas, em segundo plano</b> — abre os portais numa janela minimizada, lê o saldo disponível e o valor a liberar da sua conta e fecha. Os cartões acima passam a mostrar o valor do portal. Precisa só estar logado nos portais no Chrome do computador (e o Chrome aberto).</p>
-        <ol class="hint gn-passos">
-          <li><a class="btn small" href="/extensao/ofertou-ganhos.zip" download>Baixar a extensão (.zip)</a> e descompacte numa pasta.</li>
-          <li>No Chrome, abra <b>chrome://extensions</b>, ligue o <b>Modo do desenvolvedor</b> (canto superior direito) e clique em <b>Carregar sem compactação</b>, escolhendo a pasta.</li>
-          <li><button class="btn small primary" type="button" id="gn-ext-chave">Gerar chave da extensão</button> <span id="gn-ext-info"></span></li>
-          <li>Clique no ícone do Ofertou! na barra do Chrome, cole a chave e toque em <b>Salvar e sincronizar</b>. Pronto: a partir daí é automático. No ícone você vê a situação de cada loja e pode escolher quais sincronizar.</li>
-          <li>Para atualizar na hora: toque em <b>Portal ↗</b> no cartão da loja. O portal abre nesta guia, a extensão lê o saldo (e, no Mercado Livre, os produtos com comissão extra que estiverem na tela) e você volta para cá sozinho.</li>
-        </ol>
-        <div id="gn-ext-chave-box" hidden class="gn-ext-chave"><code id="gn-ext-chave-txt"></code><button class="btn small" type="button" id="gn-ext-copiar">Copiar</button>
-          <span class="hint" style="margin:0">Guarde agora: por segurança, ela não aparece de novo (gerar outra desliga a anterior).</span></div>
       </div>
 
       <form class="settings-form">
@@ -1644,12 +1624,6 @@ async function showApp() {
   $('#manual-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
   $('#cat-list').textContent = CATEGORIES.join(', ');
   if ($('#nt-cat').options.length === 1) $('#nt-cat').insertAdjacentHTML('beforeend', CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join(''));
-  // Volta do portal pelo botão "Portal" (extensão do Chrome): avisa o resultado e limpa o endereço
-  const volta = new URLSearchParams(location.search);
-  if (volta.has('portal')) {
-    globalMsg(volta.get('ok') ? 'Saldo lido no portal e atualizado.' : 'Voltou do portal sem ler o saldo (abra a página de ganhos do portal e tente de novo).', Boolean(volta.get('ok')));
-    history.replaceState(null, '', `${location.pathname}${location.hash}`);
-  }
   const inicial = location.hash.slice(1);
   if (inicial && inicial !== 'dash' && document.querySelector(`.tab[data-tab="${inicial}"]`)) abrirAba(inicial); else loadDashboard();
 }
@@ -2841,14 +2815,13 @@ async function loadGanhos() {
   $('#gn-sync-lista').innerHTML = Object.entries(GN.sync.plataformas).map(([id, x]) => `<div class="gn-sync-item">
     <span class="gn-ponto ${!x.automatica ? 'manual' : x.ok === true ? 'ok' : x.ok === false ? 'erro' : ''}"></span>
     <div><b>${esc(nomes[id] || id)}</b><small>${esc(x.mensagem || '')}</small>
-    <span class="gn-tag">${x.automatica ? `${x.extensao ? '🧩 Pela extensão' : '🔄 Automática'}${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : '📄 Pela planilha do portal'}</span></div></div>`).join('');
+    <span class="gn-tag">${x.automatica ? `🔄 Automática${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : '📄 Pela planilha do portal'}</span></div></div>`).join('');
   // Cartões das plataformas
   $('#gn-plataformas').innerHTML = GN.plataformas.map(p => {
     const pct = p.minimo > 0 ? Math.min(100, Math.round((p.disponivel / p.minimo) * 100)) : (p.disponivel > 0 ? 100 : 0);
     return `<div class="gn-card${p.pode_sacar ? ' is-pronto' : ''}${p.ativo ? '' : ' is-off'}">
       <div class="gn-card-topo"><b>${esc(p.nome)}</b>${p.pode_sacar ? '<span class="badge b-active">Pode sacar</span>' : ''}</div>
       <div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div>
-      ${p.leitura_portal ? `<div class="gn-portal" title="${esc(p.leitura_portal.url || '')}">📡 Lido no portal em ${fmtDate(p.leitura_portal.em)}${p.leitura_portal.total != null ? ` · total ${gnMoeda(p.leitura_portal.total, p.moeda)}` : ''}<button type="button" data-gn-portal-limpar="${p.id}" title="Voltar a usar a soma das vendas registradas">usar as vendas</button></div>` : ''}
       <div class="gn-barra" title="${pct}% do mínimo"><span style="width:${pct}%"></span></div>
       <div class="hint" style="margin:6px 0 0">Mínimo: <b>${p.minimo ? gnMoeda(p.minimo, p.moeda) : 'não informado'}</b>${p.falta > 0 ? ` · faltam ${gnMoeda(p.falta, p.moeda)}` : ''}</div>
       <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>
@@ -2856,7 +2829,7 @@ async function loadGanhos() {
       <div class="gn-card-acoes">
         <button class="btn small${p.pode_sacar ? ' primary' : ''}" data-gn-saque="${p.id}">Registrar saque</button>
         <button class="btn small" data-gn-regras="${p.id}">Regras</button>
-        ${p.portal ? `<a class="btn small" href="${esc(p.portal)}" data-gn-portal="${p.id}" rel="noopener" title="Abre o portal nesta guia; com a extensão do Chrome, o saldo é lido e você volta para cá">Portal ↗</a>` : ''}
+        ${p.portal ? `<a class="btn small" href="${esc(p.portal)}" target="_blank" rel="noopener">Portal ↗</a>` : ''}
       </div></div>`;
   }).join('');
   // Selects de plataforma
@@ -2956,25 +2929,6 @@ $('#gn-vendas').addEventListener('change', async e => {
   catch (err) { globalMsg(err.message, false); }
 });
 $('#gn-filtro-plat').addEventListener('change', loadGanhos);
-// Extensão do Chrome: chave (aparece uma vez) e "voltar a usar as vendas registradas" num cartão
-$('#gn-ext-chave').addEventListener('click', async () => {
-  try {
-    const tem = (await api('/api/admin/ganhos/extensao')).tem_chave;
-    if (tem && !await OfertouUI.confirmar('Gerar uma chave nova? A extensão com a chave antiga para de enviar até você colar a nova.')) return;
-    const r = await api('/api/admin/ganhos/extensao/chave', { method: 'POST', body: {} });
-    $('#gn-ext-chave-txt').textContent = r.chave;
-    $('#gn-ext-chave-box').hidden = false;
-  } catch (err) { globalMsg(err.message, false); }
-});
-$('#gn-ext-copiar').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('#gn-ext-chave-txt').textContent); globalMsg('Chave copiada.'); } catch { globalMsg('Selecione e copie a chave.', false); }
-});
-$('#gn-plataformas').addEventListener('click', async e => {
-  const b = e.target.closest('[data-gn-portal-limpar]');
-  if (!b) return;
-  if (!await OfertouUI.confirmar('Deixar de usar o saldo lido no portal e voltar à soma das vendas registradas? (A extensão envia de novo na próxima visita ao portal.)')) return;
-  try { await api(`/api/admin/ganhos/portal/${b.dataset.gnPortalLimpar}`, { method: 'DELETE' }); loadGanhos(); } catch (err) { globalMsg(err.message, false); }
-});
 $('#gn-filtro-status').addEventListener('change', loadGanhos);
 $('#gn-nova').addEventListener('submit', async e => {
   e.preventDefault();

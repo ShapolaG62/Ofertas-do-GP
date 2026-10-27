@@ -259,7 +259,7 @@ body:not(.is-admin) .admin-only { display: none !important; }
   background: var(--deal); color: #fff; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .card-tags .card-off { position: static; }
-/* Comissão de afiliado (só admin e afiliados): azul = extra do vendedor, amarelo = normal */
+/* Selo de comissão extra (só admin, equipe e afiliados) */
 .card-com { padding: 3px 8px; border-radius: 6px; background: #f5b70a; color: #2b2100; font-size: 12px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: auto; }
 .card-com.extra { background: #1d7bf2; color: #fff; }
 .com-ponto { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; background: #1d7bf2; vertical-align: 0; }

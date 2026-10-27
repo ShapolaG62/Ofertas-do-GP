@@ -167,7 +167,6 @@ const DEFAULTS = {
   agenda_lojas: '',             // lojas das ofertas automáticas (vazio = todas), ex.: mercadolivre,amazon
   agenda_palavras_bloqueadas: 'capinha, capa para celular, pelicula, cabo usb, suporte para celular', // nunca postar ofertas com estas palavras
   agenda_palavras_permitidas: '', // se preenchido: só ofertas com pelo menos uma destas palavras
-  comissao_padrao: '',          // comissão normal por loja e categoria (src/comissao-padrao.js); vazio = tabela inicial
   post_modelo: '',              // modelo do texto das postagens (public/js/modelo-post.js); vazio = padrão
   zapi2_instance: '',           // WhatsApp de contingência (assume se o principal falhar)
   zapi2_token: '',
@@ -252,7 +251,7 @@ function updateFromAdmin(updates) {
   for (const [key, raw] of Object.entries(updates || {})) {
     if (!(key in DEFAULTS) || INTERNAL_KEYS.includes(key)) continue;
     let value = typeof raw === 'string' ? raw.trim() : raw;
-    if (['stores_enabled', 'whatsapp_groups', 'agenda_redes', 'comissao_padrao'].includes(key) && typeof value === 'object') value = JSON.stringify(value);
+    if (['stores_enabled', 'whatsapp_groups', 'agenda_redes'].includes(key) && typeof value === 'object') value = JSON.stringify(value);
     if (SECRET_KEYS.includes(key) && !value) continue;
     set(key, value);
     changed.push(key);

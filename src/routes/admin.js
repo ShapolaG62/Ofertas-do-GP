@@ -120,9 +120,6 @@ router.post('/api/admin/mine', async (req, res) => {
   res.json({ ok: true, started: true });
 });
 
-// Tabela de comissão normal por loja e categoria (a salva ou a inicial)
-router.get('/api/admin/comissao-padrao', (req, res) => res.json(require('../comissao-padrao').tabela()));
-
 // Comissão extra do Mercado Livre colada do painel "Afiliados e Criadores" (o navegador já manda os produtos lidos)
 router.post('/api/admin/mineracao/ml-comissao-extra', async (req, res) => {
   try {

@@ -208,16 +208,14 @@
       + (any ? '<button class="link-btn" type="button" data-clear>Limpar filtros</button>' : '');
   }
 
-  // Selo da comissão de afiliado (só admin e afiliados): azul = comissão extra do vendedor; amarelo = comissão normal
+  // Selo azul de comissão extra (só admin, equipe e afiliados)
   const pctTxt = v => `${String(Math.round(Number(v) * 10) / 10).replace('.', ',')}%`;
   function comissaoHtml(o) {
     if (!('comissao_pct' in o)) return '';
     if (o.comissao_extra_pct > 0) {
       return `<span class="card-com extra com-only" title="Comissão extra de ${pctTxt(o.comissao_extra_pct)}${o.comissao_pct ? ` (total de ${pctTxt(o.comissao_pct)})` : ''}">Extra +${pctTxt(o.comissao_extra_pct)}</span>`;
     }
-    return o.comissao_pct > 0
-      ? `<span class="card-com com-only" title="${o.comissao_estimada ? `Comissão normal da categoria nesta loja: ${pctTxt(o.comissao_pct)} (tabela em Painel → Mineração; confira no seu painel de afiliado)` : `Comissão normal de ${pctTxt(o.comissao_pct)}`}">Comissão ${pctTxt(o.comissao_pct)}</span>`
-      : '<span class="card-com com-only" title="Comissão normal da loja (a loja não informa a porcentagem)">Comissão</span>';
+    return '';
   }
 
   function cardHtml(o) {

@@ -216,7 +216,7 @@
       return `<span class="card-com extra com-only" title="Comissão extra de ${pctTxt(o.comissao_extra_pct)}${o.comissao_pct ? ` (total de ${pctTxt(o.comissao_pct)})` : ''}">Extra +${pctTxt(o.comissao_extra_pct)}</span>`;
     }
     return o.comissao_pct > 0
-      ? `<span class="card-com com-only" title="Comissão normal de ${pctTxt(o.comissao_pct)}">Comissão ${pctTxt(o.comissao_pct)}</span>`
+      ? `<span class="card-com com-only" title="${o.comissao_estimada ? `Comissão normal da categoria nesta loja: ${pctTxt(o.comissao_pct)} (tabela em Painel → Mineração; confira no seu painel de afiliado)` : `Comissão normal de ${pctTxt(o.comissao_pct)}`}">Comissão ${pctTxt(o.comissao_pct)}</span>`
       : '<span class="card-com com-only" title="Comissão normal da loja (a loja não informa a porcentagem)">Comissão</span>';
   }
 

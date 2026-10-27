@@ -134,13 +134,13 @@ function resumo(id) {
       MIN(CASE WHEN status = 'confirmada' AND liberada_em > ? THEN liberada_em END) proxima_liberacao
     FROM ganhos_vendas WHERE plataforma = ?`, agora, agora, agora, p.id);
   const sacado = db.get('SELECT COALESCE(SUM(valor), 0) n FROM ganhos_saques WHERE plataforma = ?', p.id).n;
-  const disponivel = r2(Math.max(0, v.liberado - sacado));
-  // Mercado Livre: o "Ganho estimado" lido no painel de afiliado (extensão do Chrome) é o valor a liberar; cada
+  // Mercado Livre: o "Ganho estimado" lido no painel de afiliado (extensão do Chrome) é o saldo disponível; cada
   // leitura substitui a anterior (não soma)
   const estimado = p.id === 'mercadolivre' ? ganhoEstimadoMl() : null;
+  const disponivel = estimado ? estimado.valor : r2(Math.max(0, v.liberado - sacado));
   return {
     ...p, ativo: Boolean(p.ativo), estimado,
-    disponivel, a_liberar: estimado ? estimado.valor : r2(v.a_liberar), recebido: r2(v.pago + sacado), vendas: v.vendas,
+    disponivel, a_liberar: r2(v.a_liberar), recebido: r2(v.pago + sacado), vendas: v.vendas,
     proxima_liberacao: v.proxima_liberacao,
     pode_sacar: disponivel > 0 && disponivel >= p.minimo,
     falta: r2(Math.max(0, p.minimo - disponivel)),

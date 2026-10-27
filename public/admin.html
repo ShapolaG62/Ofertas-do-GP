@@ -109,6 +109,10 @@
   dialog.dlg-pequena { width: min(520px, calc(100vw - 24px)); }
   .gn-dlg-campos { display: grid; gap: 12px; }
   .gn-estimado { margin: 2px 0 0 !important; color: var(--brand, #2bb673) !important; font-size: 12.5px; }
+  .cpad-wrap { max-height: 460px; overflow: auto; }
+  .cpad th, .cpad td { white-space: nowrap; }
+  .cpad td:first-child { white-space: normal; min-width: 150px; }
+  .cpad input { width: 76px; padding: 6px 8px; }
   .mlx-passos { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 6px; }
   .mlx-auto { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 4px 0 12px; }
   .mlx-auto[hidden], .mlx-ext[hidden] { display: none; }
@@ -335,13 +339,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261229"></script>
-<script src="/js/dialogo.js?v=20261229"></script>
-<script src="/js/modelo-post.js?v=20261229"></script>
-<script src="/js/avisos-entrada.js?v=20261229"></script>
-<script src="/js/capi-minerando.js?v=20261229" defer></script>
-<script src="/js/cadastro-auto.js?v=20261229" defer></script>
-<script src="/js/seletor.js?v=20261229" defer></script>
+<script src="/js/tema.js?v=20261230"></script>
+<script src="/js/dialogo.js?v=20261230"></script>
+<script src="/js/modelo-post.js?v=20261230"></script>
+<script src="/js/avisos-entrada.js?v=20261230"></script>
+<script src="/js/capi-minerando.js?v=20261230" defer></script>
+<script src="/js/cadastro-auto.js?v=20261230" defer></script>
+<script src="/js/seletor.js?v=20261230" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -592,6 +596,12 @@
           <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" id="mlx-importar">Importar</button><button class="btn" type="button" id="mlx-limpar-caixa">Limpar</button></div>
         </div>
         <div id="mlx-resultado" class="hint"></div>
+      </div>
+      <div class="panel">
+        <h2>Comissão normal por categoria</h2>
+        <p class="hint">Mercado Livre, Amazon, Magalu e KaBuM! não informam a comissão de cada produto, mas pagam uma <b>% fixa por categoria</b>. Com esta tabela, o selo amarelo das ofertas mostra "Comissão X%" (só para você, a equipe e os afiliados). Quando a loja informa a comissão do produto (Shopee, AliExpress e a importação acima), vale a informada. Os valores iniciais vêm das tabelas publicadas em out/2026 (Magalu: estimativa do nível inicial; KaBuM!: sem tabela pública) — <b>confira no painel de afiliado de cada loja</b> e ajuste. Em branco = sem %.</p>
+        <div class="table-wrap cpad-wrap"><table class="cpad"><thead><tr><th>Categoria</th><th>Mercado Livre</th><th>Amazon</th><th>Magalu</th><th>KaBuM!</th></tr></thead><tbody id="cpad-lista"></tbody></table></div>
+        <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" id="cpad-salvar">Salvar tabela</button><span class="hint" id="cpad-msg" style="margin:0"></span></div>
       </div>
       <form class="settings-form">
         <div class="panel">
@@ -1739,6 +1749,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'social') { loadSocialLog(); loadAwa(); }
   if (t.dataset.tab === 'clientes') loadClientes();
   if (t.dataset.tab === 'ganhos') loadGanhos();
+  if (t.dataset.tab === 'mining') loadComissaoPadrao();
   if (t.dataset.tab === 'atendimento') loadAtendimento().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'planos') { loadPlanos().then(loadPedidos).catch(e => globalMsg(e.message, false)); $('#rc-webhook-url').textContent = `${location.origin}/api/app/webhook/revenuecat`; }
 }));
@@ -2120,6 +2131,32 @@ $('#mlx-importar').addEventListener('click', async () => {
       + '<br>Os selos e o filtro "Só comissão extra" atualizam em até 1 minuto na página de ofertas.';
   } catch (err) { $('#mlx-resultado').textContent = err.message; }
   finally { b.disabled = false; }
+});
+
+// ── Comissão normal por categoria ─────────────────────────────────────────────
+const CPAD_LOJAS = ['mercadolivre', 'amazon', 'magalu', 'kabum'];
+const CPAD_CATS = [['informatica', 'Informática'], ['celulares', 'Celulares, tablets e relógios'], ['games', 'Games'], ['audio_tv', 'TV, áudio e casa inteligente'],
+  ['eletrodomesticos', 'Eletrodomésticos'], ['cozinha', 'Cozinha e eletroportáteis'], ['casa', 'Casa, móveis e decoração'], ['ferramentas', 'Ferramentas e construção'],
+  ['beleza', 'Beleza e cuidados pessoais'], ['saude', 'Saúde e bem-estar'], ['esporte', 'Esporte e fitness'], ['moda', 'Moda e acessórios'],
+  ['brinquedos', 'Bebês e brinquedos'], ['automotivo', 'Automotivo'], ['pets', 'Pet shop'], ['limpeza', 'Limpeza'], ['alimentos', 'Alimentos e bebidas'],
+  ['*', 'Outras categorias (o que ficar em branco acima)']];
+async function loadComissaoPadrao() {
+  try {
+    const tab = await api('/api/admin/comissao-padrao');
+    $('#cpad-lista').innerHTML = CPAD_CATS.map(([cat, nome]) => `<tr><td>${esc(nome)}</td>${CPAD_LOJAS.map(loja => {
+      const v = tab[loja]?.[cat];
+      return `<td><input type="number" class="cpad-in" data-loja="${loja}" data-cat="${cat}" min="0" max="50" step="0.5" inputmode="decimal" value="${v ?? ''}" aria-label="${esc(nome)}"></td>`;
+    }).join('')}</tr>`).join('');
+  } catch (err) { $('#cpad-msg').textContent = err.message; }
+}
+$('#cpad-salvar').addEventListener('click', async () => {
+  const tab = Object.fromEntries(CPAD_LOJAS.map(l => [l, {}]));
+  for (const inp of $$('.cpad-in')) if (inp.value !== '') tab[inp.dataset.loja][inp.dataset.cat] = Number(inp.value);
+  try {
+    await api('/api/admin/settings', { method: 'PUT', body: { comissao_padrao: tab } });
+    $('#cpad-msg').textContent = 'Tabela salva. Os selos atualizam em até 1 minuto na página de ofertas.';
+    loadComissaoPadrao();
+  } catch (err) { $('#cpad-msg').textContent = err.message; }
 });
 
 $('#quick-mine').addEventListener('submit', async e => {
@@ -3032,8 +3069,8 @@ async function loadGanhos() {
       <div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div>
       <div class="gn-barra" title="${pct}% do mínimo"><span style="width:${pct}%"></span></div>
       <div class="hint" style="margin:6px 0 0">Mínimo: <b>${p.minimo ? gnMoeda(p.minimo, p.moeda) : 'não informado'}</b>${p.falta > 0 ? ` · faltam ${gnMoeda(p.falta, p.moeda)}` : ''}</div>
-      <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao && !p.estimado ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>
-      ${p.estimado ? `<div class="hint gn-estimado">📡 Ganho estimado no painel do Mercado Livre, lido em ${fmtDate(p.estimado.em)}</div>` : ''}
+      <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>
+      ${p.estimado ? `<div class="hint gn-estimado">📡 Disponível = ganho estimado no painel do Mercado Livre, lido em ${fmtDate(p.estimado.em)}</div>` : ''}
       <div class="hint" style="margin:2px 0 0">${p.vendas} venda(s) · libera em ${p.dias_liberacao} dias</div>
       <div class="gn-card-acoes">
         <button class="btn small${p.pode_sacar ? ' primary' : ''}" data-gn-saque="${p.id}">Registrar saque</button>

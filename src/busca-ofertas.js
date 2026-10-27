@@ -4,6 +4,7 @@
 // ordenações; agrupamento por tipo; contagens de cada loja/categoria/tipo ignorando o próprio filtro.
 const offers = require('./offers');
 const db = require('./db');
+const comissaoPadrao = require('./comissao-padrao');
 
 const CATEGORIAS = {
   informatica: 'Informática', celulares: 'Celulares, tablets e relógios', games: 'Games',
@@ -25,7 +26,8 @@ let NOMES = new Map(); // id → { p: nome, n: nome normalizado }
 const RESPOSTAS = new Map();
 const assinatura = () => {
   const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h, COUNT(comissao_pct) AS c, TOTAL(comissao_extra_pct) AS e FROM offers');
-  return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}|${r.e}`;
+  // a tabela de comissão normal (Painel) também muda o que aparece nos selos
+  return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}|${r.e}|${require('./settings').get('comissao_padrao') || ''}`;
 };
 // Quem visita nunca espera a lista ser refeita: recebe a lista pronta e a atualização roda logo depois, em segundo plano.
 let refazendo = false;
@@ -75,7 +77,11 @@ function montar() {
       link_clicks: o.link_clicks || 0, fonte: o.fonte, created_at: o.created_at, last_seen_at: o.last_seen_at,
       loja_slug: o.loja_slug || null,
       menor_preco_30d: h && h.n >= 2 && c <= seteDias && o.preco_atual <= h.min30 ? 1 : 0,
-      comissao_pct: o.comissao_pct ?? null, comissao_extra_pct: o.comissao_extra_pct > 0 ? o.comissao_extra_pct : 0,
+      // Comissão: a informada pela loja (API/importação) ou, sem ela, a da tabela por categoria (estimada)
+      ...(o.comissao_pct != null
+        ? { comissao_pct: o.comissao_pct }
+        : { comissao_pct: comissaoPadrao.de(o.store_id, o.categoria), comissao_estimada: true }),
+      comissao_extra_pct: o.comissao_extra_pct > 0 ? o.comissao_extra_pct : 0,
       _n: n, _k: m.k, _c: c, _alta: m.alta, _acess: m.acess,
     };
   });
@@ -101,7 +107,7 @@ function montar() {
 }
 const publico = o => { const { _n, _k, _c, _s, _alta, _acess, ...r } = o; return r; };
 // Quem visita não vê a comissão de afiliado (só o admin e os afiliados com a ferramenta de postagem)
-const semComissao = o => { const { comissao_pct, comissao_extra_pct, ...r } = publico(o); return r; };
+const semComissao = o => { const { comissao_pct, comissao_extra_pct, comissao_estimada, ...r } = publico(o); return r; };
 
 // ── Filtros ──
 function ler(q) {

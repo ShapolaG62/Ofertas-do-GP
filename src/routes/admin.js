@@ -120,6 +120,16 @@ router.post('/api/admin/mine', async (req, res) => {
   res.json({ ok: true, started: true });
 });
 
+// Comissão extra do Mercado Livre colada do painel "Afiliados e Criadores" (o navegador já manda os produtos lidos)
+router.post('/api/admin/mineracao/ml-comissao-extra', async (req, res) => {
+  try {
+    const cml = require('../comissao-ml');
+    if (Array.isArray(req.body?.limpar_exceto)) return res.json({ limpos: cml.limparExceto(req.body.limpar_exceto) });
+    res.json(await cml.importar(req.body?.itens));
+  }
+  catch (err) { res.status(400).json({ error: err.message }); }
+});
+
 // ── Ofertas ───────────────────────────────────────────────────────────────────
 router.get('/api/admin/offers', (req, res) => {
   res.json(offers.listForAdmin({

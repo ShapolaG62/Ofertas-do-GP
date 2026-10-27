@@ -108,6 +108,12 @@
   .gn-status { font-size: 12px; padding: 4px 6px; border-radius: 8px; background: var(--surface-2); }
   dialog.dlg-pequena { width: min(520px, calc(100vw - 24px)); }
   .gn-dlg-campos { display: grid; gap: 12px; }
+  .mlx-passos { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 6px; }
+  .mlx-cola { min-height: 84px; max-height: 160px; overflow: auto; padding: 14px; border-radius: 12px; border: 1.5px dashed var(--border-strong, #343c36);
+    background: var(--surface-2); color: var(--muted); font-size: 14px; cursor: text; outline: none; }
+  .mlx-cola:focus { border-color: var(--brand, #2bb673); }
+  .mlx-cola:empty::before { content: attr(data-vazio); color: var(--muted); }
+  #mlx-previa .table-wrap { max-height: 320px; overflow: auto; }
   .gn-sync-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
   .gn-sync-item { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
   .gn-sync-item b { display: block; font-size: 14px; }
@@ -550,6 +556,23 @@
           </div>
         </form>
         <div id="quick-result" class="hint"></div>
+      </div>
+      <div class="panel">
+        <h2>Comissão extra do Mercado Livre</h2>
+        <p class="hint">O Mercado Livre não informa a comissão por API: ela só aparece no seu painel de afiliado. Traga de lá em 3 passos:</p>
+        <ol class="hint mlx-passos">
+          <li>Abra o <a href="https://www.mercadolivre.com.br/afiliados/hub?is_affiliate=true" target="_blank" rel="noopener"><b>painel Afiliados e Criadores ↗</b></a> (logado) na página dos produtos com ganho extra. Role até o fim para carregar todos.</li>
+          <li>Na página do Mercado Livre, aperte <b>Ctrl+A</b> e depois <b>Ctrl+C</b>.</li>
+          <li>Clique na caixa abaixo e aperte <b>Ctrl+V</b>. Confira a prévia e toque em <b>Importar</b>.</li>
+        </ol>
+        <div class="mlx-cola" id="mlx-cola" contenteditable="true" role="textbox" aria-label="Cole aqui a página do painel de afiliados" data-vazio="Clique aqui e aperte Ctrl+V"></div>
+        <div id="mlx-previa" hidden>
+          <p class="hint" id="mlx-info"></p>
+          <div class="table-wrap"><table><thead><tr><th>Produto</th><th>Código</th><th>Comissão</th><th>Extra</th></tr></thead><tbody id="mlx-lista"></tbody></table></div>
+          <label class="check" style="margin-top:10px"><input type="checkbox" id="mlx-limpar"> <span>Tirar a comissão extra dos produtos do Mercado Livre que <b>não</b> estão nesta lista (campanhas que acabaram)</span></label>
+          <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" id="mlx-importar">Importar</button><button class="btn" type="button" id="mlx-limpar-caixa">Limpar</button></div>
+        </div>
+        <div id="mlx-resultado" class="hint"></div>
       </div>
       <form class="settings-form">
         <div class="panel">
@@ -1912,6 +1935,132 @@ $('#qm-todas').addEventListener('click', () => {
   const todas = caixas.every(c => c.checked);
   caixas.forEach(c => { c.checked = !todas; });
   $('#qm-todas').textContent = todas ? 'marcar todas' : 'desmarcar todas';
+});
+
+// ── Comissão extra do Mercado Livre: página do painel de afiliados copiada e colada ─────────────────────────
+// Lê no próprio navegador: cada cartão de produto (bloco com um só link MLB) dá o código, o nome, os preços, a foto
+// e as porcentagens de ganho (normal e extra). O servidor marca as ofertas do site e inclui as que faltam.
+const MLX = { itens: [] };
+const mlxPct = /(\d{1,2}(?:[.,]\d{1,2})?)\s*%/g;
+const mlxDinheiro = /R\$\s?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:,\d{1,2})?)/g;
+const mlxNum = s => Number(String(s).replace(/\./g, '').replace(',', '.'));
+function mlxCodigo(href) {
+  const h = decodeURIComponent(href || '');
+  const item = h.match(/item_id[:=]MLB-?(\d{6,})/i) || h.match(/[?&]wid=MLB-?(\d{6,})/i) || (!/\/p\/MLB/i.test(h) && h.match(/MLB-?(\d{6,})/i));
+  const prod = h.match(/\/p\/MLB-?(\d{6,})/i);
+  return { item: item ? `MLB${item[1]}` : null, produto: prod ? `MLB${prod[1]}` : null };
+}
+const mlxChave = c => c.item || c.produto;
+// Texto do bloco com espaço entre os pedaços (o textContent junta "8%" com a palavra seguinte)
+function mlxTexto(el) {
+  const partes = [];
+  const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  for (let n; (n = w.nextNode());) { const t = n.nodeValue.trim(); if (t) partes.push(t); }
+  return partes.join(' ').replace(/\s+/g, ' ');
+}
+function mlxGanho(texto) {
+  let base = 0, extra = 0, incluida = false;
+  const achados = [...texto.matchAll(mlxPct)];
+  achados.forEach((p, i) => {
+    const v = Number(p[1].replace(',', '.'));
+    if (!(v > 0 && v <= 60)) return;
+    const ini = i ? achados[i - 1].index + achados[i - 1][0].length : Math.max(0, p.index - 30);
+    const fim = Math.min(i < achados.length - 1 ? achados[i + 1].index : texto.length, p.index + p[0].length + 30);
+    // O rótulo vem antes do número ("Ganho extra +6%"); depois, só conta se estiver colado ("4% extra")
+    const antes = texto.slice(ini, p.index), depois = texto.slice(p.index + p[0].length, fim);
+    if (/^\s*(off|de desconto|de cashback)/i.test(depois) || /(desconto|juros|cashback|cupom|avalia\w*)(\s+de)?\s*$/i.test(antes.slice(-14))) return;
+    const ehExtra = /(extra|adicional|campanha|bônus|bonus)[^%]{0,20}$/i.test(antes) || /^\s*\)?\s*(a mais\s+)?(extra|adicional|de bônus|de bonus)/i.test(depois);
+    if (ehExtra) { extra = Math.max(extra, v); if (/inclu|dos quais|sendo/i.test(antes.slice(-25))) incluida = true; }
+    else if (/(ganh|comiss)[^%]{0,25}$/i.test(antes)) base = Math.max(base, v);
+  });
+  if (!base && !extra) return null;
+  return { comissao: Math.round((extra && !incluida ? base + extra : base || extra) * 100) / 100, extra };
+}
+function mlxLer(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const itens = new Map();
+  for (const a of doc.querySelectorAll('a[href*="MLB"]')) {
+    const cod = mlxCodigo(a.getAttribute('href'));
+    const chave = mlxChave(cod);
+    if (!chave || itens.has(chave)) continue;
+    // Cartão = maior bloco em volta do link que ainda tem um produto só
+    let card = null;
+    for (let el = a.parentElement, i = 0; el && el !== doc.body && i < 8; el = el.parentElement, i++) {
+      const outros = new Set([...el.querySelectorAll('a[href*="MLB"]')].map(x => mlxChave(mlxCodigo(x.getAttribute('href')))).filter(Boolean));
+      if (outros.size > 1) break;
+      card = el;
+    }
+    if (!card) continue;
+    const texto = mlxTexto(card);
+    const ganho = mlxGanho(texto);
+    if (!ganho) continue;
+    // Preços: valores em R$ que não são o ganho em dinheiro ("Ganhe R$ 12,00")
+    const precos = [...texto.matchAll(mlxDinheiro)]
+      .filter(m => !/(ganh|comiss|extra)[^$]{0,14}$/i.test(texto.slice(Math.max(0, m.index - 18), m.index)))
+      .map(m => mlxNum(m[1])).filter(v => v > 0);
+    const img = card.querySelector('img');
+    const imagem = img && (img.getAttribute('data-src') || img.getAttribute('src') || '');
+    const nome = [...card.querySelectorAll('a[href*="MLB"]')].map(x => mlxTexto(x)).sort((x, y) => y.length - x.length)[0]
+      || img?.getAttribute('alt') || '';
+    itens.set(chave, { ...cod, nome: nome.slice(0, 200), ...ganho,
+      preco: precos.length ? Math.min(...precos) : null, preco_anterior: precos.length > 1 ? Math.max(...precos) : null,
+      imagem: /^https:\/\//.test(imagem || '') ? imagem : null });
+  }
+  return [...itens.values()];
+}
+function mlxMostrar() {
+  const n = MLX.itens.length, extras = MLX.itens.filter(i => i.extra > 0).length;
+  $('#mlx-previa').hidden = !n;
+  $('#mlx-info').innerHTML = n
+    ? `<b>${n}</b> produto(s) com comissão encontrados, <b>${extras}</b> com comissão extra.`
+    : '';
+  $('#mlx-lista').innerHTML = MLX.itens.slice(0, 60).map(i => `<tr><td>${esc(i.nome || '—')}</td><td class="num">${esc(i.item || i.produto)}</td>
+    <td class="num">${String(i.comissao).replace('.', ',')}%</td><td class="num">${i.extra ? `<b>+${String(i.extra).replace('.', ',')}%</b>` : '—'}</td></tr>`).join('')
+    + (n > 60 ? `<tr><td colspan="4" class="hint">… e mais ${n - 60}.</td></tr>` : '');
+}
+$('#mlx-cola').addEventListener('paste', e => {
+  e.preventDefault();
+  const html = e.clipboardData.getData('text/html');
+  $('#mlx-resultado').textContent = '';
+  if (!html) {
+    MLX.itens = [];
+    mlxMostrar();
+    $('#mlx-cola').textContent = '';
+    $('#mlx-resultado').textContent = 'A colagem veio sem os links dos produtos. Copie direto da página do Mercado Livre (Ctrl+A e Ctrl+C) e cole aqui com Ctrl+V (não use "colar sem formatação").';
+    return;
+  }
+  MLX.itens = mlxLer(html);
+  $('#mlx-cola').textContent = `Página colada (${Math.max(1, Math.round(html.length / 1024))} KB). Para trocar, clique aqui e cole de novo.`;
+  mlxMostrar();
+  if (!MLX.itens.length) $('#mlx-resultado').textContent = 'Não encontrei produtos com porcentagem de ganho nessa página. Confira se é a página dos produtos com ganho extra do painel de afiliados.';
+});
+$('#mlx-cola').addEventListener('keydown', e => { if (!(e.ctrlKey || e.metaKey)) e.preventDefault(); }); // a caixa só aceita colar
+$('#mlx-limpar-caixa').addEventListener('click', () => { MLX.itens = []; $('#mlx-cola').textContent = ''; $('#mlx-resultado').textContent = ''; mlxMostrar(); });
+$('#mlx-importar').addEventListener('click', async () => {
+  const b = $('#mlx-importar');
+  b.disabled = true;
+  const total = { marcados: 0, com_extra: 0, novos: 0, limpos: 0, fora: [], ids: [] };
+  try {
+    // Em partes de 80 (o pedido tem limite de tamanho); depois, se marcado, tira a extra das campanhas que acabaram
+    const partes = [];
+    for (let i = 0; i < MLX.itens.length; i += 80) partes.push(MLX.itens.slice(i, i + 80));
+    for (const [i, itens] of partes.entries()) {
+      $('#mlx-resultado').textContent = `Importando… (${i + 1} de ${partes.length})`;
+      const r = await api('/api/admin/mineracao/ml-comissao-extra', { method: 'POST', body: { itens } });
+      for (const k of ['marcados', 'com_extra', 'novos']) total[k] += r[k];
+      total.fora.push(...r.fora);
+      total.ids.push(...r.ids);
+    }
+    if ($('#mlx-limpar').checked && total.ids.length) {
+      const r = await api('/api/admin/mineracao/ml-comissao-extra', { method: 'POST', body: { limpar_exceto: total.ids } });
+      total.limpos = r.limpos;
+    }
+    $('#mlx-resultado').innerHTML = `Pronto: <b>${total.marcados}</b> produto(s) marcados no site (<b>${total.com_extra}</b> com comissão extra)`
+      + `${total.novos ? `, sendo <b>${total.novos}</b> novos no site` : ''}${total.limpos ? `; comissão extra retirada de ${total.limpos} que não estavam na lista` : ''}.`
+      + (total.fora.length ? `<br>Não entraram (sem desconto ou o Mercado Livre não deixou consultar): ${total.fora.slice(0, 8).map(esc).join(', ')}${total.fora.length > 8 ? '…' : ''}` : '')
+      + '<br>Os selos e o filtro "Só comissão extra" atualizam em até 1 minuto na página de ofertas.';
+  } catch (err) { $('#mlx-resultado').textContent = err.message; }
+  finally { b.disabled = false; }
 });
 
 $('#quick-mine').addEventListener('submit', async e => {

@@ -190,7 +190,14 @@ async function search(query, s) {
   return searchHtml(query);
 }
 
+// Oferta de um produto do catálogo (código MLB do link /p/…) pela API oficial: usada na importação da comissão extra
+async function ofertaDoProduto(productId, s) {
+  if (!s.ml_client_id || !s.ml_client_secret) return null;
+  return dealFor(productId, await getToken(s));
+}
+
 module.exports = {
+  ofertaDoProduto,
   id: 'mercadolivre',
   name: 'Mercado Livre',
   method: 'API oficial (catálogo por palavra + mais vendidos com desconto) ou leitura da busca pública',

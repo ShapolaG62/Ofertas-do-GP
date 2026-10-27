@@ -102,14 +102,41 @@
     window.scrollTo(0, document.documentElement.scrollHeight);
   }
 
+  // ── Cartões juntados durante as rolagens ──
+  // A lista do Mercado Livre tira da página os produtos que ficaram para trás ao rolar (lista "virtualizada"): por
+  // isso cada cartão visível é guardado a cada rolagem, e no fim vão todos juntos (sem repetir) para o Painel.
+  const coletados = new Map(); // código do produto → HTML do cartão
+  const codigoDe = href => {
+    const h = decodeURIComponent(href || '');
+    const m = h.match(/item_id[:=](MLB-?\d{6,})/i) || h.match(/[?&]wid=(MLB-?\d{6,})/i) || h.match(/(MLB-?\d{6,})/i);
+    return m ? m[1].toUpperCase().replace('-', '') : null;
+  };
+  function coletar() {
+    for (const a of document.querySelectorAll('a[href*="MLB"]')) {
+      const chave = codigoDe(a.href);
+      if (!chave) continue;
+      // Cartão = maior bloco em volta do link que ainda tem um produto só (o mesmo critério do Painel)
+      let card = null;
+      for (let el = a.parentElement, i = 0; el && el !== document.body && i < 8; el = el.parentElement, i++) {
+        const ids = new Set([...el.querySelectorAll('a[href*="MLB"]')].map(x => codigoDe(x.href)).filter(Boolean));
+        if (ids.size > 1) break;
+        card = el;
+      }
+      if (card && /\d\s*%/.test(card.innerText || '')) coletados.set(chave, card.outerHTML); // a versão mais recente
+    }
+    return coletados.size;
+  }
+
   // Rola até o fim o número de vezes escolhido (para antes se a lista acabar: 3 rolagens sem produto novo)
   async function carregar(vezes) {
-    let antes = produtos(), parado = 0;
+    let antes = coletar(), parado = 0;
     for (let i = 1; i <= vezes && parado < 3; i++) {
       rolarAteOFim();
-      await espera(1500);
-      const agora = produtos();
-      texto(`Rolando a página ${i} de ${vezes}… (${agora} produtos)`);
+      await espera(700);
+      coletar(); // pega também os que aparecem só por um instante
+      await espera(800);
+      const agora = coletar();
+      texto(`Rolando a página ${i} de ${vezes}… (${agora} produtos guardados)`);
       parado = agora === antes ? parado + 1 : 0;
       antes = agora;
     }
@@ -119,7 +146,7 @@
   async function enviar(filtro) {
     $('.ir').disabled = true;
     await carregar(limitar($('.n').value));
-    const n = produtos();
+    const n = coletados.size || produtos();
     if (!n) {
       texto('Não encontrei produtos nesta página. Abra a lista de produtos com ganho extra e tente de novo.');
       $('.ir').disabled = false;
@@ -133,7 +160,9 @@
       return;
     }
     // Guarda a página (o Painel lê e apaga) e volta para o Painel nesta mesma guia
-    await chrome.storage.local.set({ pagina: { html: document.body.outerHTML, url: location.href, filtro: filtro || null, em: Date.now() } });
+    // Todos os cartões juntados (se nenhum tinha porcentagem, vai a página como está, como na colagem manual)
+    const html = coletados.size ? `<div>${[...coletados.values()].join('\n')}</div>` : document.body.outerHTML;
+    await chrome.storage.local.set({ pagina: { html, url: location.href, filtro: filtro || null, em: Date.now() } });
     location.href = `${painel}/admin?ml-importar=1#mining`;
   }
   $('.ir').addEventListener('click', async () => {

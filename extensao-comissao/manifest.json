@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Ofertou! Comissão extra ML",
+  "short_name": "Ofertou ML",
+  "version": "2.0.0",
+  "description": "Leva os produtos com comissão extra do seu painel de afiliado do Mercado Livre para o Painel do Ofertou!, sem copiar e colar.",
+  "icons": { "16": "icone.png", "48": "icone.png", "128": "icone.png" },
+  "permissions": ["storage", "unlimitedStorage"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.mercadolivre.com.br/afiliados*"],
+      "js": ["mercadolivre.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://tanoofertou.com.br/admin*", "https://www.tanoofertou.com.br/admin*", "http://localhost/admin*", "http://127.0.0.1/admin*"],
+      "js": ["painel.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

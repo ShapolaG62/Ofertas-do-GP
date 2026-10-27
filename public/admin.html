@@ -109,6 +109,9 @@
   dialog.dlg-pequena { width: min(520px, calc(100vw - 24px)); }
   .gn-dlg-campos { display: grid; gap: 12px; }
   .mlx-passos { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 6px; }
+  .mlx-auto { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 4px 0 12px; }
+  .mlx-auto[hidden], .mlx-ext[hidden] { display: none; }
+  .mlx-ext { margin: 0 0 12px; }
   .mlx-cola { min-height: 84px; max-height: 160px; overflow: auto; padding: 14px; border-radius: 12px; border: 1.5px dashed var(--border-strong, #343c36);
     background: var(--surface-2); color: var(--muted); font-size: 14px; cursor: text; outline: none; }
   .mlx-cola:focus { border-color: var(--brand, #2bb673); }
@@ -565,6 +568,18 @@
           <li>Na página do Mercado Livre, aperte <b>Ctrl+A</b> e depois <b>Ctrl+C</b>.</li>
           <li>Clique na caixa abaixo e aperte <b>Ctrl+V</b>. Confira a prévia e toque em <b>Importar</b>.</li>
         </ol>
+        <div class="mlx-auto" id="mlx-auto" hidden>
+          <button class="btn primary" type="button" id="mlx-buscar">🔄 Buscar automaticamente</button>
+          <span class="hint" style="margin:0">Abre o painel do Mercado Livre nesta guia (faça login se ele pedir), carrega todos os produtos e volta para cá já importando.</span>
+        </div>
+        <details class="hint mlx-ext" id="mlx-ext">
+          <summary><b>Fazer isso sozinho com a extensão do Chrome</b> (sem copiar e colar)</summary>
+          <ol class="mlx-passos">
+            <li><a class="btn small" href="/extensao/ofertou-comissao-ml.zip" download>Baixar a extensão (.zip)</a> e descompactar numa pasta.</li>
+            <li>No Chrome, abrir <b>chrome://extensions</b>, ligar o <b>Modo do desenvolvedor</b> (canto superior direito) e clicar em <b>Carregar sem compactação</b>, escolhendo a pasta.</li>
+            <li>Recarregar esta página: aparece o botão <b>Buscar automaticamente</b>.</li>
+          </ol>
+        </details>
         <div class="mlx-cola" id="mlx-cola" contenteditable="true" role="textbox" aria-label="Cole aqui a página do painel de afiliados" data-vazio="Clique aqui e aperte Ctrl+V"></div>
         <div id="mlx-previa" hidden>
           <p class="hint" id="mlx-info"></p>
@@ -2018,9 +2033,7 @@ function mlxMostrar() {
     <td class="num">${String(i.comissao).replace('.', ',')}%</td><td class="num">${i.extra ? `<b>+${String(i.extra).replace('.', ',')}%</b>` : '—'}</td></tr>`).join('')
     + (n > 60 ? `<tr><td colspan="4" class="hint">… e mais ${n - 60}.</td></tr>` : '');
 }
-$('#mlx-cola').addEventListener('paste', e => {
-  e.preventDefault();
-  const html = e.clipboardData.getData('text/html');
+function mlxProcessar(html, origem = 'colagem') {
   $('#mlx-resultado').textContent = '';
   if (!html) {
     MLX.itens = [];
@@ -2030,9 +2043,36 @@ $('#mlx-cola').addEventListener('paste', e => {
     return;
   }
   MLX.itens = mlxLer(html);
-  $('#mlx-cola').textContent = `Página colada (${Math.max(1, Math.round(html.length / 1024))} KB). Para trocar, clique aqui e cole de novo.`;
+  $('#mlx-cola').textContent = origem === 'extensao'
+    ? `Página trazida pela extensão (${Math.max(1, Math.round(html.length / 1024))} KB).`
+    : `Página colada (${Math.max(1, Math.round(html.length / 1024))} KB). Para trocar, clique aqui e cole de novo.`;
   mlxMostrar();
   if (!MLX.itens.length) $('#mlx-resultado').textContent = 'Não encontrei produtos com porcentagem de ganho nessa página. Confira se é a página dos produtos com ganho extra do painel de afiliados.';
+  return MLX.itens.length;
+}
+$('#mlx-cola').addEventListener('paste', e => {
+  e.preventDefault();
+  mlxProcessar(e.clipboardData.getData('text/html'));
+});
+// Extensão do Chrome "Ofertou! Comissão extra ML" (pasta extensao-comissao/): conversa por mensagens nesta janela
+const ML_HUB = 'https://www.mercadolivre.com.br/afiliados/hub?is_affiliate=true';
+window.addEventListener('message', e => {
+  if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
+  if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; }
+  if (e.data.tipo === 'pode-ir') location.href = ML_HUB;
+  if (e.data.tipo === 'pagina') {
+    // Volta do Mercado Livre: mostra a aba, lê a página do mesmo jeito da colagem e importa sozinho
+    if (location.hash !== '#mining') abrirAba('mining');
+    $('#mlx-cola').closest('.panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (mlxProcessar(String(e.data.html || ''), 'extensao')) $('#mlx-importar').click();
+  }
+});
+window.postMessage({ ofertouPainel: true, tipo: 'ola' }, location.origin);
+if (new URLSearchParams(location.search).has('ml-importar')) history.replaceState(null, '', `${location.pathname}${location.hash}`);
+$('#mlx-buscar').addEventListener('click', () => {
+  $('#mlx-buscar').disabled = true;
+  window.postMessage({ ofertouPainel: true, tipo: 'buscar' }, location.origin);
+  setTimeout(() => { $('#mlx-buscar').disabled = false; }, 3000);
 });
 $('#mlx-cola').addEventListener('keydown', e => { if (!(e.ctrlKey || e.metaKey)) e.preventDefault(); }); // a caixa só aceita colar
 $('#mlx-limpar-caixa').addEventListener('click', () => { MLX.itens = []; $('#mlx-cola').textContent = ''; $('#mlx-resultado').textContent = ''; mlxMostrar(); });

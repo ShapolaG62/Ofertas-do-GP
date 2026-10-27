@@ -13,7 +13,8 @@
     if (e.source !== window || e.origin !== ORIGEM || !e.data || e.data.ofertouPainel !== true) return;
     if (e.data.tipo === 'ola') avisar({ tipo: 'instalada' });
     if (e.data.tipo === 'buscar') {
-      await chrome.storage.local.set({ autoAte: Date.now() + 10 * 60 * 1000 });
+      const rolagens = Math.min(Math.max(parseInt(e.data.rolagens, 10) || 10, 1), 100);
+      await chrome.storage.local.set({ autoAte: Date.now() + 10 * 60 * 1000, rolagens });
       avisar({ tipo: 'pode-ir' });
     }
   });
@@ -23,6 +24,6 @@
     if (!pagina) return;
     await chrome.storage.local.remove('pagina');
     if (Date.now() - pagina.em > 15 * 60 * 1000) return;
-    avisar({ tipo: 'pagina', html: pagina.html });
+    avisar({ tipo: 'pagina', html: pagina.html, filtro: pagina.filtro });
   });
 })();

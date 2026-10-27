@@ -111,6 +111,8 @@
   .mlx-passos { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 6px; }
   .mlx-auto { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 4px 0 12px; }
   .mlx-auto[hidden], .mlx-ext[hidden] { display: none; }
+  .mlx-rolar { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+  .mlx-rolar input { width: 72px; }
   .mlx-ext { margin: 0 0 12px; }
   .mlx-cola { min-height: 84px; max-height: 160px; overflow: auto; padding: 14px; border-radius: 12px; border: 1.5px dashed var(--border-strong, #343c36);
     background: var(--surface-2); color: var(--muted); font-size: 14px; cursor: text; outline: none; }
@@ -570,7 +572,8 @@
         </ol>
         <div class="mlx-auto" id="mlx-auto" hidden>
           <button class="btn primary" type="button" id="mlx-buscar">🔄 Buscar automaticamente</button>
-          <span class="hint" style="margin:0">Abre o painel do Mercado Livre nesta guia (faça login se ele pedir), carrega todos os produtos e volta para cá já importando.</span>
+          <label class="mlx-rolar">Rolar a página <input type="number" id="mlx-rolagens" min="1" max="100" value="10" inputmode="numeric"> vezes</label>
+          <span class="hint" style="margin:0;flex-basis:100%">Abre o painel do Mercado Livre nesta guia (faça login se ele pedir), liga o filtro <b>Ganhos extras</b>, rola a página o número de vezes escolhido para carregar mais produtos e volta para cá já importando.</span>
         </div>
         <details class="hint mlx-ext" id="mlx-ext">
           <summary><b>Fazer isso sozinho com a extensão do Chrome</b> (sem copiar e colar)</summary>
@@ -1984,9 +1987,12 @@ function mlxGanho(texto) {
     // O rótulo vem antes do número ("Ganho extra +6%"); depois, só conta se estiver colado ("4% extra")
     const antes = texto.slice(ini, p.index), depois = texto.slice(p.index + p[0].length, fim);
     if (/^\s*(off|de desconto|de cashback)/i.test(depois) || /(desconto|juros|cashback|cupom|avalia\w*)(\s+de)?\s*$/i.test(antes.slice(-14))) return;
-    const ehExtra = /(extra|adicional|campanha|bônus|bonus)[^%]{0,20}$/i.test(antes) || /^\s*\)?\s*(a mais\s+)?(extra|adicional|de bônus|de bonus)/i.test(depois);
+    // Vale a palavra mais perto do número: "Ganho extra Ganhos 8%" → 8% é ganho normal; "Ganho extra +6%" → extra
+    const ultima = re => { let i = -1; for (const m of antes.matchAll(re)) i = m.index; return i; };
+    const pExtra = ultima(/extra|adicional|campanha|bônus|bonus/gi), pGanho = ultima(/ganh|comiss/gi);
+    const ehExtra = (pExtra >= 0 && pExtra > pGanho && antes.length - pExtra <= 25) || /^\s*\)?\s*(a mais\s+)?(extra|adicional|de bônus|de bonus)/i.test(depois);
     if (ehExtra) { extra = Math.max(extra, v); if (/inclu|dos quais|sendo/i.test(antes.slice(-25))) incluida = true; }
-    else if (/(ganh|comiss)[^%]{0,25}$/i.test(antes)) base = Math.max(base, v);
+    else if (pGanho >= 0 && antes.length - pGanho <= 30) base = Math.max(base, v);
   });
   if (!base && !extra) return null;
   return { comissao: Math.round((extra && !incluida ? base + extra : base || extra) * 100) / 100, extra };
@@ -2065,13 +2071,19 @@ window.addEventListener('message', e => {
     if (location.hash !== '#mining') abrirAba('mining');
     $('#mlx-cola').closest('.panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (mlxProcessar(String(e.data.html || ''), 'extensao')) $('#mlx-importar').click();
+    const filtro = { aplicado: 'Filtro "Ganhos extras" ligado pela extensão.', ja: 'O filtro "Ganhos extras" já estava ligado.', 'nao-achei': 'A extensão não achou o filtro "Ganhos extras" na página: vieram os produtos que estavam na tela.' }[e.data.filtro];
+    if (filtro) $('#mlx-cola').textContent += ` ${filtro}`;
   }
 });
 window.postMessage({ ofertouPainel: true, tipo: 'ola' }, location.origin);
 if (new URLSearchParams(location.search).has('ml-importar')) history.replaceState(null, '', `${location.pathname}${location.hash}`);
+// Quantas vezes rolar a página do Mercado Livre (a lista carrega mais produtos a cada rolagem); fica guardado
+const mlxRolagens = () => Math.min(Math.max(parseInt($('#mlx-rolagens').value, 10) || 10, 1), 100);
+try { const r = localStorage.getItem('ofertou_ml_rolagens'); if (r) $('#mlx-rolagens').value = r; } catch { /* sem armazenamento */ }
+$('#mlx-rolagens').addEventListener('change', () => { $('#mlx-rolagens').value = mlxRolagens(); try { localStorage.setItem('ofertou_ml_rolagens', mlxRolagens()); } catch { /* */ } });
 $('#mlx-buscar').addEventListener('click', () => {
   $('#mlx-buscar').disabled = true;
-  window.postMessage({ ofertouPainel: true, tipo: 'buscar' }, location.origin);
+  window.postMessage({ ofertouPainel: true, tipo: 'buscar', rolagens: mlxRolagens() }, location.origin);
   setTimeout(() => { $('#mlx-buscar').disabled = false; }, 3000);
 });
 $('#mlx-cola').addEventListener('keydown', e => { if (!(e.ctrlKey || e.metaKey)) e.preventDefault(); }); // a caixa só aceita colar

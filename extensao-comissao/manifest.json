@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Ofertou! Comissão extra ML",
   "short_name": "Ofertou ML",
-  "version": "2.2.0",
-  "description": "Leva os produtos com comissão extra do seu painel de afiliado do Mercado Livre para o Painel do Ofertou!, sem copiar e colar.",
+  "version": "2.3.0",
+  "description": "Leva para o Painel do Ofertou! os produtos com comissão extra e o ganho estimado do seu painel de afiliado do Mercado Livre, sem copiar e colar.",
   "icons": {
     "16": "icone.png",
     "48": "icone.png",

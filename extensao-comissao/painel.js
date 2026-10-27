@@ -19,6 +19,13 @@
     }
   });
 
+  // "Ganho estimado" lido no painel do Mercado Livre: entrega ao Painel (que grava no site, substituindo o anterior)
+  chrome.storage.local.get('ganhoEstimado').then(async ({ ganhoEstimado }) => {
+    if (!ganhoEstimado) return;
+    await chrome.storage.local.remove('ganhoEstimado');
+    avisar({ tipo: 'ganho-estimado', valor: ganhoEstimado.valor, em: ganhoEstimado.em });
+  });
+
   // Página do Mercado Livre trazida pela extensão (vale 15 min): entrega ao Painel uma vez só
   chrome.storage.local.get('pagina').then(async ({ pagina }) => {
     if (!pagina) return;

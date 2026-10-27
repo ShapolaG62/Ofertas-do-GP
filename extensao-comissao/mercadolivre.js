@@ -36,6 +36,51 @@
   $('.x').addEventListener('click', () => caixa.remove());
   $('.n').addEventListener('change', () => { $('.n').value = limitar($('.n').value); chrome.storage.local.set({ rolagens: Number($('.n').value) }); });
 
+  // ── "Ganho estimado" do painel (vai para o cartão do Mercado Livre em Painel → Ganhos de afiliados) ──
+  // O valor aparece com os centavos pequenos ("R$ 9" e "35" em cima): o inteiro e os centavos vêm em pedaços separados
+  function lerGanhoEstimado() {
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let no; (no = w.nextNode());) {
+      if (!/^\s*ganhos?\s+estimados?\s*:?\s*$/i.test(no.nodeValue || '')) continue;
+      // Sobe até o bloco que tem o valor em R$
+      let bloco = no.parentElement;
+      for (let i = 0; i < 4 && bloco && !/R\$|\d/.test((bloco.innerText || '').replace(/ganhos?\s+estimados?/i, '')); i++) bloco = bloco.parentElement;
+      if (!bloco) continue;
+      // Formato do Mercado Livre (andes-money-amount): parte inteira e centavos em elementos próprios
+      const fracao = bloco.querySelector('[class*="money-amount__fraction"]');
+      if (fracao) {
+        const centavos = bloco.querySelector('[class*="money-amount__cents"]');
+        const v = Number(fracao.textContent.replace(/\D/g, '')) + (centavos ? Number(centavos.textContent.replace(/\D/g, '').slice(0, 2).padEnd(2, '0')) / 100 : 0);
+        if (Number.isFinite(v)) return v;
+      }
+      // Sem essas classes: pedaços de texto depois do rótulo ("R$", "9", "35" ou "R$ 9,35")
+      const pedacos = [];
+      const w2 = document.createTreeWalker(bloco, NodeFilter.SHOW_TEXT);
+      let depois = false;
+      for (let n; (n = w2.nextNode());) {
+        const t = (n.nodeValue || '').trim();
+        if (!t) continue;
+        if (n === no) { depois = true; continue; }
+        if (depois) pedacos.push(t);
+      }
+      const texto = pedacos.join(' ').replace(/R\$\s*/g, '').trim();
+      const m = texto.match(/^(\d{1,3}(?:\.\d{3})*|\d+)(?:,(\d{1,2}))?(?:\s+(\d{2})\b)?/);
+      if (!m) continue;
+      const inteiro = Number(m[1].replace(/\./g, ''));
+      const cent = m[2] ?? m[3];
+      return inteiro + (cent ? Number(cent.padEnd(2, '0')) / 100 : 0);
+    }
+    return null;
+  }
+  // Lê assim que o valor aparecer (até 30 s) e guarda; o Painel do Ofertou! pega na próxima vez que abrir
+  (async () => {
+    for (let i = 0; i < 20; i++) {
+      const v = lerGanhoEstimado();
+      if (v != null) { await chrome.storage.local.set({ ganhoEstimado: { valor: Math.round(v * 100) / 100, em: Date.now() } }); return; }
+      await espera(1500);
+    }
+  })();
+
   // ── Filtro "Ganhos extras" ──
   // Procura pelo texto um botão/aba/opção curto e fora dos cartões de produto; se já estiver marcado, não clica
   const RE_FILTRO = /^\s*(ganhos?\s+extras?|com\s+ganhos?\s+extras?|ganho\s+extra|comiss(ão|ao)\s+extra)\s*$/i;
@@ -160,6 +205,9 @@
       return;
     }
     // Guarda a página (o Painel lê e apaga) e volta para o Painel nesta mesma guia
+    // Última chance de ler o "Ganho estimado" antes de sair da página
+    const ganho = lerGanhoEstimado();
+    if (ganho != null) await chrome.storage.local.set({ ganhoEstimado: { valor: Math.round(ganho * 100) / 100, em: Date.now() } });
     // Todos os cartões juntados (se nenhum tinha porcentagem, vai a página como está, como na colagem manual)
     const html = coletados.size ? `<div>${[...coletados.values()].join('\n')}</div>` : document.body.outerHTML;
     await chrome.storage.local.set({ pagina: { html, url: location.href, filtro: filtro || null, em: Date.now() } });

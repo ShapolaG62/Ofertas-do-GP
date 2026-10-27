@@ -112,6 +112,17 @@ function statusDe(v) {
 }
 
 // ── Saldos ───────────────────────────────────────────────────────────────────
+// "Ganho estimado" do painel Afiliados e Criadores do Mercado Livre: { valor, em }
+const ESTIMADO_ML = 'ganhos_ml_estimado';
+function ganhoEstimadoMl() {
+  try { const e = JSON.parse(settings.get(ESTIMADO_ML) || 'null'); return e && Number.isFinite(e.valor) ? e : null; } catch { return null; }
+}
+function salvarGanhoEstimadoMl(valor) {
+  const v = Number(valor);
+  if (!Number.isFinite(v) || v < 0 || v > 1e7) throw fail('Valor inválido.');
+  settings.set(ESTIMADO_ML, JSON.stringify({ valor: r2(v), em: nowSql() }));
+  return ganhoEstimadoMl();
+}
 function resumo(id) {
   const p = plataforma(id);
   const agora = nowSql();
@@ -124,9 +135,12 @@ function resumo(id) {
     FROM ganhos_vendas WHERE plataforma = ?`, agora, agora, agora, p.id);
   const sacado = db.get('SELECT COALESCE(SUM(valor), 0) n FROM ganhos_saques WHERE plataforma = ?', p.id).n;
   const disponivel = r2(Math.max(0, v.liberado - sacado));
+  // Mercado Livre: o "Ganho estimado" lido no painel de afiliado (extensão do Chrome) é o valor a liberar; cada
+  // leitura substitui a anterior (não soma)
+  const estimado = p.id === 'mercadolivre' ? ganhoEstimadoMl() : null;
   return {
-    ...p, ativo: Boolean(p.ativo),
-    disponivel, a_liberar: r2(v.a_liberar), recebido: r2(v.pago + sacado), vendas: v.vendas,
+    ...p, ativo: Boolean(p.ativo), estimado,
+    disponivel, a_liberar: estimado ? estimado.valor : r2(v.a_liberar), recebido: r2(v.pago + sacado), vendas: v.vendas,
     proxima_liberacao: v.proxima_liberacao,
     pode_sacar: disponivel > 0 && disponivel >= p.minimo,
     falta: r2(Math.max(0, p.minimo - disponivel)),
@@ -335,6 +349,7 @@ function iniciar() {
 }
 
 module.exports = {
+  salvarGanhoEstimadoMl,
   notificar, painel, resumo, verificar, iniciar, notificacoes, marcarLida, marcarTodasLidas,
   registrar, atualizarStatus, excluir, listar, registrarSaque, saques, excluirSaque, editarPlataforma,
   previa, importar, vendasConfirmadas, statusDe, numero, data, STATUS,

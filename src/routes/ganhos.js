@@ -16,6 +16,8 @@ router.get('/api/admin/ganhos', tentar(req => ({
   notificacoes: ganhos.notificacoes(),
   sync: require('../ganhos-sync').estado(),
 })));
+// Ganho estimado do Mercado Livre lido pela extensão no painel de afiliado (substitui o valor anterior)
+router.post('/api/admin/ganhos/ml-estimado', tentar(req => ganhos.salvarGanhoEstimadoMl(req.body?.valor)));
 // Busca agora as vendas nos programas com API (Shopee e KaBuM!/Awin)
 router.post('/api/admin/ganhos/sincronizar', async (req, res) => {
   try { res.json(await require('../ganhos-sync').sincronizar()); } catch (err) { sendError(res, err); }

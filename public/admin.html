@@ -108,6 +108,7 @@
   .gn-status { font-size: 12px; padding: 4px 6px; border-radius: 8px; background: var(--surface-2); }
   dialog.dlg-pequena { width: min(520px, calc(100vw - 24px)); }
   .gn-dlg-campos { display: grid; gap: 12px; }
+  .gn-estimado { margin: 2px 0 0 !important; color: var(--brand, #2bb673) !important; font-size: 12.5px; }
   .mlx-passos { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 6px; }
   .mlx-auto { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 4px 0 12px; }
   .mlx-auto[hidden], .mlx-ext[hidden] { display: none; }
@@ -2066,6 +2067,12 @@ window.addEventListener('message', e => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
   if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; }
   if (e.data.tipo === 'pode-ir') location.href = ML_HUB;
+  if (e.data.tipo === 'ganho-estimado') {
+    // "Ganho estimado" lido no painel do Mercado Livre: grava (substitui o anterior) e atualiza o cartão se estiver aberto
+    api('/api/admin/ganhos/ml-estimado', { method: 'POST', body: { valor: e.data.valor } })
+      .then(() => { if (!$('[data-body="ganhos"]')?.classList.contains('hidden')) loadGanhos(); })
+      .catch(() => {});
+  }
   if (e.data.tipo === 'pagina') {
     // Volta do Mercado Livre: mostra a aba, lê a página do mesmo jeito da colagem e importa sozinho
     if (location.hash !== '#mining') abrirAba('mining');
@@ -3025,7 +3032,8 @@ async function loadGanhos() {
       <div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div>
       <div class="gn-barra" title="${pct}% do mínimo"><span style="width:${pct}%"></span></div>
       <div class="hint" style="margin:6px 0 0">Mínimo: <b>${p.minimo ? gnMoeda(p.minimo, p.moeda) : 'não informado'}</b>${p.falta > 0 ? ` · faltam ${gnMoeda(p.falta, p.moeda)}` : ''}</div>
-      <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>
+      <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao && !p.estimado ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>
+      ${p.estimado ? `<div class="hint gn-estimado">📡 Ganho estimado no painel do Mercado Livre, lido em ${fmtDate(p.estimado.em)}</div>` : ''}
       <div class="hint" style="margin:2px 0 0">${p.vendas} venda(s) · libera em ${p.dias_liberacao} dias</div>
       <div class="gn-card-acoes">
         <button class="btn small${p.pode_sacar ? ' primary' : ''}" data-gn-saque="${p.id}">Registrar saque</button>

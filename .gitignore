@@ -30,6 +30,9 @@ video/quadros/
 video/telas-motion/
 video/quadros-motion/
 video/narracao/
+video/telas-tutorial/
+video/quadros-tutorial/
+video/narracao-tutorial/
 
 # Capi animada: vídeos originais e quadros de conferência (só local)
 video/capi/fontes/

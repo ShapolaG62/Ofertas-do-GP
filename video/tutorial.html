@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Ofertou! — como funciona (tutorial)</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #050b08; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; object-fit: contain; }
+</style>
+</head>
+<body>
+<canvas id="tela"></canvas>
+<script>
+'use strict';
+// ════════════════════════════════════════════════════════════════════════════════════════════
+// Vídeo tutorial "Como o Ofertou! funciona" (16:9, 1920×1080, 30 fps), no estilo dos tutoriais do canal Buboflow:
+// fundo escuro com brilho verde e dois anéis no canto, rótulo pequeno + título grande à esquerda, tela do site numa
+// janela de navegador à direita, barra de etapas no topo e encerramento com a mascote.
+// Narração: video/narracao-tutorial (powershell video\narrar-tutorial.ps1 + node video/medir-falas.js narracao-tutorial).
+// Prints: video/telas-tutorial (node video/capturar-tutorial.js). Gravar: node video/gravar-tutorial.js
+// Cada cena dura a fala dela + uma pequena pausa. Música gerada no navegador (sem direitos autorais).
+// ════════════════════════════════════════════════════════════════════════════════════════════
+const W = 1920, H = 1080;
+const cv = document.getElementById('tela');
+cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+const VERDE = '#2bd47d', VERDE_ESC = '#1a9d5c', FUNDO = '#050b08', TXT = '#f1f6f3', TXT2 = '#9fb2a8', LINHA = 'rgba(255,255,255,.10)';
+
+// ── Utilidades ──
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const prog = (t, ini, dur) => clamp((t - ini) / dur);
+const E = {
+  out: t => 1 - Math.pow(1 - t, 3),
+  inOut: t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  back: t => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+const entra = (u, atraso = 0, dur = .6) => E.out(prog(u, atraso, dur));
+function img(src) { const i = new Image(); i.src = src; return i; }
+const T = n => img(`telas-tutorial/${n}.png`);
+const IMG = {
+  capi: img('../public/images/pet-capi.png'),
+  entrar: T('pc-entrar'), inicio: T('pc-inicio'), ofertas: T('pc-ofertas'), busca: T('pc-busca'), planos: T('pc-planos'),
+  cliente: T('pc-cliente'), postagens: T('pc-postagens'), ajuda: T('pc-ajuda'),
+  app: img('telas-motion/cel-app.png'),
+};
+const pronta = i => i.complete && i.naturalWidth;
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+function fonte(peso, tam) { ctx.font = `${peso} ${tam}px Figtree, sans-serif`; }
+function escrever(s, x, y, { tam = 40, peso = 700, cor = TXT, alinhar = 'left', base = 'alphabetic', espaco = 0 } = {}) {
+  fonte(peso, tam); ctx.fillStyle = cor; ctx.textAlign = alinhar; ctx.textBaseline = base;
+  if (espaco) ctx.letterSpacing = `${espaco}px`;
+  ctx.fillText(s, x, y);
+  ctx.letterSpacing = '0px';
+}
+function alpha(a, f) { ctx.save(); ctx.globalAlpha *= clamp(a); f(); ctx.restore(); }
+
+// ── Fundo: escuro, brilho verde e dois anéis no canto (os "olhos" do estilo) ──
+function fundo(t) {
+  ctx.fillStyle = FUNDO; ctx.fillRect(0, 0, W, H);
+  let g = ctx.createRadialGradient(W * .22, H * .18, 0, W * .22, H * .18, 1100);
+  g.addColorStop(0, 'rgba(43,212,125,.13)'); g.addColorStop(1, 'rgba(43,212,125,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  g = ctx.createRadialGradient(W * .9, H * .95, 0, W * .9, H * .95, 900);
+  g.addColorStop(0, 'rgba(43,212,125,.10)'); g.addColorStop(1, 'rgba(43,212,125,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const d = Math.sin(t * .25) * 8;
+  for (const [cx, cy, r] of [[W * .74, H * 1.04 + d, 300], [W * 1.0, H * .94 - d, 330]]) {
+    ctx.strokeStyle = 'rgba(43,212,125,.16)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(43,212,125,.10)';
+    ctx.beginPath(); ctx.arc(cx - r * .18, cy - r * .2, r * .36, 0, Math.PI * 2); ctx.fill();
+  }
+  // vinheta
+  g = ctx.createRadialGradient(W / 2, H / 2, H * .45, W / 2, H / 2, H * 1.05);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.45)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+// ── Blocos de texto do lado esquerdo ──
+const ESQ = 150;
+function rotulo(s, y, a) { alpha(a, () => escrever(s.toUpperCase(), ESQ, y, { tam: 22, peso: 800, cor: VERDE, espaco: 5 })); }
+// linhas: [[ ['Como o ', 0], ['Ofertou!', 1] ], ...]  (1 = verde)
+function titulo(linhas, y, u, { tam = 104, atraso = .15 } = {}) {
+  linhas.forEach((linha, i) => {
+    const a = entra(u, atraso + i * .1, .7);
+    alpha(a, () => {
+      fonte(900, tam); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+      let x = ESQ;
+      const yy = y + i * tam * 1.02 + (1 - a) * 30;
+      for (const [s, verde] of linha) { ctx.fillStyle = verde ? VERDE : TXT; ctx.fillText(s, x, yy); x += ctx.measureText(s).width; }
+    });
+  });
+  return y + linhas.length * tam * 1.02;
+}
+function check(x, y, r = 15) {
+  ctx.fillStyle = 'rgba(43,212,125,.18)'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = VERDE; ctx.lineWidth = 3.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x - r * .42, y + r * .02); ctx.lineTo(x - r * .1, y + r * .34); ctx.lineTo(x + r * .45, y - r * .3); ctx.stroke();
+}
+function pilulas(itens, y, u, atraso = .7, { tam = 30 } = {}) {
+  itens.forEach((s, i) => {
+    const a = entra(u, atraso + i * .35, .55);
+    alpha(a, () => {
+      fonte(700, tam);
+      const w = ctx.measureText(s).width + 96, h = tam + 34, x = ESQ + (1 - a) * -20, yy = y + i * (h + 16);
+      rr(x, yy, w, h, h / 2); ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fill();
+      ctx.strokeStyle = LINHA; ctx.lineWidth = 2; ctx.stroke();
+      check(x + 34, yy + h / 2, 15);
+      escrever(s, x + 62, yy + h / 2 + 1, { tam, peso: 700, base: 'middle' });
+    });
+  });
+}
+function etiqueta(s, x, y, a, { verde = true, tam = 34 } = {}) {
+  alpha(a, () => {
+    fonte(900, tam); const w = ctx.measureText(s).width + 48, h = tam + 28;
+    rr(x, y, w, h, 14); ctx.fillStyle = verde ? VERDE : 'rgba(255,255,255,.08)'; ctx.fill();
+    escrever(s, x + 24, y + h / 2 + 1, { tam, peso: 900, cor: verde ? '#04140b' : TXT, base: 'middle' });
+  });
+}
+
+// ── Janela de navegador com a tela do site ──
+function navegador(x, y, w, h, url, desenho, { a = 1, escala = 1 } = {}) {
+  alpha(a, () => {
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2); ctx.scale(escala, escala); ctx.translate(-(x + w / 2), -(y + h / 2));
+    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 24;
+    rr(x, y, w, h, 18); ctx.fillStyle = '#121a16'; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2; ctx.stroke();
+    // barra superior
+    const bh = 56;
+    ['#ff5f57', '#febc2e', '#28c840'].forEach((c, i) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + 30 + i * 22, y + bh / 2, 7, 0, Math.PI * 2); ctx.fill(); });
+    rr(x + 110, y + 12, w - 140, bh - 24, 16); ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fill();
+    if (url) {
+      // cadeado + endereço
+      ctx.strokeStyle = TXT2; ctx.lineWidth = 2;
+      rr(x + 130, y + bh / 2 - 3, 12, 10, 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x + 136, y + bh / 2 - 3, 4, Math.PI, 0); ctx.stroke();
+      escrever(url, x + 154, y + bh / 2 + 1, { tam: 20, peso: 600, cor: TXT2, base: 'middle' });
+    }
+    // conteúdo
+    ctx.save(); rr(x + 2, y + bh, w - 4, h - bh - 2, [0, 0, 16, 16]); ctx.clip();
+    desenho(x + 2, y + bh, w - 4, h - bh - 2);
+    ctx.restore();
+    ctx.restore();
+  });
+}
+// Desenha um print preenchendo a área, com um zoom lento (origem em sx/sy relativos)
+function print(im, x, y, w, h, { zoom = 1, ox = .5, oy = 0, a = 1 } = {}) {
+  if (!pronta(im)) return;
+  alpha(a, () => {
+    const s = Math.max(w / im.naturalWidth, h / im.naturalHeight) * zoom;
+    const iw = im.naturalWidth * s, ih = im.naturalHeight * s;
+    ctx.drawImage(im, x + (w - iw) * ox, y + (h - ih) * oy, iw, ih);
+  });
+}
+// Recorte de um print (sx, sy, sw, sh em pixels do print) desenhado num cartão
+function recorte(im, sx, sy, sw, sh, x, y, w, { a = 1, raio = 22, sombra = true } = {}) {
+  if (!pronta(im)) return 0;
+  const h = w * sh / sw;
+  alpha(a, () => {
+    if (sombra) { ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 50; ctx.shadowOffsetY = 20; rr(x, y, w, h, raio); ctx.fillStyle = '#111'; ctx.fill(); ctx.restore(); }
+    ctx.save(); rr(x, y, w, h, raio); ctx.clip(); ctx.drawImage(im, sx, sy, sw, sh, x, y, w, h); ctx.restore();
+  });
+  return h;
+}
+function cursor(x, y, clique = 0) {
+  if (clique > 0) { ctx.strokeStyle = `rgba(43,212,125,${1 - clique})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, 18 + clique * 34, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.save(); ctx.translate(x, y);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 34); ctx.lineTo(9, 26); ctx.lineTo(16, 41); ctx.lineTo(22, 38); ctx.lineTo(15, 23); ctx.lineTo(27, 23); ctx.closePath();
+  ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+}
+function digitar(s, u, ini, dur) { return s.slice(0, Math.round(s.length * prog(u, ini, dur))); }
+const piscar = u => (Math.floor(u * 2.2) % 2 === 0);
+
+// ── Barra de etapas no topo ──
+const ETAPAS = ['Acessar', 'Criar conta', 'Ofertas', 'Planos'];
+function etapas(atual, a) {
+  alpha(a, () => {
+    fonte(700, 22);
+    const larg = ETAPAS.map(s => ctx.measureText(s).width + 76);
+    const total = larg.reduce((x, y) => x + y, 0) + (ETAPAS.length - 1) * 34;
+    let x = (W - total) / 2; const y = 52;
+    ETAPAS.forEach((s, i) => {
+      const feito = i < atual, agora = i === atual;
+      rr(x, y, larg[i], 48, 24);
+      ctx.fillStyle = agora ? 'rgba(43,212,125,.14)' : 'rgba(255,255,255,.04)'; ctx.fill();
+      ctx.strokeStyle = agora ? VERDE : LINHA; ctx.lineWidth = 2; ctx.stroke();
+      if (feito) { ctx.fillStyle = VERDE; ctx.beginPath(); ctx.arc(x + 26, y + 24, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#04140b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 20, y + 24); ctx.lineTo(x + 24.5, y + 28.5); ctx.lineTo(x + 32, y + 19.5); ctx.stroke(); }
+      else escrever(String(i + 1), x + 26, y + 25, { tam: 20, peso: 800, cor: agora ? VERDE : TXT2, alinhar: 'center', base: 'middle' });
+      escrever(s, x + 48, y + 25, { tam: 22, peso: 700, cor: agora || feito ? TXT : TXT2, base: 'middle' });
+      if (i < ETAPAS.length - 1) { ctx.strokeStyle = LINHA; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + larg[i] + 8, y + 24); ctx.lineTo(x + larg[i] + 26, y + 24); ctx.stroke(); }
+      x += larg[i] + 34;
+    });
+  });
+}
+
+// ════════════════════════════════ CENAS ════════════════════════════════
+// Cada cena recebe u (tempo desde o início dela) e d (duração). A ordem é a das falas.
+const LOJAS = ['Mercado Livre', 'Amazon', 'Shopee', 'Magalu', 'KaBuM!', 'AliExpress'];
+// Recortes dos cartões de oferta (pc-ofertas, 1600×900) e dos cartões dos planos (pc-planos)
+const CARTOES = [[457, 273, 226, 420], [945, 273, 226, 420], [1189, 273, 226, 420], [701, 273, 226, 420]];
+const PLANO = [[184, 236, 397, 567], [601, 236, 398, 567], [1019, 224, 397, 580]];
+
+const CENAS = [
+  // 1 Abertura
+  (u, d) => {
+    rotulo('Tutorial · Passo a passo', 300, entra(u, 0));
+    let y = titulo([[['Como o ', 0]], [['Ofertou!', 1]], [['funciona', 0]]], 420, u, { tam: 120 });
+    const itens = ['Acessar o site', 'Encontrar ofertas', 'Planos e acessos'];
+    itens.forEach((s, i) => alpha(entra(u, 1 + i * .3), () => {
+      fonte(700, 26); const w = ctx.measureText(s).width + 84, x = ESQ + itens.slice(0, i).reduce((acc, z) => (fonte(700, 26), acc + ctx.measureText(z).width + 84 + 14), 0);
+      rr(x, y + 30, w, 56, 28); ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fill(); ctx.strokeStyle = LINHA; ctx.lineWidth = 2; ctx.stroke();
+      check(x + 30, y + 58, 13); escrever(s, x + 54, y + 59, { tam: 26, peso: 700, base: 'middle' });
+    }));
+    // cartões de oferta trocando à direita
+    const i = Math.floor(u / 3) % CARTOES.length, f = (u % 3) / 3;
+    const a = entra(u, .4, .8) * (f > .85 ? 1 - (f - .85) / .15 : 1) * (u > 3 && f < .12 ? f / .12 : 1);
+    const [sx, sy, sw, sh] = CARTOES[i];
+    ctx.save(); ctx.translate(1380, 560); ctx.rotate(-.03 + Math.sin(u * .8) * .01); ctx.translate(-1380, -560);
+    recorte(IMG.ofertas, sx, sy, sw, sh, 1180, 200 + (1 - a) * 40, 400, { a });
+    ctx.restore();
+  },
+  // 2 O que é
+  (u, d) => {
+    const a1 = entra(u, .1, .8), a2 = entra(u, .7, .8);
+    alpha(a1, () => escrever('Ofertas reais. Conferidas.', W / 2, 400 + (1 - a1) * 30, { tam: 92, peso: 900, alinhar: 'center' }));
+    alpha(a2, () => escrever('Num só lugar.', W / 2, 510 + (1 - a2) * 30, { tam: 76, peso: 900, cor: VERDE, alinhar: 'center' }));
+    fonte(800, 30);
+    const larg = LOJAS.map(s => ctx.measureText(s).width + 56), total = larg.reduce((x, y) => x + y, 0) + 16 * (LOJAS.length - 1);
+    let x = (W - total) / 2;
+    LOJAS.forEach((s, i) => {
+      const a = entra(u, 2 + i * .45, .5);
+      alpha(a, () => { rr(x, 640 + (1 - a) * 20, larg[i], 64, 32); ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.fill(); ctx.strokeStyle = LINHA; ctx.lineWidth = 2; ctx.stroke();
+        escrever(s, x + larg[i] / 2, 640 + (1 - a) * 20 + 33, { tam: 30, peso: 800, alinhar: 'center', base: 'middle' }); });
+      x += larg[i] + 16;
+    });
+    const a3 = entra(u, 6.6, .7);
+    alpha(a3, () => { etiqueta('Só desconto de verdade', W / 2 - 250, 770, 1); });
+  },
+  // 3 Acessar pelo Google
+  (u, d) => {
+    etapas(0, entra(u, 0));
+    rotulo('Passo 1 de 4 · Acessar', 300, entra(u, .1));
+    const y = titulo([[['Pesquise', 0]], [['no ', 0], ['Google', 1]]], 410, u);
+    alpha(entra(u, 1.2), () => { escrever('Digite:', ESQ, y + 60, { tam: 30, peso: 600, cor: TXT2 }); });
+    etiqueta('Ofertou!', ESQ + 120, y + 18, entra(u, 1.4), { tam: 40 });
+    const site = u > 7.4;
+    navegador(860, 200, 920, 640, site ? 'tanoofertou.com.br' : 'google.com', (x, yy, w, h) => {
+      if (!site) {
+        ctx.fillStyle = '#0f1512'; ctx.fillRect(x, yy, w, h);
+        const sobe = E.inOut(prog(u, 3.6, .7)); // a caixa sobe quando aparecem os resultados
+        const cy = lerp(yy + 230, yy + 70, sobe);
+        alpha(1 - sobe, () => escrever('Google', x + w / 2, cy - 80, { tam: 72, peso: 700, cor: '#e8eaed', alinhar: 'center' }));
+        rr(x + 90, cy - 30, w - 180, 64, 32); ctx.fillStyle = '#202624'; ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = TXT2; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x + 128, cy + 1, 10, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x + 135, cy + 8); ctx.lineTo(x + 143, cy + 16); ctx.stroke();
+        const txt = digitar('Ofertou!', u, 1.6, 1.4);
+        escrever(txt || (u < 1.6 ? 'Pesquisar no Google' : ''), x + 160, cy + 3, { tam: 28, peso: txt ? 600 : 500, cor: txt ? '#fff' : '#8a958f', base: 'middle' });
+        if (txt && u < 3.6 && piscar(u)) { fonte(600, 28); ctx.fillStyle = '#fff'; ctx.fillRect(x + 162 + ctx.measureText(txt).width, cy - 16, 2, 34); }
+        // resultados
+        const r = entra(u, 4.0, .6);
+        alpha(r, () => {
+          const ry = yy + 150 + (1 - r) * 20;
+          rr(x + 70, ry - 18, w - 140, 186, 18); ctx.fillStyle = u > 6.2 ? 'rgba(43,212,125,.10)' : 'rgba(255,255,255,.03)'; ctx.fill();
+          if (u > 6.2) { ctx.strokeStyle = 'rgba(43,212,125,.6)'; ctx.lineWidth = 2; ctx.stroke(); }
+          if (pronta(IMG.capi)) ctx.drawImage(IMG.capi, x + 96, ry, 44, 44);
+          escrever('Ofertou!', x + 154, ry + 18, { tam: 22, peso: 700, cor: '#e8eaed', base: 'middle' });
+          escrever('https://tanoofertou.com.br', x + 154, ry + 42, { tam: 19, peso: 500, cor: '#9aa0a6', base: 'middle' });
+          escrever('Ofertou! — Ofertas reais das maiores lojas do Brasil', x + 96, ry + 96, { tam: 30, peso: 700, cor: '#8ab4f8', base: 'middle' });
+          escrever('Só entra desconto que a própria loja exibe. Preços conferidos', x + 96, ry + 136, { tam: 21, peso: 500, cor: '#bdc1c6', base: 'middle' });
+          for (let k = 0; k < 2; k++) { const y2 = ry + 230 + k * 110; rr(x + 96, y2, 260, 18, 9); ctx.fillStyle = 'rgba(255,255,255,.08)'; ctx.fill(); rr(x + 96, y2 + 34, w - 260, 14, 7); ctx.fill(); rr(x + 96, y2 + 60, w - 360, 14, 7); ctx.fill(); }
+        });
+        if (u > 4.8 && u < 7.4) {
+          const c = E.inOut(prog(u, 4.8, 1.3));
+          cursor(lerp(x + w - 120, x + 400, c), lerp(yy + h - 60, yy + 252, c), u > 6.2 ? prog(u, 6.2, .5) : 0);
+        }
+      } else {
+        print(IMG.entrar, x, yy, w, h, { zoom: lerp(1.0, 1.06, prog(u, 7.4, d - 7.4)), ox: .3, oy: .3 });
+      }
+    }, { a: entra(u, .5, .8), escala: lerp(.96, 1, entra(u, .5, .8)) });
+  },
+  // 4 Acessar pelo endereço
+  (u, d) => {
+    etapas(0, 1);
+    rotulo('Passo 1 de 4 · Acessar', 300, 1);
+    titulo([[['Ou digite o', 0]], [['endereço', 1]]], 410, u, { atraso: 0 });
+    const a = entra(u, 1.2, .6);
+    alpha(a, () => {
+      fonte(900, 54); const s = 'tanoofertou.com.br', w = ctx.measureText(s).width + 70;
+      rr(ESQ, 600, w, 96, 48); ctx.fillStyle = 'rgba(43,212,125,.12)'; ctx.fill(); ctx.strokeStyle = VERDE; ctx.lineWidth = 3; ctx.stroke();
+      escrever(s, ESQ + 35, 650, { tam: 54, peso: 900, cor: VERDE, base: 'middle' });
+    });
+    alpha(entra(u, 2.2), () => escrever('Tudo junto, sem espaço.', ESQ, 760, { tam: 30, peso: 600, cor: TXT2 }));
+    const digitado = digitar('tanoofertou.com.br', u, 1.8, 3.2);
+    const carregou = u > 5.6;
+    navegador(860, 200, 920, 640, '', (x, yy, w, h) => {
+      if (!carregou) {
+        ctx.fillStyle = '#0f1512'; ctx.fillRect(x, yy, w, h);
+        escrever('Nova guia', x + w / 2, yy + h / 2, { tam: 26, peso: 600, cor: '#5d6a63', alinhar: 'center', base: 'middle' });
+      } else print(IMG.inicio, x, yy, w, h, { zoom: lerp(1.0, 1.05, prog(u, 5.6, d - 5.6)), ox: .2, oy: .1, a: entra(u, 5.6, .5) });
+    }, { a: entra(u, 0, .6) });
+    // endereço sendo digitado na barra (por cima da janela)
+    const bx = 860 + 154, by = 200 + 29;
+    escrever(carregou ? 'tanoofertou.com.br' : (digitado || 'Pesquisar ou digitar um endereço'), bx, by, { tam: 20, peso: 600, cor: digitado ? '#fff' : '#7d8b84', base: 'middle' });
+    if (!carregou && digitado && piscar(u)) { fonte(600, 20); ctx.fillStyle = '#fff'; ctx.fillRect(bx + ctx.measureText(digitado).width + 2, by - 12, 2, 24); }
+    if (u > 5.1 && u < 5.8) alpha(1 - prog(u, 5.3, .5), () => etiqueta('Enter ↵', 1600, 270, 1, { verde: true, tam: 24 }));
+  },
+  // 5 App no celular
+  (u, d) => {
+    rotulo('Dica · No celular', 330, entra(u, 0));
+    const y = titulo([[['Instale na', 0]], [['tela inicial', 1]]], 440, u);
+    pilulas(['Abre como aplicativo', 'Com um toque'], y + 40, u, .9);
+    const a = entra(u, .3, .9);
+    alpha(a, () => {
+      const pw = 380, ph = 800, px = 1240, py = 150 + (1 - a) * 60;
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.65)'; ctx.shadowBlur = 70; ctx.shadowOffsetY = 30;
+      rr(px - 14, py - 14, pw + 28, ph + 28, 58); ctx.fillStyle = '#1c2420'; ctx.fill(); ctx.restore();
+      ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.lineWidth = 2; rr(px - 14, py - 14, pw + 28, ph + 28, 58); ctx.stroke();
+      ctx.save(); rr(px, py, pw, ph, 46); ctx.clip();
+      if (pronta(IMG.app)) { const s = pw / IMG.app.naturalWidth; ctx.drawImage(IMG.app, px, py, pw, IMG.app.naturalHeight * s); }
+      ctx.restore();
+      rr(px + pw / 2 - 60, py + 14, 120, 30, 15); ctx.fillStyle = '#000'; ctx.fill();
+    });
+  },
+  // 6 Criar conta
+  (u, d) => {
+    etapas(1, entra(u, 0));
+    rotulo('Passo 2 de 4 · Criar conta', 300, entra(u, .1));
+    const y = titulo([[['Crie sua', 0]], [['conta', 1]]], 410, u);
+    pilulas(['Com e-mail', 'Com o Google', 'Cadastro rápido: nome, celular e senha'], y + 40, u, 1.2, { tam: 28 });
+    // a página inteira e, depois, o cartão de login recortado e ampliado
+    const troca = E.inOut(prog(u, 2.6, .8));
+    navegador(940, 220, 840, 600, 'tanoofertou.com.br/conta', (x, yy, w, h) => {
+      print(IMG.entrar, x, yy, w, h, { zoom: 1, ox: .5, oy: .3 });
+    }, { a: entra(u, .4, .8) * (1 - troca) });
+    if (troca > 0) recorte(IMG.entrar, 997, 66, 420, 674, 1180, 190 + (1 - troca) * 30, 440, { a: troca });
+  },
+  // 7 Ofertas
+  (u, d) => {
+    etapas(2, entra(u, 0));
+    rotulo('Passo 3 de 4 · Ofertas', 300, entra(u, .1));
+    const y = titulo([[['Ache as', 0]], [['melhores', 1]], [['ofertas', 0]]], 410, u, { tam: 100 });
+    pilulas(['Busca', 'Filtros: loja, categoria, preço e desconto', 'Menor preço em 30 dias'], y + 30, u, 1.6, { tam: 26 });
+    const troca = prog(u, 7.5, .8);
+    navegador(940, 200, 840, 640, troca > .5 ? 'tanoofertou.com.br/?q=air fryer' : 'tanoofertou.com.br', (x, yy, w, h) => {
+      print(IMG.ofertas, x, yy, w, h, { zoom: lerp(1.05, 1.12, prog(u, 0, 7.5)), ox: .55, oy: lerp(0, .25, prog(u, 0, 7.5)), a: 1 - troca });
+      print(IMG.busca, x, yy, w, h, { zoom: lerp(1.05, 1.15, prog(u, 7.5, d - 7.5)), ox: .6, oy: .1, a: troca });
+    }, { a: entra(u, .4, .8) });
+    if (u > 11) etiqueta('Preços conferidos várias vezes por dia', 960, 870, entra(u, 11.2), { verde: true, tam: 26 });
+  },
+  // 8 Planos (visão geral)
+  (u, d) => {
+    etapas(3, entra(u, 0));
+    rotulo('Passo 4 de 4 · Planos', 300, entra(u, .1));
+    const y = titulo([[['Escolha o', 0]], [['seu plano', 1]]], 410, u);
+    alpha(entra(u, 1.4), () => escrever('Três planos, três tipos de acesso.', ESQ, y + 60, { tam: 32, peso: 600, cor: TXT2 }));
+    navegador(860, 200, 920, 640, 'tanoofertou.com.br/conta#planos', (x, yy, w, h) => {
+      print(IMG.planos, x, yy, w, h, { zoom: lerp(1.0, 1.04, prog(u, 0, d)), ox: .5, oy: .3 });
+    }, { a: entra(u, .4, .8) });
+  },
+  // 9–11 Um plano por cena
+  ...[
+    { n: 0, rot: 'Plano 1 · Para quem quer economizar', tit: [[['Caçador', 0]], [['de ', 0], ['Ofertas', 1]]], preco: 'Grátis', itens: ['Todas as ofertas na hora', 'Sem esperar aprovação', 'Busca, filtros e histórico de preço'] },
+    { n: 1, rot: 'Plano 2 · Para quem tem loja', tit: [[['Loja', 0]], [['Parceira', 1]]], preco: 'R$ 59,90/mês', itens: ['Página própria da sua loja', 'Anúncios com fotos, cupom e frete', 'Importação automática do catálogo'] },
+    { n: 2, rot: 'Plano 3 · Para afiliados', tit: [[['Afiliado', 0]], [['Pro', 1]]], preco: 'R$ 89,90/mês', itens: ['Seus links de afiliado', 'Milhares de ofertas para postar', 'Postagem automática nos grupos', 'Horários agendados'], extra: 'Mais completo' },
+  ].map(p => (u, d) => {
+    etapas(3, 1);
+    rotulo(p.rot, 270, entra(u, 0));
+    const y = titulo(p.tit, 380, u, { atraso: .1 });
+    etiqueta(p.preco, ESQ, y - 40, entra(u, .7), { tam: 36 });
+    if (p.extra) etiqueta(p.extra, ESQ + (p.preco.length * 21 + 90), y - 40, entra(u, .9), { verde: false, tam: 26 });
+    pilulas(p.itens, y + 60, u, 1.3, { tam: 26 });
+    const [sx, sy, sw, sh] = PLANO[p.n];
+    const a = entra(u, .3, .9);
+    // Afiliado Pro: depois do cartão, mostra a tela de postagens
+    const troca = p.n === 2 ? prog(u, 10, .8) : 0;
+    ctx.save(); ctx.translate(1390, 540); ctx.rotate(lerp(.04, 0, a)); ctx.translate(-1390, -540);
+    recorte(IMG.planos, sx, sy, sw, sh, 1140, 140 + (1 - a) * 50, 500, { a: a * (1 - troca) });
+    ctx.restore();
+    if (troca > 0) navegador(860, 210, 920, 640, 'tanoofertou.com.br/postagens', (x, yy, w, h) => {
+      print(IMG.postagens, x, yy, w, h, { zoom: lerp(1.0, 1.08, prog(u, 10, d - 10)), ox: .3, oy: .3 });
+    }, { a: troca });
+  }),
+  // 12 Resumo
+  (u, d) => {
+    const a0 = entra(u, 0, .7);
+    alpha(a0, () => escrever('Qual é o seu?', W / 2, 260 + (1 - a0) * 20, { tam: 84, peso: 900, alinhar: 'center' }));
+    const linhas = [['01', 'Quer economizar?', 'Caçador de Ofertas', 'Grátis', 1.4], ['02', 'Tem uma loja?', 'Loja Parceira', 'R$ 59,90', 4.6], ['03', 'Divulga ofertas e ganha comissão?', 'Afiliado Pro', 'R$ 89,90', 7.6]];
+    linhas.forEach(([n, perg, plano, preco, at], i) => {
+      const a = entra(u, at, .6);
+      alpha(a, () => {
+        const x = 200, y = 360 + i * 150 + (1 - a) * 20, w = W - 400, h = 120;
+        rr(x, y, w, h, 24); ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.fill(); ctx.strokeStyle = LINHA; ctx.lineWidth = 2; ctx.stroke();
+        escrever(n, x + 44, y + h / 2 + 2, { tam: 34, peso: 900, cor: VERDE, base: 'middle' });
+        escrever(perg, x + 120, y + h / 2 + 2, { tam: 34, peso: 700, base: 'middle' });
+        escrever('→', x + w - 640, y + h / 2 + 2, { tam: 40, peso: 800, cor: TXT2, base: 'middle' });
+        escrever(plano, x + w - 580, y + h / 2 + 2, { tam: 38, peso: 900, cor: VERDE, base: 'middle' });
+        escrever(preco, x + w - 44, y + h / 2 + 2, { tam: 26, peso: 700, cor: TXT2, alinhar: 'right', base: 'middle' });
+      });
+    });
+  },
+  // 13 Ajuda
+  (u, d) => {
+    rotulo('Ajuda · Guia e suporte', 330, entra(u, 0));
+    const y = titulo([[['Ficou alguma', 0]], [['dúvida?', 1]]], 440, u);
+    pilulas(['Guia do usuário, passo a passo', 'Suporte com a Capi'], y + 40, u, 1.4, { tam: 28 });
+    navegador(940, 220, 840, 600, 'tanoofertou.com.br/ajuda', (x, yy, w, h) => {
+      print(IMG.ajuda, x, yy, w, h, { zoom: lerp(1.0, 1.1, prog(u, 0, d)), ox: .4, oy: .15 });
+    }, { a: entra(u, .4, .8) });
+  },
+  // 14 Final
+  (u, d) => {
+    const a = entra(u, 0, .9), b = E.back(prog(u, .1, .9));
+    if (pronta(IMG.capi)) alpha(a, () => {
+      const tam = 470 * b, cx = 560, cy = 540 + Math.sin(u * 2.2) * 10;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.sin(u * 1.6) * .05); ctx.drawImage(IMG.capi, -tam / 2, -tam / 2, tam, tam); ctx.restore();
+    });
+    const x = 960;
+    const a1 = entra(u, .5, .7);
+    alpha(a1, () => {
+      fonte(900, 120); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+      ctx.fillStyle = TXT; ctx.fillText('Ofertou', x, 430 + (1 - a1) * 20);
+      ctx.fillStyle = VERDE; ctx.fillText('!', x + ctx.measureText('Ofertou').width, 430 + (1 - a1) * 20);
+    });
+    alpha(entra(u, .9, .7), () => escrever('Ofertas reais. Conferidas.', x, 520, { tam: 52, peso: 800 }));
+    const a3 = entra(u, 1.6, .6);
+    alpha(a3, () => {
+      fonte(900, 36); const s = 'Acesse tanoofertou.com.br  →', w = ctx.measureText(s).width + 72;
+      rr(x, 590, w, 84, 42); ctx.fillStyle = VERDE; ctx.fill();
+      escrever(s, x + 36, 633, { tam: 36, peso: 900, cor: '#04140b', base: 'middle' });
+    });
+    alpha(entra(u, 2.4, .6), () => escrever('ou pesquise Ofertou! no Google', x, 740, { tam: 30, peso: 600, cor: TXT2 }));
+    alpha(entra(u, 2.8, .6), () => escrever('TANOOFERTOU.COM.BR', x, 820, { tam: 20, peso: 800, cor: '#5f7a6c', espaco: 6 }));
+  },
+];
+
+// ── Tempos: cada cena dura a fala dela + uma pausa ──
+let FALAS = null;
+let INICIOS = [], DUR = 0;
+function montarTempos(tempos) {
+  FALAS = tempos;
+  INICIOS = []; let t = 0;
+  CENAS.forEach((_, i) => {
+    INICIOS.push(t);
+    const voz = tempos?.[i] ? tempos[i].voz : 8;
+    t += voz + (i === 0 ? 1.4 : i === CENAS.length - 1 ? 3.0 : 1.0);
+  });
+  DUR = t;
+}
+montarTempos(null);
+function desenhar(t) {
+  fundo(t);
+  let i = INICIOS.length - 1;
+  while (i > 0 && t < INICIOS[i]) i--;
+  const ini = INICIOS[i], fim = i + 1 < INICIOS.length ? INICIOS[i + 1] : DUR, d = fim - ini, u = t - ini;
+  // a cena entra com a própria animação e sai com um esmaecer rápido
+  const sai = i + 1 < INICIOS.length ? 1 - E.inOut(prog(u, d - .45, .45)) : 1 - prog(u, d - .8, .8);
+  alpha(sai, () => CENAS[i](u, d));
+}
+
+// ════════════════════════════════ MÚSICA (calma, por baixo da voz) ════════════════════════════════
+function musica(ac, destino, inicio) {
+  const BPM = 96, BEAT = 60 / BPM, COMP = BEAT * 4;
+  const master = ac.createGain();
+  master.gain.setValueAtTime(0, inicio); master.gain.linearRampToValueAtTime(.42, inicio + 2);
+  master.gain.setValueAtTime(.42, inicio + DUR - 3.5); master.gain.linearRampToValueAtTime(0, inicio + DUR - .2);
+  const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(destino);
+  const nota = n => 440 * Math.pow(2, (n - 69) / 12);
+  const ACORDES = [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 66]];
+  const BAIXO = [45, 41, 48, 43];
+  function voz(freq, t0, dur, { tipo = 'sine', vol = .05, ataque = .02, solta = .3, filtro = 1800 } = {}) {
+    const o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
+    o.type = tipo; o.frequency.value = freq; f.type = 'lowpass'; f.frequency.value = filtro;
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + ataque); g.gain.setValueAtTime(vol, t0 + Math.max(ataque, dur - solta));
+    g.gain.linearRampToValueAtTime(0, t0 + dur);
+    o.connect(f); f.connect(g); g.connect(master); o.start(t0); o.stop(t0 + dur + .05);
+  }
+  const compassos = Math.ceil(DUR / COMP);
+  for (let c = 0; c < compassos; c++) {
+    const t0 = inicio + c * COMP, i = c % 4;
+    for (const n of ACORDES[i]) voz(nota(n), t0, COMP, { tipo: 'triangle', vol: .022, ataque: .8, solta: 1.2, filtro: 1100 });
+    voz(nota(BAIXO[i]), t0, COMP * .98, { tipo: 'sine', vol: .12, ataque: .1, filtro: 500 });
+    for (let s = 0; s < 8; s++) { // arpejo suave em colcheias
+      const n = ACORDES[i][[0, 2, 1, 3, 2, 1, 3, 2][s]] + 12;
+      voz(nota(n), t0 + s * BEAT / 2, BEAT / 2 * .95, { tipo: 'sine', vol: .028, ataque: .01, solta: .25, filtro: 3000 });
+    }
+  }
+}
+
+// ════════════════════════════════ NARRAÇÃO ════════════════════════════════
+const PASTA = 'narracao-tutorial';
+async function carregarFalas(ac) {
+  if (!FALAS) return [];
+  return Promise.all(FALAS.map(async x => ac.decodeAudioData(await (await fetch(`${PASTA}/${x.arquivo}`)).arrayBuffer())));
+}
+function narrar(ac, destino, inicio, buffers) {
+  const voz = ac.createGain(); voz.gain.value = 1.2;
+  const comp = ac.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3;
+  const eq = ac.createBiquadFilter(); eq.type = 'peaking'; eq.frequency.value = 3000; eq.gain.value = 3; eq.Q.value = .9;
+  voz.connect(eq); eq.connect(comp); comp.connect(destino);
+  buffers.forEach((b, i) => {
+    const src = ac.createBufferSource(); src.buffer = b; src.connect(voz);
+    const quando = inicio + INICIOS[i] + (i === 0 ? .8 : .3) - (FALAS[i].voz_ini || 0);
+    src.start(Math.max(inicio, quando), Math.max(0, inicio - quando));
+  });
+}
+
+// ════════════════════════════════ EXECUÇÃO ════════════════════════════════
+async function pronto() {
+  try { const r = await fetch(`${PASTA}/tempos.json`, { cache: 'no-store' }); if (r.ok) montarTempos(await r.json()); } catch { /* sem narração */ }
+  await document.fonts.load('900 100px Figtree'); await document.fonts.load('800 40px Figtree'); await document.fonts.load('700 40px Figtree'); await document.fonts.load('600 40px Figtree');
+  await Promise.all(Object.values(IMG).map(i => (i.complete ? null : new Promise(r => { i.onload = i.onerror = r; }))));
+}
+// Prévia no navegador: clique para começar com som
+function assistir() {
+  desenhar(0);
+  cv.addEventListener('click', async () => {
+    const ac = new AudioContext(); const falas = await carregarFalas(ac);
+    const ini = ac.currentTime + .1; musica(ac, ac.destination, ini); narrar(ac, ac.destination, ini, falas);
+    const t0 = performance.now() + 100;
+    const quadro = () => { const t = (performance.now() - t0) / 1000; desenhar(clamp(t, 0, DUR)); if (t < DUR) requestAnimationFrame(quadro); };
+    requestAnimationFrame(quadro);
+  }, { once: true });
+}
+window.pedaco = async (ini, fim) => {
+  const b = new Uint8Array(await window.__video.slice(ini, fim).arrayBuffer());
+  let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+  return btoa(s);
+};
+window.gravar = async () => {
+  await pronto();
+  const ac = new AudioContext({ sampleRate: 48000 }); window.__ac = ac;
+  await ac.resume();
+  const destino = ac.createMediaStreamDestination();
+  const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...destino.stream.getAudioTracks()]);
+  const tipo = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus'].find(m => MediaRecorder.isTypeSupported(m));
+  const rec = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 9_000_000, audioBitsPerSecond: 192_000 });
+  const partes = [];
+  rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
+  desenhar(0);
+  const falas = await carregarFalas(ac);
+  const silencio = ac.createConstantSource(); silencio.offset.value = 0; silencio.connect(destino); silencio.start();
+  let esperando = true; const manter = () => { if (!esperando) return; desenhar(0); requestAnimationFrame(manter); }; requestAnimationFrame(manter);
+  let quadros = 0, lentos = 0, ultimo = 0;
+  await new Promise(ok => {
+    rec.onstart = () => {
+      esperando = false;
+      const inicioAudio = ac.currentTime + .05;
+      musica(ac, destino, inicioAudio);
+      narrar(ac, destino, inicioAudio, falas);
+      const t0 = performance.now() + 50;
+      const quadro = () => {
+        const agora = performance.now(), t = Math.max(0, (agora - t0) / 1000);
+        if (ultimo && agora - ultimo > 50) lentos++;
+        ultimo = agora; quadros++;
+        window.__progresso = { t: +t.toFixed(1), DUR };
+        desenhar(Math.min(t, DUR));
+        if (t < DUR) requestAnimationFrame(quadro); else ok();
+      };
+      requestAnimationFrame(quadro);
+    };
+    rec.start(1000);
+  });
+  await new Promise(r => { rec.onstop = r; rec.stop(); });
+  const blob = new Blob(partes, { type: tipo });
+  window.__video = blob;
+  return { tipo, tamanho: blob.size, quadros, lentos, duracao: +DUR.toFixed(1) };
+};
+// ?t=12.5 mostra só aquele instante (para conferir o visual); ?tempos devolve o início de cada cena
+const tFixo = new URLSearchParams(location.search).get('t');
+if (tFixo !== null) pronto().then(() => { desenhar(Number(tFixo)); document.title = 'pronto'; });
+else if (!/[?&]gravar/.test(location.search)) pronto().then(assistir);
+window.inicios = () => pronto().then(() => ({ INICIOS: INICIOS.map(x => +x.toFixed(1)), DUR: +DUR.toFixed(1) }));
+</script>
+</body>
+</html>

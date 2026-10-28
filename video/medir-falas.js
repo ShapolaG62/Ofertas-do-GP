@@ -1,6 +1,7 @@
-// Mede cada fala (sem o silêncio do começo e do fim) e grava video/narracao/tempos.json, usado pelo vídeo.
+// Mede cada fala (sem o silêncio do começo e do fim) e grava video/<pasta>/tempos.json, usado pelo vídeo.
+// Uso: node video/medir-falas.js [pasta]   (padrão: narracao; o tutorial usa narracao-tutorial)
 const fs = require('fs'), path = require('path');
-const dir = path.join(__dirname, 'narracao');
+const dir = path.join(__dirname, process.argv[2] || 'narracao');
 const out = [];
 for (const f of fs.readdirSync(dir).filter(x => /^fala\d+\.wav$/.test(x)).sort()) {
   const b = fs.readFileSync(path.join(dir, f));

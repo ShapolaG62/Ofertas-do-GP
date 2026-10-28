@@ -481,5 +481,5 @@ module.exports = {
   renovarSessao,
   TIPOS, SIGNUP_MODES, signupMode, register, registerRapido, login, createSession, destroySession, currentUser,
   requireUser, requireActive, loginWithGoogle, completeProfile, publicUser, updateProfile, changePassword, deleteOwnAccount, moderate, listForAdmin, detailForAdmin,
-  getById, logAction,
+  getById, logAction, acharParaLogin, blockedReason,
 };

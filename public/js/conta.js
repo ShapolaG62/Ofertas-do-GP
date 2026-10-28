@@ -290,6 +290,8 @@
   }
 
   async function route() {
+    const redefinir = new URLSearchParams(location.search).get('redefinir');
+    if (redefinir) return showRedefinir(redefinir); // link de "Esqueci minha senha" (mesmo com alguém logado)
     const me = await api('/api/conta/me');
     ME = me.user; LOJA = me.loja;
     // Administrador logado vai para o painel (ou para a página que pediu).
@@ -343,12 +345,61 @@
     $('#form-entrar').hidden = tab !== 'entrar';
     $('#form-criar').hidden = tab !== 'criar';
     $('#form-rapido').hidden = tab !== 'rapido';
+    $('#form-esqueci').hidden = true;
+    $('#form-redefinir').hidden = true;
+    $('.tabs-line').hidden = false;
     $('#google-label').textContent = tab === 'criar' ? 'Criar conta com Google' : 'Entrar com Google';
     const closed = INFO.consumidor === 'fechado' && INFO.empresa === 'fechado';
     if (tab === 'criar' && closed) msg($('#form-criar'), 'Os cadastros estão fechados no momento.');
   }
   $$('[data-auth]').forEach(b => b.addEventListener('click', () => setAuthTab(b.dataset.auth)));
   $$('[data-ir-criar]').forEach(a => a.addEventListener('click', () => setAuthTab('criar')));
+
+  // ── Esqueci minha senha ──
+  // Mostra um formulário só (sem as abas e o Google) no lugar do login
+  function soFormulario(id) {
+    for (const f of ['#form-entrar', '#form-criar', '#form-rapido', '#form-esqueci', '#form-redefinir']) $(f).hidden = f !== id;
+    $('.tabs-line').hidden = true;
+    for (const el of ['#google-btn', '#google-divider']) $(el).classList.add('esconder-google');
+  }
+  function voltarEntrar() {
+    for (const el of ['#google-btn', '#google-divider']) $(el).classList.remove('esconder-google');
+    setAuthTab('entrar');
+  }
+  $('#esqueci-btn').addEventListener('click', () => {
+    soFormulario('#form-esqueci');
+    const digitado = $('#form-entrar [name=email]').value.trim();
+    if (digitado) $('#form-esqueci [name=email]').value = digitado;
+    $('#form-esqueci [name=email]').focus();
+  });
+  $$('[data-voltar-entrar]').forEach(b => b.addEventListener('click', voltarEntrar));
+  bind('#form-esqueci', async (form, d) => {
+    const r = await api('/api/conta/esqueci-senha', { method: 'POST', body: d });
+    msg(form, r.mensagem, true);
+  });
+  // Link do e-mail: /conta?redefinir=<código>
+  async function showRedefinir(token) {
+    show('login');
+    soFormulario('#form-redefinir');
+    const form = $('#form-redefinir');
+    try {
+      const r = await api(`/api/conta/redefinir-senha?token=${encodeURIComponent(token)}`);
+      $('#redefinir-conta').textContent = r.email ? `Conta: ${r.email}` : '';
+    } catch (err) {
+      form.querySelectorAll('input, [type=submit]').forEach(el => { el.disabled = true; });
+      msg(form, err.message);
+    }
+  }
+  bind('#form-redefinir', async (form, d) => {
+    if (!form.reportValidity()) return;
+    if (d.nova !== d.nova_confirmacao) throw new Error('As senhas não conferem.');
+    const token = new URLSearchParams(location.search).get('redefinir');
+    await api('/api/conta/redefinir-senha', { method: 'POST', body: { token, nova: d.nova } });
+    history.replaceState(null, '', location.pathname);
+    form.reset();
+    voltarEntrar();
+    msg($('#form-entrar'), 'Senha nova salva! Agora é só entrar com ela.', true);
+  });
 
   bind('#form-entrar', async (form, d) => {
     const r = await api('/api/conta/entrar', { method: 'POST', body: d });

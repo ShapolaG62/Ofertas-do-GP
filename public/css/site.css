@@ -799,6 +799,10 @@ body.is-landing { overflow-x: clip; }
 .auth-card { padding: 24px 26px 26px; box-shadow: var(--shadow-md); }
 .auth-card .form + .form { margin-top: 0; }
 .auth-title { margin: 0 0 12px; font-size: 20px; letter-spacing: -.01em; }
+/* Esqueci minha senha */
+.esqueci-link { justify-self: end; margin-top: -6px; font-size: 13.5px; }
+.auth-sub { margin: 0; font-size: 17px; }
+.esconder-google, .tabs-line[hidden] { display: none !important; }
 .auth-aprovacao { margin: 16px 0 0; padding: 12px 14px; border-radius: 10px; background: var(--gold-soft); color: var(--ink-2); font-size: 13px; line-height: 1.5; }
 
 .lp-lojas { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 26px; padding: 22px 0 8px; color: var(--ink-3); font-size: 14px; }

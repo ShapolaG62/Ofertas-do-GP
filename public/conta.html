@@ -13,19 +13,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261231">
-<script src="/js/tema.js?v=20261231"></script>
-<script src="/js/app-nativo.js?v=20261231"></script>
-<script src="/js/dialogo.js?v=20261231"></script>
-<script src="/js/aceite-parceiro.js?v=20261231"></script>
-<script src="/js/cosmeticos.js?v=20261231" defer></script>
-<script src="/js/cartoes.js?v=20261231" defer></script>
-<script src="/js/capi-minerando.js?v=20261231" defer></script>
-<script src="/js/cadastro-auto.js?v=20261231" defer></script>
-<script src="/js/rodape-legal.js?v=20261231" defer></script>
-<script src="/js/instalar-app.js?v=20261231" defer></script>
-<script src="/js/cookies.js?v=20261231"></script>
-<script src="/js/seletor.js?v=20261231" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261232">
+<script src="/js/tema.js?v=20261232"></script>
+<script src="/js/app-nativo.js?v=20261232"></script>
+<script src="/js/dialogo.js?v=20261232"></script>
+<script src="/js/aceite-parceiro.js?v=20261232"></script>
+<script src="/js/cosmeticos.js?v=20261232" defer></script>
+<script src="/js/cartoes.js?v=20261232" defer></script>
+<script src="/js/capi-minerando.js?v=20261232" defer></script>
+<script src="/js/cadastro-auto.js?v=20261232" defer></script>
+<script src="/js/rodape-legal.js?v=20261232" defer></script>
+<script src="/js/instalar-app.js?v=20261232" defer></script>
+<script src="/js/cookies.js?v=20261232"></script>
+<script src="/js/seletor.js?v=20261232" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -87,11 +87,31 @@
           <form class="form" id="form-entrar">
             <label class="field"><span>E-mail ou celular</span><input type="text" name="email" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="voce@email.com ou (62) 99999-9999" required></label>
             <label class="field"><span>Senha</span><input type="password" name="senha" autocomplete="current-password" required></label>
+            <button class="link-btn esqueci-link" type="button" id="esqueci-btn">Esqueci minha senha</button>
             <div class="form-msg" hidden></div>
             <button class="btn btn-primary btn-block" type="submit">Entrar</button>
             <p class="muted" style="margin:0;font-size:13px;text-align:center">Assinante do Afiliado Pro? <a class="link-btn" href="/cliente">Entre no painel do cliente</a></p>
           </form>
 
+          <form class="form" id="form-esqueci" hidden>
+            <h3 class="auth-sub">Esqueci minha senha</h3>
+            <p class="muted" style="margin:0">Informe o e-mail ou o celular da sua conta. Enviamos para o <b>e-mail da conta</b> um link para você criar uma senha nova.</p>
+            <label class="field"><span>E-mail ou celular</span><input type="text" name="email" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="voce@email.com ou (62) 99999-9999" required></label>
+            <div class="form-msg" hidden></div>
+            <button class="btn btn-primary btn-block" type="submit">Enviar link</button>
+            <button class="link-btn" type="button" data-voltar-entrar style="justify-self:center">Voltar para entrar</button>
+          </form>
+          <form class="form" id="form-redefinir" hidden>
+            <h3 class="auth-sub">Criar senha nova</h3>
+            <p class="muted" style="margin:0" id="redefinir-conta"></p>
+            <div class="form-row senha-par">
+              <label class="field"><span>Nova senha</span><input type="password" name="nova" autocomplete="new-password" minlength="8" required></label>
+              <label class="field"><span>Confirme a senha</span><input type="password" name="nova_confirmacao" autocomplete="new-password" minlength="8" required></label>
+            </div>
+            <div class="form-msg" hidden></div>
+            <button class="btn btn-primary btn-block" type="submit">Salvar senha nova</button>
+            <button class="link-btn" type="button" data-voltar-entrar style="justify-self:center">Voltar para entrar</button>
+          </form>
           <form class="form" id="form-criar" hidden>
             <label class="field"><span>E-mail</span><input type="email" name="email" autocomplete="email" maxlength="120" required></label>
             <div class="form-row senha-par">
@@ -718,9 +738,9 @@
 </footer>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/loja-painel.js?v=20261231" defer></script>
-<script src="/js/conta.js?v=20261231" defer></script>
-<script src="/js/calculadora.js?v=20261231" defer></script>
-<script src="/js/chat-topo.js?v=20261231" defer></script>
+<script src="/js/loja-painel.js?v=20261232" defer></script>
+<script src="/js/conta.js?v=20261232" defer></script>
+<script src="/js/calculadora.js?v=20261232" defer></script>
+<script src="/js/chat-topo.js?v=20261232" defer></script>
 </body>
 </html>

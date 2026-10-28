@@ -125,6 +125,25 @@ router.post('/api/conta/entrar', (req, res) => {
   } catch (err) { sendError(res, err); }
 });
 
+// "Esqueci minha senha": pedido do link por e-mail e criação da senha nova pelo link (src/recuperar-senha.js)
+const esqueciIp = createLimiter(5, 60);      // 5 pedidos por hora por IP
+const esqueciConta = createLimiter(3, 60);   // 3 pedidos por hora para a mesma conta
+const redefinirLimiter = createLimiter(10, 15);
+router.post('/api/conta/esqueci-senha', (req, res) => {
+  const entrada = String(req.body?.email || '').trim().toLowerCase();
+  const wait = esqueciIp.hit(req.ip) || (entrada && esqueciConta.hit(entrada));
+  if (wait) return res.status(429).json({ error: `Muitos pedidos seguidos. Tente de novo em ${wait} min.` });
+  try { res.json(require('../recuperar-senha').pedir(entrada, `${req.protocol}://${req.get('host')}`)); } catch (err) { sendError(res, err); }
+});
+router.get('/api/conta/redefinir-senha', (req, res) => {
+  try { res.json(require('../recuperar-senha').conferir(String(req.query.token || ''))); } catch (err) { sendError(res, err); }
+});
+router.post('/api/conta/redefinir-senha', (req, res) => {
+  const wait = redefinirLimiter.hit(req.ip);
+  if (wait) return res.status(429).json({ error: `Muitas tentativas. Tente de novo em ${wait} min.` });
+  try { res.json(require('../recuperar-senha').redefinir(String(req.body?.token || ''), req.body?.nova)); } catch (err) { sendError(res, err); }
+});
+
 router.post('/api/conta/sair', (req, res) => {
   users.destroySession(req, res);
   res.json({ ok: true });

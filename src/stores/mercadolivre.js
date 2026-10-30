@@ -33,12 +33,17 @@ async function getToken(s) {
 }
 
 // Erro de rede ou demora (timeout) volta como resposta com status 0, em vez de derrubar a busca do termo inteiro.
-// Tenta de novo uma vez.
+// "Muitos pedidos" (429) e erro do servidor (5xx) esperam um pouco e tentam de novo: antes o 429 virava "nenhum
+// resultado" e o termo inteiro se perdia.
+const espera = ms => new Promise(r => setTimeout(r, ms));
+const ok = r => r.status === 200 || r.status === 206; // 206 = resposta parcial válida da API
 async function apiGet(path, token, params) {
   for (let tentativa = 1; ; tentativa++) {
-    try { return await apiGetUmaVez(path, token, params); } catch (err) {
-      if (tentativa >= 2) return { status: 0, data: {}, erro: err.message };
-    }
+    let r;
+    try { r = await apiGetUmaVez(path, token, params); } catch (err) { r = { status: 0, data: {}, erro: err.message }; }
+    const repetir = r.status === 0 || r.status === 429 || r.status >= 500;
+    if (!repetir || tentativa >= 4) return r;
+    await espera(r.status === 429 ? 1500 * tentativa * tentativa : 800 * tentativa); // 1,5 s, 6 s, 13,5 s
   }
 }
 async function apiGetUmaVez(path, token, params) {
@@ -50,46 +55,63 @@ async function apiGetUmaVez(path, token, params) {
   return res;
 }
 
-// Roda as tarefas com poucas requisições simultâneas, para não sobrecarregar a API.
-async function inBatches(list, size, fn) {
+// Roda as tarefas com poucas requisições simultâneas e uma pausa curta entre os grupos (a API limita a frequência).
+async function inBatches(list, size, fn, pausa = 250) {
   const out = [];
   for (let i = 0; i < list.length; i += size) {
     out.push(...await Promise.all(list.slice(i, i + size).map(fn)));
+    if (i + size < list.length) await espera(pausa);
   }
   return out;
 }
 
 // A busca comum (/sites/MLB/search) é recusada para aplicativos (403). Caminho usado:
-// termo → produtos do catálogo com a palavra (products/search) + mais vendidos da categoria (highlights) → anúncios de cada produto.
+// termo → mais vendidos das categorias do termo (highlights: de 20, a maioria vira oferta) + produtos do catálogo
+// com a palavra (products/search: a maioria não tem vendedor ativo) → anúncios de cada produto.
 // Entra só o anúncio mais barato que tenha preço anterior (riscado) informado pelo próprio Mercado Livre.
+const POR_TERMO = 80;
 async function searchApi(query, s) {
   const token = await getToken(s);
   const produtos = [];
-  // 1º) Busca por palavra no catálogo (products/search): traz os produtos do termo, não só os mais vendidos
-  const porPalavra = await cached(`q:${query}`, async () => {
-    const r = await apiGet('/products/search', token, { status: 'active', site_id: 'MLB', q: query, limit: 20 });
-    return r.status === 200 ? (r.data.results || []).map(p => p.id).filter(Boolean) : [];
-  });
-  for (const id of porPalavra) if (!produtos.includes(id)) produtos.push(id);
+  const somar = ids => { for (const id of ids) if (!produtos.includes(id)) produtos.push(id); };
 
-  // 2º) Mais vendidos da categoria do termo (completa a lista)
-  const disc = await apiGet('/sites/MLB/domain_discovery/search', token, { q: query, limit: 2 });
-  if (disc.status !== 200 && !produtos.length) throw new Error(`categoria não encontrada (${disc.status})`);
-  const categorias = disc.status === 200 ? [...new Set((disc.data || []).map(d => d.category_id).filter(Boolean))] : [];
-
+  // 1º) Mais vendidos das categorias do termo e da categoria "mãe" de cada uma (outros 20 mais vendidos)
+  const disc = await apiGet('/sites/MLB/domain_discovery/search', token, { q: query, limit: 3 });
+  const categorias = ok(disc) ? [...new Set((disc.data || []).map(d => d.category_id).filter(Boolean))] : [];
   for (const cat of categorias) {
-    const ids = await cached(`cat:${cat}`, async () => {
-      const h = await apiGet(`/highlights/MLB/category/${cat}`, token);
-      return h.status === 200 ? (h.data.content || []).filter(c => c.type === 'PRODUCT').map(c => c.id) : [];
-    });
-    for (const id of ids) if (!produtos.includes(id)) produtos.push(id);
+    somar(await destaques(cat, token));
+    const mae = await cached(`mae:${cat}`, async () => {
+      const c = await apiGet(`/categories/${cat}`, token);
+      if (!ok(c)) throw new Error(`categoria ${c.status}`);
+      const caminho = c.data.path_from_root || [];
+      return caminho.length >= 3 ? caminho[caminho.length - 2].id : null; // não sobe até a raiz (genérica demais)
+    }).catch(() => null);
+    if (mae) somar(await destaques(mae, token));
   }
 
-  const deals = await inBatches(produtos.slice(0, 40), 5, productId => cached(`prod:${productId}`, () => dealFor(productId, token)).catch(() => null));
+  // 2º) Produtos do catálogo com a palavra (completa a lista)
+  const porPalavra = await cached(`q:${query}`, async () => {
+    const r = await apiGet('/products/search', token, { status: 'active', site_id: 'MLB', q: query, limit: 50 });
+    if (!ok(r)) throw new Error(`busca ${r.status}`); // falha não fica guardada: tenta de novo no próximo termo/rodada
+    return (r.data.results || []).map(p => p.id).filter(Boolean);
+  }).catch(() => []);
+  somar(porPalavra);
+  if (!produtos.length) throw new Error(`a API não devolveu produtos (${disc.status})`);
+
+  const deals = await inBatches(produtos.slice(0, POR_TERMO), 4, productId => cached(`prod:${productId}`, () => dealFor(productId, token)).catch(() => null));
   return deals.filter(Boolean);
+}
+async function destaques(cat, token) {
+  return cached(`cat:${cat}`, async () => {
+    const h = await apiGet(`/highlights/MLB/category/${cat}`, token);
+    if (h.status === 404) return [];
+    if (!ok(h)) throw new Error(`destaques ${h.status}`);
+    return (h.data.content || []).filter(c => c.type === 'PRODUCT').map(c => c.id);
+  }).catch(() => []);
 }
 
 // Vários termos caem na mesma categoria ("fone bluetooth", "fone tws"...): guarda as respostas por 30 min.
+// Só guarda o que deu certo (se a função lança erro, nada fica guardado e a próxima vez tenta de novo).
 const CACHE_MS = 30 * 60 * 1000;
 const cache = new Map();
 async function cached(key, fn) {
@@ -102,15 +124,18 @@ async function cached(key, fn) {
 }
 
 // Anúncio mais barato do produto que tenha preço anterior (riscado) informado pelo Mercado Livre.
+// "Sem vendedor ativo" (404) é resposta de verdade (guarda null); falha de limite/rede lança erro (não guarda).
 async function dealFor(productId, token) {
   const items = await apiGet(`/products/${productId}/items`, token);
-  if (items.status !== 200) return null;
+  if (items.status === 404) return null;
+  if (!ok(items)) throw new Error(`anúncios ${items.status}`);
   const best = (items.data.results || [])
     .filter(i => i.price > 0 && i.original_price > i.price && i.currency_id === 'BRL' && i.condition !== 'used')
     .sort((a, b) => a.price - b.price)[0];
   if (!best) return null;
   const prod = await apiGet(`/products/${productId}`, token);
-  if (prod.status !== 200 || !prod.data.name) return null;
+  if (!ok(prod)) throw new Error(`produto ${prod.status}`);
+  if (!prod.data.name) return null;
   const num = String(best.item_id).replace(/^MLB/i, '');
   return {
     store_product_id: best.item_id,

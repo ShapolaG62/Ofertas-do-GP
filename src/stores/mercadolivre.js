@@ -110,6 +110,50 @@ async function destaques(cat, token) {
   }).catch(() => []);
 }
 
+// ── Varredura das categorias (além dos termos de busca) ──
+// Cada categoria do Mercado Livre, em qualquer nível, tem os próprios 20 mais vendidos, e a maioria deles tem preço
+// riscado. A cada rodada, percorre um lote da árvore de categorias (as filhas de cada uma entram na fila) e continua de
+// onde parou na rodada seguinte; terminada a árvore, recomeça. Assim o site cobre milhares de categorias, não só as
+// que os termos de busca alcançam. Lote: Painel → Mineração ("Mercado Livre: categorias varridas por rodada").
+const VARREDURA = 'ml_varredura'; // { fila: [ids], ciclo, feitas } (chave interna)
+async function varredura(s, { parar = () => false } = {}) {
+  const settings = require('../settings');
+  const lote = Math.min(Math.max(parseInt(s.ml_categorias_por_rodada ?? '200', 10) || 0, 0), 1000);
+  if (!lote || !s.ml_client_id || !s.ml_client_secret) return { deals: [], message: '' };
+  const token = await getToken(s);
+  let st = {};
+  try { st = JSON.parse(settings.get(VARREDURA) || '{}') || {}; } catch { st = {}; }
+  let fila = Array.isArray(st.fila) ? st.fila : [];
+  if (!fila.length) { // começo de um ciclo: as categorias principais
+    const r = await apiGet('/sites/MLB/categories', token);
+    if (!ok(r)) throw new Error(`categorias ${r.status}`);
+    fila = (r.data || []).map(c => c.id);
+    st = { ciclo: (st.ciclo || 0) + 1, feitas: 0 };
+  }
+  const guardar = () => settings.set(VARREDURA, JSON.stringify({ ...st, fila }));
+  const deals = [];
+  let feitas = 0;
+  while (feitas < lote && fila.length && !parar()) {
+    const cat = fila.shift();
+    feitas++;
+    const c = await cached(`arvore:${cat}`, async () => {
+      const r = await apiGet(`/categories/${cat}`, token);
+      if (r.status === 404) return [];
+      if (!ok(r)) throw new Error(`categoria ${r.status}`);
+      return (r.data.children_categories || []).map(f => f.id);
+    }).catch(() => null);
+    if (c === null) { fila.push(cat); continue; } // falhou agora: volta para o fim da fila
+    fila.push(...c);
+    const ids = await destaques(cat, token);
+    const achados = await inBatches(ids, 4, id => cached(`prod:${id}`, () => dealFor(id, token)).catch(() => null));
+    deals.push(...achados.filter(Boolean));
+    if (feitas % 10 === 0) { st.feitas = (st.feitas || 0) + 10; guardar(); }
+  }
+  st.feitas = (st.feitas || 0) + (feitas % 10);
+  guardar();
+  return { deals, message: `${feitas} categorias varridas (ciclo ${st.ciclo}, ${st.feitas} feitas, ${fila.length} na fila)` };
+}
+
 // Vários termos caem na mesma categoria ("fone bluetooth", "fone tws"...): guarda as respostas por 30 min.
 // Só guarda o que deu certo (se a função lança erro, nada fica guardado e a próxima vez tenta de novo).
 const CACHE_MS = 30 * 60 * 1000;
@@ -223,6 +267,7 @@ async function ofertaDoProduto(productId, s) {
 
 module.exports = {
   ofertaDoProduto,
+  varredura,
   id: 'mercadolivre',
   name: 'Mercado Livre',
   method: 'API oficial (catálogo por palavra + mais vendidos com desconto) ou leitura da busca pública',

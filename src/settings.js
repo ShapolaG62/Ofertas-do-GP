@@ -28,6 +28,7 @@ const DEFAULTS = {
   search_terms: DEFAULT_SEARCH_TERMS,
   mining_terms_per_run: '60', // termos por rodada; a lista inteira é percorrida em rodízio
   mining_interval_min: '120',
+  ml_categorias_por_rodada: '200', // Mercado Livre: categorias da árvore varridas por rodada (mais vendidos de cada uma); 0 = desliga
   offer_max_age_hours: '24',
   manual_offer_days: '3',
   min_discount_pct: '5',
@@ -191,7 +192,7 @@ const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_se
   'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token', 'ganhos_awin_token', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
-const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas', 'ganhos_ml_estimado'];
+const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas', 'ganhos_ml_estimado', 'ml_varredura'];
 
 for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);

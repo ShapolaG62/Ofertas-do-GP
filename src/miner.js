@@ -37,7 +37,7 @@ function setStatus(storeId, fields) {
   );
 }
 
-async function mineStore(store, terms, s, log) {
+async function mineStore(store, terms, s, log, { varredura = false } = {}) {
   const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
   const ready = store.isReady(s);
   if (!ready.ready) {
@@ -75,6 +75,18 @@ async function mineStore(store, terms, s, log) {
       }
     }
     if (i < terms.length - 1) await esperar(DELAY_BETWEEN_QUERIES_MS);
+  }
+
+  // Varredura extra da loja, além dos termos (Mercado Livre: mais vendidos das categorias, em rodízio)
+  if (varredura && typeof store.varredura === 'function' && !parar && lastStatus !== 'blocked') {
+    try {
+      const r = await store.varredura(s, { parar: () => parar });
+      for (const deal of r.deals) {
+        found++;
+        try { if (offers.saveDeal(store, deal, { settings: s })) saved++; } catch (err) { log(`[${store.name}] falha ao gravar: ${err.message}`); }
+      }
+      if (r.message) { lastMessage = lastMessage ? `${lastMessage} · ${r.message}` : r.message; log(`[${store.name}] ${r.message}`); }
+    } catch (err) { log(`[${store.name}] varredura: erro ${err.message}`); }
   }
 
   const ok = lastStatus === 'ok' || saved > 0;
@@ -119,7 +131,7 @@ async function runMining(options = {}) {
         setStatus(store.id, { status: 'disabled', message: 'Desativada no painel', found: 0, saved: 0 });
         return { store: store.id, status: 'disabled', found: 0, saved: 0 };
       }
-      return mineStore(store, terms, s, log);
+      return mineStore(store, terms, s, log, { varredura: !options.query });
     }));
     const purged = offers.purgeOld();
     lastRun = { startedAt, finishedAt: new Date().toISOString(), results, purged, query: options.query || null, parada: parar };

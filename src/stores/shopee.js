@@ -1,7 +1,7 @@
 // Shopee — somente pela API oficial do programa Shopee Afiliados (affiliate.shopee.com.br > Open API).
 // A Shopee bloqueia a leitura do site por robôs, então sem App ID + Senha da API não há coleta automática.
 const crypto = require('crypto');
-const { http, round2 } = require('../util');
+const { http, round2, sleep } = require('../util');
 
 const ENDPOINT = 'https://open-api.affiliate.shopee.com.br/graphql';
 
@@ -9,7 +9,49 @@ const ENDPOINT = 'https://open-api.affiliate.shopee.com.br/graphql';
 // como "infantil" ou "vestido" têm milhares de anúncios e só a 1ª página deixava muita oferta de fora.
 const LISTAS = [{ sortType: 1, page: 1 }, { sortType: 1, page: 2 }, { sortType: 2, page: 1 }];
 
+const CAMPOS = 'itemId productName priceMin priceMax priceDiscountRate imageUrl productLink offerLink commissionRate sellerCommissionRate';
+
+// A Shopee informa o preço atual e o percentual de desconto anunciado; o preço "de" é derivado deles.
+function ofertaDe(n) {
+  const price = Number(n.priceMin);
+  const rate = Number(n.priceDiscountRate);
+  if (!price || !rate || rate <= 0 || rate >= 100) return null;
+  return {
+    store_product_id: String(n.itemId),
+    produto: n.productName,
+    preco_atual: price,
+    preco_anterior: round2(price / (1 - rate / 100)),
+    imagem: n.imageUrl,
+    original_url: n.productLink,
+    affiliate_url: n.offerLink || null,
+    // Comissão: commissionRate = total; sellerCommissionRate = a extra ("Comissão Xtra") paga pelo vendedor
+    comissao_pct: n.commissionRate != null ? Number(n.commissionRate) * 100 : null,
+    comissao_extra_pct: n.sellerCommissionRate != null ? Number(n.sellerCommissionRate) * 100 : null,
+  };
+}
+
+const ehLink = q => /^(https?:\/\/)?([a-z0-9-]+\.)*(shopee\.com\.br|shp\.ee)\//i.test(String(q).trim());
+// Formatos: nome-i.<loja>.<produto>, /product/<loja>/<produto> e /opaanlp/<loja>/<produto> (destino dos links curtos)
+const idDoLink = url => (String(url).match(/i\.(\d+)\.(\d+)/) || String(url).match(/\/(\d{3,})\/(\d{3,})(?:[/?#]|$)/) || [])[2] || null;
+
+// Busca pontual com o link do produto: a busca por palavras da Shopee não entende links, então consulta pelo código.
+async function porLink(url, s) {
+  let id = idDoLink(url);
+  if (!id) { // link curto (shp.ee / s.shopee.com.br): lê só o endereço para onde ele redireciona
+    const r = await http.get(/^https?:/i.test(url) ? url : `https://${url}`, { maxRedirects: 0, validateStatus: () => true }).catch(() => null);
+    id = idDoLink(r?.headers?.location || '');
+  }
+  if (!id) return { status: 'error', message: 'não achei o código do produto nesse link', deals: [] };
+  const d = await gql(`{ productOfferV2(itemId: ${id}, limit: 1) { nodes { ${CAMPOS} } } }`, s);
+  const n = d.productOfferV2?.nodes?.[0];
+  if (!n) return { status: 'ok', deals: [], message: 'a API de afiliados não tem esse produto' };
+  const oferta = ofertaDe(n);
+  if (!oferta) return { status: 'ok', deals: [], message: 'a Shopee não informa desconto nesse produto (cupom não conta)' };
+  return { status: 'ok', deals: [oferta], message: `via link do produto (${n.priceDiscountRate}% de desconto)` };
+}
+
 async function search(query, s) {
+  if (ehLink(query)) return porLink(String(query).trim(), s);
   const vistos = new Set();
   const deals = [];
   let erro = null, semPagina2 = false;
@@ -18,7 +60,7 @@ async function search(query, s) {
     let d;
     try {
       d = await gql(`{ productOfferV2(keyword: ${JSON.stringify(query)}, sortType: ${l.sortType}, page: ${l.page}, limit: 50) {
-        nodes { itemId productName priceMin priceMax priceDiscountRate imageUrl productLink offerLink commissionRate sellerCommissionRate }
+        nodes { ${CAMPOS} }
         pageInfo { hasNextPage }
       } }`, s);
     } catch (err) {
@@ -28,31 +70,27 @@ async function search(query, s) {
     }
     const nodes = d.productOfferV2?.nodes || [];
     for (const n of nodes) {
-      const price = Number(n.priceMin);
-      const rate = Number(n.priceDiscountRate);
-      // A Shopee informa o preço atual e o percentual de desconto anunciado; o preço "de" é derivado deles.
-      if (!price || !rate || rate <= 0 || rate >= 100 || vistos.has(String(n.itemId))) continue;
-      vistos.add(String(n.itemId));
-      deals.push({
-        store_product_id: String(n.itemId),
-        produto: n.productName,
-        preco_atual: price,
-        preco_anterior: round2(price / (1 - rate / 100)),
-        imagem: n.imageUrl,
-        original_url: n.productLink,
-        affiliate_url: n.offerLink || null,
-        // Comissão: commissionRate = total; sellerCommissionRate = a extra ("Comissão Xtra") paga pelo vendedor
-        comissao_pct: n.commissionRate != null ? Number(n.commissionRate) * 100 : null,
-        comissao_extra_pct: n.sellerCommissionRate != null ? Number(n.sellerCommissionRate) * 100 : null,
-      });
+      const oferta = vistos.has(String(n.itemId)) ? null : ofertaDe(n);
+      if (!oferta) continue;
+      vistos.add(oferta.store_product_id);
+      deals.push(oferta);
     }
     if (l.page === 1 && !d.productOfferV2?.pageInfo?.hasNextPage) semPagina2 = true;
   }
   return { status: 'ok', deals, message: erro ? `via API de afiliados (aviso: ${erro})` : 'via API de afiliados' };
 }
 
-// Chamada assinada à API GraphQL do Shopee Afiliados.
-async function gql(query, s) {
+// Chamada assinada à API GraphQL do Shopee Afiliados. O "System Error" [10000] é passageiro (o mesmo pedido
+// costuma dar certo logo depois): tenta mais 2 vezes antes de desistir, senão o termo inteiro se perdia.
+async function gql(query, s, tentativa = 0) {
+  try { return await gqlUmaVez(query, s); } catch (err) {
+    if (tentativa >= 2 || !/\[10000\]|System Error/i.test(err.message)) throw err;
+    await sleep(1500 * (tentativa + 1));
+    return gql(query, s, tentativa + 1);
+  }
+}
+
+async function gqlUmaVez(query, s) {
   const payload = JSON.stringify({ query });
   const ts = Math.floor(Date.now() / 1000);
   const signature = crypto.createHash('sha256').update(`${s.shopee_app_id}${ts}${payload}${s.shopee_app_secret}`).digest('hex');

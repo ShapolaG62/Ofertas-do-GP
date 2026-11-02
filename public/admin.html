@@ -552,7 +552,7 @@
         <p class="hint">Minera um termo específico agora, nas lojas marcadas (ex.: "fone jbl", "air fryer mondial"). Lojas desligadas na mineração automática também podem ser marcadas aqui.</p>
         <form id="quick-mine">
           <div class="row">
-            <input type="text" name="query" placeholder="Termo de busca" style="flex:1;min-width:200px" maxlength="100" required>
+            <input type="text" name="query" placeholder="Termo de busca ou link do produto da Shopee" style="flex:1;min-width:200px" maxlength="1000" required>
             <button class="btn" type="submit">Buscar ofertas</button>
           </div>
           <div class="row qm-lojas" style="gap:14px;margin-top:10px;align-items:center">
@@ -2134,7 +2134,7 @@ $('#quick-mine').addEventListener('submit', async e => {
   try {
     const r = await api('/api/admin/mine', { method: 'POST', body: { query: q, stores: lojas } });
     out.innerHTML = (r.results || []).filter(x => x.status !== 'skipped' && x.status !== 'disabled')
-      .map(x => `${esc(STORE_LIST.find(s => s.id === x.store)?.name || x.store)}: <b>${x.saved}</b> gravadas (${esc(STATUS_LABEL[x.status] || x.status)})`).join(' · ') || 'Nenhuma loja automática ativa.';
+      .map(x => `${esc(STORE_LIST.find(s => s.id === x.store)?.name || x.store)}: <b>${x.saved}</b> gravadas (${esc(STATUS_LABEL[x.status] || x.status)})${!x.saved && x.message ? ` — ${esc(x.message)}` : ''}`).join(' · ') || 'Nenhuma loja automática ativa.';
     loadStores();
   } catch (err) { out.textContent = err.message; }
   e.target.querySelector('button').disabled = false;

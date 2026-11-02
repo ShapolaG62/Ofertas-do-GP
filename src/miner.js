@@ -97,7 +97,7 @@ async function mineStore(store, terms, s, log, { varredura = false } = {}) {
     ...(saved > 0 ? { last_success_at: now() } : {}),
   });
   log(`[${store.name}] ${found} encontradas, ${saved} gravadas (${lastStatus})`);
-  return { store: store.id, found, saved, status: lastStatus };
+  return { store: store.id, found, saved, status: lastStatus, message: lastMessage };
 }
 
 // Com centenas de termos, cada rodada busca só um lote e a próxima continua de onde esta parou.

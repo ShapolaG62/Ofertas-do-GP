@@ -107,8 +107,11 @@ router.get('/api/admin/stores', (req, res) => {
 router.post('/api/admin/mine/parar', (req, res) => res.json(miner.pararMineracao()));
 
 router.post('/api/admin/mine', async (req, res) => {
-  const query = String(req.body?.query || '').trim().slice(0, 100);
-  const storeIds = Array.isArray(req.body?.stores) ? req.body.stores : undefined;
+  const bruto = String(req.body?.query || '').trim();
+  // Link de produto colado na busca pontual: vai só para a loja do link (que consulta o produto pelo código)
+  const lojaDoLink = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+\/\S*$/i.test(bruto) ? storeFromUrl(bruto) : null;
+  const query = bruto.slice(0, lojaDoLink ? 1000 : 100);
+  const storeIds = lojaDoLink ? [lojaDoLink.id] : Array.isArray(req.body?.stores) ? req.body.stores : undefined;
   if (miner.getState().running) {
     return res.status(409).json({ error: 'A mineração automática está rodando agora (lote de termos). Tente de novo em alguns minutos.' });
   }

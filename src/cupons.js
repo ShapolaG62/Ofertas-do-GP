@@ -5,16 +5,21 @@ const { round2 } = require('./util');
 
 const CODIGO = /^[A-Z0-9][A-Z0-9_-]{2,29}$/;
 
-// cupom: { codigo, tipo: 'pct' | 'valor', valor }
+// cupom: { codigo, tipo: 'pct' | 'valor', valor, minimo?, limite?, texto? }
+// minimo: compra mínima (abaixo dela o cupom não vale); limite: desconto máximo em R$ do cupom.
+// Mercado Livre: o cupom não tem código (é "Aplicar" na central de cupons): codigo = "ML" + nº da campanha.
 function aplicar(deal, cupom) {
   const codigo = String(cupom?.codigo || '').trim().toUpperCase();
   if (!deal || !CODIGO.test(codigo)) return deal;
   const valor = Number(cupom.valor);
   const atual = Number(deal.preco_atual);
   if (!(atual > 0) || !(valor > 0)) return deal;
-  const comCupom = round2(cupom.tipo === 'pct' ? atual * (1 - Math.min(valor, 90) / 100) : atual - valor);
+  if (Number(cupom.minimo) > atual) return deal;
+  let desconto = cupom.tipo === 'pct' ? atual * Math.min(valor, 90) / 100 : valor;
+  if (Number(cupom.limite) > 0) desconto = Math.min(desconto, Number(cupom.limite));
+  const comCupom = round2(atual - desconto);
   if (!(comCupom > 0) || comCupom >= atual) return deal;
-  const texto = cupom.tipo === 'pct'
+  const texto = cupom.texto ? String(cupom.texto).slice(0, 80) : cupom.tipo === 'pct'
     ? `${String(round2(valor)).replace('.', ',')}% OFF`
     : `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: valor % 1 ? 2 : 0, maximumFractionDigits: 2 })} OFF`;
   return {
@@ -37,4 +42,10 @@ function resumo() {
      GROUP BY o.store_id, o.cupom_codigo ORDER BY ofertas DESC`, ...active.params);
 }
 
-module.exports = { aplicar, resumo };
+// Cupom do Mercado Livre (sem código: é ativado na central de cupons)
+const ehMl = codigo => /^ML\d+$/.test(String(codigo || ''));
+const CENTRAL_ML = 'https://www.mercadolivre.com.br/cupons';
+// Valor de {{cupom}} nas postagens
+const paraPost = (codigo, texto) => (!codigo ? '' : ehMl(codigo) ? `${texto || 'cupom'} (ative em Cupons no Mercado Livre)` : codigo);
+
+module.exports = { aplicar, resumo, ehMl, paraPost, CENTRAL_ML };

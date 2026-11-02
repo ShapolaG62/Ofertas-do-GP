@@ -64,7 +64,6 @@ module.exports = {
   name: 'Magalu',
   method: 'Busca na sua loja Magazine Você',
   automatic: true,
-  cupons: true, // a busca informa o cupom de cada produto (src/cupons.js)
   isReady: s => (lojaDe(s)
     ? { ready: true }
     : { ready: false, reason: 'Informe o nome da sua loja Magazine Você (ex.: magazinesualoja) em Afiliados → Magalu.' }),

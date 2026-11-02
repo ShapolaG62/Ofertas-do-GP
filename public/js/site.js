@@ -180,12 +180,16 @@
         <li><button class="filter-option" type="button" data-com="extra" aria-pressed="${state.com === 'extra'}"><span><i class="com-ponto"></i>Só comissão extra</span><span class="count">${DATA.contagens.comissao_extra ?? ''}</span></button></li></ul></div>`;
   }
 
+  // Cupom do Mercado Livre não tem código: é ativado na central de cupons (o site guarda "ML" + nº da campanha)
+  const cupomMl = c => /^ML\d+$/.test(String(c || ''));
+  const CENTRAL_ML = 'https://www.mercadolivre.com.br/cupons';
+
   // Cupons de desconto encontrados pela mineração: todas, só com cupom e os códigos com mais ofertas
   function cuponsHtml() {
     const c = DATA.contagens.cupons;
     if (!c || (!c.total && !state.cupom)) return '';
     const codigos = c.codigos.map(k => `<li><button class="filter-option" type="button" data-cupom="${esc(k.codigo)}" aria-pressed="${state.cupom === k.codigo}">
-      <span><b class="cupom-cod">${esc(k.codigo)}</b>${k.texto ? ` <small>${esc(k.texto)}</small>` : ''}</span><span class="count">${k.n}</span></button></li>`).join('');
+      <span>${cupomMl(k.codigo) ? `<b>${esc(k.texto || 'Cupom')}</b> <small>Mercado Livre</small>` : `<b class="cupom-cod">${esc(k.codigo)}</b>${k.texto ? ` <small>${esc(k.texto)}</small>` : ''}`}</span><span class="count">${k.n}</span></button></li>`).join('');
     return `<div class="filter-group"><h3 class="filter-title">Cupons de desconto</h3><ul class="filter-list cupons-list">
         <li><button class="filter-option" type="button" data-cupom="" aria-pressed="${!state.cupom}"><span>Com ou sem cupom</span></button></li>
         <li><button class="filter-option" type="button" data-cupom="1" aria-pressed="${state.cupom === '1'}"><span>🎟️ Só com cupom</span><span class="count">${c.total}</span></button></li>
@@ -217,7 +221,7 @@
     }
     if (state.desc) items.push(['desc', `${state.desc}% ou mais`]);
     if (state.com) items.push(['com', 'Comissão extra']);
-    if (state.cupom) items.push(['cupom', state.cupom === '1' ? 'Com cupom' : `Cupom ${state.cupom}`]);
+    if (state.cupom) items.push(['cupom', state.cupom === '1' ? 'Com cupom' : cupomMl(state.cupom) ? 'Cupom do Mercado Livre' : `Cupom ${state.cupom}`]);
     const any = items.length || state.loja || state.cat;
     $('#active-filters').innerHTML = items.map(([k, label]) =>
       `<button class="chip" type="button" data-remove="${k}">${esc(label)}<svg><use href="#i-x"/></svg></button>`).join('')
@@ -252,7 +256,9 @@
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
           <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}${o.cupom ? '<small class="card-com-cupom">com cupom</small>' : ''}</div>
         </div>
-        ${o.cupom ? `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom">🎟️ Cupom <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>
+        ${o.cupom ? `${cupomMl(o.cupom)
+          ? `<button class="card-cupom" type="button" data-cupom-ml="${esc(o.cupom_texto || '')}" title="Abrir a central de cupons do Mercado Livre">🎟️ <b>${esc(o.cupom_texto || 'Cupom')}</b> <span>ative em Cupons no app</span></button>`
+          : `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom">🎟️ Cupom <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>`}
         <div class="card-sem-cupom num">ou R$ ${brl(o.preco_sem_cupom)} sem cupom</div>` : ''}
         <div class="card-foot"><span>${o.loja_slug ? 'Publicado pela loja' : o.fonte === 'manual' ? 'Oferta selecionada' : `Conferido ${timeAgo(o.last_seen_at)}`}</span></div>
         <button class="card-enviar poster-only" type="button" data-enviar="${o.id}"><svg><use href="#i-enviar"/></svg>Enviar para os grupos</button>
@@ -565,6 +571,11 @@
     if (e.target.closest('[data-select], [data-enviar]')) return;
     const b = e.target.closest('[data-copiar-cupom]');
     if (b) { e.preventDefault(); e.stopPropagation(); return copiarCupom(b.dataset.copiarCupom); }
+    // Cupom do Mercado Livre: o botão abre a central de cupons (lá a pessoa toca em "Aplicar"); o cartão só avisa
+    const ml = e.target.closest('[data-cupom-ml]');
+    if (ml) { e.preventDefault(); e.stopPropagation(); window.open(CENTRAL_ML, '_blank', 'noopener'); return toast(`Ative o cupom “${ml.dataset.cupomMl}” em Cupons do Mercado Livre antes de comprar.`); }
+    const mlCard = e.target.closest('.card')?.querySelector('[data-cupom-ml]');
+    if (mlCard) toast(`Antes de pagar, ative o cupom “${mlCard.dataset.cupomMl}” em Cupons no Mercado Livre.`);
     const card = e.target.closest('.card');
     const cod = card?.querySelector('[data-copiar-cupom]')?.dataset.copiarCupom;
     if (cod) copiarCupom(cod);

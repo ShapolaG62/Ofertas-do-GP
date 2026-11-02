@@ -133,6 +133,16 @@ router.post('/api/admin/mineracao/ml-comissao-extra', async (req, res) => {
   catch (err) { res.status(400).json({ error: err.message }); }
 });
 
+// Cupons do Mercado Livre lidos pela extensão: { cupons: [...] } grava a lista; { campanha, itens } grava os produtos
+router.get('/api/admin/mineracao/ml-cupons', (req, res) => res.json(require('../cupons-ml').listar()));
+router.post('/api/admin/mineracao/ml-cupons', (req, res) => {
+  try {
+    const cml = require('../cupons-ml');
+    if (Array.isArray(req.body?.cupons)) return res.json({ cupons: cml.salvarCupons(req.body.cupons) });
+    res.json(cml.importarProdutos(req.body?.campanha, req.body?.itens));
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
 // ── Ofertas ───────────────────────────────────────────────────────────────────
 router.get('/api/admin/offers', (req, res) => {
   res.json(offers.listForAdmin({

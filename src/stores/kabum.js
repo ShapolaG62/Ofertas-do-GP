@@ -74,7 +74,6 @@ module.exports = {
   name: 'KaBuM!',
   method: 'Busca do catálogo da loja',
   automatic: true,
-  cupons: true, // a busca informa o cupom de cada produto (src/cupons.js)
   isReady: () => ({ ready: true }),
   search,
   // Link de afiliado a partir de UM link de afiliado de qualquer produto da KaBuM! colado no painel:

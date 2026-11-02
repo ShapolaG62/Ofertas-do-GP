@@ -49,7 +49,7 @@ function saveDeal(store, deal, opts = {}) {
   // Comissão (%) só quando a API da loja informa; sem ela, fica a última conhecida
   const pct = v => (v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
   const comissao = pct(deal.comissao_pct), comissaoExtra = pct(deal.comissao_extra_pct);
-  // Cupom: só as lojas que informam cupom (store.cupons) o atualizam; sem cupom na leitura de agora, ele sai
+  // Cupom: vale o que veio nesta leitura (sem cupom agora, ele sai: o preço novo não é mais o preço com cupom)
   const cupom = deal.cupom_codigo ? [String(deal.cupom_codigo), deal.cupom_texto || null, round2(Number(deal.preco_sem_cupom)) || null] : [null, null, null];
 
   return db.transaction(() => {
@@ -67,9 +67,7 @@ function saveDeal(store, deal, opts = {}) {
         produto, atual, anterior, desconto, deal.imagem || null, deal.original_url, affiliate, affFixed,
         fonte, expiresAt, classifySubcategory(produto, existing.categoria), comissao, comissaoExtra, existing.id
       );
-      if (store.cupons) {
-        db.run('UPDATE offers SET cupom_codigo = ?, cupom_texto = ?, preco_sem_cupom = ? WHERE id = ?', ...cupom, existing.id);
-      }
+      db.run('UPDATE offers SET cupom_codigo = ?, cupom_texto = ?, preco_sem_cupom = ? WHERE id = ?', ...cupom, existing.id);
       if (Number(existing.preco_atual) !== atual) {
         db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', existing.id, atual);
       }

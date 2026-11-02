@@ -1,0 +1,104 @@
+// Cupons do Mercado Livre (Painel → Mineração → "Cupons do Mercado Livre").
+// A central de cupons só abre com a conta logada (e a leitura automática pelo servidor é barrada como "tráfego
+// suspeito"), então quem lê é a extensão do Chrome no navegador do admin e o Painel manda para cá:
+//  • cupons: todos os da central (desconto, compra mínima, limite, validade, se já está ativo na conta);
+//  • produtos: os marcados "com Cupom" na lista de cada cupom ativo (o link "Conferir"), com o preço sem o cupom.
+// Cada produto vira oferta pelo preço com o cupom (respeitando a compra mínima e o limite do cupom).
+const db = require('./db');
+const settings = require('./settings');
+const offers = require('./offers');
+const cupons = require('./cupons');
+const ml = require('./stores/mercadolivre');
+
+db.db.exec(`CREATE TABLE IF NOT EXISTS ml_cupons (
+  campanha TEXT PRIMARY KEY,
+  titulo TEXT NOT NULL,
+  subtitulo TEXT,
+  tipo TEXT,               -- pct | valor
+  valor REAL,
+  minimo REAL,             -- compra mínima (R$)
+  limite REAL,             -- desconto máximo (R$)
+  validade TEXT,           -- texto do Mercado Livre ("Vence 31 de dezembro")
+  expira_em TEXT,          -- data de fim (ISO), quando o Mercado Livre informa
+  ativo INTEGER NOT NULL DEFAULT 0,  -- já ativo na conta (tem o link dos produtos)
+  link TEXT,
+  previa TEXT,             -- nomes de alguns produtos (JSON)
+  produtos INTEGER NOT NULL DEFAULT 0,
+  visto_em TEXT NOT NULL DEFAULT (datetime('now'))
+)`);
+
+const preco = v => (Number.isFinite(Number(v)) && Number(v) > 0 && Number(v) < 1e6 ? Math.round(Number(v) * 100) / 100 : null);
+const txt = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max) || null;
+
+function salvarCupons(lista) {
+  let n = 0;
+  for (const c of (Array.isArray(lista) ? lista : []).slice(0, 5000)) {
+    const campanha = String(c.id || '').replace(/\D/g, '').slice(0, 20);
+    const titulo = txt(c.titulo, 120);
+    if (!campanha || !titulo) continue;
+    const link = /^https:\/\/lista\.mercadolivre\.com\.br\//.test(c.link || '') ? String(c.link).slice(0, 500) : null;
+    db.run(`INSERT INTO ml_cupons (campanha, titulo, subtitulo, tipo, valor, minimo, limite, validade, expira_em, ativo, link, previa, visto_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(campanha) DO UPDATE SET titulo = excluded.titulo, subtitulo = excluded.subtitulo, tipo = excluded.tipo,
+              valor = excluded.valor, minimo = excluded.minimo, limite = excluded.limite, validade = excluded.validade,
+              expira_em = excluded.expira_em, ativo = excluded.ativo, link = excluded.link, previa = excluded.previa, visto_em = excluded.visto_em`,
+      campanha, titulo, txt(c.subtitulo, 120), c.tipo === 'pct' || c.tipo === 'valor' ? c.tipo : null, preco(c.valor),
+      preco(c.minimo), preco(c.limite), txt(c.validade, 60), txt(c.expira, 30), c.ativo ? 1 : 0, link,
+      JSON.stringify((Array.isArray(c.previa) ? c.previa : []).map(p => txt(p, 120)).filter(Boolean).slice(0, 5)));
+    n++;
+  }
+  return n;
+}
+
+// Desconto do cupom no cartão do produto ("5% OFF com Cupom", "R$ 30 OFF com Cupom"); sem número, vale o do cupom
+function descontoDoRotulo(rotulo, c) {
+  const pct = String(rotulo || '').match(/(\d{1,2}(?:[.,]\d{1,2})?)\s*%\s*OFF/i);
+  if (pct) return { tipo: 'pct', valor: Number(pct[1].replace(',', '.')) };
+  const valor = String(rotulo || '').match(/R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?)\s*OFF/i);
+  if (valor) return { tipo: 'valor', valor: Number(valor[1].replace(/\./g, '').replace(',', '.')) };
+  return c.tipo && c.valor ? { tipo: c.tipo, valor: c.valor } : null;
+}
+
+// "R$ 50 OFF" + "Em produtos de Cama Inbox" → "R$ 50 OFF em Cama Inbox" (o subtítulo genérico não entra)
+const nomeDoCupom = c => {
+  const sub = String(c.subtitulo || '').replace(/^em produtos (de|da|do)\s+/i, 'em ').trim();
+  return sub && !/selecionados/i.test(sub) && !c.titulo.toLowerCase().includes(sub.toLowerCase()) ? `${c.titulo} ${sub}` : c.titulo;
+};
+
+function importarProdutos(campanha, itens) {
+  const s = settings.getAll();
+  const c = db.get('SELECT * FROM ml_cupons WHERE campanha = ?', String(campanha || ''));
+  const out = { recebidos: 0, gravados: 0, ids: [] };
+  if (!c) return out;
+  for (const it of (Array.isArray(itens) ? itens : []).slice(0, 300)) {
+    out.recebidos++;
+    const id = String(it.produto || it.item || '').toUpperCase().match(/^MLB-?(\d{6,})$/);
+    const nome = txt(it.nome, 200);
+    const atual = preco(it.preco);
+    let url;
+    try { url = new URL(it.link); } catch { continue; }
+    if (!id || !nome || !atual || !/(^|\.)mercadoli(vre|bre)\.com(\.br)?$/i.test(url.hostname)) continue;
+    const desconto = descontoDoRotulo(it.rotulo, c);
+    if (!desconto) continue;
+    const deal = cupons.aplicar({
+      store_product_id: `MLB${id[1]}`, produto: nome, preco_atual: atual, preco_anterior: preco(it.preco_anterior) || atual,
+      imagem: /^https:\/\//.test(it.imagem || '') ? it.imagem : null,
+      original_url: `${url.origin}${url.pathname}`,
+    }, { codigo: `ML${c.campanha}`, ...desconto, minimo: c.minimo, limite: c.limite, texto: nomeDoCupom(c) });
+    if (!deal.cupom_codigo) continue; // abaixo da compra mínima: o cupom não vale para este produto
+    const oid = offers.saveDeal(ml, deal, { settings: s });
+    if (oid) { out.gravados++; out.ids.push(oid); }
+  }
+  db.run('UPDATE ml_cupons SET produtos = ? WHERE campanha = ?', out.gravados, c.campanha);
+  return out;
+}
+
+// Cupons no Painel: os ativos com produtos primeiro, depois os maiores descontos; some o que não é visto há 3 dias
+function listar() {
+  db.run(`DELETE FROM ml_cupons WHERE visto_em < datetime('now', '-3 days')`);
+  return db.all(`SELECT campanha, titulo, subtitulo, tipo, valor, minimo, limite, validade, ativo, link, previa, produtos, visto_em
+                 FROM ml_cupons ORDER BY produtos DESC, ativo DESC, valor DESC LIMIT 3000`)
+    .map(r => ({ ...r, previa: (() => { try { return JSON.parse(r.previa || '[]'); } catch { return []; } })() }));
+}
+
+module.exports = { salvarCupons, importarProdutos, listar };

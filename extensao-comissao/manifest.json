@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Ofertou! Comissão extra ML",
+  "name": "Ofertou! Mercado Livre",
   "short_name": "Ofertou ML",
-  "version": "2.3.0",
-  "description": "Leva para o Painel do Ofertou! os produtos com comissão extra e o ganho estimado do seu painel de afiliado do Mercado Livre, sem copiar e colar.",
+  "version": "2.4.0",
+  "description": "Leva para o Painel do Ofertou! os produtos com comissão extra, o ganho estimado do seu painel de afiliado e os cupons do Mercado Livre (com os produtos em que valem), sem copiar e colar.",
   "icons": {
     "16": "icone.png",
     "48": "icone.png",
@@ -20,6 +20,16 @@
       ],
       "js": [
         "mercadolivre.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.mercadolivre.com.br/cupons*",
+        "https://lista.mercadolivre.com.br/*"
+      ],
+      "js": [
+        "cupons.js"
       ],
       "run_at": "document_idle"
     },

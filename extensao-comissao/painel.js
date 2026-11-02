@@ -17,6 +17,15 @@
       await chrome.storage.local.set({ autoAte: Date.now() + 10 * 60 * 1000, rolagens });
       avisar({ tipo: 'pode-ir' });
     }
+    // Minerar cupons: páginas da central de cupons, quantos cupons ativos abrir e quantas páginas de produtos por cupom
+    if (e.data.tipo === 'buscar-cupons') {
+      const n = (v, min, max, pad) => Math.min(Math.max(parseInt(v, 10) || pad, min), max);
+      await chrome.storage.local.set({ cuponsJob: {
+        ate: Date.now() + 3 * 60 * 60 * 1000, painel: ORIGEM, fase: 'cupons', pagina: 1, cupons: {}, produtos: {},
+        paginas: n(e.data.paginas, 1, 100, 70), maxCupons: n(e.data.cupons, 0, 500, 60), paginasProd: n(e.data.paginasProd, 1, 10, 2),
+      } });
+      avisar({ tipo: 'pode-ir-cupons' });
+    }
   });
 
   // "Ganho estimado" lido no painel do Mercado Livre: entrega ao Painel (que grava no site, substituindo o anterior)
@@ -24,6 +33,14 @@
     if (!ganhoEstimado) return;
     await chrome.storage.local.remove('ganhoEstimado');
     avisar({ tipo: 'ganho-estimado', valor: ganhoEstimado.valor, em: ganhoEstimado.em });
+  });
+
+  // Cupons do Mercado Livre trazidos pelo minerador de cupons (vale 30 min): entrega ao Painel uma vez só
+  chrome.storage.local.get('cuponsResultado').then(async ({ cuponsResultado: r }) => {
+    if (!r) return;
+    await chrome.storage.local.remove('cuponsResultado');
+    if (Date.now() - r.em > 30 * 60 * 1000) return;
+    avisar({ tipo: 'cupons', cupons: r.cupons, produtos: r.produtos, motivo: r.motivo });
   });
 
   // Página do Mercado Livre trazida pela extensão (vale 15 min): entrega ao Painel uma vez só

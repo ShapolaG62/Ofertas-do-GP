@@ -3,7 +3,8 @@
 //     compra mínima, limite, validade e se o cupom já está ativo na sua conta;
 //  2. Abre a lista de produtos de cada cupom ativo (o link "Conferir") e pega os produtos marcados "com Cupom";
 //  3. Volta para o Painel do Ofertou! entregando tudo (o Painel grava os cupons e as ofertas).
-// Só lê as páginas: não clica em "Aplicar" nem muda nada na sua conta.
+// Com "Aplicar sozinho" marcado no Painel, toca em "Aplicar" nos cupons ainda não aplicados (até o limite escolhido),
+// para o Mercado Livre liberar a lista de produtos deles. Fora isso, só lê as páginas.
 (() => {
   'use strict';
   if (window.__ofertouCupons) return;
@@ -102,7 +103,7 @@
     const { cuponsJob: j } = await chrome.storage.local.get('cuponsJob');
     await chrome.storage.local.remove('cuponsJob');
     if (!j) return;
-    await chrome.storage.local.set({ cuponsResultado: { em: Date.now(), motivo, cupons: Object.values(j.cupons || {}), produtos: j.produtos || {} } });
+    await chrome.storage.local.set({ cuponsResultado: { em: Date.now(), motivo, aplicados: j.aplicados || 0, cupons: Object.values(j.cupons || {}), produtos: j.produtos || {} } });
     caixa('Pronto! Voltando para o Painel…');
     location.href = `${j.painel}/admin?ml-cupons=1#mining`;
   }
@@ -114,6 +115,23 @@
 
     // 1. Central de cupons
     if (j.fase === 'cupons' && location.hostname === 'www.mercadolivre.com.br' && location.pathname.startsWith('/cupons')) {
+      // Aplicar sozinho (opção do Painel): toca em "Aplicar" nos cupons desta página e recarrega para ler os links
+      // dos produtos (o cupom aplicado passa a ter o "Conferir" com a lista de produtos)
+      if (j.aplicar && j.aplicouPagina !== j.pagina && j.aplicados < j.maxAplicar) {
+        const botoes = [...document.querySelectorAll('.coupon-card button')].filter(b => b.textContent.trim() === 'Aplicar');
+        for (const b of botoes) {
+          if (j.aplicados >= j.maxAplicar) break;
+          const { cuponsJob: ainda } = await chrome.storage.local.get('cuponsJob');
+          if (!ainda) return; // parado pela pessoa
+          caixa(`aplicando cupons: página ${j.pagina} · ${j.aplicados} aplicados`);
+          b.click();
+          await espera(1200);
+          if (/Aplicado|Conferir/.test(b.closest('.coupon-card')?.innerText || '')) j.aplicados++;
+        }
+        j.aplicouPagina = j.pagina;
+        await chrome.storage.local.set({ cuponsJob: j });
+        if (botoes.length) { await espera(800); location.reload(); return; }
+      }
       const dados = estado()?.appProps?.pageProps?.filteredCouponsData;
       if (!dados) { caixa('não consegui ler os cupons desta página (faça login no Mercado Livre e tente de novo).'); return terminar('sem-dados'); }
       for (const c of dados.rawCoupons || []) { const k = cupomDe(c); if (k.id) j.cupons[k.id] = k; }

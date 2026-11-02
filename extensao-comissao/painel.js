@@ -22,7 +22,8 @@
       const n = (v, min, max, pad) => Math.min(Math.max(parseInt(v, 10) || pad, min), max);
       await chrome.storage.local.set({ cuponsJob: {
         ate: Date.now() + 3 * 60 * 60 * 1000, painel: ORIGEM, fase: 'cupons', pagina: 1, cupons: {}, produtos: {},
-        paginas: n(e.data.paginas, 1, 100, 70), maxCupons: n(e.data.cupons, 0, 500, 60), paginasProd: n(e.data.paginasProd, 1, 10, 2),
+        paginas: n(e.data.paginas, 1, 100, 70), maxCupons: n(e.data.cupons, 0, 2000, 60), paginasProd: n(e.data.paginasProd, 1, 10, 2),
+        aplicar: e.data.aplicar === true, maxAplicar: n(e.data.maxAplicar, 0, 2000, 300), aplicados: 0,
       } });
       avisar({ tipo: 'pode-ir-cupons' });
     }
@@ -40,7 +41,7 @@
     if (!r) return;
     await chrome.storage.local.remove('cuponsResultado');
     if (Date.now() - r.em > 30 * 60 * 1000) return;
-    avisar({ tipo: 'cupons', cupons: r.cupons, produtos: r.produtos, motivo: r.motivo });
+    avisar({ tipo: 'cupons', cupons: r.cupons, produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0 });
   });
 
   // Página do Mercado Livre trazida pela extensão (vale 15 min): entrega ao Painel uma vez só

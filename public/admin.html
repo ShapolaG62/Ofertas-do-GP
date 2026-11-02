@@ -570,12 +570,14 @@
       </div>
       <div class="panel">
         <h2>Cupons do Mercado Livre</h2>
-        <p class="hint">A central de cupons do Mercado Livre só abre logada, então quem lê é a extensão do Chrome (a mesma da comissão extra, versão 2.4 ou mais nova). Ela percorre a central de cupons, abre a lista de produtos de cada cupom já ativo na sua conta e volta para cá gravando tudo: os cupons ficam na lista abaixo e os produtos "com Cupom" entram nas ofertas pelo preço com o cupom (respeitando a compra mínima e o limite). Ela só lê: não aplica cupom nenhum na sua conta.</p>
+        <p class="hint">A central de cupons do Mercado Livre só abre logada, então quem lê é a extensão do Chrome (a mesma da comissão extra, versão 2.5 ou mais nova). Ela percorre a central de cupons, abre a lista de produtos de cada cupom já ativo na sua conta e volta para cá gravando tudo: os cupons ficam na lista abaixo e os produtos "com Cupom" entram nas ofertas pelo preço com o cupom (respeitando a compra mínima e o limite). Com "Aplicar sozinho" marcado, ela também toca em "Aplicar" nos cupons que ainda não estão na sua conta (o Mercado Livre só mostra os produtos de um cupom depois de aplicado).</p>
         <div class="mlx-auto" id="mlc-auto" hidden>
           <button class="btn primary" type="button" id="mlc-buscar">🎟️ Minerar cupons do Mercado Livre</button>
           <label class="mlx-rolar">Páginas de cupons <input type="number" id="mlc-paginas" min="1" max="100" value="70" inputmode="numeric"></label>
-          <label class="mlx-rolar">Cupons ativos a abrir <input type="number" id="mlc-cupons" min="0" max="500" value="60" inputmode="numeric"></label>
+          <label class="mlx-rolar">Cupons ativos a abrir <input type="number" id="mlc-cupons" min="0" max="2000" value="100" inputmode="numeric"></label>
           <label class="mlx-rolar">Páginas de produtos por cupom <input type="number" id="mlc-pagprod" min="1" max="10" value="2" inputmode="numeric"></label>
+          <label class="check"><input type="checkbox" id="mlc-aplicar" checked> Aplicar sozinho os cupons ainda não aplicados</label>
+          <label class="mlx-rolar">até <input type="number" id="mlc-maxaplicar" min="0" max="2000" value="300" inputmode="numeric"> cupons</label>
           <span class="hint" style="margin:0;flex-basis:100%">A central tem cerca de 65 páginas de 30 cupons; cada página leva uns 3 segundos. Deixe a guia aberta até ela voltar para cá.</span>
         </div>
         <p class="hint" id="mlc-sem-ext">Instale a extensão (veja "Fazer isso sozinho com a extensão do Chrome" no quadro "Comissão extra do Mercado Livre") para minerar os cupons.</p>
@@ -2132,7 +2134,7 @@ async function mlcImportar(d) {
       gravados += r.gravados; recebidos += r.recebidos;
     }
     const ativos = lista.filter(c => c.ativo).length;
-    out.innerHTML = `<b>${lista.length}</b> cupons lidos (${ativos} ativos na sua conta) · <b>${gravados}</b> ofertas gravadas com cupom de ${recebidos} produtos "com Cupom" em ${produtos.length} cupons`
+    out.innerHTML = `<b>${lista.length}</b> cupons lidos (${ativos} ativos na sua conta${d.aplicados ? `, ${d.aplicados} aplicados agora pela extensão` : ''}) · <b>${gravados}</b> ofertas gravadas com cupom de ${recebidos} produtos "com Cupom" em ${produtos.length} cupons`
       + (d.motivo === 'parado' ? ' · mineração parada por você' : d.motivo === 'sem-dados' ? ' · a central de cupons não abriu (faça login no Mercado Livre)' : '');
   } catch (err) { out.textContent = `Erro ao gravar: ${err.message}`; }
   mlcCarregar();
@@ -2157,10 +2159,11 @@ function mlcMostrar() {
 }
 $('#mlc-so-ativos').addEventListener('change', mlcMostrar);
 const mlcN = (id, min, max, pad) => Math.min(Math.max(parseInt($(id).value, 10) || pad, min), max);
-try { const g = JSON.parse(localStorage.getItem('ofertou_ml_cupons') || '{}'); for (const k of ['paginas', 'cupons', 'pagprod']) if (g[k] != null) $(`#mlc-${k}`).value = g[k]; } catch { /* sem armazenamento */ }
+try { const g = JSON.parse(localStorage.getItem('ofertou_ml_cupons') || '{}'); for (const k of ['paginas', 'cupons', 'pagprod', 'maxaplicar']) if (g[k] != null) $(`#mlc-${k}`).value = g[k]; if (g.aplicar != null) $('#mlc-aplicar').checked = g.aplicar; } catch { /* sem armazenamento */ }
 $('#mlc-buscar').addEventListener('click', () => {
-  const p = { paginas: mlcN('#mlc-paginas', 1, 100, 70), cupons: mlcN('#mlc-cupons', 0, 500, 60), paginasProd: mlcN('#mlc-pagprod', 1, 10, 2) };
-  try { localStorage.setItem('ofertou_ml_cupons', JSON.stringify({ paginas: p.paginas, cupons: p.cupons, pagprod: p.paginasProd })); } catch { /* */ }
+  const p = { paginas: mlcN('#mlc-paginas', 1, 100, 70), cupons: mlcN('#mlc-cupons', 0, 2000, 100), paginasProd: mlcN('#mlc-pagprod', 1, 10, 2),
+    aplicar: $('#mlc-aplicar').checked, maxAplicar: mlcN('#mlc-maxaplicar', 0, 2000, 300) };
+  try { localStorage.setItem('ofertou_ml_cupons', JSON.stringify({ paginas: p.paginas, cupons: p.cupons, pagprod: p.paginasProd, aplicar: p.aplicar, maxaplicar: p.maxAplicar })); } catch { /* */ }
   $('#mlc-buscar').disabled = true;
   window.postMessage({ ofertouPainel: true, tipo: 'buscar-cupons', ...p }, location.origin);
   setTimeout(() => { $('#mlc-buscar').disabled = false; }, 3000);

@@ -335,13 +335,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261233"></script>
-<script src="/js/dialogo.js?v=20261233"></script>
-<script src="/js/modelo-post.js?v=20261233"></script>
-<script src="/js/avisos-entrada.js?v=20261233"></script>
-<script src="/js/capi-minerando.js?v=20261233" defer></script>
-<script src="/js/cadastro-auto.js?v=20261233" defer></script>
-<script src="/js/seletor.js?v=20261233" defer></script>
+<script src="/js/tema.js?v=20261235"></script>
+<script src="/js/dialogo.js?v=20261235"></script>
+<script src="/js/modelo-post.js?v=20261235"></script>
+<script src="/js/avisos-entrada.js?v=20261235"></script>
+<script src="/js/capi-minerando.js?v=20261235" defer></script>
+<script src="/js/cadastro-auto.js?v=20261235" defer></script>
+<script src="/js/seletor.js?v=20261235" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -562,6 +562,11 @@
           </div>
         </form>
         <div id="quick-result" class="hint"></div>
+      </div>
+      <div class="panel">
+        <h2>Cupons de desconto encontrados</h2>
+        <p class="hint">A mineração lê o cupom de cada produto na KaBuM! e na Magalu. A oferta entra pelo preço com o cupom (o cartão mostra o código e o preço sem cupom), inclusive quando o desconto só existe com o cupom. Shopee, Mercado Livre, Amazon e AliExpress não informam cupons na busca.</p>
+        <div class="table-wrap"><table><thead><tr><th>Cupom</th><th>Loja</th><th>Desconto</th><th>Ofertas no ar</th><th></th></tr></thead><tbody id="cupons-lista"></tbody></table></div>
       </div>
       <div class="panel">
         <h2>Comissão extra do Mercado Livre</h2>
@@ -1901,6 +1906,10 @@ let pollTimer = null;
 async function loadStores() {
   const st = await api('/api/admin/stores');
   CATEGORIES = st.categories;
+  $('#cupons-lista').innerHTML = (st.cupons || []).map(c => `<tr><td><b>${esc(c.codigo)}</b></td>
+    <td>${esc(STORE_LIST.find(s => s.id === c.store_id)?.name || c.store_id)}</td><td>${esc(c.texto || '—')}</td><td>${c.ofertas}</td>
+    <td><a class="btn small" href="/?cupom=${encodeURIComponent(c.codigo)}" target="_blank" rel="noopener">Ver ofertas</a></td></tr>`).join('')
+    || '<tr><td colspan="5" class="hint">Nenhum cupom ainda: eles aparecem depois da próxima mineração da KaBuM! e da Magalu.</td></tr>';
   $('#store-cards').innerHTML = st.stores.map(s => {
     const status = s.status || 'none';
     return `<div class="store-card">

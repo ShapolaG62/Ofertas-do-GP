@@ -101,7 +101,7 @@ router.get('/api/admin/dashboard', (req, res) => {
 
 // ── Lojas e mineração ─────────────────────────────────────────────────────────
 router.get('/api/admin/stores', (req, res) => {
-  res.json({ ...miner.getState(), enabled: settings.getEnabledStores(), categories: CATEGORIES });
+  res.json({ ...miner.getState(), enabled: settings.getEnabledStores(), categories: CATEGORIES, cupons: require('../cupons').resumo() });
 });
 
 router.post('/api/admin/mine/parar', (req, res) => res.json(miner.pararMineracao()));

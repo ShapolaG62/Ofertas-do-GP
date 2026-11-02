@@ -154,6 +154,10 @@ if (!offerColumns.includes('subcategoria')) db.exec('ALTER TABLE offers ADD COLU
 // Comissão de afiliado informada pela API da loja (Shopee/AliExpress), em %: a total e a extra paga pelo vendedor
 if (!offerColumns.includes('comissao_pct')) db.exec('ALTER TABLE offers ADD COLUMN comissao_pct REAL');
 if (!offerColumns.includes('comissao_extra_pct')) db.exec('ALTER TABLE offers ADD COLUMN comissao_extra_pct REAL');
+// Cupom de desconto do produto (KaBuM!, Magalu): preco_atual já é o preço com o cupom
+if (!offerColumns.includes('cupom_codigo')) db.exec('ALTER TABLE offers ADD COLUMN cupom_codigo TEXT');
+if (!offerColumns.includes('cupom_texto')) db.exec('ALTER TABLE offers ADD COLUMN cupom_texto TEXT');
+if (!offerColumns.includes('preco_sem_cupom')) db.exec('ALTER TABLE offers ADD COLUMN preco_sem_cupom REAL');
 if (!offerColumns.includes('loja_id')) {
   db.exec('ALTER TABLE offers ADD COLUMN loja_id INTEGER REFERENCES lojas(id) ON DELETE CASCADE');
 }

@@ -104,14 +104,14 @@ const ROBO_PREVIA = /whatsapp|facebookexternalhit|facebot|telegrambot|twitterbot
 router.get('/o/:id', (req, res) => {
   const id = Number(req.params.id) || 0;
   if (!ROBO_PREVIA.test(String(req.get('user-agent') || ''))) return res.redirect(`/oferta/${id}`);
-  const o = id && offers.isActive(id) ? db.get('SELECT id, produto, preco_atual, preco_anterior, desconto_pct, store_id FROM offers WHERE id = ?', id) : null;
+  const o = id && offers.isActive(id) ? db.get('SELECT id, produto, preco_atual, preco_anterior, desconto_pct, store_id, cupom_codigo FROM offers WHERE id = ?', id) : null;
   if (!o) return res.redirect(`/oferta/${id}`);
   const site = String(require('../settings').get('site_url') || '').replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`;
   const social = require('../social');
   const brl = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const h = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const titulo = social.tituloCurto(o.produto);
-  const desc = `De R$ ${brl(o.preco_anterior)} por R$ ${brl(o.preco_atual)} (${Math.round(o.desconto_pct)}% off) — oferta conferida pelo Ofertou!`;
+  const desc = `De R$ ${brl(o.preco_anterior)} por R$ ${brl(o.preco_atual)} (${Math.round(o.desconto_pct)}% off)${o.cupom_codigo ? ` com o cupom ${o.cupom_codigo}` : ''} — oferta conferida pelo Ofertou!`;
   res.set('Cache-Control', 'public, max-age=600');
   res.send(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
 <title>${h(titulo)}</title>

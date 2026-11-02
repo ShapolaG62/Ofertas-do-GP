@@ -24,8 +24,8 @@ let NOMES = new Map(); // id → { p: nome, n: nome normalizado }
 // Respostas prontas das buscas sem login (a página inicial é igual para todos): valem até a lista mudar
 const RESPOSTAS = new Map();
 const assinatura = () => {
-  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h, COUNT(comissao_pct) AS c, TOTAL(comissao_extra_pct) AS e FROM offers');
-  return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}|${r.e}`;
+  const r = db.get('SELECT COUNT(*) AS n, MAX(updated_at) AS u, MAX(last_seen_at) AS s, SUM(oculto) AS h, COUNT(comissao_pct) AS c, TOTAL(comissao_extra_pct) AS e, COUNT(cupom_codigo) AS k FROM offers');
+  return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}|${r.e}|${r.k}`;
 };
 // Quem visita nunca espera a lista ser refeita: recebe a lista pronta e a atualização roda logo depois, em segundo plano.
 let refazendo = false;
@@ -44,7 +44,8 @@ function montar() {
   const active = offers.activeClause();
   const brutas = db.all(
     `SELECT o.id, o.store_id, o.plataforma, o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct, o.categoria,
-       o.subcategoria, o.link_clicks, o.fonte, o.created_at, o.last_seen_at, o.comissao_pct, o.comissao_extra_pct, l.slug AS loja_slug
+       o.subcategoria, o.link_clicks, o.fonte, o.created_at, o.last_seen_at, o.comissao_pct, o.comissao_extra_pct,
+       o.cupom_codigo, o.cupom_texto, o.preco_sem_cupom, l.slug AS loja_slug
      FROM offers o LEFT JOIN lojas l ON l.id = o.loja_id WHERE ${active.sql}`, ...active.params);
   // Menor preço dos últimos 30 dias: refeito a cada 10 min (o selo não precisa ser ao segundo)
   if (Date.now() - HIST.at > 10 * 60 * 1000) {
@@ -76,6 +77,7 @@ function montar() {
       loja_slug: o.loja_slug || null,
       menor_preco_30d: h && h.n >= 2 && c <= seteDias && o.preco_atual <= h.min30 ? 1 : 0,
       comissao_pct: o.comissao_pct ?? null, comissao_extra_pct: o.comissao_extra_pct > 0 ? o.comissao_extra_pct : 0,
+      ...(o.cupom_codigo ? { cupom: o.cupom_codigo, cupom_texto: o.cupom_texto, preco_sem_cupom: o.preco_sem_cupom } : {}),
       _n: n, _k: m.k, _c: c, _alta: m.alta, _acess: m.acess,
     };
   });
@@ -108,7 +110,8 @@ function ler(q) {
   const num = v => (v === undefined || v === '' || v === null || !Number.isFinite(Number(v)) ? null : Number(v));
   return {
     loja: String(q.loja || ''), cat: String(q.cat || ''), tipo: String(q.tipo || ''), q: String(q.q || '').slice(0, 120),
-    min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, extra: q.com === 'extra', ordem: String(q.ordem || 'destaques'),
+    min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, extra: q.com === 'extra',
+    cupom: String(q.cupom || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30), ordem: String(q.ordem || 'destaques'),
     sem: String(q.sem || '').replace(/[^a-z0-9]/gi, '').slice(0, 12),
     pagina: Math.max(1, parseInt(q.pagina, 10) || 1), por: Math.min(Math.max(parseInt(q.por, 10) || POR_PAGINA, 1), 96),
   };
@@ -124,9 +127,13 @@ function filtro(f, pular = '') {
     if (f.max != null && o.preco_atual > f.max) return false;
     if (f.desc && o.desconto_pct < f.desc) return false;
     if (pular !== 'extra' && f.extra && !(o.comissao_extra_pct > 0)) return false;
+    if (pular !== 'cupom' && f.cupom && !temCupom(o, f.cupom)) return false;
     return true;
   };
 }
+// cupom=1: qualquer cupom; cupom=CODIGO: só esse cupom
+const temCupom = (o, c) => Boolean(o.cupom) && (c === '1' || o.cupom === c);
+
 function ordemSub(a, b) {
   if (a === b) return 0;
   if (a === 'Outros') return 1;
@@ -232,7 +239,8 @@ function buscar(query, { comissao = false } = {}) {
 
   // Números dos filtros (cada um ignora o próprio filtro), numa passada só pela lista
   const lojas = {}, categorias = {}, subcategorias = {};
-  let parceiros = 0, categoriasTotal = 0, comissaoExtra = 0;
+  let parceiros = 0, categoriasTotal = 0, comissaoExtra = 0, comCupom = 0;
+  const codigos = {};
   const palavras = f.q ? normalizar(f.q).split(/\s+/).filter(Boolean) : [];
   for (const o of todas) {
     // Filtros comuns a todas as contagens
@@ -243,13 +251,17 @@ function buscar(query, { comissao = false } = {}) {
     const okLoja = !f.loja || (f.loja === 'parceiros' ? Boolean(o.loja_slug) : o.store_id === f.loja);
     const okCat = !f.cat || o.categoria === f.cat;
     const okTipo = !f.tipo || o.subcategoria === f.tipo;
-    const okExtra = !f.extra || o.comissao_extra_pct > 0;
+    const okExtra = (!f.extra || o.comissao_extra_pct > 0) && (!f.cupom || temCupom(o, f.cupom));
+    if (okLoja && okCat && okTipo && (!f.extra || o.comissao_extra_pct > 0) && o.cupom) { comCupom++; codigos[o.cupom] = (codigos[o.cupom] || 0) + 1; }
     if (okCat && okTipo && okExtra) { lojas[o.store_id] = (lojas[o.store_id] || 0) + 1; if (o.loja_slug) parceiros++; }
     if (okLoja && okTipo && okExtra) { categorias[o.categoria] = (categorias[o.categoria] || 0) + 1; categoriasTotal++; }
     if (f.cat && okLoja && okCat && okExtra) subcategorias[o.subcategoria] = (subcategorias[o.subcategoria] || 0) + 1;
     if (comissao && okLoja && okCat && okTipo && o.comissao_extra_pct > 0) comissaoExtra++;
   }
-  const contagens = { lojas, parceiros, categorias, categorias_total: categoriasTotal, subcategorias };
+  // Cupons: total e os 8 códigos com mais ofertas (filtro "Cupons de desconto")
+  const cupons = { total: comCupom, codigos: Object.entries(codigos).sort((a, b) => b[1] - a[1]).slice(0, 8)
+    .map(([codigo, n]) => ({ codigo, n, texto: (todas.find(o => o.cupom === codigo) || {}).cupom_texto || '' })) };
+  const contagens = { lojas, parceiros, categorias, categorias_total: categoriasTotal, subcategorias, cupons };
   if (comissao) contagens.comissao_extra = comissaoExtra;
   // Ordem "por tipo": quantas ofertas cada grupo tem na lista inteira
   let grupos = null;

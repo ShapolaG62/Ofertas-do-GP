@@ -290,6 +290,17 @@ body:not(.is-admin) .admin-only { display: none !important; }
 .card-old { font-size: 13px; color: var(--ink-3); text-decoration: line-through; }
 .card-price { font-size: 21px; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
 .card-price small { font-size: 13px; font-weight: 700; margin-right: 2px; }
+.card-price .card-com-cupom { margin: 0 0 0 5px; font-size: 12px; font-weight: 700; color: var(--brand); letter-spacing: 0; }
+/* Cupom de desconto: tocar copia o código */
+.card-cupom {
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap; width: 100%; margin-top: 6px; padding: 6px 9px; min-height: 34px;
+  border: 1.5px dashed var(--brand); border-radius: 9px; background: var(--brand-soft); color: var(--ink);
+  font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
+}
+.card-cupom b { font-weight: 800; letter-spacing: .03em; color: var(--brand); word-break: break-all; }
+.card-cupom span { color: var(--ink-3); font-weight: 700; }
+.card-sem-cupom { margin-top: 3px; font-size: 12px; color: var(--ink-3); }
+.cupom-cod { letter-spacing: .03em; }
 .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-3); }
 .badge-low { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); font-size: 11.5px; font-weight: 700; width: fit-content; }
 
@@ -2580,6 +2591,7 @@ h1 .selo-ok { width: 26px; height: 26px; margin-left: 2px; }
   .drawer .filter-group { padding-bottom: 14px; margin-bottom: 14px; }
   .drawer .filter-title { font-size: 11px; margin-bottom: 8px; }
   .drawer .filter-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .drawer .filter-list.cupons-list { grid-template-columns: minmax(0, 1fr); } /* códigos de cupom longos: uma coluna */
   .drawer .filter-option { padding: 8px 10px; font-size: 13px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
   .drawer .filter-option > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .drawer .filter-option[aria-pressed="true"] { border-color: var(--brand); }

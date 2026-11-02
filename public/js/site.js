@@ -48,7 +48,7 @@
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)}-${o.id}`;
 
   // ── Estado (espelhado na URL para links compartilháveis) ─────────────────
-  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', ordem: 'destaques', pagina: 1 };
+  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', ordem: 'destaques', pagina: 1 };
   // Resposta do servidor para os filtros atuais: { total, pagina, paginas, itens, contagens, grupos, resumo }
   let DATA = { total: 0, pagina: 1, paginas: 1, itens: [], contagens: { lojas: {}, parceiros: 0, categorias: {}, categorias_total: 0, subcategorias: {} }, grupos: null, resumo: null };
   let carregou = false;
@@ -68,6 +68,7 @@
     state.max = p.has('max') ? Number(p.get('max')) : null;
     state.desc = Number(p.get('desc')) || 0;
     state.com = p.get('com') === 'extra' ? 'extra' : '';
+    state.cupom = (p.get('cupom') || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30);
     state.ordem = p.get('ordem') || 'destaques';
     state.pagina = Math.max(1, Number(p.get('pagina')) || 1);
   }
@@ -79,6 +80,7 @@
     if (state.max != null) p.set('max', state.max);
     if (state.desc) p.set('desc', state.desc);
     if (state.com) p.set('com', state.com);
+    if (state.cupom) p.set('cupom', state.cupom);
     if (state.ordem !== 'destaques') p.set('ordem', state.ordem);
     if (state.pagina > 1) p.set('pagina', state.pagina);
     const qs = p.toString();
@@ -172,9 +174,22 @@
       <div class="filter-group"><h3 class="filter-title">Desconto</h3><ul class="filter-list">
         <li><button class="filter-option" type="button" data-desc="0" aria-pressed="${!state.desc}"><span>Qualquer desconto</span></button></li>
         ${discounts}</ul></div>
+      ${cuponsHtml()}
       <div class="filter-group com-only"><h3 class="filter-title">Comissão de afiliado</h3><ul class="filter-list">
         <li><button class="filter-option" type="button" data-com="" aria-pressed="${!state.com}"><span>Todas as comissões</span></button></li>
         <li><button class="filter-option" type="button" data-com="extra" aria-pressed="${state.com === 'extra'}"><span><i class="com-ponto"></i>Só comissão extra</span><span class="count">${DATA.contagens.comissao_extra ?? ''}</span></button></li></ul></div>`;
+  }
+
+  // Cupons de desconto encontrados pela mineração: todas, só com cupom e os códigos com mais ofertas
+  function cuponsHtml() {
+    const c = DATA.contagens.cupons;
+    if (!c || (!c.total && !state.cupom)) return '';
+    const codigos = c.codigos.map(k => `<li><button class="filter-option" type="button" data-cupom="${esc(k.codigo)}" aria-pressed="${state.cupom === k.codigo}">
+      <span><b class="cupom-cod">${esc(k.codigo)}</b>${k.texto ? ` <small>${esc(k.texto)}</small>` : ''}</span><span class="count">${k.n}</span></button></li>`).join('');
+    return `<div class="filter-group"><h3 class="filter-title">Cupons de desconto</h3><ul class="filter-list cupons-list">
+        <li><button class="filter-option" type="button" data-cupom="" aria-pressed="${!state.cupom}"><span>Com ou sem cupom</span></button></li>
+        <li><button class="filter-option" type="button" data-cupom="1" aria-pressed="${state.cupom === '1'}"><span>🎟️ Só com cupom</span><span class="count">${c.total}</span></button></li>
+        ${codigos}</ul></div>`;
   }
 
   function renderFilters() {
@@ -202,6 +217,7 @@
     }
     if (state.desc) items.push(['desc', `${state.desc}% ou mais`]);
     if (state.com) items.push(['com', 'Comissão extra']);
+    if (state.cupom) items.push(['cupom', state.cupom === '1' ? 'Com cupom' : `Cupom ${state.cupom}`]);
     const any = items.length || state.loja || state.cat;
     $('#active-filters').innerHTML = items.map(([k, label]) =>
       `<button class="chip" type="button" data-remove="${k}">${esc(label)}<svg><use href="#i-x"/></svg></button>`).join('')
@@ -234,8 +250,10 @@
         ${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low">Menor preço em 30 dias</span>' : ''}
         <div class="card-prices">
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
-          <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div>
+          <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}${o.cupom ? '<small class="card-com-cupom">com cupom</small>' : ''}</div>
         </div>
+        ${o.cupom ? `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom">🎟️ Cupom <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>
+        <div class="card-sem-cupom num">ou R$ ${brl(o.preco_sem_cupom)} sem cupom</div>` : ''}
         <div class="card-foot"><span>${o.loja_slug ? 'Publicado pela loja' : o.fonte === 'manual' ? 'Oferta selecionada' : `Conferido ${timeAgo(o.last_seen_at)}`}</span></div>
         <button class="card-enviar poster-only" type="button" data-enviar="${o.id}"><svg><use href="#i-enviar"/></svg>Enviar para os grupos</button>
       </div>
@@ -243,7 +261,7 @@
   }
 
   function emptyHtml() {
-    const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc || state.com;
+    const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc || state.com || state.cupom;
     return `<div class="empty"><img src="/images/pet-capi.png" alt="" width="120">
       <h3>${DATA.resumo?.total ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
       <p>${DATA.resumo?.total ? 'Tente outra busca ou remova alguns filtros.' : 'O minerador está procurando descontos reais nas lojas. Volte em alguns minutos.'}</p>
@@ -440,6 +458,7 @@
     if (t.dataset.tipo !== undefined) return setFilter({ tipo: t.dataset.tipo });
     if (t.dataset.desc !== undefined) return setFilter({ desc: Number(t.dataset.desc) });
     if (t.dataset.com !== undefined) return setFilter({ com: t.dataset.com });
+    if (t.dataset.cupom !== undefined) return setFilter({ cupom: t.dataset.cupom });
     if (t.dataset.min !== undefined) {
       const min = Number(t.dataset.min) || null, max = t.dataset.max ? Number(t.dataset.max) : null;
       const on = state.min === min && state.max === max;
@@ -450,7 +469,7 @@
       return setFilter(k === 'preco' ? { min: null, max: null } : { [k]: k === 'desc' ? 0 : '' });
     }
     if (t.dataset.clear !== undefined) {
-      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '' });
+      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '' });
     }
   }
 
@@ -535,6 +554,20 @@
     selected.has(id) ? selected.delete(id) : selected.add(id);
     b.closest('.card').classList.toggle('is-selected', selected.has(id));
     updateSelection();
+  });
+
+  // Cupom: tocar no código copia; tocar no cartão também copia e já abre a loja (é só colar no carrinho)
+  async function copiarCupom(codigo) {
+    try { await navigator.clipboard.writeText(codigo); toast(`Cupom ${codigo} copiado! Cole no carrinho da loja.`); }
+    catch { toast(`Use o cupom ${codigo} no carrinho da loja.`); }
+  }
+  $('#grid').addEventListener('click', e => {
+    if (e.target.closest('[data-select], [data-enviar]')) return;
+    const b = e.target.closest('[data-copiar-cupom]');
+    if (b) { e.preventDefault(); e.stopPropagation(); return copiarCupom(b.dataset.copiarCupom); }
+    const card = e.target.closest('.card');
+    const cod = card?.querySelector('[data-copiar-cupom]')?.dataset.copiarCupom;
+    if (cod) copiarCupom(cod);
   });
 
   // Botão "Enviar para os grupos" do cartão: todos os grupos de WhatsApp escolhidos no painel ou um deles
@@ -670,6 +703,7 @@
     if (state.max != null) p.set('max', state.max);
     if (state.desc) p.set('desc', state.desc);
     if (state.com) p.set('com', state.com);
+    if (state.cupom) p.set('cupom', state.cupom);
     p.set('pagina', state.pagina);
     p.set('por', PER_PAGE);
     p.set('sem', SEMENTE); // embaralha a comissão extra a cada visita (mesma ordem nas páginas seguintes)

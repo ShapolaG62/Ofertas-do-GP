@@ -4,11 +4,18 @@
 // Só a primeira página de cada busca, sem parâmetros na URL (o robots.txt do Magazine Você proíbe busca com "?").
 // Preço igual ao que a loja exibe: "De" = preço riscado (price), "Por" = preço à vista no Pix (bestPrice).
 const { http } = require('../util');
+const cupons = require('../cupons');
 
 const VOCE = 'https://www.magazinevoce.com.br';
 const SITE = 'https://www.magazineluiza.com.br';
 
 const lojaDe = s => String(s?.magalu_store || '').trim().toLowerCase().replace(/^https?:\/\/[^/]+\//, '').replace(/\/.*$/, '').replace(/^magazine/, '');
+
+// Cupom do vendedor: seller.tags → { type: 'coupon', code: 'LEVOU5', discountType: 'percentage' | 'absolute', discountValue: 5 }
+function cupomDe(p) {
+  const t = (p.seller?.tags || []).find(x => x && x.type === 'coupon' && x.code && Number(x.discountValue) > 0);
+  return t ? { codigo: t.code, tipo: t.discountType === 'percentage' ? 'pct' : 'valor', valor: Number(t.discountValue) } : null;
+}
 
 function parse(produtos) {
   const deals = [];
@@ -16,18 +23,20 @@ function parse(produtos) {
     const pr = p.price || {};
     const atual = Number(pr.bestPrice || pr.fullPrice) || 0;
     const anterior = Number(pr.price) || 0;
-    if (!p.id || !p.title || p.available === false || !(atual > 0) || !(anterior > atual)) continue;
+    const cupom = cupomDe(p);
+    // Sem preço riscado só entra quando o cupom dá o desconto
+    if (!p.id || !p.title || p.available === false || !(atual > 0) || (!(anterior > atual) && !cupom)) continue;
     // Caminho do produto sem o nome da loja: vira o link da Magalu (e o link de afiliado é montado a partir dele).
     const caminho = String(p.path || p.url || '').replace(/^\/magazine[^/]+\//, '/');
     if (!/\/p\/[a-z0-9]+/i.test(caminho)) continue;
-    deals.push({
+    deals.push(cupons.aplicar({
       store_product_id: String(p.variationId || p.id),
       produto: String(p.title).trim(),
       preco_atual: atual,
       preco_anterior: anterior,
       imagem: /^https:\/\//.test(p.image || '') ? p.image.replace('{w}x{h}', '800x800') : null,
       original_url: `${SITE}${caminho}`,
-    });
+    }, cupom));
   }
   return deals;
 }
@@ -55,6 +64,7 @@ module.exports = {
   name: 'Magalu',
   method: 'Busca na sua loja Magazine Você',
   automatic: true,
+  cupons: true, // a busca informa o cupom de cada produto (src/cupons.js)
   isReady: s => (lojaDe(s)
     ? { ready: true }
     : { ready: false, reason: 'Informe o nome da sua loja Magazine Você (ex.: magazinesualoja) em Afiliados → Magalu.' }),

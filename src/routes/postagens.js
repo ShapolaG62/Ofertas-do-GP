@@ -101,7 +101,7 @@ router.get('/api/postagens/ofertas', async (req, res) => {
   const cid = req.poster.clienteId;
   const rows = db.all(
     `SELECT id, store_id, store_product_id, plataforma, produto, preco_atual, preco_anterior, desconto_pct, categoria, imagem, fonte, loja_id,
-            affiliate_url, original_url, last_seen_at, oculto, expires_at
+            affiliate_url, original_url, last_seen_at, oculto, expires_at, cupom_codigo AS cupom
      FROM offers WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids);
   const hist = social.historico(ids, cid);
   const out = [];
@@ -113,7 +113,7 @@ router.get('/api/postagens/ofertas', async (req, res) => {
     const link = curtos[i];
     out.push({
       id: o.id, store_id: o.store_id, plataforma: o.plataforma, produto: o.produto, preco_atual: o.preco_atual,
-      preco_anterior: o.preco_anterior, desconto_pct: o.desconto_pct, categoria: o.categoria, last_seen_at: o.last_seen_at,
+      preco_anterior: o.preco_anterior, desconto_pct: o.desconto_pct, categoria: o.categoria, last_seen_at: o.last_seen_at, cupom: o.cupom || null,
       link, imagem_publica: Boolean(social.postImage(o, req.cfg)), postado_em: hist[o.id] || {},
       imagem_url: `/api/img/${o.id}`,
     });

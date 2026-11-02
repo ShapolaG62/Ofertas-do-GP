@@ -488,6 +488,16 @@
     window.Comunidade?.fecharSugestoes();
     searchTimer = setTimeout(() => setFilter({ q: e.target.value.trim() }), 200);
   });
+  // Celular: o teclado fecha ao confirmar uma pesquisa (qualquer formulário da página) e ao tocar fora do campo
+  const digitando = el => el && (el.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), textarea') || el.isContentEditable);
+  document.addEventListener('submit', () => { if (digitando(document.activeElement)) document.activeElement.blur(); }, true);
+  document.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'touch' || !digitando(document.activeElement)) return;
+    // tocar em outro campo (ou no próprio) não fecha: o teclado continua para ele
+    if (digitando(e.target) || e.target.closest?.('label, select, [contenteditable]')) return;
+    document.activeElement.blur();
+  }, true);
+
   $('#search-form').addEventListener('submit', e => {
     e.preventDefault();
     if (buscaPerfil($('#q').value)) { window.Comunidade.buscar($('#q').value.trim(), true); return; }
@@ -650,6 +660,7 @@
 
   // Pede ao servidor só a página atual (com os filtros da URL). Pedidos antigos são cancelados.
   let pedidoAtual = null;
+  const SEMENTE = Math.random().toString(36).slice(2, 10);
   async function loadOffers() {
     pedidoAtual?.abort();
     const ctrl = pedidoAtual = new AbortController();
@@ -661,6 +672,7 @@
     if (state.com) p.set('com', state.com);
     p.set('pagina', state.pagina);
     p.set('por', PER_PAGE);
+    p.set('sem', SEMENTE); // embaralha a comissão extra a cada visita (mesma ordem nas páginas seguintes)
     if (carregou) $('#grid').classList.add('is-loading');
     try {
       const r = await fetch(`/api/offers/busca?${p}`, { signal: ctrl.signal });

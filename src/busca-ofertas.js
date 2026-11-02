@@ -109,6 +109,7 @@ function ler(q) {
   return {
     loja: String(q.loja || ''), cat: String(q.cat || ''), tipo: String(q.tipo || ''), q: String(q.q || '').slice(0, 120),
     min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, extra: q.com === 'extra', ordem: String(q.ordem || 'destaques'),
+    sem: String(q.sem || '').replace(/[^a-z0-9]/gi, '').slice(0, 12),
     pagina: Math.max(1, parseInt(q.pagina, 10) || 1), por: Math.min(Math.max(parseInt(q.por, 10) || POR_PAGINA, 1), 96),
   };
 }
@@ -178,11 +179,31 @@ function ordenada(nome, cmp) {
   return c[nome];
 }
 const porComissao = (a, b) => (notaComissao(b) - notaComissao(a)) || (b._c - a._c);
+// Ordem com os produtos de comissão extra embaralhados (semente sorteada pela página a cada visita): cada visita mostra
+// outros no topo, e as páginas seguintes da mesma visita continuam a mesma ordem (sem repetir produto).
+// Só os de comissão extra ganham o sorteio (0 a 40 pontos); continuam acima dos demais e misturados aos mais atrativos.
+function sorteio(sem, id) { // número de 0 a 1 fixo para a dupla semente + produto (FNV-1a)
+  let h = 2166136261;
+  for (const ch of `${sem}:${id}`) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return (h >>> 0) / 4294967296;
+}
+function ordenadaComissao(sem) {
+  if (!sem) return ordenada('comissao-destaques', porComissao);
+  const c = CACHE.ordenadas, nome = `comissao-destaques:${sem}`;
+  if (!c[nome]) {
+    // guarda só as ordens das visitas mais recentes
+    const antigas = Object.keys(c).filter(k => k.startsWith('comissao-destaques:'));
+    if (antigas.length >= 30) delete c[antigas[0]];
+    const nota = new Map(CACHE.lista.map(o => [o.id, notaComissao(o) + (o.comissao_extra_pct > 0 ? sorteio(sem, o.id) * 40 : 0)]));
+    c[nome] = CACHE.lista.slice().sort((a, b) => (nota.get(b.id) - nota.get(a.id)) || (b._c - a._c));
+  }
+  return c[nome];
+}
 
 // comissao: true para o admin e os afiliados (veem a comissão e podem filtrar pela comissão extra)
 function buscar(query, { comissao = false } = {}) {
   const f = ler(query);
-  if (!comissao) { f.extra = false; if (f.ordem === 'comissao') f.ordem = 'destaques'; }
+  if (!comissao) { f.extra = false; f.sem = ''; if (f.ordem === 'comissao') f.ordem = 'destaques'; } // sem sorteio para visitantes (resposta pronta igual para todos)
   const { lista: todas, resumo } = lista();
   // Mesma busca de antes (ex.: a página inicial, igual para todos): devolve a resposta pronta
   const chaveResp = comissao ? null : JSON.stringify(f);
@@ -198,7 +219,7 @@ function buscar(query, { comissao = false } = {}) {
     l.sort((a, b) => nota.get(b.id) - nota.get(a.id) || ORDENS[f.ordem](a, b));
   } else if (comissao && f.ordem === 'destaques') {
     // Admin, equipe e afiliados: as de comissão extra vêm primeiro, junto das mais atrativas
-    l = variar(ordenada('comissao-destaques', porComissao).filter(filtro(f)), f.por);
+    l = variar(ordenadaComissao(f.sem).filter(filtro(f)), f.por);
   } else {
     const ordem = ORDENS[f.ordem] ? f.ordem : 'destaques';
     l = ordenada(ordem, ORDENS[ordem]).filter(filtro(f));

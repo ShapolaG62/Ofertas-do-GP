@@ -120,6 +120,9 @@
   .mlx-cola:focus { border-color: var(--brand, #2bb673); }
   .mlx-cola:empty::before { content: attr(data-vazio); color: var(--muted); }
   #mlx-previa .table-wrap { max-height: 320px; overflow: auto; }
+  /* Tabelas de cupons: rolagem própria com o cabeçalho fixo (a lista passa de centenas de linhas) */
+  .tabela-rolavel { max-height: 440px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 10px; }
+  .tabela-rolavel thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
   .gn-sync-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
   .gn-sync-item { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
   .gn-sync-item b { display: block; font-size: 14px; }
@@ -566,7 +569,7 @@
       <div class="panel">
         <h2>Cupons de desconto encontrados</h2>
         <p class="hint">A mineração lê o cupom de cada produto na KaBuM! e na Magalu. A oferta entra pelo preço com o cupom (o cartão mostra o código e o preço sem cupom), inclusive quando o desconto só existe com o cupom. Mercado Livre: use o quadro "Cupons do Mercado Livre" abaixo. Shopee, Amazon e AliExpress não informam cupons na busca.</p>
-        <div class="table-wrap"><table><thead><tr><th>Cupom</th><th>Loja</th><th>Desconto</th><th>Ofertas no ar</th><th></th></tr></thead><tbody id="cupons-lista"></tbody></table></div>
+        <div class="table-wrap tabela-rolavel"><table><thead><tr><th>Cupom</th><th>Loja</th><th>Desconto</th><th>Ofertas no ar</th><th></th></tr></thead><tbody id="cupons-lista"></tbody></table></div>
       </div>
       <div class="panel">
         <h2>Cupons do Mercado Livre</h2>
@@ -586,7 +589,7 @@
           <label class="check"><input type="checkbox" id="mlc-so-ativos"> Só os ativos na conta (com produtos)</label>
           <span class="hint" style="margin:0" id="mlc-total"></span>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>Cupom</th><th>Desconto</th><th>Compra mínima</th><th>Limite</th><th>Validade</th><th>Situação</th><th>Ofertas</th></tr></thead><tbody id="mlc-lista"></tbody></table></div>
+        <div class="table-wrap tabela-rolavel"><table><thead><tr><th>Cupom</th><th>Desconto</th><th>Compra mínima</th><th>Limite</th><th>Validade</th><th>Situação</th><th>Ofertas</th></tr></thead><tbody id="mlc-lista"></tbody></table></div>
       </div>
       <div class="panel">
         <h2>Comissão extra do Mercado Livre</h2>

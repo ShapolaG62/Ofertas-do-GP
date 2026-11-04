@@ -89,6 +89,15 @@ router.put('/api/admin/settings', (req, res) => {
   res.json({ ok: true, changed, refreshed });
 });
 
+// ── Backup do banco (src/backup.js) ───────────────────────────────────────────
+router.get('/api/admin/backups', (req, res) => res.json(require('../backup').estado()));
+router.post('/api/admin/backups', async (req, res) => res.json(await require('../backup').fazer()));
+router.get('/api/admin/backups/:nome', (req, res) => {
+  const p = require('../backup').caminho(req.params.nome);
+  if (!p) return res.status(404).json({ error: 'Backup não encontrado.' });
+  res.download(p);
+});
+
 // ── Dashboard (resumo do site) ───────────────────────────────────────────────
 // Resumo do painel: varre o site inteiro (~0,5 s); guardado por 1 min para não travar o site a cada abertura do painel
 let dashCache = { at: 0, dados: null };

@@ -49,6 +49,8 @@ const DEFAULTS = {
   aliexpress_app_key: '',
   aliexpress_app_secret: '',
   aliexpress_tracking_id: '',
+  backup_dias: '7',          // backups diários guardados (além de 1 por semana das últimas 4 semanas)
+  backup_pasta_externa: '',  // pasta sincronizada com a nuvem no servidor (Google Drive, OneDrive): recebe uma cópia
   kabum_afiliado: '',        // modelo do link de afiliado da KaBuM! com {url} (ou parâmetros para acrescentar)
   magalu_store: '',
 

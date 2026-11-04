@@ -54,25 +54,6 @@ function suspeita(o, h, n) {
   }
   return '';
 }
-// Anúncios com o nome idêntico: fica só o mais barato, com "Menor preço entre N anúncios". Comissão extra e lojas
-// parceiras ficam sempre (o afiliado pode preferir o anúncio que paga mais).
-function semRepetidos(rows) {
-  const melhor = new Map();
-  for (const o of rows) {
-    if (o.loja_slug || o.comissao_extra_pct > 0 || o._k.length < 16) continue;
-    const m = melhor.get(o._k);
-    if (!m) melhor.set(o._k, { o, n: 1 });
-    else { m.n++; if (o.preco_atual < m.o.preco_atual) m.o = o; }
-  }
-  return rows.filter(o => {
-    if (o.loja_slug || o.comissao_extra_pct > 0 || o._k.length < 16) return true;
-    const m = melhor.get(o._k);
-    if (m.o !== o) return false;
-    if (m.n > 1) o.iguais = m.n;
-    return true;
-  });
-}
-
 function montar() {
   const sig = assinatura();
   if (sig === CACHE.sig) { CACHE.at = Date.now(); return CACHE; }
@@ -118,7 +99,6 @@ function montar() {
     };
   });
   NOMES = memo;
-  rows = semRepetidos(rows);
   rows.sort((a, b) => (b._c - a._c) || b.id - a.id); // mais novas primeiro (ordem base, como antes)
   for (const o of rows) o._s = atratividade(o);
   // Resumo do topo da página: total, lojas, maior desconto, última conferência e a oferta de maior desconto

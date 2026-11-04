@@ -57,6 +57,14 @@ test('páginas públicas, 404 e cabeçalhos de segurança', async () => {
   assert.equal((await pede('/data/ofertas.db')).status, 404, 'o banco não é servido');
 });
 
+test('busca confirmada e listas de mais pesquisados', async () => {
+  const r = await json('/api/offers/termo', { q: '#perfil' });
+  assert.deepEqual(await r.json(), { status: 'ignorado' });
+  assert.deepEqual(await (await pede('/api/offers/termo?q=nada')).json(), { status: 'cadastrado' });
+  const p = await (await pede('/api/offers/populares')).json();
+  assert.ok(Array.isArray(p.buscados) && Array.isArray(p.clicados));
+});
+
 test('visitante: sessão sem erro e áreas fechadas', async () => {
   assert.deepEqual(await (await pede('/api/sessao')).json(), { logado: false });
   for (const p of ['/api/admin/backups', '/api/admin/2fa', '/api/admin/offers/suspeitas', '/api/admin/dashboard']) {

@@ -15,9 +15,38 @@ const router = express.Router();
 // Página de ofertas: o servidor filtra e devolve só a página pedida (24 ofertas) + os números dos filtros
 router.get('/api/offers/busca', (req, res) => {
   res.setHeader('Cache-Control', 'private, no-cache');
-  const r = require('../busca-ofertas').buscar(req.query, { comissao: require('./postagens').veComissao(req) });
-  if (req.query.q && r.pagina === 1) require('../buscas-termos').registrar(req.query.q, r.aproximado ? 0 : r.total);
-  res.json(r);
+  res.json(require('../busca-ofertas').buscar(req.query, { comissao: require('./postagens').veComissao(req) }));
+});
+// A pessoa confirmou uma busca: conta nos mais pesquisados e, se o termo não está na lista de mineração, minera agora.
+// (Não é a busca acima, que roda a cada letra digitada: "gel", "gela"... não podem virar termos.)
+const contaBuscaLimiter = createLimiter(120, 60);
+router.post('/api/offers/termo', (req, res) => {
+  const q = String(req.body?.q || '').trim().slice(0, 100);
+  if (!q) return res.json({ status: 'ignorado' });
+  res.setHeader('Cache-Control', 'no-store');
+  if (!contaBuscaLimiter.hit(req.ip)) {
+    const r = require('../busca-ofertas').buscar({ q, por: 1 }, { comissao: false });
+    require('../buscas-termos').registrar(q, r.aproximado ? 0 : r.total);
+  }
+  res.json(require('../termos-busca').pedir(q, req.ip));
+});
+router.get('/api/offers/termo', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(require('../termos-busca').situacao(String(req.query.q || '')));
+});
+// Mais pesquisados e mais clicados (só termos com ofertas no ar: qualquer um pode digitar qualquer coisa na busca)
+let popularesCache = { em: 0, dados: null };
+router.get('/api/offers/populares', (req, res) => {
+  if (!popularesCache.dados || Date.now() - popularesCache.em > 10 * 60 * 1000) {
+    const busca = require('../busca-ofertas');
+    const buscados = db.all(`SELECT termo, vezes FROM buscas_termos WHERE vezes >= 2 ORDER BY vezes DESC LIMIT 40`)
+      .filter(b => { const r = busca.buscar({ q: b.termo, por: 1 }, { comissao: false }); return !r.aproximado && r.total >= 3; }).slice(0, 12);
+    const clicados = busca.ativas().filter(o => o.link_clicks > 0).sort((a, b) => b.link_clicks - a.link_clicks).slice(0, 12)
+      .map(o => ({ id: o.id, produto: o.produto, preco_atual: o.preco_atual, desconto_pct: o.desconto_pct, plataforma: o.plataforma, cliques: o.link_clicks }));
+    popularesCache = { em: Date.now(), dados: { buscados, clicados } };
+  }
+  res.setHeader('Cache-Control', 'no-cache'); // (o servidor já guarda por 10 min)
+  res.json(popularesCache.dados);
 });
 // Postagens: "melhor de cada categoria"
 router.get('/api/offers/mix', (req, res) => {

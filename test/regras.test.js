@@ -133,8 +133,7 @@ test('busca, repetidos e descontos suspeitos', () => {
   assert.equal(b('xyzabc').total, 0);
 
   const cafe = b('cafeteira expresso').itens;
-  assert.equal(cafe.length, 1, 'anúncios idênticos viram um');
-  assert.deepEqual([cafe[0].preco_atual, cafe[0].iguais], [450, 2]);
+  assert.equal(cafe.length, 2, 'cada anúncio aparece, mesmo com o nome igual');
 
   const motivos = Object.fromEntries(busca.suspeitas(50).itens.map(o => [o.produto, o.motivo]));
   assert.match(motivos['Relógio Masculino Barato Demais'], /95%/);
@@ -144,6 +143,47 @@ test('busca, repetidos e descontos suspeitos', () => {
   assert.ok(r.maior_desconto < 95, 'suspeita não é o "maior desconto"');
   assert.notEqual(r.destaque?.produto, 'Relógio Masculino Barato Demais');
   assert.notEqual(busca.buscar({ por: 1, ordem: 'desconto' }, { comissao: false }).itens[0].produto, 'Relógio Masculino Barato Demais');
+});
+
+test('termo novo na busca: entra na lista, minera na hora e avisa', async () => {
+  const termos = require('../src/termos-busca');
+  const { STORES } = require('../src/stores');
+  const espera = async q => { for (let i = 0; i < 100; i++) { const s = termos.situacao(q); if (s.status !== 'minerando') return s; await new Promise(r => setTimeout(r, 20)); } throw new Error('não terminou'); };
+  const lista = () => settings.getSearchTerms().map(t => t.query);
+
+  // Uma ou várias palavras: termos diferentes; ordem, plural, acento e "de" não importam
+  assert.equal(termos.chaveDe('Tênis de Nike'), termos.chaveDe('nike tenis'));
+  assert.notEqual(termos.chaveDe('tenis'), termos.chaveDe('tenis nike'));
+  assert.equal(termos.chaveDe('fones bluetooth'), termos.chaveDe('bluetooth fone'));
+  for (const ruim of ['ab', 'https://x.test/p', '#perfil', '12345', 'a'.repeat(61), '<script>']) assert.equal(termos.valido(ruim), false, ruim);
+
+  const originais = STORES.map(s => [s, s.search, s.isReady, s.automatic]);
+  const buscas = [];
+  for (const s of STORES) { s.automatic = s.id === 'amazon'; s.isReady = () => ({ ready: true }); s.search = async q => { buscas.push(q); return { status: 'ok', deals: /naoexiste/.test(q) ? [] : [{ store_product_id: `AUTO${q}`, produto: `Patinete Azul ${q}`, preco_atual: 100, preco_anterior: 200, original_url: 'https://www.exemplo.test/a' }] }; }; }
+  try {
+    settings.set('search_terms', 'tenis | moda');
+    assert.deepEqual(termos.pedir('tênis', '1.1.1.1'), { status: 'cadastrado' }, 'já está na lista: não minera');
+    assert.equal(buscas.length, 0);
+
+    const r = termos.pedir('Tenis Nike', '1.1.1.1');
+    assert.equal(r.status, 'minerando', 'duas palavras é outro termo');
+    assert.ok(lista().includes('Tenis Nike'), 'entra na lista na hora');
+    assert.equal(termos.pedir('nike tênis', '1.1.1.1').status, 'minerando', 'a mesma busca não dispara duas vezes');
+    const fim = await espera('Tenis Nike');
+    assert.deepEqual([fim.status, fim.gravadas], ['pronto', 1]);
+    assert.equal(buscas.filter(q => q === 'Tenis Nike').length, 1);
+    assert.deepEqual(termos.pedir('Tenis Nike', '1.1.1.1'), { status: 'cadastrado' }, 'depois de recarregar não pede para recarregar de novo');
+    assert.ok(busca.buscar({ q: 'patinete azul', por: 5 }, { comissao: false }).total >= 1, 'a oferta já está na lista do site');
+
+    termos.pedir('naoexiste nada', '1.1.1.1');
+    assert.equal((await espera('naoexiste nada')).status, 'sem_ofertas');
+    assert.ok(!lista().includes('naoexiste nada'), 'nenhuma loja tem: sai da lista');
+    assert.ok(lista().includes('tenis | moda') || lista().includes('tenis'), 'os outros termos continuam');
+
+    for (let i = 0; i < 10; i++) termos.pedir(`limite ${'abcdefghij'[i]}x`, '9.9.9.9');
+    assert.equal(termos.pedir('limite novo', '9.9.9.9').status, 'limite', 'cada IP tem limite por hora');
+    await new Promise(r => setTimeout(r, 300));
+  } finally { for (const [s, a, b, c] of originais) { s.search = a; s.isReady = b; s.automatic = c; } }
 });
 
 test('páginas de categoria e marca', () => {

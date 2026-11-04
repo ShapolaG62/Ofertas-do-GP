@@ -2805,7 +2805,6 @@ textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5;
 .explore-links a:hover { border-color: var(--brand); color: var(--brand); }
 .explore-links a span { color: var(--ink-3); font-weight: 500; font-size: 12px; }
 
-.badge-iguais { display: inline-flex; width: fit-content; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 11.5px; font-weight: 700; }
 
 /* Celular: as ofertas aparecem logo na primeira tela (contadores, destaque e convite de anúncio só no computador;
    sem eles a página também não pula quando os dados chegam). Anúncio de verdade continua aparecendo. */
@@ -2847,3 +2846,26 @@ textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5;
 .cli-sug-tags em.extra { background: #1d7bf2; color: #fff; }
 .cli-sug-item .btn { margin-top: auto; width: 100%; justify-content: center; }
 .cli-kpis + .panel-card, #cli-passos-card { margin: 0 0 16px; }
+
+/* Termo novo na busca: aviso da mineração na hora */
+.mina-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 14px; padding: 12px 14px; border: 1px solid var(--brand); border-radius: 12px; background: var(--brand-soft); font-size: 14px; line-height: 1.4; }
+.mina-aviso[hidden] { display: none; }
+.mina-aviso > div { flex: 1 1 200px; min-width: 0; }
+.mina-aviso .btn { flex: 0 0 auto; }
+.mina-sem, .mina-limite { border-color: var(--line-strong); background: var(--surface-2); }
+.mina-roda { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--line-strong); border-top-color: var(--brand); animation: mina-gira .9s linear infinite; }
+@keyframes mina-gira { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .mina-roda { animation: none; } }
+/* Mais pesquisados e mais clicados */
+.populares { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 20px; margin-top: 28px; }
+.populares[hidden], .populares section[hidden] { display: none; }
+.populares h2 { font-size: 15px; margin: 0 0 10px; }
+.populares section { min-width: 0; }
+.populares-busca { display: flex; flex-wrap: wrap; gap: 8px; }
+.populares-busca .chip { text-decoration: none; }
+.populares-lista { margin: 0; padding: 0 0 0 20px; font-size: 13px; color: var(--ink-3); }
+.populares-lista li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+.populares-lista li:last-child { border-bottom: 0; }
+.populares-lista a { display: flex; justify-content: space-between; gap: 10px; color: var(--ink); text-decoration: none; }
+.populares-lista span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.populares-lista b { flex: none; }

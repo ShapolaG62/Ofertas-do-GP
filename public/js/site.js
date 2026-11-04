@@ -257,7 +257,6 @@
         <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}</div>
         <h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
         ${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low">Menor preço em 30 dias</span>' : ''}
-        ${o.iguais > 1 ? `<span class="badge-iguais">Menor preço entre ${o.iguais} anúncios</span>` : ''}
         <div class="card-prices">
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
           <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}${o.cupom ? '<small class="card-com-cupom">com cupom</small>' : ''}</div>
@@ -275,7 +274,7 @@
   function emptyHtml() {
     const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc || state.com || state.cupom;
     return `<div class="empty"><img src="/images/pet-capi.png" alt="" width="120">
-      <h3>${DATA.resumo?.total ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
+      <h3>${minaTermo && !$('#mina-aviso').hidden && $('#mina-aviso').classList.contains('mina-minerando') ? 'Procurando nas lojas…' : DATA.resumo?.total ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
       <p>${DATA.resumo?.total ? 'Tente outra busca ou remova alguns filtros.' : 'O minerador está procurando descontos reais nas lojas. Volte em alguns minutos.'}</p>
       ${hasFilters ? '<button class="btn" type="button" data-clear>Limpar filtros</button>' : ''}</div>`;
   }
@@ -529,10 +528,55 @@
     document.activeElement.blur();
   }, true);
 
+  // ── Termo novo vira mineração: avisa enquanto as lojas são consultadas e quando as ofertas ficam prontas ──
+  let minaTermo = '', minaTimer = null, minaAuto = null, minaTentativas = 0;
+  const minaJaPedidos = new Set();
+  function mostrarMina(tipo, termo, gravadas = 0) {
+    const el = $('#mina-aviso');
+    el.className = `mina-aviso mina-${tipo}`;
+    el.hidden = false;
+    if (tipo === 'minerando') {
+      el.innerHTML = `<span class="mina-roda" aria-hidden="true"></span><div><b>Aguarde, a sua oferta está sendo minerada agora.</b><br>Iremos te avisar para recarregar a página quando suas ofertas de “${esc(termo)}” estiverem prontas!</div>`;
+    } else if (tipo === 'pronto') {
+      el.innerHTML = `<div><b>Suas ofertas de “${esc(termo)}” estão prontas!</b><br>${gravadas.toLocaleString('pt-BR')} oferta${gravadas === 1 ? '' : 's'} encontrada${gravadas === 1 ? '' : 's'} nas lojas.</div><button class="btn btn-primary" type="button" id="mina-recarregar">Recarregar a página</button>`;
+      $('#mina-recarregar').addEventListener('click', () => location.reload());
+      document.title = `✓ Ofertas prontas | ${document.title.replace(/^✓ Ofertas prontas \| /, '')}`;
+    } else if (tipo === 'sem') {
+      el.innerHTML = `<div><b>As lojas não têm “${esc(termo)}” com desconto agora.</b><br>Confira se está escrito certo ou tente outras palavras.</div>`;
+    } else {
+      el.innerHTML = '<div><b>Muitas buscas novas agora.</b><br>Tente de novo em alguns minutos para minerarmos essa oferta.</div>';
+    }
+    if (DATA.total === 0 && state.q) renderGrid();
+  }
+  function esconderMina() { clearTimeout(minaTimer); minaTermo = ''; $('#mina-aviso').hidden = true; }
+  function tratarMina(r, termo) {
+    if (termo !== minaTermo) return;
+    if (r.status === 'minerando') {
+      mostrarMina('minerando', termo);
+      if (++minaTentativas > 60) return esconderMina(); // 5 minutos: não fica perguntando para sempre
+      minaTimer = setTimeout(() => fetch(`/api/offers/termo?q=${encodeURIComponent(termo)}`).then(x => x.json()).then(d => tratarMina(d, termo)).catch(() => {}), 5000);
+    } else if (r.status === 'pronto') { mostrarMina('pronto', termo, r.gravadas); toast(`Suas ofertas de “${termo}” estão prontas! Recarregue a página.`); }
+    else if (r.status === 'sem_ofertas') mostrarMina('sem', termo);
+    else if (r.status === 'limite') mostrarMina('limite', termo);
+    else esconderMina();
+  }
+  // Busca confirmada: conta nos mais pesquisados e, se o termo é novo, começa a minerar
+  function pedirMineracao(q) {
+    q = String(q || '').trim();
+    clearTimeout(minaAuto);
+    if (!q || q.startsWith('#') || minaJaPedidos.has(q.toLowerCase())) return;
+    minaJaPedidos.add(q.toLowerCase());
+    clearTimeout(minaTimer);
+    minaTermo = q; minaTentativas = 0;
+    fetch('/api/offers/termo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ q }) })
+      .then(r => r.json()).then(d => tratarMina(d, q)).catch(() => {});
+  }
+
   $('#search-form').addEventListener('submit', e => {
     e.preventDefault();
     if (buscaPerfil($('#q').value)) { window.Comunidade.buscar($('#q').value.trim(), true); return; }
     setFilter({ q: $('#q').value.trim() });
+    pedirMineracao($('#q').value);
     $('#ofertas').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -736,6 +780,10 @@
     }
     if (pedidoAtual !== ctrl) return;
     carregou = true;
+    // Busca sem resultado: se a pessoa parou de digitar, já minera (sem esperar ela confirmar)
+    clearTimeout(minaAuto);
+    if (state.q && !PAGINA_SEO && (!DATA.total || DATA.aproximado)) { const q = state.q; minaAuto = setTimeout(() => { if (state.q === q) pedirMineracao(q); }, 1500); }
+    if (minaTermo && state.q.toLowerCase() !== minaTermo.toLowerCase()) esconderMina();
     if (state.pagina !== DATA.pagina) { state.pagina = DATA.pagina; writeUrl(); }
     renderHero();
     render();
@@ -744,6 +792,16 @@
   // ── Início ───────────────────────────────────────────────────────────────
   $('#year').textContent = new Date().getFullYear();
   readUrl();
+  if (state.q && !PAGINA_SEO) setTimeout(() => pedirMineracao(state.q), 300); // abriu um link de busca
+  // Mais pesquisados e mais clicados, no fim da página
+  fetch('/api/offers/populares').then(r => r.json()).then(p => {
+    if (!p.buscados?.length && !p.clicados?.length) return;
+    $('#pop-buscados').innerHTML = p.buscados.map(b => `<a class="chip" href="/?q=${encodeURIComponent(b.termo)}">${esc(b.termo)}</a>`).join('');
+    $('#pop-buscados').parentElement.hidden = !p.buscados.length;
+    $('#pop-clicados').innerHTML = p.clicados.map(o => `<li><a href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"><span>${esc(o.produto)}</span><b class="num">R$ ${brl(o.preco_atual)}</b></a></li>`).join('');
+    $('#pop-clicados').parentElement.hidden = !p.clicados.length;
+    $('#populares').hidden = false;
+  }).catch(() => {});
   if (new URLSearchParams(location.search).has('expirada')) {
     $('#expired-notice').hidden = false;
     history.replaceState(null, '', location.pathname);

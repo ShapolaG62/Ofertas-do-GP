@@ -100,6 +100,32 @@ async function mineStore(store, terms, s, log, { varredura = false } = {}) {
   return { store: store.id, found, saved, status: lastStatus, message: lastMessage };
 }
 
+// Um termo pedido pela busca do site, na hora: não depende da rodada automática nem mexe na situação das lojas no painel.
+async function minerarTermo(query) {
+  const s = settings.getAll();
+  const ligadas = settings.getEnabledStores();
+  const cat = (settings.getSearchTerms().find(t => t.query === query) || {}).cat || null;
+  const lojas = STORES.filter(st => st.automatic && ligadas[st.id] !== false && st.isReady(s).ready);
+  const r = await Promise.all(lojas.map(async store => {
+    try {
+      const espera = new Promise((_, nao) => setTimeout(() => nao(new Error('demorou demais')), 90 * 1000).unref?.());
+      const res = await Promise.race([store.search(query, s), espera]);
+      if (res.status !== 'ok') return { encontradas: 0, gravadas: 0, falhou: 1 };
+      let gravadas = 0;
+      for (const deal of res.deals) {
+        try { if (offers.saveDeal(store, deal, { settings: s, catHint: cat })) gravadas++; } catch { /* oferta com problema: segue */ }
+      }
+      return { encontradas: res.deals.length, gravadas, falhou: 0 };
+    } catch (err) {
+      console.error(`[MINER] termo "${query}" em ${store.name}: ${err.message}`);
+      return { encontradas: 0, gravadas: 0, falhou: 1 };
+    }
+  }));
+  const soma = k => r.reduce((a, x) => a + x[k], 0);
+  console.log(`[MINER] termo da busca "${query}": ${soma('gravadas')} gravadas`);
+  return { encontradas: soma('encontradas'), gravadas: soma('gravadas'), falhas: soma('falhou') };
+}
+
 // Com centenas de termos, cada rodada busca só um lote e a próxima continua de onde esta parou.
 // Assim a lista inteira é percorrida várias vezes por dia sem disparar centenas de buscas de uma vez.
 function nextBatch(all) {
@@ -182,4 +208,5 @@ function startScheduler() {
   schedule(10 * 1000);
 }
 
-module.exports = { statusPublico, runMining, pararMineracao, getState, startScheduler };
+module.exports = {
+  minerarTermo, statusPublico, runMining, pararMineracao, getState, startScheduler };

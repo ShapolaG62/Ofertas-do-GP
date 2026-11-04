@@ -273,7 +273,14 @@ function lojasSemAfiliado(s) {
   if (!s.kabum_afiliado) faltam.push('KaBuM!');
   if (!(s.aliexpress_app_key && s.aliexpress_app_secret && s.aliexpress_tracking_id)) faltam.push('AliExpress');
   if (!(s.shopee_app_id && s.shopee_app_secret) && !s.shopee_afiliado_id) faltam.push('Shopee');
+  if (!s.magalu_store) faltam.push('Magalu');
   return faltam;
+}
+// Lojas em que a pessoa ganha comissão: é delas que o agendamento e as sugestões escolhem
+const LOJA_ID = { Amazon: 'amazon', 'Mercado Livre': 'mercadolivre', 'KaBuM!': 'kabum', AliExpress: 'aliexpress', Shopee: 'shopee', Magalu: 'magalu' };
+function lojasComAfiliado(s) {
+  const faltam = lojasSemAfiliado(s);
+  return Object.entries(LOJA_ID).filter(([nome]) => !faltam.includes(nome)).map(([, id]) => id);
 }
 
 function publico(c) {
@@ -283,6 +290,7 @@ function publico(c) {
 }
 
 module.exports = {
+  lojasComAfiliado,
   liberarPlano,
   linkParaPostar,
   renovarSessao,

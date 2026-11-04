@@ -97,6 +97,16 @@ router.get('/api/cliente/painel', (req, res) => {
   });
 });
 
+// Sugestões para postar hoje: o mesmo critério do agendamento, com a comissão e o cupom de cada produto
+router.get('/api/cliente/sugestoes', (req, res) => {
+  const ids = agenda.melhoresOfertas(12, new Set(), req.cliente.id, clientes.config(req.cliente.id));
+  const dados = new Map(require('../busca-ofertas').ativas().filter(o => ids.includes(o.id)).map(o => [o.id, o]));
+  res.json({ itens: ids.map(id => dados.get(id)).filter(Boolean).map(o => ({
+    id: o.id, store_id: o.store_id, plataforma: o.plataforma, produto: o.produto, preco_atual: o.preco_atual, preco_anterior: o.preco_anterior,
+    desconto_pct: o.desconto_pct, cupom_texto: o.cupom_texto || null, comissao_pct: o.comissao_pct, comissao_extra_pct: o.comissao_extra_pct,
+  })) });
+});
+
 router.get('/api/cliente/grupo-automacao', (req, res) => {
   const ga = require('../grupo-automacao');
   res.json({ webhook: ga.enderecoWebhook(req.cliente.id), controle: clientes.config(req.cliente.id).wa_grupo_controle || '', ajuda: ga.AJUDA });

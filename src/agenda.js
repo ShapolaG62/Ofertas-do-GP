@@ -91,26 +91,32 @@ function filtroDoDono(s) {
   };
 }
 
-// Melhores ofertas do momento: maior desconto (até 80% — acima disso costuma ser erro de preço da loja),
-// categorias variadas, nada que o mesmo dono tenha postado nos últimos 7 dias, respeitando os filtros do dono.
+// Melhores ofertas do momento: as de maior nota (chance de venda + comissão extra, sem descontos suspeitos), categorias
+// variadas, nada que o mesmo dono tenha postado nos últimos 7 dias, respeitando os filtros do dono. Para o afiliado, só
+// das lojas em que ele já tem link de afiliado (postar das outras não rende comissão).
 function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid)) {
   const passa = filtroDoDono(s);
-  const rows = db.all(
-    `SELECT o.id, o.categoria, o.store_id, o.produto FROM offers o
-     WHERE o.oculto = 0 AND o.fonte = 'auto' AND o.desconto_pct BETWEEN 15 AND 80 AND o.last_seen_at > datetime('now', '-12 hours')
-       AND o.imagem LIKE 'https://%'
-       AND NOT EXISTS (SELECT 1 FROM social_posts p WHERE p.offer_id = o.id AND p.ok = 1 AND p.cliente_id IS ?
-                       AND p.created_at > datetime('now', '-7 days'))
-     ORDER BY o.desconto_pct DESC, o.link_clicks DESC LIMIT 1500`, cid).filter(passa);
+  const pagas = cid ? new Set(clientes.lojasComAfiliado(s)) : null;
+  const limite = Date.now() - 12 * 3600000;
+  const postadas = new Set(db.all(`SELECT DISTINCT offer_id FROM social_posts WHERE ok = 1 AND cliente_id IS ? AND created_at > datetime('now', '-7 days')`, cid).map(r => r.offer_id));
+  let rows = require('./busca-ofertas').paraPostar(o => !postadas.has(o.id) && !excluir.has(o.id) && passa(o)
+    && Date.parse(`${String(o.last_seen_at).replace(' ', 'T')}Z`) > limite && (!pagas?.size || pagas.has(o.store_id))).slice(0, 1500);
+  // Só com foto pública (a postagem sai com a imagem)
+  const comFoto = new Set();
+  for (let i = 0; i < rows.length; i += 500) {
+    const ids = rows.slice(i, i + 500).map(r => r.id);
+    for (const r of db.all(`SELECT id FROM offers WHERE id IN (${ids.map(() => '?').join(',')}) AND imagem LIKE 'https://%'`, ...ids)) comFoto.add(r.id);
+  }
+  rows = rows.filter(r => comFoto.has(r.id));
   const out = [], cats = new Set();
   for (const r of rows) {           // primeiro uma por categoria
     if (out.length >= qtd) break;
-    if (excluir.has(r.id) || cats.has(r.categoria) || !offers.isActive(r.id)) continue;
+    if (cats.has(r.categoria) || !offers.isActive(r.id)) continue;
     cats.add(r.categoria); out.push(r.id);
   }
   for (const r of rows) {           // completa se faltar
     if (out.length >= qtd) break;
-    if (!excluir.has(r.id) && !out.includes(r.id) && offers.isActive(r.id)) out.push(r.id);
+    if (!out.includes(r.id) && offers.isActive(r.id)) out.push(r.id);
   }
   return out;
 }

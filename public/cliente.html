@@ -11,19 +11,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261239">
-<script src="/js/tema.js?v=20261239"></script>
-<script src="/js/app-nativo.js?v=20261239"></script>
-<script src="/js/dialogo.js?v=20261239"></script>
-<script src="/js/modelo-post.js?v=20261239"></script>
-<script src="/js/aceite-parceiro.js?v=20261239"></script>
-<script src="/js/capi-minerando.js?v=20261239" defer></script>
-<script src="/js/cadastro-auto.js?v=20261239" defer></script>
-<script src="/js/voltar.js?v=20261239" data-padrao="/" defer></script>
-<script src="/js/rodape-legal.js?v=20261239" defer></script>
-<script src="/js/instalar-app.js?v=20261239" defer></script>
-<script src="/js/cookies.js?v=20261239"></script>
-<script src="/js/seletor.js?v=20261239" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261241">
+<script src="/js/tema.js?v=20261241"></script>
+<script src="/js/app-nativo.js?v=20261241"></script>
+<script src="/js/dialogo.js?v=20261241"></script>
+<script src="/js/modelo-post.js?v=20261241"></script>
+<script src="/js/aceite-parceiro.js?v=20261241"></script>
+<script src="/js/capi-minerando.js?v=20261241" defer></script>
+<script src="/js/cadastro-auto.js?v=20261241" defer></script>
+<script src="/js/voltar.js?v=20261241" data-padrao="/" defer></script>
+<script src="/js/rodape-legal.js?v=20261241" defer></script>
+<script src="/js/instalar-app.js?v=20261241" defer></script>
+<script src="/js/cookies.js?v=20261241"></script>
+<script src="/js/seletor.js?v=20261241" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -96,7 +96,19 @@
           <button type="button" data-dias="30">30 dias</button>
         </div>
       </div>
+      <div class="panel-card" id="cli-passos-card" hidden>
+        <div class="cli-sug-topo"><h2>Primeiros passos</h2><span class="cli-passos-n" id="cli-passos-n"></span></div>
+        <div class="cli-passos-barra"><i id="cli-passos-barra"></i></div>
+        <ul class="cli-passos" id="cli-passos"></ul>
+      </div>
       <div class="cli-kpis" id="cli-kpis"></div>
+      <div class="panel-card">
+        <div class="cli-sug-topo">
+          <div><h2>Sugestões para postar hoje</h2><p class="cli-hint" id="cli-sug-sub" style="margin:0">As mais prováveis de vender, das lojas em que você tem link de afiliado.</p></div>
+          <div class="cli-sug-acoes"><button class="btn btn-sm" type="button" id="cli-sug-novas">Trocar</button><button class="btn btn-primary btn-sm" type="button" id="cli-sug-todas">Pôr todas na fila</button></div>
+        </div>
+        <div class="cli-sug" id="cli-sug"></div>
+      </div>
       <div class="cli-dash-grid">
         <div class="panel-card"><h3 class="cli-card-tit">Envio de mensagens</h3><p class="cli-hint" id="cli-graf-sub"></p><div class="cli-graf" id="cli-graf"></div></div>
         <div class="panel-card"><h3 class="cli-card-tit">Conexões</h3><ul class="cli-conexoes" id="cli-conexoes"></ul></div>
@@ -319,6 +331,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/cliente.js?v=20261239" defer></script>
+<script src="/js/cliente.js?v=20261241" defer></script>
 </body>
 </html>

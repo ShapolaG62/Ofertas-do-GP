@@ -78,6 +78,7 @@
     await OfertouAceiteParceiro.pedir(me.parceiro_pendente, '/api/cliente/aceite-parceiro', '/api/cliente/sair');
     await carregarConfig();
     carregarPainel().catch(() => {});
+    carregarSugestoes().catch(() => {});
   }
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
@@ -95,6 +96,7 @@
   async function carregarPainel() {
     const d = await api(`/api/cliente/painel?dias=${DIAS}`);
     const prontas = d.redes.filter(r => r.pronta);
+    mostrarPassos(d);
     const periodo = DIAS === 1 ? 'hoje' : `nos últimos ${DIAS} dias`;
     $('#cli-kpis').innerHTML = [
       kpi('enviados', 'Mensagens enviadas', num(d.enviados), d.falhas ? `${num(d.falhas)} com falha ${periodo}` : periodo, 'verde'),
@@ -119,6 +121,75 @@
       : linha(r.pronta, r.nome, r.pronta ? 'Conectado' : r.motivo || 'não configurado')).join('')
       + (d.sem_afiliado.length ? linha(false, 'Links de afiliado', `faltam: ${d.sem_afiliado.join(', ')}`) : linha(true, 'Links de afiliado', 'todas as lojas configuradas'));
   }
+  // Primeiros passos: o que falta para a ferramenta começar a render (some quando está tudo feito)
+  function mostrarPassos(d) {
+    const zap = d.redes.find(r => r.id === 'whatsapp');
+    const lojasFeitas = 6 - d.sem_afiliado.length;
+    const passos = [
+      { ok: lojasFeitas > 0, tit: 'Coloque seus links de afiliado', det: d.sem_afiliado.length ? `${lojasFeitas} de 6 lojas · faltam: ${d.sem_afiliado.join(', ')}` : 'Todas as lojas', tab: 'afiliados' },
+      { ok: d.redes.some(r => r.pronta), tit: 'Conecte uma rede', det: 'WhatsApp, Telegram, Facebook ou X', tab: 'redes' },
+      ...(zap?.pronta ? [{ ok: d.grupos_whatsapp > 0, tit: 'Escolha os grupos do WhatsApp', det: `${d.grupos_whatsapp} grupo(s) escolhido(s)`, tab: 'redes' }] : []),
+      { ok: Boolean(d.ultimo_envio), tit: 'Faça a primeira postagem', det: 'Use as sugestões abaixo ou escolha em Ver ofertas', link: '/postagens' },
+      { ok: Boolean(d.agenda.ativa), tit: 'Ligue o agendamento', det: 'O site posta sozinho nos seus horários', tab: 'agenda' },
+    ];
+    const feitos = passos.filter(p => p.ok).length;
+    $('#cli-passos-card').hidden = feitos === passos.length;
+    $('#cli-passos-n').textContent = `${feitos} de ${passos.length}`;
+    $('#cli-passos-barra').style.width = `${(feitos / passos.length) * 100}%`;
+    $('#cli-passos').innerHTML = passos.map(p => `<li class="${p.ok ? 'ok' : ''}"><span class="cli-passo-marca">${p.ok ? '✓' : ''}</span>
+      <div><b>${esc(p.tit)}</b><small>${esc(p.det)}</small></div>
+      ${p.ok ? '' : p.link ? `<a class="btn btn-sm" href="${p.link}">Fazer</a>` : `<button class="btn btn-sm" type="button" data-ir="${p.tab}">Fazer</button>`}</li>`).join('');
+  }
+  $('#cli-passos').addEventListener('click', e => {
+    const b = e.target.closest('[data-ir]');
+    if (b) document.querySelector(`.tabs-line [data-tab="${b.dataset.ir}"]`)?.click();
+  });
+
+  // Sugestões para postar hoje
+  let SUG = [], sugPula = 0;
+  const reais = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const pct = v => `${String(Math.round(Number(v) * 10) / 10).replace('.', ',')}%`;
+  async function carregarSugestoes() {
+    const d = await api('/api/cliente/sugestoes');
+    SUG = d.itens || [];
+    sugPula = 0;
+    mostrarSugestoes();
+  }
+  function mostrarSugestoes() {
+    const lista = SUG.slice(sugPula, sugPula + 6);
+    $('#cli-sug-todas').hidden = $('#cli-sug-novas').hidden = !lista.length;
+    $('#cli-sug-novas').hidden = SUG.length <= 6;
+    $('#cli-sug').innerHTML = lista.map(o => `<div class="cli-sug-item" data-id="${o.id}">
+        <div class="cli-sug-foto"><img src="/img/o/${o.id}.jpg" alt="" loading="lazy"><span>-${Math.round(o.desconto_pct)}%</span></div>
+        <small>${esc(o.plataforma)}</small><b title="${esc(o.produto)}">${esc(o.produto)}</b>
+        <div class="cli-sug-preco">R$ ${reais(o.preco_atual)}</div>
+        <div class="cli-sug-tags">${o.comissao_extra_pct > 0 ? `<em class="extra">Extra +${pct(o.comissao_extra_pct)}</em>` : o.comissao_pct ? `<em>Comissão ${pct(o.comissao_pct)}</em>` : ''}${o.cupom_texto ? '<em>🎟️ Cupom</em>' : ''}</div>
+        <button class="btn btn-sm" type="button" data-fila="${o.id}">Pôr na fila</button>
+      </div>`).join('') || '<p class="cli-hint">Nenhuma sugestão agora. Confira se os seus links de afiliado estão preenchidos ou se o agendamento não está filtrando demais.</p>';
+  }
+  async function porNaFila(ids) {
+    const r = await fetch('/api/postagens/fila', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itens: ids.map(offer_id => ({ offer_id })) }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || `Erro ${r.status}`);
+    toast(`${d.adicionados} na fila. Total: ${d.pendentes}. Ela sai nos horários do agendamento.`);
+    carregarPainel().catch(() => {});
+  }
+  $('#cli-sug').addEventListener('click', async e => {
+    const b = e.target.closest('[data-fila]');
+    if (!b) return;
+    b.disabled = true;
+    try { await porNaFila([Number(b.dataset.fila)]); b.textContent = 'Na fila ✓'; }
+    catch (err) { b.disabled = false; toast(err.message); }
+  });
+  $('#cli-sug-todas').addEventListener('click', async e => {
+    const ids = SUG.slice(sugPula, sugPula + 6).map(o => o.id);
+    e.target.disabled = true;
+    try { await porNaFila(ids); $$('#cli-sug [data-fila]').forEach(b => { b.disabled = true; b.textContent = 'Na fila ✓'; }); }
+    catch (err) { toast(err.message); }
+    e.target.disabled = false;
+  });
+  $('#cli-sug-novas').addEventListener('click', () => { sugPula = sugPula + 6 >= SUG.length ? 0 : sugPula + 6; mostrarSugestoes(); });
+
   $('#cli-periodo').addEventListener('click', e => {
     const b = e.target.closest('[data-dias]');
     if (!b) return;

@@ -487,10 +487,15 @@ function aquecer() { setTimeout(() => { try { montar(); } catch (e) { console.er
 
 // Ofertas no ar (lista em memória), para outras partes do site que precisam varrer todas (ex.: a vitrine)
 const ativas = () => lista().lista;
+// Candidatas a postagem: sem desconto suspeito, ordenadas pela nota (chance de venda + comissão extra)
+function paraPostar(passa = () => true) {
+  return ativas().filter(o => !o._susp && o.fonte === 'auto' && o.desconto_pct >= 15 && o.desconto_pct <= 80 && passa(o))
+    .sort((a, b) => notaComissao(b) - notaComissao(a));
+}
 // Ofertas com desconto suspeito, para o Painel conferir (as maiores primeiro)
 function suspeitas(limite = 200) {
   const l = ativas().filter(o => o._susp);
   return { total: l.length, itens: l.sort((a, b) => b.desconto_pct - a.desconto_pct).slice(0, limite).map(o => ({ ...publico(o), motivo: o._susp })) };
 }
 
-module.exports = { buscar, mix, aquecer, montar, ativas, suspeitas, POR_PAGINA };
+module.exports = { buscar, mix, aquecer, montar, ativas, suspeitas, paraPostar, POR_PAGINA };

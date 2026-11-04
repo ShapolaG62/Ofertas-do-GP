@@ -45,7 +45,7 @@
     aviso.className = 'ck-aviso';
     aviso.setAttribute('role', 'dialog');
     aviso.setAttribute('aria-label', 'Aviso de cookies');
-    aviso.innerHTML = `<p><b>Cookies.</b> Usamos cookies essenciais para manter você conectado e o site seguro. Com a sua permissão, também usamos cookies de <b>estatísticas</b> (Google Analytics) e de <b>publicidade</b> (Google AdSense). Você pode mudar a escolha quando quiser em "Preferências de cookies", no rodapé. <a href="/privacidade#cookies">Saiba mais</a>.</p>
+    aviso.innerHTML = `<p><b>Cookies.</b> Usamos os essenciais e, com a sua permissão, os de <b>estatísticas</b> (Google Analytics) e <b>publicidade</b> (Google AdSense). Mude quando quiser no rodapé. <a href="/privacidade#cookies">Saiba mais</a>.</p>
       <div class="ck-botoes"><button type="button" class="ck-nao">Só os essenciais</button><button type="button" class="ck-sim">Aceitar todos</button></div>`;
     document.body.appendChild(aviso);
     const fechar = sim => { gravar(sim); aviso.remove(); aviso = null; };

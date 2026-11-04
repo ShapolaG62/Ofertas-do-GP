@@ -111,6 +111,7 @@ function pagina(partes, base) {
   html = html.replace('</head>', () => `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>
 <script>window.OFERTOU_PAGINA=${JSON.stringify({ caminho: p.caminho, cat: p.filtro.cat || '', tipo: p.filtro.tipo || '', q: p.filtro.q || '' }).replace(/</g, '\\u003c')}</script>
 </head>`);
+  troca(/<main>/, '<main class="pagina-seo">');
   troca(/<h1>[\s\S]*?<\/h1>/, `<h1>${h(p.marca ? p.nome : `Ofertas de ${curto}`)}</h1>`);
   troca(/<p class="lead">[\s\S]*?<\/p>/, `<p class="lead">${h(intro)}</p>`);
   troca(/<div class="grid" id="grid" aria-live="polite"><\/div>/, `<div class="grid" id="grid" aria-live="polite">${r.itens.map(cartao).join('')}</div>`);

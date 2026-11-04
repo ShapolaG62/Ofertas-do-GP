@@ -128,11 +128,15 @@ router.get('/o/:id', (req, res) => {
 router.get('/oferta/:slug', (req, res) => {
   const id = Number(String(req.params.slug).split('-').pop());
   const offer = id && offers.isActive(id)
-    ? db.get('SELECT affiliate_url, original_url, loja_id FROM offers WHERE id = ?', id)
+    ? db.get('SELECT affiliate_url, original_url, loja_id, store_id, categoria FROM offers WHERE id = ?', id)
     : null;
   if (!offer) return res.redirect('/?expirada=1');
-  db.run('UPDATE offers SET link_clicks = link_clicks + 1 WHERE id = ?', id);
-  require('../admin-painel').registrarClique();
+  // Robôs (prévia de link, buscadores) não contam como clique
+  const robo = ROBO_PREVIA.test(String(req.get('user-agent') || '')) || /bot|crawl|spider|slurp|headless/i.test(String(req.get('user-agent') || ''));
+  if (!robo) {
+    db.run('UPDATE offers SET link_clicks = link_clicks + 1 WHERE id = ?', id);
+    require('../admin-painel').registrarClique(offer);
+  }
   // Conquistas: ida à loja pelo link do site (do admin) de quem está logado.
   if (!offer.loja_id) { try { const perfis = require('../perfis'); perfis.incrementar(perfis.donoDe(req), 'idas_loja'); } catch { /* sem perfil */ } }
   res.redirect(offer.affiliate_url || offer.original_url);

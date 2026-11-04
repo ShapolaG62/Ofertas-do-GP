@@ -5,8 +5,13 @@ const miner = require('./miner');
 
 // Cliques nas ofertas por dia (para o gráfico; o total por oferta continua em offers.link_clicks)
 db.db.exec(`CREATE TABLE IF NOT EXISTS cliques_dia (dia TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)`);
-function registrarClique() {
-  try { db.run(`INSERT INTO cliques_dia (dia, n) VALUES (date('now'), 1) ON CONFLICT(dia) DO UPDATE SET n = n + 1`); } catch { /* opcional */ }
+// ... e por loja e categoria (Painel → resumo: o que dá resultado)
+db.db.exec(`CREATE TABLE IF NOT EXISTS cliques_loja_dia (dia TEXT NOT NULL, store_id TEXT NOT NULL, categoria TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (dia, store_id, categoria))`);
+function registrarClique(o = null) {
+  try {
+    db.run(`INSERT INTO cliques_dia (dia, n) VALUES (date('now'), 1) ON CONFLICT(dia) DO UPDATE SET n = n + 1`);
+    if (o) db.run(`INSERT INTO cliques_loja_dia (dia, store_id, categoria, n) VALUES (date('now'), ?, ?, 1) ON CONFLICT(dia, store_id, categoria) DO UPDATE SET n = n + 1`, o.store_id, o.categoria || 'outros');
+  } catch { /* opcional */ }
 }
 
 const r2 = v => Math.round((Number(v) || 0) * 100) / 100;
@@ -57,6 +62,9 @@ function dashboard() {
     afiliados = { disponivel: r2(g.reduce((s, p) => s + p.disponivel, 0)), a_liberar: r2(g.reduce((s, p) => s + p.a_liberar, 0)), pode_sacar: g.filter(p => p.pode_sacar).map(p => p.nome) };
   } catch { /* sem ganhos */ }
 
+  let saude = null;
+  try { saude = require('./admin-saude').saude(); } catch (e) { console.error('[SAUDE]', e.message); }
+
   // Pendências
   const pend = {
     cadastros: usuarios.pendentes || 0,
@@ -105,6 +113,7 @@ function dashboard() {
     WHERE p.pago_em IS NOT NULL ORDER BY p.pago_em DESC LIMIT 5`);
 
   return {
+    saude,
     kpis: {
       ofertas: { no_ar: ofertasNoAr, novas24h: ofertasNovas.d1 || 0, novas7d: ofertasNovas.d7 || 0 },
       cliques: { d7: cliques7, var: variacao(cliques7, cliquesAnt), total: cliquesTotal },

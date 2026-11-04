@@ -2796,3 +2796,11 @@ textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5;
 .modelo-proprio { grid-column: 1 / -1; margin: 0; color: var(--ink-3); font-size: 12.5px; }
 .modelo-previa { margin: 6px 0 0; padding: 12px 14px; min-height: 220px; border-radius: 12px; background: #0b141a; color: #e9edef; font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 @media (max-width: 760px) { .modelos-escolha { grid-template-columns: minmax(0, 1fr); } }
+
+/* Links de categorias e tipos no fim da página (também é o caminho do Google até as páginas de categoria) */
+.explore-links { margin: 28px 0 8px; }
+.explore-links h2 { font-size: 15px; margin: 0 0 10px; color: var(--ink-2, var(--ink)); }
+.explore-links > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.explore-links a { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); font-size: 13px; font-weight: 600; text-decoration: none; }
+.explore-links a:hover { border-color: var(--brand); color: var(--brand); }
+.explore-links a span { color: var(--ink-3); font-weight: 500; font-size: 12px; }

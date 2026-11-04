@@ -48,6 +48,7 @@
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80)}-${o.id}`;
 
   // ── Estado (espelhado na URL para links compartilháveis) ─────────────────
+  const PAGINA_SEO = window.OFERTOU_PAGINA || null; // /ofertas/celulares etc. (src/paginas/ofertas-seo.js)
   const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', ordem: 'destaques', pagina: 1 };
   // Resposta do servidor para os filtros atuais: { total, pagina, paginas, itens, contagens, grupos, resumo }
   let DATA = { total: 0, pagina: 1, paginas: 1, itens: [], contagens: { lojas: {}, parceiros: 0, categorias: {}, categorias_total: 0, subcategorias: {} }, grupos: null, resumo: null };
@@ -71,11 +72,14 @@
     state.cupom = (p.get('cupom') || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30);
     state.ordem = p.get('ordem') || 'destaques';
     state.pagina = Math.max(1, Number(p.get('pagina')) || 1);
+    if (PAGINA_SEO) for (const k of ['cat', 'tipo', 'q']) if (!p.has(k)) state[k] = PAGINA_SEO[k] || '';
   }
 
   function writeUrl() {
     const p = new URLSearchParams();
-    for (const k of ['loja', 'cat', 'tipo', 'q']) if (state[k]) p.set(k, state[k]);
+    // Na página de categoria/marca: enquanto os filtros dela não mudam, o endereço continua o dela
+    const naPagina = PAGINA_SEO && ['cat', 'tipo', 'q'].every(k => (state[k] || '') === (PAGINA_SEO[k] || ''));
+    for (const k of ['loja', 'cat', 'tipo', 'q']) if (state[k] && !(naPagina && k !== 'loja')) p.set(k, state[k]);
     if (state.min != null) p.set('min', state.min);
     if (state.max != null) p.set('max', state.max);
     if (state.desc) p.set('desc', state.desc);
@@ -84,7 +88,8 @@
     if (state.ordem !== 'destaques') p.set('ordem', state.ordem);
     if (state.pagina > 1) p.set('pagina', state.pagina);
     const qs = p.toString();
-    history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+    const base = naPagina ? PAGINA_SEO.caminho : PAGINA_SEO ? '/' : location.pathname;
+    history.replaceState(null, '', qs ? `${base}?${qs}` : base);
   }
 
   function setFilter(changes, { keepPage = false } = {}) {
@@ -742,7 +747,7 @@
     $('#expired-notice').hidden = false;
     history.replaceState(null, '', location.pathname);
   }
-  $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join('');
+  if (!$('#grid').children.length) $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join(''); // (a página de categoria já vem com as ofertas)
 
   fetch('/api/settings/public').then(r => r.json()).then(applySettings).catch(() => {});
   // Perfil + Minha conta + Sair num botão só (com a foto e o nome do perfil), para qualquer pessoa logada:

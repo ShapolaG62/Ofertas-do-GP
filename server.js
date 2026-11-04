@@ -197,18 +197,30 @@ app.get('/grupo/entrar', (req, res) => {
   res.redirect(302, g ? g.link : '/');
 });
 
+// Páginas de categoria, tipo de produto e marca (src/paginas/ofertas-seo.js)
+app.get(/^\/ofertas\/([a-z0-9-]+(?:\/[a-z0-9-]+)?)\/?$/, (req, res, next) => {
+  if (!access.canSeeOffers(req)) return res.redirect('/conta');
+  const seo = require('./src/paginas/ofertas-seo');
+  const p = seo.pagina(req.params[0].split('/'), seo.baseDe(req));
+  if (!p) return next();
+  res.type('html').setHeader('Cache-Control', 'no-cache');
+  res.send(p.html);
+});
+// Navegadores e robôs pedem /favicon.ico mesmo com o ícone indicado nas páginas
+app.get('/favicon.ico', (req, res) => res.redirect(301, '/images/favicon-32x32.png'));
+
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send([
     'User-agent: *',
     'Allow: /',
-    ...['/admin', '/api/', '/o/', '/grupo', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
+    ...['/admin', '/api/', '/o/', '/oferta/', '/grupo', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
     '',
     `Sitemap: ${baseUrl(req)}/sitemap.xml`,
     '',
   ].join('\n'));
 });
 app.get('/sitemap.xml', (req, res) => {
-  const base = baseUrl(req);
+  const base = String(require('./src/settings').get('site_url') || '').replace(/\/+$/, '') || baseUrl(req);
   const hoje = new Date().toISOString().slice(0, 10);
   const urls = [['/', 'hourly', '1.0'], ['/conta', 'weekly', '0.8'], ['/ajuda', 'monthly', '0.6'], ['/anuncie', 'monthly', '0.5'], ['/assinar', 'monthly', '0.5'], ['/privacidade', 'yearly', '0.3']]
     .map(([p, freq, pri]) => ({ loc: base + p, freq, pri }));
@@ -217,6 +229,7 @@ app.get('/sitemap.xml', (req, res) => {
       WHERE lj.oculta = 0 AND u.status = 'active' ORDER BY lj.id LIMIT 5000`);
     for (const l of lojas) urls.push({ loc: `${base}/loja/${encodeURIComponent(l.slug)}`, freq: 'daily', pri: '0.6' });
   } catch { /* sem lojas parceiras */ }
+  try { for (const u of require('./src/paginas/ofertas-seo').enderecos()) urls.push({ loc: base + u.p, freq: 'daily', pri: u.pri }); } catch { /* sem ofertas */ }
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -277,7 +290,8 @@ app.get('*', (req, res) => {
   // Arquivos (com extensão) e caminhos ocultos (.env, .git...) inexistentes respondem 404.
   if (path.extname(req.path) || /\/\./.test(req.path)) return res.status(404).send('Não encontrado');
   if (!access.canSeeOffers(req)) return res.redirect('/conta');
-  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  // Endereço que não existe: mostra as ofertas, mas responde 404 (com 200 o Google trata como página duplicada)
+  res.status(req.path === '/' ? 200 : 404).sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 app.use((err, req, res, next) => {

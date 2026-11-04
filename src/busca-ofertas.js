@@ -4,6 +4,7 @@
 // ordenações; agrupamento por tipo; contagens de cada loja/categoria/tipo ignorando o próprio filtro.
 const offers = require('./offers');
 const db = require('./db');
+const { classifyCategory } = require('./categorize');
 
 const CATEGORIAS = {
   informatica: 'Informática', celulares: 'Celulares, tablets e relógios', games: 'Games',
@@ -37,6 +38,41 @@ function lista() {
   }
   return CACHE;
 }
+// Desconto suspeito: não some do site, mas não vira destaque e cai na ordem (o motivo aparece no Painel → Ofertas).
+const FALSIFICADO = /\b(replica|primeira linha|1:1|similar ao original|tipo original|estilo original)\b/;
+function suspeita(o, h, n) {
+  const d = o.desconto_pct, p = o.preco_atual;
+  if (o.fonte !== 'auto') return '';
+  if (FALSIFICADO.test(n)) return 'Parece réplica';
+  if (/\bfalso\b|nao funciona|para exibicao|\bdummy\b/.test(n)) return 'Produto de exibição';
+  if ((n.match(/\biphone \d+/g) || []).length >= 2 && !ACESSORIO_BUSCA.test(n)) return 'Vários modelos no mesmo anúncio';
+  if (d >= 85) return `Desconto de ${d}%`;
+  if (p < 15 && d >= 70) return `${d}% em produto de R$ ${p.toFixed(2).replace('.', ',')}`;
+  // "De" que nunca vimos: há 7 dias ou mais de leituras e o preço nunca chegou nem a 40% do "de"
+  if (h && d >= 60 && Date.parse(`${String(h.desde).replace(' ', 'T')}Z`) <= Date.now() - 7 * 86400000 && h.max30 * 2.5 < o.preco_anterior) {
+    return 'Preço "de" nunca visto em 7+ dias';
+  }
+  return '';
+}
+// Anúncios com o nome idêntico: fica só o mais barato, com "Menor preço entre N anúncios". Comissão extra e lojas
+// parceiras ficam sempre (o afiliado pode preferir o anúncio que paga mais).
+function semRepetidos(rows) {
+  const melhor = new Map();
+  for (const o of rows) {
+    if (o.loja_slug || o.comissao_extra_pct > 0 || o._k.length < 16) continue;
+    const m = melhor.get(o._k);
+    if (!m) melhor.set(o._k, { o, n: 1 });
+    else { m.n++; if (o.preco_atual < m.o.preco_atual) m.o = o; }
+  }
+  return rows.filter(o => {
+    if (o.loja_slug || o.comissao_extra_pct > 0 || o._k.length < 16) return true;
+    const m = melhor.get(o._k);
+    if (m.o !== o) return false;
+    if (m.n > 1) o.iguais = m.n;
+    return true;
+  });
+}
+
 function montar() {
   const sig = assinatura();
   if (sig === CACHE.sig) { CACHE.at = Date.now(); return CACHE; }
@@ -50,14 +86,14 @@ function montar() {
   // Menor preço dos últimos 30 dias: refeito a cada 10 min (o selo não precisa ser ao segundo)
   if (Date.now() - HIST.at > 10 * 60 * 1000) {
     const m = new Map();
-    for (const h of db.all(`SELECT offer_id, MIN(price) AS min30, COUNT(*) AS n FROM price_history
+    for (const h of db.all(`SELECT offer_id, MIN(price) AS min30, MAX(price) AS max30, MIN(checked_at) AS desde, COUNT(*) AS n FROM price_history
                             WHERE checked_at >= datetime('now', '-30 days') GROUP BY offer_id`)) m.set(h.offer_id, h);
     HIST = { at: Date.now(), m };
   }
   const hist = HIST.m;
   const seteDias = Date.now() - 7 * 86400000;
   const memo = new Map();
-  const rows = brutas.map(o => {
+  let rows = brutas.map(o => {
     const h = hist.get(o.id);
     // O que depende só do nome e da data de entrada (nome normalizado, "em alta", acessório) é guardado e só
     // refeito quando o nome muda: era ~1 s de cada montagem
@@ -65,7 +101,7 @@ function montar() {
     if (!m || m.p !== o.produto || m.ca !== o.created_at) {
       const n = normalizar(o.produto);
       // k: chave das ordens por nome (só letras e números; nome só com símbolos ou letras decoradas vai para o fim)
-      m = { p: o.produto, ca: o.created_at, n, k: n.replace(/[^a-z0-9 ]+/g, '').trim(), c: quando(o.created_at),
+      m = { p: o.produto, ca: o.created_at, n, k: n.replace(/[^a-z0-9 ]+/g, '').trim(), t: ` ${n.replace(/[^a-z0-9]+/g, ' ').trim()} `, c: quando(o.created_at),
         alta: EM_ALTA.some(k => n.includes(k)), acess: ACESSORIO.test(n.slice(0, 40)) };
     }
     memo.set(o.id, m);
@@ -78,10 +114,11 @@ function montar() {
       menor_preco_30d: h && h.n >= 2 && c <= seteDias && o.preco_atual <= h.min30 ? 1 : 0,
       comissao_pct: o.comissao_pct ?? null, comissao_extra_pct: o.comissao_extra_pct > 0 ? o.comissao_extra_pct : 0,
       ...(o.cupom_codigo ? { cupom: o.cupom_codigo, cupom_texto: o.cupom_texto, preco_sem_cupom: o.preco_sem_cupom } : {}),
-      _n: n, _k: m.k, _c: c, _alta: m.alta, _acess: m.acess,
+      _n: n, _k: m.k, _t: m.t, _c: c, _alta: m.alta, _acess: m.acess, _susp: suspeita(o, h, n),
     };
   });
   NOMES = memo;
+  rows = semRepetidos(rows);
   rows.sort((a, b) => (b._c - a._c) || b.id - a.id); // mais novas primeiro (ordem base, como antes)
   for (const o of rows) o._s = atratividade(o);
   // Resumo do topo da página: total, lojas, maior desconto, última conferência e a oferta de maior desconto
@@ -89,9 +126,10 @@ function montar() {
   const lojas = new Set();
   for (const o of rows) {
     lojas.add(o.store_id);
-    if (o.desconto_pct > maior) maior = o.desconto_pct;
+    if (!o._susp && o.desconto_pct > maior) maior = o.desconto_pct;
     if (o.last_seen_at > ultima) ultima = o.last_seen_at; // mesmo formato de texto: compara direto
-    if (o.desconto_pct >= 30 && (!melhor || o.desconto_pct > melhor.desconto_pct)) melhor = o;
+    if (!o._susp && o.desconto_pct >= 30 && o.preco_atual >= 40 && (LOJA_CONFIANCA[o.store_id] ?? 0) >= 6 && !o._acess
+      && (!melhor || o.desconto_pct > melhor.desconto_pct)) melhor = o;
   }
   RESPOSTAS.clear();
   CACHE = { sig, at: Date.now(), lista: rows, ordenadas: {}, resumo: {
@@ -101,9 +139,39 @@ function montar() {
   } };
   return CACHE;
 }
-const publico = o => { const { _n, _k, _c, _s, _alta, _acess, ...r } = o; return r; };
+const publico = o => { const { _n, _k, _t, _c, _s, _alta, _acess, _susp, ...r } = o; return r; };
 // Quem visita não vê a comissão de afiliado (só o admin e os afiliados com a ferramenta de postagem)
 const semComissao = o => { const { comissao_pct, comissao_extra_pct, ...r } = publico(o); return r; };
+
+// ── Termos da busca: cada palavra casa com o INÍCIO de uma palavra do nome ("tv" não casa com "ativo", "lg" não casa
+// com "algodão"), aceita sinônimos e plural; número precisa ser o número inteiro ("15" não casa com "150").
+const PALAVRAS_VAZIAS = new Set(['de', 'da', 'do', 'das', 'dos', 'para', 'pra', 'com', 'e', 'a', 'o', 'em', 'p']);
+const SINONIMOS = {
+  tv: ['televisao', 'televisor'], televisao: ['tv', 'televisor'], celular: ['smartphone', 'iphone'], smartphone: ['celular'],
+  geladeira: ['refrigerador'], refrigerador: ['geladeira'], notebook: ['laptop'], laptop: ['notebook'],
+  ps5: ['playstation 5'], ps4: ['playstation 4'], fone: ['headphone', 'headset', 'earbud'], airfryer: ['air fryer'],
+  microondas: ['micro ondas'], relogio: ['smartwatch'], camisa: ['camiseta'], tenis: ['sapatenis'],
+};
+function termosDe(q) {
+  return normalizar(q).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(w => w && !PALAVRAS_VAZIAS.has(w)).map(w => {
+    const alts = [w, ...(SINONIMOS[w] || [])];
+    if (w.length > 4 && w.endsWith('s')) alts.push(w.slice(0, -1)); // plural
+    return alts;
+  });
+}
+function temPalavra(t, w) {
+  const alvo = ` ${w}`;
+  let i = t.indexOf(alvo);
+  if (!/\d$/.test(w)) return i >= 0;
+  while (i >= 0) { // número: o caractere seguinte não pode ser outro dígito
+    const c = t[i + alvo.length];
+    if (!(c >= '0' && c <= '9')) return true;
+    i = t.indexOf(alvo, i + 1);
+  }
+  return false;
+}
+const casaTodos = (o, termos) => termos.every(alts => alts.some(w => temPalavra(o._t, w)));
+const quantosCasam = (o, termos) => termos.reduce((n, alts) => n + (alts.some(w => temPalavra(o._t, w)) ? 1 : 0), 0);
 
 // ── Filtros ──
 function ler(q) {
@@ -117,12 +185,12 @@ function ler(q) {
   };
 }
 function filtro(f, pular = '') {
-  const palavras = f.q ? normalizar(f.q).split(/\s+/).filter(Boolean) : [];
+  const termos = f.q ? termosDe(f.q) : [];
   return o => {
     if (pular !== 'loja' && f.loja && (f.loja === 'parceiros' ? !o.loja_slug : o.store_id !== f.loja)) return false;
     if (pular !== 'cat' && f.cat && o.categoria !== f.cat) return false;
     if (pular !== 'tipo' && f.tipo && o.subcategoria !== f.tipo) return false;
-    if (palavras.length && !palavras.every(w => o._n.includes(w))) return false;
+    if (termos.length && !casaTodos(o, termos)) return false;
     if (f.min != null && o.preco_atual < f.min) return false;
     if (f.max != null && o.preco_atual > f.max) return false;
     if (f.desc && o.desconto_pct < f.desc) return false;
@@ -157,7 +225,7 @@ function rankSub(s) {
 const ORDENS = {
   destaques: (a, b) => (b._s - a._s) || (b._c - a._c),
   recentes: (a, b) => (b._c - a._c) || b.id - a.id,
-  desconto: (a, b) => b.desconto_pct - a.desconto_pct,
+  desconto: (a, b) => (a._susp ? 1 : 0) - (b._susp ? 1 : 0) || b.desconto_pct - a.desconto_pct,
   'menor-preco': (a, b) => a.preco_atual - b.preco_atual,
   'maior-preco': (a, b) => b.preco_atual - a.preco_atual,
   // Nome: compara o nome já normalizado (sem acento, minúsculo); o comparador de idioma levava ~1 s com 100 mil ofertas
@@ -169,13 +237,48 @@ const ORDENS = {
 };
 // Relevância na busca: primeiro o produto cujo nome começa com o termo, depois quem traz o termo logo no início,
 // por último acessórios ("Organizador de geladeira").
-function relevancia(o, frase, palavras) {
+const ACESSORIO_BUSCA = /\b(capa|capinha|case|cover|pelicula|suporte|cabo|adesivo|organizador|refil|peca|pecas|reposicao|carregador|skin|protetor|plate|base|prateleira|forro|borracha|painel|rack|tampa|placa frontal|controle remoto)\b/;
+const BRINQUEDO = /\b(brinquedo|miniatura|boneca|infantil|de brincar|capsulas?)\b/;
+const CONSOLE = /\bconsole\b/;
+function relevancia(o, frase, palavras, contexto) {
   const t = o._n;
   const i = t.indexOf(frase);
   let s = i === 0 ? 100 : i > 0 && i <= 30 ? 60 : i > 0 ? 30 : 10;
   if (i > 0 && /\b(para|de|do|da|p\/)\s$/.test(t.slice(Math.max(0, i - 5), i))) s -= 25;
-  if (t.split(' ')[0] === palavras[0]) s += 20;
+  const primeira = t.split(' ')[0];
+  if (primeira === palavras[0] || `${primeira}s` === palavras[0]) s += 20;
+  // A busca é pelo produto, não pelo que acompanha: quem pede "geladeira" quer geladeira, não brinquedo nem peça
+  if (contexto.intencao && o.categoria === contexto.intencao) s += 25;
+  if (!contexto.querAcessorio && ACESSORIO_BUSCA.test(t)) s -= 70;
+  if (o._susp) s -= 35;
+  if (!contexto.querBrinquedo && (o.categoria === 'brinquedos' || BRINQUEDO.test(t))) s -= 45;
+  if (contexto.intencao === 'games' && CONSOLE.test(t)) s += 40;
   return s;
+}
+function contextoDaBusca(frase) {
+  const c = /\b(ps[345]|playstation|xbox|nintendo|switch)\b/.test(frase) ? 'games' : classifyCategory(frase);
+  return {
+    intencao: c && c !== 'outros' ? c : null,
+    querAcessorio: ACESSORIO_BUSCA.test(frase),
+    querBrinquedo: BRINQUEDO.test(frase) || c === 'brinquedos',
+  };
+}
+// Variações do mesmo produto (cor, tamanho): no máximo uma por página nas primeiras páginas da busca
+function espalhar(l, por) {
+  const LIMITE = por * 5;
+  const saida = [];
+  let fila = l.slice(0, LIMITE);
+  while (fila.length) {
+    const vistos = new Set(), pagina = [], adiadas = [];
+    for (const o of fila) {
+      const k = o._n.slice(0, 26);
+      if (pagina.length < por && !vistos.has(k)) { pagina.push(o); vistos.add(k); } else adiadas.push(o);
+    }
+    if (pagina.length < por) pagina.push(...adiadas.splice(0, por - pagina.length));
+    saida.push(...pagina);
+    fila = adiadas;
+  }
+  return saida.concat(l.slice(LIMITE));
 }
 
 // Lista inteira já ordenada (feita uma vez por montagem): filtrar uma lista ordenada mantém a ordem, então cada
@@ -216,20 +319,32 @@ function buscar(query, { comissao = false } = {}) {
   const chaveResp = comissao ? null : JSON.stringify(f);
   if (chaveResp && RESPOSTAS.has(chaveResp)) return RESPOSTAS.get(chaveResp);
 
-  let l;
+  let l, aproximado = false;
+  const termos = f.q ? termosDe(f.q) : [];
+  const doTermo = termos.length ? todas.filter(o => casaTodos(o, termos)) : todas;
+  const semTermo = filtro({ ...f, q: '' });
   if (f.q && (f.ordem === 'recentes' || f.ordem === 'destaques')) {
     // Busca: primeiro o que mais combina com o termo; empate → a mais atrativa (ou a mais nova)
-    l = todas.filter(filtro(f));
+    l = doTermo.filter(semTermo);
     const frase = normalizar(f.q).trim().replace(/\s+/g, ' ');
     const palavras = frase.split(' ');
-    const nota = new Map(l.map(o => [o.id, relevancia(o, frase, palavras)]));
+    // Sem nada com todas as palavras ("tênis nike"): mostra o que tem parte delas, avisando que são parecidas
+    if (!l.length && termos.length > 1) {
+      l = todas.filter(o => semTermo(o) && quantosCasam(o, termos) > 0);
+      aproximado = l.length > 0;
+    }
+    const contexto = contextoDaBusca(frase);
+    const nota = new Map(l.map(o => [o.id, relevancia(o, frase, palavras, contexto) + (aproximado ? 60 * quantosCasam(o, termos) : 0)]));
     l.sort((a, b) => nota.get(b.id) - nota.get(a.id) || ORDENS[f.ordem](a, b));
+    if (f.ordem === 'destaques') l = espalhar(l, f.por);
   } else if (comissao && f.ordem === 'destaques') {
     // Admin, equipe e afiliados: as de comissão extra vêm primeiro, junto das mais atrativas
     l = variar(ordenadaComissao(f.sem).filter(filtro(f)), f.por);
   } else {
     const ordem = ORDENS[f.ordem] ? f.ordem : 'destaques';
-    l = ordenada(ordem, ORDENS[ordem]).filter(filtro(f));
+    l = ordenada(ordem, ORDENS[ordem]);
+    const ids = termos.length ? new Set(doTermo.map(o => o.id)) : null;
+    l = l.filter(o => (!ids || ids.has(o.id)) && semTermo(o));
     if (ordem === 'destaques') l = variar(l, f.por);
   }
 
@@ -241,10 +356,9 @@ function buscar(query, { comissao = false } = {}) {
   const lojas = {}, categorias = {}, subcategorias = {};
   let parceiros = 0, categoriasTotal = 0, comissaoExtra = 0, comCupom = 0;
   const codigos = {};
-  const palavras = f.q ? normalizar(f.q).split(/\s+/).filter(Boolean) : [];
-  for (const o of todas) {
+  for (const o of aproximado ? todas : doTermo) {
     // Filtros comuns a todas as contagens
-    if (palavras.length && !palavras.every(w => o._n.includes(w))) continue;
+    if (aproximado && !quantosCasam(o, termos)) continue;
     if (f.min != null && o.preco_atual < f.min) continue;
     if (f.max != null && o.preco_atual > f.max) continue;
     if (f.desc && o.desconto_pct < f.desc) continue;
@@ -269,7 +383,7 @@ function buscar(query, { comissao = false } = {}) {
     grupos = {};
     for (const o of l) { const k = `${o.categoria}|${o.subcategoria}`; grupos[k] = (grupos[k] || 0) + 1; }
   }
-  const resp = { total: l.length, pagina, paginas, por: f.por, itens: itens.map(comissao ? publico : semComissao), contagens, grupos, resumo };
+  const resp = { total: l.length, aproximado, pagina, paginas, por: f.por, itens: itens.map(comissao ? publico : semComissao), contagens, grupos, resumo };
   if (chaveResp) {
     if (RESPOSTAS.size >= 300) RESPOSTAS.delete(RESPOSTAS.keys().next().value);
     RESPOSTAS.set(chaveResp, resp);
@@ -313,12 +427,16 @@ function variar(l, por) {
   const saida = [];
   let fila = topo;
   while (fila.length) {
-    const cat = {}, loja = {}, vistos = new Set(), adiadas = [];
+    const cat = {}, loja = {}, tipo = {}, tema = {}, vistos = new Set(), adiadas = [];
     const pagina = [];
     for (const o of fila) {
       const chave = o._n.slice(0, 28);
-      if (pagina.length < por && !vistos.has(chave) && (cat[o.categoria] || 0) < Math.ceil(por / 4) && (loja[o.store_id] || 0) < Math.ceil(por / 2)) {
+      // Também no máximo 2 do mesmo tema (1ª palavra: "berço", "smartwatch") e 3 do mesmo tipo de produto por página
+      const palavra = o._k.split(' ')[0], sub = o.subcategoria !== 'Outros' ? `${o.categoria}|${o.subcategoria}` : o.id;
+      if (pagina.length < por && !vistos.has(chave) && (cat[o.categoria] || 0) < Math.ceil(por / 4) && (loja[o.store_id] || 0) < Math.ceil(por / 2)
+        && (tema[palavra] || 0) < 2 && (tipo[sub] || 0) < 3) {
         pagina.push(o); vistos.add(chave); cat[o.categoria] = (cat[o.categoria] || 0) + 1; loja[o.store_id] = (loja[o.store_id] || 0) + 1;
+        tema[palavra] = (tema[palavra] || 0) + 1; tipo[sub] = (tipo[sub] || 0) + 1;
       } else adiadas.push(o);
     }
     if (!pagina.length) { saida.push(...adiadas); break; }
@@ -338,6 +456,7 @@ function pontuacao(o) {
   const d = o.desconto_pct;
   const p = o.preco_atual;
   let s = Math.min(d, 70);
+  if (o._susp) s -= 40; // desconto suspeito: não entra nos destaques nem nas postagens automáticas
   s += 12 * Math.log2(1 + (o.link_clicks || 0));
   if (o.menor_preco_30d) s += 15;
   s += LOJA_CONFIANCA[o.store_id] ?? 2;
@@ -368,5 +487,10 @@ function aquecer() { setTimeout(() => { try { montar(); } catch (e) { console.er
 
 // Ofertas no ar (lista em memória), para outras partes do site que precisam varrer todas (ex.: a vitrine)
 const ativas = () => lista().lista;
+// Ofertas com desconto suspeito, para o Painel conferir (as maiores primeiro)
+function suspeitas(limite = 200) {
+  const l = ativas().filter(o => o._susp);
+  return { total: l.length, itens: l.sort((a, b) => b.desconto_pct - a.desconto_pct).slice(0, limite).map(o => ({ ...publico(o), motivo: o._susp })) };
+}
 
-module.exports = { buscar, mix, aquecer, montar, ativas, POR_PAGINA };
+module.exports = { buscar, mix, aquecer, montar, ativas, suspeitas, POR_PAGINA };

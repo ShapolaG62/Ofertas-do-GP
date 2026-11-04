@@ -15,7 +15,9 @@ const router = express.Router();
 // Página de ofertas: o servidor filtra e devolve só a página pedida (24 ofertas) + os números dos filtros
 router.get('/api/offers/busca', (req, res) => {
   res.setHeader('Cache-Control', 'private, no-cache');
-  res.json(require('../busca-ofertas').buscar(req.query, { comissao: require('./postagens').veComissao(req) }));
+  const r = require('../busca-ofertas').buscar(req.query, { comissao: require('./postagens').veComissao(req) });
+  if (req.query.q && r.pagina === 1) require('../buscas-termos').registrar(req.query.q, r.aproximado ? 0 : r.total);
+  res.json(r);
 });
 // Postagens: "melhor de cada categoria"
 router.get('/api/offers/mix', (req, res) => {

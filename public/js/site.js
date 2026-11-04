@@ -257,6 +257,7 @@
         <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}</div>
         <h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
         ${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low">Menor preço em 30 dias</span>' : ''}
+        ${o.iguais > 1 ? `<span class="badge-iguais">Menor preço entre ${o.iguais} anúncios</span>` : ''}
         <div class="card-prices">
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
           <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}${o.cupom ? '<small class="card-com-cupom">com cupom</small>' : ''}</div>
@@ -285,7 +286,7 @@
     const pageItems = DATA.itens;
 
     const title = state.tipo || (state.cat ? CATEGORIES[state.cat] : state.loja === 'parceiros' ? 'Lojas parceiras' : state.loja ? STORE_BY_ID[state.loja]?.name : 'Todas as ofertas');
-    $('#results-title').textContent = state.q ? `Resultados para “${state.q}”` : title;
+    $('#results-title').textContent = !state.q ? title : DATA.aproximado ? `Nada exato para “${state.q}”: veja parecidos` : `Resultados para “${state.q}”`;
     $('#results-count').textContent = `${DATA.total.toLocaleString('pt-BR')} oferta${DATA.total === 1 ? '' : 's'}`;
 
     if (!pageItems.length) {
@@ -441,7 +442,7 @@
     el.href = `/oferta/${slug(best)}`;
     el.innerHTML = `<img src="/img/o/${best.id}.jpg" alt="">
       <div class="featured-body">
-        <div class="featured-label">Maior desconto agora · -${Math.round(best.desconto_pct)}%</div>
+        <div class="featured-label">Destaque agora · -${Math.round(best.desconto_pct)}%</div>
         <div class="featured-title">${esc(best.produto)}</div>
         <div class="featured-price num">de <s>R$ ${brl(best.preco_anterior)}</s> por <b>R$ ${brl(best.preco_atual)}</b> · ${esc(STORE_BY_ID[best.store_id]?.name || best.plataforma)}</div>
       </div><svg width="20" height="20"><use href="#i-arrow"/></svg>`;

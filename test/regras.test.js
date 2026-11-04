@@ -134,6 +134,9 @@ test('busca, repetidos e descontos suspeitos', () => {
 
   const cafe = b('cafeteira expresso').itens;
   assert.equal(cafe.length, 2, 'cada anúncio aparece, mesmo com o nome igual');
+  const barata = cafe.find(o => o.preco_atual === 450), cara = cafe.find(o => o.preco_atual === 500);
+  assert.equal(barata.iguais, 2, 'o mais barato tem o selo');
+  assert.equal(cara.iguais, undefined, 'o outro não');
 
   const motivos = Object.fromEntries(busca.suspeitas(50).itens.map(o => [o.produto, o.motivo]));
   assert.match(motivos['Relógio Masculino Barato Demais'], /95%/);

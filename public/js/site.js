@@ -257,6 +257,7 @@
         <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}</div>
         <h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
         ${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low">Menor preço em 30 dias</span>' : ''}
+        ${o.iguais > 1 ? `<span class="badge-iguais">Menor preço entre ${o.iguais} anúncios</span>` : ''}
         <div class="card-prices">
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
           <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}${o.cupom ? '<small class="card-com-cupom">com cupom</small>' : ''}</div>

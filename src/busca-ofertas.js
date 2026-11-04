@@ -54,6 +54,21 @@ function suspeita(o, h, n) {
   }
   return '';
 }
+// Anúncios com o nome idêntico: todos aparecem; o mais barato (ou os empatados) ganha "Menor preço entre N anúncios"
+function marcarIguais(rows) {
+  const grupos = new Map();
+  for (const o of rows) {
+    if (o.loja_slug || o._k.length < 16) continue;
+    const g = grupos.get(o._k);
+    if (!g) grupos.set(o._k, { n: 1, menor: o.preco_atual });
+    else { g.n++; if (o.preco_atual < g.menor) g.menor = o.preco_atual; }
+  }
+  for (const o of rows) {
+    const g = !o.loja_slug && grupos.get(o._k);
+    if (g && g.n > 1 && o.preco_atual === g.menor) o.iguais = g.n;
+  }
+}
+
 function montar() {
   const sig = assinatura();
   if (sig === CACHE.sig) { CACHE.at = Date.now(); return CACHE; }
@@ -99,6 +114,7 @@ function montar() {
     };
   });
   NOMES = memo;
+  marcarIguais(rows);
   rows.sort((a, b) => (b._c - a._c) || b.id - a.id); // mais novas primeiro (ordem base, como antes)
   for (const o of rows) o._s = atratividade(o);
   // Resumo do topo da página: total, lojas, maior desconto, última conferência e a oferta de maior desconto

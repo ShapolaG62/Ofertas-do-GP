@@ -151,14 +151,15 @@ function caminho(nome) {
   return fs.existsSync(p) ? p : null;
 }
 
+// Chamada de tempos em tempos: faz o backup do dia, se ainda não existe e já passou da hora marcada
+function conferir(hora = horaSp()) {
+  if (rodando || hora < HORA_MINIMA) return null;
+  if (fs.existsSync(path.join(DIR, `ofertas-${hojeSp()}.db.gz`))) return null;
+  return fazer().then(r => { if (r.ok) console.log(`[BACKUP] ${r.nome}: ${(r.tamanho / 1048576).toFixed(1)} MB em ${r.segundos} s`); return r; });
+}
 function iniciar() {
-  const conferir = () => {
-    if (rodando || horaSp() < HORA_MINIMA) return;
-    if (fs.existsSync(path.join(DIR, `ofertas-${hojeSp()}.db.gz`))) return;
-    fazer().then(r => { if (r.ok) console.log(`[BACKUP] ${r.nome}: ${(r.tamanho / 1048576).toFixed(1)} MB em ${r.segundos} s`); });
-  };
   setTimeout(conferir, 5 * 60 * 1000); // depois do arranque (o servidor pode ter ficado desligado na hora marcada)
   setInterval(conferir, 30 * 60 * 1000);
 }
 
-module.exports = { fazer, estado, caminho, iniciar, limpar };
+module.exports = { fazer, conferir, estado, caminho, iniciar, limpar };

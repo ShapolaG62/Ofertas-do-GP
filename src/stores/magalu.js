@@ -24,6 +24,9 @@ function parse(produtos) {
     const atual = Number(pr.bestPrice || pr.fullPrice) || 0;
     const anterior = Number(pr.price) || 0;
     const cupom = cupomDe(p);
+    // A Magalu só aplica o cupom na revisão do pedido, com login: usa a mesma conta da KaBuM (do mesmo grupo). Se for
+    // outra, o cliente paga menos do que o site mostrou, nunca mais.
+    if (cupom?.tipo === 'valor') { cupom.texto = cupons.textoValor(cupom.valor); cupom.valor = cupons.valorNoPix(cupom.valor, atual, Number(pr.fullPrice)); }
     // Sem preço riscado só entra quando o cupom dá o desconto
     if (!p.id || !p.title || p.available === false || !(atual > 0) || (!(anterior > atual) && !cupom)) continue;
     // Caminho do produto sem o nome da loja: vira o link da Magalu (e o link de afiliado é montado a partir dele).
@@ -60,6 +63,7 @@ async function search(query, s) {
 }
 
 module.exports = {
+  parse,
   id: 'magalu',
   name: 'Magalu',
   method: 'Busca na sua loja Magazine Você',

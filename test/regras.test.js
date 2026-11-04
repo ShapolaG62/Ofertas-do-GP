@@ -65,6 +65,33 @@ test('cupom: compra mínima, limite e preço sem cupom', () => {
   assert.deepEqual([sem.preco_atual, sem.preco_anterior, sem.preco_sem_cupom], [90, 100, 100]);
 });
 
+test('cupom: preços confirmados nas páginas das lojas', () => {
+  const kabum2 = require('../src/stores/kabum');
+  const base = { title: 'Produto', available: true, images: [], product_link: 'x' };
+  const selo = d => ({ title: 'CUPOM X', name: 'X', description: d });
+  // KaBuM, produto 105104: "R$ 139,49 à vista no PIX c/ cupom" (10% sobre 154,99)
+  const [pct] = kabum2.parse([{ id: 1, attributes: { ...base, price: 182.34, old_price: 0, price_with_discount: 154.99, stamps: selo('Use o cupom KORUJAO e ganhe 10% OFF neste item') } }]);
+  assert.deepEqual([pct.preco_atual, pct.cupom_codigo, pct.cupom_texto], [139.49, 'KORUJAO', '10% OFF']);
+  // KaBuM, produto 644868: "R$ 415,00 à vista no PIX c/ cupom" = (521,11 - 60) x 0,9
+  const agora = Date.now() / 1000;
+  const [val] = kabum2.parse([{ id: 2, attributes: { ...base, price: 606.67, old_price: 0, price_with_discount: 546, offer: { price: 521.11, price_with_discount: 469, starts_at: agora - 100, ends_at: agora + 100, quantity_available: 5 }, stamps: selo('Use o cupom TOMA60 e ganhe R$ 60 OFF neste item') } }]);
+  assert.deepEqual([val.preco_atual, val.preco_sem_cupom, val.cupom_texto], [415, 469, 'R$ 60 OFF']);
+  // Mercado Livre, colchão: "R$ 1.128 com Cupom, ou R$ 1.178 em 10x": não desconta de novo
+  const incl = cupons.jaIncluso({ preco_atual: 1128, preco_anterior: 1929 }, { codigo: 'ML1', tipo: 'valor', valor: 50, texto: 'R$ 50 OFF' });
+  assert.deepEqual([incl.preco_atual, incl.preco_sem_cupom, incl.preco_anterior], [1128, 1178, 1929]);
+});
+
+test('cupom do Mercado Livre: rótulo colado no preço já inclui; à parte, ainda não', () => {
+  const cml = require('../src/cupons-ml');
+  assert.equal(cml.salvarCupons([{ id: '99', titulo: 'R$ 50 OFF', subtitulo: 'Em produtos de Loja X', tipo: 'valor', valor: 50, minimo: 100, limite: 50, ativo: true }]), 1);
+  const item = (id, preco, rotulo) => ({ produto: `MLB${id}`, link: `https://www.mercadolivre.com.br/p/MLB${id}`, nome: `Produto cupom ${id}`, preco, preco_anterior: 2000, rotulo });
+  assert.equal(cml.importarProdutos('99', [item(1000001, 1128, 'com Cupom'), item(1000002, 1000, 'R$ 50 OFF com Cupom'), item(1000003, 50, 'R$ 50 OFF com Cupom')]).gravados, 2);
+  const preco = id => db.get('SELECT preco_atual p, preco_sem_cupom s FROM offers WHERE store_product_id = ?', `MLB${id}`);
+  assert.deepEqual({ ...preco(1000001) }, { p: 1128, s: 1178 }, 'já inclui');
+  assert.deepEqual({ ...preco(1000002) }, { p: 950, s: 1000 }, 'à parte');
+  assert.equal(preco(1000003), undefined, 'abaixo da compra mínima');
+});
+
 test('oferta perde o cupom quando a leitura nova vem sem ele', () => {
   const deal = cupons.aplicar({ store_product_id: 'CUP1', produto: 'Monitor com cupom teste', preco_atual: 100, preco_anterior: 200, original_url: 'https://www.exemplo.test/c' }, { codigo: 'ESQUENTA', tipo: 'pct', valor: 10 });
   const s = { ...settings.getAll(), min_discount_pct: 5 };
@@ -161,6 +188,13 @@ test('backup: banco, fotos, pasta externa, restauração e limpeza', async () =>
   backup.limpar();
   const sobram = fs.readdirSync(dir).filter(x => x.startsWith('ofertas-')).length;
   assert.ok(sobram >= 8 && sobram <= 11, `sobraram ${sobram}`);
+
+  // Disparo automático: antes da hora nada; depois, faz uma vez só por dia
+  fs.rmSync(backup.caminho(r.nome));
+  assert.equal(backup.conferir(3), null, 'antes das 4 h não faz');
+  const auto = await backup.conferir(5);
+  assert.equal(auto.ok, true, 'depois da hora faz');
+  assert.equal(backup.conferir(5), null, 'já feito hoje: não repete');
 
   settings.set('backup_pasta_externa', path.join(externa, 'nao-existe'));
   const r2 = await backup.fazer();

@@ -15,7 +15,8 @@ function precoDe(a, agora = Date.now() / 1000) {
     && (o.quantity_available ?? 1) > 0;
   const atual = Number(relampago ? (o.new_price_with_discount || o.price_with_discount) : a.price_with_discount) || 0;
   const anterior = Number(relampago || a.is_prime ? a.price : a.old_price) || 0;
-  return { atual, anterior };
+  const aPrazo = Number(relampago ? o.price : a.price) || 0;
+  return { atual, anterior, aPrazo };
 }
 
 // Cupom no selo do produto: { title: "CUPOM FLASHNOVEMBRO", description: "Use o cupom FLASHNOVEMBRO e ganhe 10% OFF neste item…" }
@@ -36,8 +37,9 @@ function parse(lista) {
   for (const p of lista || []) {
     const a = p.attributes || {};
     if (!p.id || !a.title || a.available === false || a.is_pre_order) continue;
-    const { atual, anterior } = precoDe(a);
+    const { atual, anterior, aPrazo } = precoDe(a);
     const cupom = cupomDe(a);
+    if (cupom?.tipo === 'valor') { cupom.texto = cupons.textoValor(cupom.valor); cupom.valor = cupons.valorNoPix(cupom.valor, atual, aPrazo); }
     // Sem preço riscado só entra quando o cupom dá o desconto
     if (!(atual > 0) || (!(anterior > atual) && !cupom)) continue;
     const imagem = (a.images || []).find(u => /^https:\/\//.test(u)) || null;
@@ -70,6 +72,7 @@ async function search(query) {
 }
 
 module.exports = {
+  parse,
   id: 'kabum',
   name: 'KaBuM!',
   method: 'Busca do catálogo da loja',

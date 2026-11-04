@@ -2,7 +2,7 @@
 // A central de cupons só abre com a conta logada (e a leitura automática pelo servidor é barrada como "tráfego
 // suspeito"), então quem lê é a extensão do Chrome no navegador do admin e o Painel manda para cá:
 //  • cupons: todos os da central (desconto, compra mínima, limite, validade, se já está ativo na conta);
-//  • produtos: os marcados "com Cupom" na lista de cada cupom ativo (o link "Conferir"), com o preço sem o cupom.
+//  • produtos: os marcados "com Cupom" na lista de cada cupom ativo (o link "Conferir"), como aparecem no cartão.
 // Cada produto vira oferta pelo preço com o cupom (respeitando a compra mínima e o limite do cupom).
 const db = require('./db');
 const settings = require('./settings');
@@ -80,11 +80,14 @@ function importarProdutos(campanha, itens) {
     if (!id || !nome || !atual || !/(^|\.)mercadoli(vre|bre)\.com(\.br)?$/i.test(url.hostname)) continue;
     const desconto = descontoDoRotulo(it.rotulo, c);
     if (!desconto) continue;
-    const deal = cupons.aplicar({
+    // "R$ 1.128 com Cupom" (rótulo colado no preço): o preço já vem com o cupom. "R$ 50 OFF com Cupom" (à parte): ainda não.
+    const base = {
       store_product_id: `MLB${id[1]}`, produto: nome, preco_atual: atual, preco_anterior: preco(it.preco_anterior) || atual,
       imagem: /^https:\/\//.test(it.imagem || '') ? it.imagem : null,
       original_url: `${url.origin}${url.pathname}`,
-    }, { codigo: `ML${c.campanha}`, ...desconto, minimo: c.minimo, limite: c.limite, texto: nomeDoCupom(c) });
+    };
+    const dadosCupom = { codigo: `ML${c.campanha}`, ...desconto, minimo: c.minimo, limite: c.limite, texto: nomeDoCupom(c) };
+    const deal = /OFF/i.test(String(it.rotulo || '')) ? cupons.aplicar(base, dadosCupom) : cupons.jaIncluso(base, dadosCupom);
     if (!deal.cupom_codigo) continue; // abaixo da compra mínima: o cupom não vale para este produto
     const oid = offers.saveDeal(ml, deal, { settings: s });
     if (oid) { out.gravados++; out.ids.push(oid); }

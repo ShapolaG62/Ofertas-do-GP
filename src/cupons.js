@@ -32,6 +32,31 @@ function aplicar(deal, cupom) {
   };
 }
 
+// Cartão que já mostra o preço com o cupom (Mercado Livre: "R$ 1.128 com Cupom, ou R$ 1.178 em 10x"): não desconta de novo
+function jaIncluso(deal, cupom) {
+  const codigo = String(cupom?.codigo || '').trim().toUpperCase();
+  const atual = Number(deal?.preco_atual), valor = Number(cupom?.valor);
+  if (!deal || !CODIGO.test(codigo) || !(atual > 0) || !(valor > 0)) return deal;
+  let sem = cupom.tipo === 'pct' ? atual / (1 - Math.min(valor, 90) / 100) : atual + valor;
+  if (Number(cupom.limite) > 0 && sem - atual > Number(cupom.limite)) sem = atual + Number(cupom.limite);
+  sem = round2(sem);
+  return {
+    ...deal,
+    preco_anterior: Math.max(Number(deal.preco_anterior) || 0, sem),
+    preco_sem_cupom: sem,
+    cupom_codigo: codigo,
+    cupom_texto: cupom.texto ? String(cupom.texto).slice(0, 80) : null,
+  };
+}
+
+// Cupom em reais antes do desconto do Pix: a KaBuM! faz (preço a prazo - cupom) x (1 - Pix), confirmado na página da loja:
+// (521,11 - 60) x 0,9 = 415,00. Sobre o preço no Pix, o desconto que sobra é o cupom x (Pix / prazo).
+function valorNoPix(valor, noPix, aPrazo) {
+  const r = Number(noPix) / Number(aPrazo);
+  return r > 0 && r < 1 ? valor * r : valor;
+}
+const textoValor = v => `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 })} OFF`;
+
 // Cupons encontrados nas ofertas no ar (Painel → Mineração e filtro do site)
 function resumo() {
   const db = require('./db');
@@ -48,4 +73,4 @@ const CENTRAL_ML = 'https://www.mercadolivre.com.br/cupons';
 // Valor de {{cupom}} nas postagens
 const paraPost = (codigo, texto) => (!codigo ? '' : ehMl(codigo) ? `${texto || 'cupom'} (ative em Cupons no Mercado Livre)` : codigo);
 
-module.exports = { aplicar, resumo, ehMl, paraPost, CENTRAL_ML };
+module.exports = { aplicar, jaIncluso, valorNoPix, textoValor, resumo, ehMl, paraPost, CENTRAL_ML };

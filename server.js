@@ -31,6 +31,8 @@ auth.purgeExpiredSessions();
 offers.reclassifyAll().then(n => { if (n) console.log(`[CATEGORIAS] ${n} oferta(s) reclassificada(s)`); });
 
 const app = express();
+// Erro fora de um pedido (mineração, agenda...): registra para o Painel; o site não cai por causa de um deles
+process.on('unhandledRejection', err => { console.error('[SERVER] promessa sem tratamento:', err); try { require('./src/erros-site').registrar(err, 'tarefa em segundo plano'); } catch { /* */ } });
 app.disable('x-powered-by');
 
 // Pedidos lentos aparecem na janela do site, para achar gargalos na VPS (fotos baixadas pela 1ª vez não contam)
@@ -57,6 +59,10 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // só o próprio site pode exibir as páginas num quadro (o SAC dentro do painel)
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Só regras que não dependem da lista de scripts do site (anúncios do Google e Analytics continuam funcionando)
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self'; base-uri 'self'; object-src 'none'");
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self)');
+  if (req.secure) res.setHeader('Strict-Transport-Security', 'max-age=15552000');
   next();
 });
 
@@ -209,6 +215,18 @@ app.get(/^\/ofertas\/([a-z0-9-]+(?:\/[a-z0-9-]+)?)\/?$/, (req, res, next) => {
 // Navegadores e robôs pedem /favicon.ico mesmo com o ícone indicado nas páginas
 app.get('/favicon.ico', (req, res) => res.redirect(301, '/images/favicon-32x32.png'));
 
+// Para um monitor externo (UptimeRobot etc.) avisar quando o site cair: 200 se o banco responde. Sem dados sensíveis.
+app.get('/healthz', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  try { require('./src/db').get('SELECT 1 AS ok'); res.json({ ok: true }); }
+  catch { res.status(503).json({ ok: false }); }
+});
+// Sessão: resposta única para as páginas saberem se há login, sem pedir perfil, comunidade e alertas à toa (visitante)
+app.get('/api/sessao', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ logado: Boolean(require('./src/perfis').donoDe(req)) });
+});
+
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send([
     'User-agent: *',
@@ -296,6 +314,7 @@ app.get('*', (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('[SERVER]', err);
+  if ((err.status || 500) >= 500) require('./src/erros-site').registrar(err, `${req.method} ${req.path}`);
   res.status(err.status || 500).json({ error: 'Erro interno.' });
 });
 

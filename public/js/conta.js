@@ -30,7 +30,7 @@
       body: opts.raw ? opts.raw : opts.body ? JSON.stringify(opts.body) : undefined,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw Object.assign(new Error(data.error || `Erro ${res.status}`), { reativar: data.reativar || null });
+    if (!res.ok) throw Object.assign(new Error(data.error || `Erro ${res.status}`), { reativar: data.reativar || null, precisa_codigo: Boolean(data.precisa_codigo) });
     return data;
   }
 
@@ -59,6 +59,8 @@
       btn.disabled = true;
       try { await handler(form, formData(form)); } catch (err) {
         msg(form, err.message);
+        // Login em duas etapas do administrador: senha certa, falta o código
+        if (err.precisa_codigo && form.querySelector('#entrar-codigo')) { form.querySelector('#entrar-codigo').hidden = false; form.codigo.value = ''; form.codigo.focus(); }
         // Plano vencido: botão para reativar logo abaixo da mensagem
         if (err.reativar) {
           const a = document.createElement('a');

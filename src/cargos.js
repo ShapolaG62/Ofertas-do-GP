@@ -29,7 +29,8 @@ const PADRAO = {
 const COLUNA = { sac: 'pode_sac', moderar: 'pode_moderar', punir: 'pode_punir', postar: 'pode_postar', equipe: 'pode_equipe' };
 
 db.db.exec(`CREATE TABLE IF NOT EXISTS cargo_permissoes (cargo TEXT NOT NULL, permissao TEXT NOT NULL, PRIMARY KEY (cargo, permissao))`);
-for (const col of ['cargo TEXT', 'pode_punir INTEGER NOT NULL DEFAULT 0', 'pode_equipe INTEGER NOT NULL DEFAULT 0', 'pode_moderar INTEGER NOT NULL DEFAULT 0', 'pode_sac INTEGER NOT NULL DEFAULT 0']) {
+// (staff também aqui: este arquivo pode carregar antes de equipe.js, e com o banco novo o site não ligava)
+for (const col of ['staff INTEGER NOT NULL DEFAULT 0', 'cargo TEXT', 'pode_punir INTEGER NOT NULL DEFAULT 0', 'pode_equipe INTEGER NOT NULL DEFAULT 0', 'pode_moderar INTEGER NOT NULL DEFAULT 0', 'pode_sac INTEGER NOT NULL DEFAULT 0']) {
   try { db.db.exec(`ALTER TABLE users ADD COLUMN ${col}`); } catch { /* já existe */ }
 }
 // Primeira vez: grava o padrão

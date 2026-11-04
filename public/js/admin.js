@@ -13,7 +13,7 @@ async function api(path, opts = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && !path.includes('/login') && !path.includes('/password')) { showAuth(); throw new Error(data.error || 'Sessão expirada'); }
-  if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+  if (!res.ok) throw Object.assign(new Error(data.error || `Erro ${res.status}`), { dados: data });
   return data;
 }
 
@@ -50,8 +50,11 @@ $('#setup-form').addEventListener('submit', async e => {
 
 $('#login-form').addEventListener('submit', async e => {
   e.preventDefault();
-  try { await api('/api/admin/login', { method: 'POST', body: { password: e.target.password.value } }); e.target.reset(); showApp(); }
-  catch (err) { flash($('#auth-msg'), err.message, false); }
+  try { await api('/api/admin/login', { method: 'POST', body: { password: e.target.password.value, codigo: e.target.codigo.value.trim() || undefined } }); e.target.reset(); $('#login-codigo').classList.add('hidden'); showApp(); }
+  catch (err) {
+    flash($('#auth-msg'), err.message, false);
+    if (err.dados?.precisa_codigo) { $('#login-codigo').classList.remove('hidden'); e.target.codigo.value = ''; e.target.codigo.focus(); }
+  }
 });
 
 $('#logout').addEventListener('click', async () => { await api('/api/admin/logout', { method: 'POST' }); location.reload(); });
@@ -106,6 +109,53 @@ document.addEventListener('click', e => {
   const a = e.target.closest('[data-ir-sec]');
   if (a) { e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' }); }
 });
+// ── Login em duas etapas ──
+let F2 = { ativo: false };
+async function f2Carregar() {
+  F2 = await api('/api/admin/2fa');
+  $('#f2-status').innerHTML = F2.ativo
+    ? `<b style="color:var(--green)">Ligado.</b> O login pede a senha e o código do app. ${F2.codigos_restantes} código(s) de recuperação restante(s).`
+    : 'Desligado. Com ele ligado, quem descobrir a sua senha ainda não consegue entrar no painel.';
+  $('#f2-botao').textContent = F2.ativo ? 'Desligar' : 'Ativar';
+  $('#f2-botao').className = `btn ${F2.ativo ? 'danger' : 'primary'}`;
+  $('#f2-codigo-campo').classList.toggle('hidden', !F2.ativo);
+  $('#f2-form').codigo.required = F2.ativo;
+}
+document.querySelector('.tab[data-tab="account"]')?.addEventListener('click', () => f2Carregar().catch(() => {}));
+$('#f2-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    if (F2.ativo) {
+      await api('/api/admin/2fa/desligar', { method: 'POST', body: { senha: f.senha.value, codigo: f.codigo.value.trim() } });
+      globalMsg('Login em duas etapas desligado.');
+    } else {
+      const d = await api('/api/admin/2fa/iniciar', { method: 'POST', body: { senha: f.senha.value } });
+      $('#f2-qr-img').innerHTML = d.qr;
+      $('#f2-chave').textContent = d.segredo;
+      $('#f2-qr').classList.remove('hidden');
+      $('#f2-codigos').classList.add('hidden');
+      $('#f2-confirma').codigo.focus();
+    }
+    f.reset();
+    await f2Carregar();
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#f2-confirma').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    const d = await api('/api/admin/2fa/confirmar', { method: 'POST', body: { codigo: e.target.codigo.value.trim() } });
+    e.target.reset();
+    $('#f2-qr').classList.add('hidden');
+    $('#f2-qr-img').innerHTML = ''; $('#f2-chave').textContent = '';
+    $('#f2-lista').textContent = d.codigos.join('\n');
+    $('#f2-codigos').classList.remove('hidden');
+    globalMsg('Login em duas etapas ligado.');
+    await f2Carregar();
+  } catch (err) { globalMsg(err.message, false); }
+});
+$('#f2-copiar').addEventListener('click', () => navigator.clipboard?.writeText($('#f2-lista').textContent).then(() => globalMsg('Códigos copiados.')));
+
 // ── Backup do banco ──
 async function bkCarregar() {
   const b = await api('/api/admin/backups');
@@ -222,11 +272,14 @@ function mostrarDesempenho(s) {
   el.innerHTML = `<div class="dp-grade" style="margin-top:16px">
     <div class="panel"><h2>Cliques por loja</h2><p class="hint">Últimos 7 dias, sem contar robôs.</p>${barras(s.cliques.por_loja, x => loja(x.store_id))}</div>
     <div class="panel"><h2>Cliques por categoria</h2><p class="hint">Últimos 7 dias.</p>${barras(s.cliques.por_categoria, x => cat(x.categoria))}</div>
+    <div class="panel"><h2>De onde vêm os cliques</h2><p class="hint">Últimos 7 dias. "Acesso direto" inclui apps que não informam a origem.</p>${barras(s.origens || [], x => ORIGENS[x.origem] || x.origem)}</div>
     <div class="panel"><h2>Ofertas mais clicadas</h2><ul class="dp-lista">${s.cliques.top.map(o => `<li><span title="${esc(o.produto)}">${esc(o.produto)}</span><b>${o.link_clicks}</b></li>`).join('') || '<li class="hint">Nenhum clique ainda.</li>'}</ul></div>
     <div class="panel"><h2>O que mais buscam</h2><ul class="dp-lista">${s.buscas.mais.slice(0, 12).map(b => `<li><span>${esc(b.termo)}</span><b>${b.vezes}</b></li>`).join('') || '<li class="hint">Nenhuma busca registrada ainda.</li>'}</ul></div>
     <div class="panel"><h2>Buscam e não acham</h2><p class="hint">Minere esses termos para trazer o que estão procurando.</p><ul class="dp-lista">${s.buscas.sem.slice(0, 12).map(b => `<li><span>${esc(b.termo)} (${b.vezes}x)</span><button class="btn small" type="button" data-minerar="${esc(b.termo)}">Minerar</button></li>`).join('') || '<li class="hint">Nenhuma até agora.</li>'}</ul></div>
+    ${s.erros?.length ? `<div class="panel"><h2>Erros do servidor (24 h)</h2><ul class="dp-lista">${s.erros.map(x => `<li><span title="${esc(x.mensagem)}">${esc(x.rota || '')}: ${esc(x.mensagem)}</span><b>${x.vezes}</b></li>`).join('')}</ul></div>` : ''}
   </div>`;
 }
+const ORIGENS = { postagem: 'Postagens (grupos e redes)', site: 'Navegando no site', busca_site: 'Busca do site', pagina_categoria: 'Páginas de categoria', buscador: 'Google e buscadores', rede_social: 'Redes sociais', outro_site: 'Outros sites', direto: 'Acesso direto' };
 const CATEGORIES_NOMES = { informatica: 'Informática', celulares: 'Celulares', games: 'Games', audio_tv: 'TV e áudio', eletrodomesticos: 'Eletrodomésticos', cozinha: 'Cozinha', casa: 'Casa', ferramentas: 'Ferramentas', beleza: 'Beleza', saude: 'Saúde', esporte: 'Esporte', moda: 'Moda', brinquedos: 'Brinquedos', automotivo: 'Automotivo', pets: 'Pets', limpeza: 'Limpeza', alimentos: 'Alimentos', outros: 'Outros' };
 $('#dash-desempenho').addEventListener('click', async e => {
   const b = e.target.closest('[data-minerar]');

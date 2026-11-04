@@ -1,3 +1,5 @@
+// Há alguém logado? Um pedido só por página (o resto das telas pergunta aqui, em vez de receber 401)
+window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', { cache: 'no-store' }).then(r => r.json()).then(d => Boolean(d.logado)).catch(() => true)); })();
 /* Ofertou! — tema do site: Claro, Escuro ou Automático (segue o aparelho). A escolha fica salva neste navegador.
    Carregado no <head> sem "defer", para a página já abrir com o tema certo (sem piscar).
    - <html data-theme="light|dark"> quando a pessoa escolhe; sem o atributo, vale o tema do aparelho (site.css).

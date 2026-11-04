@@ -105,7 +105,7 @@ router.get('/img/recorte/:id.webp', async (req, res) => {
 const ROBO_PREVIA = /whatsapp|facebookexternalhit|facebot|telegrambot|twitterbot|slackbot|discordbot|linkedinbot|skypeuripreview|googlebot|bingbot|pinterest|vkshare|embedly|iframely|redditbot|applebot/i;
 router.get('/o/:id', (req, res) => {
   const id = Number(req.params.id) || 0;
-  if (!ROBO_PREVIA.test(String(req.get('user-agent') || ''))) return res.redirect(`/oferta/${id}`);
+  if (!ROBO_PREVIA.test(String(req.get('user-agent') || ''))) return res.redirect(`/oferta/${id}?via=post`);
   const o = id && offers.isActive(id) ? db.get('SELECT id, produto, preco_atual, preco_anterior, desconto_pct, store_id, cupom_codigo FROM offers WHERE id = ?', id) : null;
   if (!o) return res.redirect(`/oferta/${id}`);
   const site = String(require('../settings').get('site_url') || '').replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`;
@@ -135,7 +135,8 @@ router.get('/oferta/:slug', (req, res) => {
   const robo = ROBO_PREVIA.test(String(req.get('user-agent') || '')) || /bot|crawl|spider|slurp|headless/i.test(String(req.get('user-agent') || ''));
   if (!robo) {
     db.run('UPDATE offers SET link_clicks = link_clicks + 1 WHERE id = ?', id);
-    require('../admin-painel').registrarClique(offer);
+    const painel = require('../admin-painel');
+    painel.registrarClique(offer, painel.origemDoClique(req, req.hostname));
   }
   // Conquistas: ida à loja pelo link do site (do admin) de quem está logado.
   if (!offer.loja_id) { try { const perfis = require('../perfis'); perfis.incrementar(perfis.donoDe(req), 'idas_loja'); } catch { /* sem perfil */ } }

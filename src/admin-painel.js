@@ -7,9 +7,24 @@ const miner = require('./miner');
 db.db.exec(`CREATE TABLE IF NOT EXISTS cliques_dia (dia TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)`);
 // ... e por loja e categoria (Painel → resumo: o que dá resultado)
 db.db.exec(`CREATE TABLE IF NOT EXISTS cliques_loja_dia (dia TEXT NOT NULL, store_id TEXT NOT NULL, categoria TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (dia, store_id, categoria))`);
-function registrarClique(o = null) {
+db.db.exec(`CREATE TABLE IF NOT EXISTS cliques_origem_dia (dia TEXT NOT NULL, origem TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (dia, origem))`);
+// De onde veio o clique: postagem (link /o/), navegação no site, buscador, rede social ou acesso direto (apps não informam)
+function origemDoClique(req, host) {
+  if (req.query.via === 'post') return 'postagem';
+  let ref;
+  try { ref = new URL(String(req.get('referer') || '')); } catch { return 'direto'; }
+  if (ref.hostname === host) {
+    if (ref.searchParams.has('q')) return 'busca_site';
+    return ref.pathname.startsWith('/ofertas/') ? 'pagina_categoria' : 'site';
+  }
+  if (/(^|\.)(google|bing|duckduckgo|yahoo)\./.test(ref.hostname)) return 'buscador';
+  if (/(^|\.)(facebook|instagram|whatsapp|t|telegram|tiktok|youtube|x|twitter)\.|^l\.wl\.co$|^lm\.facebook/.test(ref.hostname)) return 'rede_social';
+  return 'outro_site';
+}
+function registrarClique(o = null, origem = null) {
   try {
     db.run(`INSERT INTO cliques_dia (dia, n) VALUES (date('now'), 1) ON CONFLICT(dia) DO UPDATE SET n = n + 1`);
+    if (origem) db.run(`INSERT INTO cliques_origem_dia (dia, origem, n) VALUES (date('now'), ?, 1) ON CONFLICT(dia, origem) DO UPDATE SET n = n + 1`, origem);
     if (o) db.run(`INSERT INTO cliques_loja_dia (dia, store_id, categoria, n) VALUES (date('now'), ?, ?, 1) ON CONFLICT(dia, store_id, categoria) DO UPDATE SET n = n + 1`, o.store_id, o.categoria || 'outros');
   } catch { /* opcional */ }
 }
@@ -131,4 +146,4 @@ function dashboard() {
   };
 }
 
-module.exports = { dashboard, registrarClique };
+module.exports = { dashboard, registrarClique, origemDoClique };

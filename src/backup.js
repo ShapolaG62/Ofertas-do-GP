@@ -11,7 +11,7 @@ const settings = require('./settings');
 
 const DIR = path.join(path.dirname(db.DB_PATH), 'backups', 'auto');
 const HORA_MINIMA = 4; // no horário de Brasília (pouco movimento)
-const NOME = /^ofertas-(\d{4}-\d{2}-\d{2})\.db\.gz$/;
+const NOME = /^(ofertas|fotos)-(\d{4}-\d{2}-\d{2})\.(db|tar)\.gz$/;
 let rodando = false;
 let ultimoErro = null;
 
@@ -55,19 +55,34 @@ function copiar(destino) {
   });
 }
 
-// Mantém os últimos N dias e, além deles, o mais novo de cada uma das 4 semanas anteriores
+// Fotos enviadas (pasta uploads). Usa caminhos relativos: o tar do Git trataria "C:" como outro computador.
+function copiarFotos(destino) {
+  return new Promise((ok, falha) => {
+    if (!fs.existsSync(db.UPLOADS_DIR) || !fs.readdirSync(db.UPLOADS_DIR).length) return ok(false);
+    const parcial = `${path.basename(destino)}.parcial`;
+    require('child_process').execFile('tar', ['-czf', parcial, '-C', path.relative(DIR, db.UPLOADS_DIR), '.'], { cwd: DIR, timeout: 10 * 60 * 1000 }, err => {
+      if (err) { fs.rmSync(path.join(DIR, parcial), { force: true }); return falha(err); }
+      fs.renameSync(path.join(DIR, parcial), destino);
+      ok(true);
+    });
+  });
+}
+
+// Mantém os últimos N dias e, além deles, o mais novo de cada uma das 4 semanas anteriores (banco e fotos, cada um na sua conta)
 function limpar(pasta = DIR) {
   const dias = Math.min(Math.max(settings.getNumber('backup_dias', 7), 1), 60);
-  const nomes = fs.readdirSync(pasta).filter(n => NOME.test(n)).sort().reverse();
-  const semanas = new Set();
   let removidos = 0;
-  nomes.forEach((nome, i) => {
-    if (i < dias) return;
-    const semana = Math.floor(Date.parse(NOME.exec(nome)[1]) / (7 * 86400000));
-    if (semanas.size < 4 && !semanas.has(semana)) { semanas.add(semana); return; }
-    fs.rmSync(path.join(pasta, nome), { force: true });
-    removidos++;
-  });
+  for (const tipo of ['ofertas', 'fotos']) {
+    const nomes = fs.readdirSync(pasta).filter(n => NOME.exec(n)?.[1] === tipo).sort().reverse();
+    const semanas = new Set();
+    nomes.forEach((nome, i) => {
+      if (i < dias) return;
+      const semana = Math.floor(Date.parse(NOME.exec(nome)[2]) / (7 * 86400000));
+      if (semanas.size < 4 && !semanas.has(semana)) { semanas.add(semana); return; }
+      fs.rmSync(path.join(pasta, nome), { force: true });
+      removidos++;
+    });
+  }
   return removidos;
 }
 
@@ -87,6 +102,11 @@ async function fazer() {
   try {
     fs.mkdirSync(DIR, { recursive: true });
     const r = await copiar(destino);
+    // As fotos não impedem o backup do banco: se falharem, o admin é avisado
+    const nomeFotos = `fotos-${hojeSp()}.tar.gz`;
+    let temFotos = false;
+    try { temFotos = await copiarFotos(path.join(DIR, nomeFotos)); }
+    catch (e) { avisar('Backup das fotos falhou', `O banco foi copiado, mas as fotos enviadas não: ${e.message}.`); }
     limpar();
     // Cópia fora do servidor (pasta sincronizada): se falhar, o backup local continua valendo e o admin é avisado
     const externa = String(settings.get('backup_pasta_externa') || '').trim();
@@ -95,6 +115,7 @@ async function fazer() {
       try {
         if (!path.isAbsolute(externa) || !fs.existsSync(externa)) throw new Error('pasta não encontrada');
         await fs.promises.copyFile(destino, path.join(externa, nome));
+        if (temFotos) await fs.promises.copyFile(path.join(DIR, nomeFotos), path.join(externa, nomeFotos));
         limpar(externa);
         externo = true;
       } catch (e) {
@@ -115,7 +136,7 @@ async function fazer() {
 
 function estado() {
   const lista = arquivos();
-  const ultimo = lista[0] || null;
+  const ultimo = lista.find(a => a.nome.startsWith('ofertas-')) || null;
   return {
     rodando, erro: ultimoErro, lista, ultimo,
     atrasado: !ultimo || Date.now() - Date.parse(ultimo.em) > 36 * 3600 * 1000,

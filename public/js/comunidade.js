@@ -108,6 +108,7 @@
   if (window.ResizeObserver) new ResizeObserver(() => ajustarAltura()).observe($('#comu-card'));
 
   async function carregarCard(q = '') {
+    if (window.ofertouSessao && !(await window.ofertouSessao())) return; // visitante não vê a comunidade
     try {
       const d = await api(`/api/perfis?grupo=${grupoCard}&q=${encodeURIComponent(q)}`);
       $('#comu-card').hidden = false;

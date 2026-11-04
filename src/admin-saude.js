@@ -39,13 +39,16 @@ function saude() {
     else if (b.atrasado && process.env.DISABLE_AGENDA !== '1') alertas.push({ texto: '<b>Backup atrasado:</b> nenhuma cópia nas últimas 36 h', aba: 'account', forte: true });
     else if (!b.pasta_externa) alertas.push({ texto: '<b>Backup só neste servidor:</b> escolha uma pasta sincronizada com a nuvem', aba: 'account', forte: false });
   } catch { /* sem backup */ }
+  const erros = require('./erros-site').recentes(24);
+  if (erros.length) alertas.push({ texto: `<b>${erros.reduce((t, e) => t + e.vezes, 0)} erro(s) no servidor</b> nas últimas 24 h: veja a lista no fim do resumo`, aba: 'dash', forte: true });
   const suspeitas = busca.suspeitas(0).total;
 
   // Cliques dos últimos 7 dias
   const porLoja = db.all(`SELECT store_id, SUM(n) AS n FROM cliques_loja_dia WHERE dia >= date('now', '-6 days') GROUP BY store_id ORDER BY n DESC`);
   const porCategoria = db.all(`SELECT categoria, SUM(n) AS n FROM cliques_loja_dia WHERE dia >= date('now', '-6 days') GROUP BY categoria ORDER BY n DESC LIMIT 10`);
   const top = db.all(`SELECT id, produto, store_id, preco_atual, desconto_pct, link_clicks FROM offers WHERE link_clicks > 0 ORDER BY link_clicks DESC LIMIT 10`);
-  return { alertas, lojas, suspeitas, cliques: { por_loja: porLoja, por_categoria: porCategoria, top }, buscas: require('./buscas-termos').resumo() };
+  const origens = db.all(`SELECT origem, SUM(n) AS n FROM cliques_origem_dia WHERE dia >= date('now', '-6 days') GROUP BY origem ORDER BY n DESC`);
+  return { alertas, erros, origens, lojas, suspeitas, cliques: { por_loja: porLoja, por_categoria: porCategoria, top }, buscas: require('./buscas-termos').resumo() };
 }
 
 module.exports = { saude };

@@ -112,6 +112,14 @@ router.post('/api/conta/entrar', (req, res) => {
       auth.registerFailure(req.ip);
       return res.status(401).json({ error: 'Usuário ou senha incorretos.' });
     }
+    const dois = require('../admin2fa');
+    if (dois.ativo()) {
+      if (!req.body?.codigo) return res.status(401).json({ error: 'Digite o código do app autenticador.', precisa_codigo: true });
+      if (!dois.conferir(req.body.codigo)) {
+        auth.registerFailure(req.ip);
+        return res.status(401).json({ error: 'Código incorreto.', precisa_codigo: true });
+      }
+    }
     auth.clearFailures(req.ip);
     loginLimiter.reset(req.ip);
     auth.createSession(req, res);

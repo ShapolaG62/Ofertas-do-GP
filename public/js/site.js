@@ -754,7 +754,7 @@
   // Perfil + Minha conta + Sair num botão só (com a foto e o nome do perfil), para qualquer pessoa logada:
   // conta do site, cliente da ferramenta ou admin. Sem login, fica o "Entrar".
   const mostrarConta = () => { $('#account-link').hidden = true; $('#conta-btn').hidden = false; };
-  fetch('/api/perfil', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(p => {
+  window.ofertouSessao().then(logado => (logado ? fetch('/api/perfil', { cache: 'no-store' }).then(r => (r.ok ? r.json() : null)) : null)).then(p => {
     if (!p) return;
     mostrarConta();
     if (p.nome) $('#conta-nome').textContent = p.nome.split(' ')[0].slice(0, 16);

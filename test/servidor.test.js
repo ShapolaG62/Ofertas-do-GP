@@ -1,0 +1,121 @@
+// Liga o servidor de verdade num banco temporário e testa pelos endereços: cabeçalhos, login em duas etapas nas duas portas
+// de entrada, cliques e páginas públicas. Rode com: npm test
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { spawn } = require('child_process');
+
+const PASTA = fs.mkdtempSync(path.join(os.tmpdir(), 'ofertou-servidor-'));
+const PORTA = 39000 + Math.floor(Math.random() * 500);
+const BASE = `http://127.0.0.1:${PORTA}`;
+const SENHA = 'Kw9#vTz4!qLm2x';
+let proc;
+
+const pede = (p, opts = {}) => fetch(BASE + p, { redirect: 'manual', ...opts });
+const json = (p, body, cookie) => pede(p, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify(body) });
+const cookieDe = r => (r.headers.get('set-cookie') || '').split(';')[0];
+
+test.before(async () => {
+  proc = spawn(process.execPath, ['server.js'], {
+    cwd: path.join(__dirname, '..'),
+    env: { ...process.env, DATA_DIR: PASTA, PORT: String(PORTA), DISABLE_MINER: '1', DISABLE_AGENDA: '1', ADMIN_PASSWORD: SENHA, NODE_ENV: 'test' },
+    stdio: ["ignore", "ignore", process.env.TESTE_VERBOSO ? "inherit" : "ignore"],
+  });
+  for (let i = 0; i < 60; i++) {
+    try {
+      if ((await pede('/healthz')).ok) {
+        // O banco novo vem com o site fechado para quem não tem login: abre, como está no ar
+        const c = cookieDe(await json('/api/admin/login', { password: SENHA }));
+        await pede('/api/admin/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json', Cookie: c }, body: JSON.stringify({ exigir_login: '0' }) });
+        return;
+      }
+    } catch { /* ainda ligando */ }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  throw new Error('o servidor não ligou');
+});
+test.after(async () => {
+  proc?.kill();
+  await new Promise(r => setTimeout(r, 500));
+  try { fs.rmSync(PASTA, { recursive: true, force: true }); } catch { /* o Windows pode segurar o arquivo por um instante */ }
+});
+
+test('páginas públicas, 404 e cabeçalhos de segurança', async () => {
+  const home = await pede('/');
+  assert.equal(home.status, 200);
+  assert.match(home.headers.get('content-security-policy'), /frame-ancestors/);
+  assert.equal(home.headers.get('x-content-type-options'), 'nosniff');
+  assert.match(await home.text(), /rel="canonical"/);
+  assert.equal((await pede('/nao-existe')).status, 404);
+  assert.equal((await pede('/ofertas/nao-existe')).status, 404);
+  assert.equal((await pede('/ofertas/celulares')).status, 200);
+  assert.equal((await pede('/favicon.ico')).status, 301);
+  assert.match(await (await pede('/robots.txt')).text(), /Disallow: \/oferta\//);
+  assert.match(await (await pede('/sitemap.xml')).text(), /\/ofertas\/celulares/);
+  assert.equal((await pede('/data/ofertas.db')).status, 404, 'o banco não é servido');
+});
+
+test('visitante: sessão sem erro e áreas fechadas', async () => {
+  assert.deepEqual(await (await pede('/api/sessao')).json(), { logado: false });
+  for (const p of ['/api/admin/backups', '/api/admin/2fa', '/api/admin/offers/suspeitas', '/api/admin/dashboard']) {
+    assert.equal((await pede(p)).status, 401, p);
+  }
+});
+
+test('login em duas etapas nas duas portas de entrada', async () => {
+  // Gera o código como o app do celular faria (sem abrir o banco temporário do servidor neste processo)
+  const crypto = require('crypto');
+  const dois = {
+    contador: () => Math.floor(Date.now() / 30000),
+    codigo(segredo, n) {
+      const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+      let bits = '';
+      for (const c of segredo.replace(/ /g, '')) bits += A.indexOf(c).toString(2).padStart(5, '0');
+      const chave = Buffer.from(bits.match(/.{8}/g).map(b => parseInt(b, 2)));
+      const m = Buffer.alloc(8); m.writeBigUInt64BE(BigInt(n));
+      const h = crypto.createHmac('sha1', chave).update(m).digest();
+      return String((h.readUInt32BE(h[19] & 15) & 0x7fffffff) % 1000000).padStart(6, '0');
+    },
+  };
+  const r0 = await json('/api/admin/login', { password: SENHA });
+  assert.equal(r0.status, 200);
+  const admin = cookieDe(r0);
+  assert.deepEqual(await (await pede('/api/sessao', { headers: { Cookie: admin } })).json(), { logado: true });
+
+  assert.equal((await json('/api/admin/2fa/iniciar', { senha: 'errada' }, admin)).status, 400);
+  const ini = await (await json('/api/admin/2fa/iniciar', { senha: SENHA }, admin)).json();
+  assert.match(ini.qr, /<svg/);
+  const agora = dois.contador();
+  const conf = await (await json('/api/admin/2fa/confirmar', { codigo: dois.codigo(ini.segredo, agora) }, admin)).json();
+  assert.equal(conf.codigos.length, 8);
+  assert.equal((await pede('/api/admin/2fa', { headers: { Cookie: admin } })).status, 200, 'a sessão atual continua');
+
+  // Painel: senha certa não entra sem o código
+  const s1 = await json('/api/admin/login', { password: SENHA });
+  assert.equal(s1.status, 401);
+  assert.equal((await s1.json()).precisa_codigo, true);
+  assert.equal(cookieDe(s1), '', 'nenhuma sessão antes do código');
+  assert.equal((await json('/api/admin/login', { password: SENHA, codigo: '000000' })).status, 401);
+
+  // /conta (usuário "admin"): mesma regra
+  const s2 = await json('/api/conta/entrar', { email: 'admin', senha: SENHA });
+  assert.equal(s2.status, 401);
+  assert.equal((await s2.json()).precisa_codigo, true);
+  const s3 = await json('/api/conta/entrar', { email: 'admin', senha: SENHA, codigo: conf.codigos[0] });
+  assert.equal(s3.status, 200, 'código de recuperação entra');
+  assert.equal((await s3.json()).admin, true);
+
+  // Código do app, uma vez só
+  const novo = dois.codigo(ini.segredo, agora + 1);
+  const s4 = await json('/api/admin/login', { password: SENHA, codigo: novo });
+  assert.equal(s4.status, 200);
+  assert.ok(cookieDe(s4).startsWith('gp_admin='));
+  assert.equal((await json('/api/admin/login', { password: SENHA, codigo: novo })).status, 401, 'o mesmo código não entra de novo');
+
+  // Desligar pede senha e código
+  assert.equal((await json('/api/admin/2fa/desligar', { senha: SENHA, codigo: '000000' }, admin)).status, 400);
+  assert.equal((await json('/api/admin/2fa/desligar', { senha: SENHA, codigo: conf.codigos[1] }, admin)).status, 200);
+  assert.equal((await json('/api/admin/login', { password: SENHA })).status, 200);
+});

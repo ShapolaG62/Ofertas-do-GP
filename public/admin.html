@@ -349,13 +349,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261243"></script>
-<script src="/js/dialogo.js?v=20261243"></script>
-<script src="/js/modelo-post.js?v=20261243"></script>
-<script src="/js/avisos-entrada.js?v=20261243"></script>
-<script src="/js/capi-minerando.js?v=20261243" defer></script>
-<script src="/js/cadastro-auto.js?v=20261243" defer></script>
-<script src="/js/seletor.js?v=20261243" defer></script>
+<script src="/js/tema.js?v=20261244"></script>
+<script src="/js/dialogo.js?v=20261244"></script>
+<script src="/js/modelo-post.js?v=20261244"></script>
+<script src="/js/avisos-entrada.js?v=20261244"></script>
+<script src="/js/capi-minerando.js?v=20261244" defer></script>
+<script src="/js/cadastro-auto.js?v=20261244" defer></script>
+<script src="/js/seletor.js?v=20261244" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -381,6 +381,7 @@
         <h2>Entrar</h2>
         <form id="login-form" class="grid" style="grid-template-columns:1fr;margin-top:10px">
           <label class="field">Senha <input type="password" name="password" autocomplete="current-password" required autofocus></label>
+          <label class="field hidden" id="login-codigo">Código do app autenticador <input type="text" name="codigo" inputmode="text" autocomplete="one-time-code" maxlength="12" placeholder="6 dígitos ou código de recuperação"></label>
           <button class="btn primary" type="submit">Entrar</button>
         </form>
       </div>
@@ -1522,13 +1523,36 @@
           </div>
           <button class="btn primary" type="button" id="bk-agora">💾 Fazer backup agora</button>
         </div>
-        <p class="hint">Uma cópia compactada por dia, de madrugada, com o site no ar. Os arquivos têm senhas (em hash) e chaves de API: guarde-os em lugar seguro. Fotos enviadas (pasta uploads) não entram.</p>
+        <p class="hint">Uma cópia compactada por dia, de madrugada, com o site no ar. Os arquivos têm senhas (em hash) e chaves de API: guarde-os em lugar seguro. As fotos enviadas pelas lojas vão num arquivo à parte.</p>
         <form id="bk-form" class="grid" style="margin-top:8px">
           <label class="field">Pasta externa no servidor (opcional) <input type="text" name="backup_pasta_externa" placeholder="Ex.: C:\Users\Administrador\Google Drive\Backups Ofertou"><span class="hint" style="margin:4px 0 0;font-weight:400">Use uma pasta sincronizada com a nuvem (Google Drive, OneDrive). É o que protege se o servidor inteiro falhar.</span></label>
           <label class="field">Dias de backups guardados <input type="number" name="backup_dias" min="1" max="60" inputmode="numeric"><span class="hint" style="margin:4px 0 0;font-weight:400">Além deles, fica 1 por semana das últimas 4 semanas.</span></label>
           <div class="actions"><button class="btn" type="submit">Salvar</button></div>
         </form>
         <div class="table-wrap tabela-rolavel" style="margin-top:10px;max-height:260px"><table><thead><tr><th>Arquivo</th><th>Tamanho</th><th>Feito em</th><th></th></tr></thead><tbody id="bk-lista"></tbody></table></div>
+      </div>
+      <div class="panel" style="max-width:480px">
+        <h2>Login em duas etapas</h2>
+        <p class="hint" id="f2-status">—</p>
+        <form id="f2-form" class="grid" style="grid-template-columns:1fr;margin-top:8px">
+          <label class="field">Sua senha <input type="password" name="senha" autocomplete="current-password" required></label>
+          <label class="field hidden" id="f2-codigo-campo">Código do app (ou de recuperação) <input type="text" name="codigo" autocomplete="one-time-code" maxlength="12"></label>
+          <button class="btn primary" type="submit" id="f2-botao">Ativar</button>
+        </form>
+        <div id="f2-qr" class="hidden" style="margin-top:12px">
+          <p class="hint">1. No celular, abra o Google Authenticator, Authy ou Microsoft Authenticator e leia o código abaixo (ou digite a chave).</p>
+          <div id="f2-qr-img" style="width:220px;max-width:100%;background:#fff;border-radius:10px;overflow:hidden"></div>
+          <p class="hint" style="margin-top:8px">Chave: <code id="f2-chave" style="word-break:break-all"></code></p>
+          <form id="f2-confirma" class="grid" style="grid-template-columns:1fr;margin-top:8px">
+            <label class="field">2. Digite o código de 6 dígitos que apareceu no app <input type="text" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+            <button class="btn primary" type="submit">Confirmar e ligar</button>
+          </form>
+        </div>
+        <div id="f2-codigos" class="hidden" style="margin-top:12px">
+          <p class="hint"><b>Guarde estes códigos fora do celular.</b> Cada um entra uma vez, se você perder o aparelho. Eles não aparecem de novo.</p>
+          <pre id="f2-lista" style="background:var(--surface-2);padding:10px;border-radius:10px;font-size:14px;line-height:1.7;white-space:pre-wrap"></pre>
+          <button class="btn" type="button" id="f2-copiar">Copiar códigos</button>
+        </div>
       </div>
       <div class="panel" style="max-width:480px">
         <h2>Trocar senha</h2>
@@ -1657,6 +1681,6 @@
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261243"></script>
+<script src="/js/admin.js?v=20261244"></script>
 </body>
 </html>

@@ -52,6 +52,15 @@ router.post('/api/admin/login', (req, res) => {
     auth.registerFailure(ip);
     return res.status(401).json({ error: 'Senha incorreta.' });
   }
+  // Login em duas etapas: senha certa ainda não abre o painel
+  const dois = require('../admin2fa');
+  if (dois.ativo()) {
+    if (!req.body?.codigo) return res.status(401).json({ error: 'Digite o código do app autenticador.', precisa_codigo: true });
+    if (!dois.conferir(req.body.codigo)) {
+      auth.registerFailure(ip);
+      return res.status(401).json({ error: 'Código incorreto.', precisa_codigo: true });
+    }
+  }
   auth.clearFailures(ip);
   auth.createSession(req, res);
   res.json({ ok: true });
@@ -77,6 +86,30 @@ router.post('/api/admin/password', (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// ── Login em duas etapas (src/admin2fa.js): ligar e desligar pedem a senha de novo ──
+const senhaConfere = req => auth.verifyPassword(String(req.body?.senha || ''), settings.get('admin_password_hash'));
+router.get('/api/admin/2fa', (req, res) => res.json(require('../admin2fa').estado()));
+router.post('/api/admin/2fa/iniciar', async (req, res) => {
+  if (!senhaConfere(req)) return res.status(400).json({ error: 'Senha incorreta.' });
+  try { res.json(await require('../admin2fa').iniciar()); } catch (err) { res.status(500).json({ error: err.message }); }
+});
+router.post('/api/admin/2fa/confirmar', (req, res) => {
+  try {
+    const codigos = require('../admin2fa').confirmar(req.body?.codigo);
+    // Quem estava logado em outro aparelho precisa entrar de novo, já com o código
+    const atual = auth.parseCookies(req.headers.cookie).gp_admin;
+    if (atual) db.run('DELETE FROM sessions WHERE token_hash <> ?', auth.tokenHash(atual));
+    res.json({ ok: true, codigos });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+router.post('/api/admin/2fa/desligar', (req, res) => {
+  const dois = require('../admin2fa');
+  if (!senhaConfere(req)) return res.status(400).json({ error: 'Senha incorreta.' });
+  if (!dois.conferir(req.body?.codigo)) return res.status(400).json({ error: 'Código incorreto.' });
+  dois.desligar();
+  res.json({ ok: true });
 });
 
 // ── Configurações ─────────────────────────────────────────────────────────────

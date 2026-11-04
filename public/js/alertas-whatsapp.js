@@ -163,6 +163,7 @@
   }
 
   async function iniciar() {
+    if (window.ofertouSessao && !(await window.ofertouSessao())) return; // sem login: nada aparece
     try { estado = await api('/api/conta/alertas-whatsapp'); } catch { return; } // sem login: nada aparece
     if (!estado.disponivel) return;
     const alvo = document.querySelector('#ofertas .results-head') || document.querySelector('#grid');

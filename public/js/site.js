@@ -110,10 +110,16 @@
   }
 
   // ── Renderização ─────────────────────────────────────────────────────────
+  // Ícone da loja (public/images/lojas); loja sem ícone continua com o ponto colorido
+  const LOJAS_COM_ICONE = new Set(['mercadolivre', 'amazon', 'shopee', 'magalu', 'shein', 'aliexpress', 'kabum', 'temu']);
+  const lojaIcone = (id, cor) => (LOJAS_COM_ICONE.has(id)
+    ? `<img class="store-logo" src="/images/lojas/${id}.svg" alt="" width="18" height="18">`
+    : `<span class="store-dot" style="background:${cor || '#999'}"></span>`);
+
   function storeLabel(id, name, lojaSlug) {
     if (lojaSlug) return `<span class="store-dot" style="background:var(--brand)"></span>Loja parceira · ${esc(name)}`;
     const s = STORE_BY_ID[id];
-    return `<span class="store-dot" style="background:${s ? s.color : '#999'}"></span>${esc(s ? s.name : name)}`;
+    return `${lojaIcone(id, s?.color)}${esc(s ? s.name : name)}`;
   }
 
   let STORES_EXTRA = '';
@@ -131,7 +137,7 @@
       const n = counts[s.id] || 0;
       if (!n && state.loja !== s.id) continue; // só lojas com produtos minerados
       tabs.push(`<button class="store-tab" type="button" data-loja="${s.id}" aria-pressed="${state.loja === s.id}" ${n || state.loja === s.id ? '' : 'disabled'}>
-        <span class="store-dot" style="background:${s.color}"></span>${esc(s.name)} <span class="count">${n}</span></button>`);
+        ${lojaIcone(s.id, s.color)}${esc(s.name)} <span class="count">${n}</span></button>`);
     }
     $('#store-tabs').innerHTML = tabs.join('') + STORES_EXTRA;
   }
@@ -695,6 +701,45 @@
     $('#filters-mobile').innerHTML = filtersHtml();
     $('#filters-dialog').showModal();
   });
+  // Celular: a folha de filtros acompanha o dedo; arrastar para baixo fecha (na lista, só com a lista já no topo)
+  (() => {
+    const dlg = $('#filters-dialog'), folha = dlg.querySelector('.drawer'), lista = $('#filters-mobile');
+    const celular = matchMedia('(max-width: 720px)');
+    let inicioY = null, inicioT = 0, dy = 0, arrastando = false;
+    const soltar = (voltar = true) => {
+      folha.style.transition = voltar ? 'transform .18s ease-out' : '';
+      folha.style.transform = '';
+      inicioY = null; dy = 0; arrastando = false;
+    };
+    folha.addEventListener('touchstart', e => {
+      if (!celular.matches || e.touches.length !== 1 || e.target.closest('input, select, textarea, .modal-foot')) { inicioY = null; return; }
+      inicioY = e.touches[0].clientY; inicioT = Date.now(); dy = 0; arrastando = false;
+      folha.style.transition = 'none';
+    }, { passive: true });
+    folha.addEventListener('touchmove', e => {
+      if (inicioY === null) return;
+      dy = e.touches[0].clientY - inicioY;
+      if (!arrastando) {
+        if (dy < 6) { if (dy < -6) inicioY = null; return; } // subindo: é rolagem da lista
+        if (lista.contains(e.target) && lista.scrollTop > 0) { inicioY = null; return; }
+        arrastando = true;
+      }
+      e.preventDefault();
+      folha.style.transform = `translateY(${Math.max(0, dy)}px)`;
+    }, { passive: false });
+    const fim = () => {
+      if (inicioY === null || !arrastando) { inicioY = null; folha.style.transition = ''; return; }
+      const rapido = dy > 40 && dy / Math.max(1, Date.now() - inicioT) > 0.5;
+      if (dy > 90 || rapido) {
+        folha.style.transition = 'transform .16s ease-in';
+        folha.style.transform = 'translateY(100%)';
+        inicioY = null; arrastando = false;
+        setTimeout(() => { dlg.close(); soltar(false); }, 160);
+      } else soltar();
+    };
+    folha.addEventListener('touchend', fim);
+    folha.addEventListener('touchcancel', fim);
+  })();
   document.querySelectorAll('dialog').forEach(d => {
     d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) d.close(); });
   });

@@ -3048,3 +3048,16 @@ textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5;
 .lj-topo { box-shadow: none; border-radius: 12px; }
 .lj-logo { border-radius: 12px; }
 @media (max-width: 720px) { .auth-card::before { width: 64px; height: 64px; } .lp-hero { padding: 16px 0; } }
+
+/* Ícones das lojas */
+.store-logo { width: 18px; height: 18px; flex: none; border-radius: 5px; display: inline-block; vertical-align: -4px; }
+.store-tab .store-logo { width: 20px; height: 20px; }
+.v2 .card-store .store-logo { width: 16px; height: 16px; vertical-align: -3px; }
+@media (max-width: 720px) {
+  /* Ordenação do tamanho do texto, sem ocupar a linha inteira */
+  .v2 .results-tools { justify-content: space-between; }
+  .v2 .results-tools .select { flex: 0 0 auto; width: 148px; text-overflow: ellipsis; }
+  /* Área maior para pegar a folha de filtros e arrastar */
+  #filters-dialog .drawer::before { width: 48px; height: 5px; margin-top: 10px; }
+  #filters-dialog .modal-head { touch-action: none; user-select: none; }
+}

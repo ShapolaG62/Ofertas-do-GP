@@ -58,7 +58,7 @@ function cartao(o) {
   return `<a class="card" href="/oferta/${h(slugOferta(o))}" target="_blank" rel="noopener sponsored nofollow" data-id="${o.id}">
       <div class="card-media"><img src="/img/o/${o.id}.jpg" alt="" loading="lazy" decoding="async" width="300" height="300">
         <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span></div></div>
-      <div class="card-body"><div class="card-store">${h(LOJAS[o.store_id] || o.plataforma)}</div>
+      <div class="card-body"><div class="card-store">${LOJAS[o.store_id] ? `<img class="store-logo" src="/images/lojas/${h(o.store_id)}.svg" alt="" width="16" height="16">` : ''}${h(LOJAS[o.store_id] || o.plataforma)}</div>
         <h3 class="card-title">${h(o.produto)}</h3>
         <div class="card-prices"><div class="card-old num">R$ ${brl(o.preco_anterior)}</div><div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div></div>
         <span class="card-ver">Ver oferta</span>

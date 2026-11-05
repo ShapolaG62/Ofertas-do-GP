@@ -111,7 +111,7 @@
     if (window.ofertouSessao && !(await window.ofertouSessao())) return; // visitante não vê a comunidade
     try {
       const d = await api(`/api/perfis?grupo=${grupoCard}&q=${encodeURIComponent(q)}`);
-      $('#comu-card').hidden = false;
+      // Quadro da lateral desligado por enquanto (para voltar: $('#comu-card').hidden = false); o botão do topo continua
       $('#comu-abrir').hidden = false;
       $('#comu-lista-card').classList.toggle('comu-parceiros', grupoCard === 'empresas');
       const lista = $('#comu-lista-card');

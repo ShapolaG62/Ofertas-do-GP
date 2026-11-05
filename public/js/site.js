@@ -329,19 +329,19 @@
         <img src="/img/o/${o.id}.jpg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
         <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span>${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low" title="Menor preço em 30 dias">Menor preço</span>' : ''}${comissaoHtml(o)}</div>
         <button class="card-select poster-only" type="button" data-select="${o.id}" aria-label="Escolher para postar"><svg><use href="#i-check"/></svg></button>
+        ${o.cupom ? (cupomMl(o.cupom)
+          ? `<button class="card-cupom card-cupom-ml" type="button" data-cupom-ml="${esc(o.cupom_texto || '')}" title="${esc(o.cupom_texto || 'Cupom')}: ative em Cupons no app do Mercado Livre">🎟️ <b>${esc(o.cupom_texto || 'Cupom')}</b> <span>ative em Cupons</span></button>`
+          : `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom ${esc(o.cupom)}${o.cupom_texto ? ` (${esc(o.cupom_texto)})` : ''}">🎟️ <i class="cupom-rot">Cupom</i> <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>`) : ''}
       </div>
       <div class="card-body">
-        <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}${minerada ? `<span class="card-verif" title="Conferido ${timeAgo(o.last_seen_at)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Preço verificado</span>` : ''}</div>
+        <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}${minerada && !o.cupom ? `<span class="card-verif" title="Conferido ${timeAgo(o.last_seen_at)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Preço verificado</span>` : ''}</div>
         <h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
         ${o.iguais > 1 ? `<span class="badge-iguais">Menor preço entre ${o.iguais} anúncios</span>` : ''}
         <div class="card-prices">
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
-          <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}${o.cupom ? '<small class="card-com-cupom">com cupom</small>' : ''}</div>
+          <div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div>
         </div>
-        ${o.cupom ? `${cupomMl(o.cupom)
-          ? `<button class="card-cupom" type="button" data-cupom-ml="${esc(o.cupom_texto || '')}" title="Abrir a central de cupons do Mercado Livre">🎟️ <b>${esc(o.cupom_texto || 'Cupom')}</b> <span>ative em Cupons no app</span></button>`
-          : `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom">🎟️ Cupom <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>`}
-        <div class="card-sem-cupom num">ou R$ ${brl(o.preco_sem_cupom)} sem cupom</div>` : ''}
+        ${o.cupom ? `<div class="card-sem-cupom num">ou R$ ${brl(o.preco_sem_cupom)} sem cupom</div>` : ''}
         ${minerada ? '' : `<div class="card-foot"><span>${o.loja_slug ? 'Publicado pela loja' : 'Oferta selecionada'}</span></div>`}
         <span class="card-ver">Ver oferta</span>
         <button class="card-enviar poster-only" type="button" data-enviar="${o.id}"><svg><use href="#i-enviar"/></svg>Enviar para os grupos</button>

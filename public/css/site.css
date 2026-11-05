@@ -2974,8 +2974,7 @@ body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --fo
 .v2 .badge-iguais { order: 1; }
 .v2 .card-prices { order: 2; display: flex; flex-direction: row-reverse; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 8px; margin-top: auto; }
 .v2 .card-price { font-size: 22px; }
-.v2 .card-price .card-com-cupom { color: var(--brand); }
-.v2 .card-cupom, .v2 .card-sem-cupom, .v2 .card-foot { order: 3; }
+.v2 .card-sem-cupom, .v2 .card-foot { order: 3; }
 .card-ver { order: 4; display: flex; align-items: center; justify-content: center; min-height: 42px; border-radius: 8px; background: var(--acao); color: #fff; font-weight: 700; font-size: 14.5px; }
 .card:hover .card-ver { background: var(--acao-forte); }
 .v2 .card-enviar { order: 5; }
@@ -3002,3 +3001,18 @@ body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --fo
 @media (max-width: 720px) { .v2 .header-row:has(#conta-btn:not([hidden])) .brand-name { display: none; } }
 @media (max-width: 360px) { .v2 .brand-name { display: none; } }
 @media (max-width: 360px) { .faixa { padding-left: 112px; } .faixa > img { width: 118px; height: 92px; } }
+/* Cupom em cima da foto, numa linha só: o cartão com cupom não estica os vizinhos da fileira. A foto sobe para não ficar atrás dele */
+.v2 .card-cupom { position: absolute; left: 6px; right: 6px; bottom: 6px; width: auto; margin: 0; padding: 0 8px; min-height: 30px; display: flex; flex-wrap: nowrap; align-items: center; gap: 4px;
+  border: 1.5px dashed #0d6985; border-radius: 8px; background: #fff; color: #17212a; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.v2 .card-cupom .cupom-rot { font-style: normal; }
+.v2 .card-cupom b { flex: none; max-width: 62%; overflow: hidden; text-overflow: ellipsis; color: #0a5269; word-break: normal; }
+.v2 .card-cupom span { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #46555f; }
+.v2 .card-media:has(.card-cupom) img { padding-bottom: 40px; }
+.v2 .card-sem-cupom { margin-top: 0; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 720px) {
+  .v2 .card-cupom { left: 4px; right: 4px; bottom: 4px; padding: 0 5px; min-height: 28px; font-size: 11px; gap: 3px; }
+  .v2 .card-cupom .cupom-rot { display: none; }
+  .v2 .card-cupom-ml span { display: none; }
+  .v2 .card-cupom-ml b { max-width: none; flex: 0 1 auto; }
+  .v2 .card-media:has(.card-cupom) img { padding-bottom: 34px; }
+}

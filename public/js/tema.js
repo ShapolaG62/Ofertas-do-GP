@@ -29,7 +29,6 @@ window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', 
   aplicar();
 
   // App instalado: a barra de navegação do Android tem a cor gravada na instalação (o app abre com ?barra=claro|escuro).
-  // O degradê do pé da tela (site.css) termina nessa cor, mesmo que o tema escolhido seja outro.
   try {
     const q = new URLSearchParams(location.search);
     if (q.has('barra')) {
@@ -37,8 +36,6 @@ window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', 
       q.delete('barra'); q.delete('origem');
       history.replaceState(null, '', location.pathname + (q.toString() ? `?${q}` : '') + location.hash);
     }
-    const barra = localStorage.getItem('ofertou-barra');
-    if (barra) raiz.style.setProperty('--barra-app', barra === 'escuro' ? '#0e1210' : '#eef2ee');
   } catch { /* sem armazenamento */ }
 
   const ICONES = {

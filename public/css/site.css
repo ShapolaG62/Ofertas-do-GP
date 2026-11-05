@@ -3440,3 +3440,5 @@ button.ex-lembrete { cursor: pointer; }
   .dm-cartao-foto { display: block; height: 250px; padding: 14px 14px 0; }
   .dm-cartao-foto > img { display: block; height: 146px; margin: 0 auto; }
 }
+.footer-cats { border-top: 0; margin-bottom: 0; padding-bottom: 0; }
+.footer-cats + .footer-legal { border-top: 0; margin-top: 6px; padding-top: 0; }

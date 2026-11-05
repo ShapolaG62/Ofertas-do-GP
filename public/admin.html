@@ -489,14 +489,28 @@
     .side-logo { font-size: 22px; padding-bottom: 6px !important; }
     .side-logo img { width: 36px; height: 36px; }
   }
+  /* Azul como segunda cor */
+  :root { --azul: #0d6985; --azul-soft: #e2f1f5; --azul-texto: #0d6985; }
+  :root[data-theme="dark"] { --azul-soft: #12303a; --azul-texto: #5cc4dd; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --azul-soft: #12303a; --azul-texto: #5cc4dd; } }
+  html { border-top: 3px solid transparent; border-image: linear-gradient(90deg, #0a7a43, #0d6985 60%, #0b6bb5) 1; }
+  .side .tab .tab-ico { color: var(--azul-texto); }
+  .side .tab:hover { background: var(--azul-soft); }
+  .side .tab.active { background: linear-gradient(90deg, #0a7a43, #0d6985); color: #fff; }
+  .side .tab.active .tab-ico { color: #fff; }
+  .db-kpi-ico { background: var(--azul-soft); }
+  .db-kpi .db-kpi-ico .tab-ico { color: var(--azul-texto); }
+  .db-seg button[aria-selected="true"] { background: var(--azul); }
+  .logo-tag { background: var(--azul-soft); color: var(--azul-texto); }
+  .db-acoes .tab-ico { color: var(--azul-texto); }
 </style>
-<script src="/js/tema.js?v=20261272"></script>
-<script src="/js/dialogo.js?v=20261272"></script>
-<script src="/js/modelo-post.js?v=20261272"></script>
-<script src="/js/avisos-entrada.js?v=20261272"></script>
-<script src="/js/capi-minerando.js?v=20261272" defer></script>
-<script src="/js/cadastro-auto.js?v=20261272" defer></script>
-<script src="/js/seletor.js?v=20261272" defer></script>
+<script src="/js/tema.js?v=20261273"></script>
+<script src="/js/dialogo.js?v=20261273"></script>
+<script src="/js/modelo-post.js?v=20261273"></script>
+<script src="/js/avisos-entrada.js?v=20261273"></script>
+<script src="/js/capi-minerando.js?v=20261273" defer></script>
+<script src="/js/cadastro-auto.js?v=20261273" defer></script>
+<script src="/js/seletor.js?v=20261273" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1838,6 +1852,6 @@
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261272"></script>
+<script src="/js/admin.js?v=20261273"></script>
 </body>
 </html>

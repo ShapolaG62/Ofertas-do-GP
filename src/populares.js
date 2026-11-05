@@ -1,6 +1,7 @@
 // Mais pesquisados e mais clicados, para o painel do afiliado (o administrador vê os dele em Painel → Desempenho).
 // Só termos com ofertas no ar: qualquer um pode digitar qualquer coisa na busca. Guardado por 10 min.
 const db = require('./db');
+require('./buscas-termos'); // cria a tabela de termos
 let cache = { em: 0, dados: null };
 function populares() {
   if (!cache.dados || Date.now() - cache.em > 10 * 60 * 1000) {

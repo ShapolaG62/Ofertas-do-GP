@@ -291,6 +291,7 @@ const DB_ICO = {
   alerta: '<path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17v.5"/>',
   ok: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.6 2.6L16 9.5"/>',
   seta: '<path d="M9 6l6 6-6 6"/>',
+  refresh: '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/>',
   sino: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
 };
 const dbIco = n => `<svg class="tab-ico" viewBox="0 0 24 24" aria-hidden="true">${DB_ICO[n]}</svg>`;
@@ -301,17 +302,64 @@ const dbDia = d => new Date(d + 'T12:00:00Z').toLocaleDateString('pt-BR', { day:
 const DB_SERIES = { cliques: ['Cliques', dbNum], ofertas: ['Ofertas novas', dbNum], cadastros: ['Cadastros', dbNum], receita: ['Receita', brl] };
 let DASH = null;
 
-function dbGrafico(serie, chave) {
-  const W = 700, H = 210, P = 24, n = serie.length, bw = (W - P * 2) / n, [nome, fmt] = DB_SERIES[chave];
+function dbGrafico(serie, chave, W = 700, H = 210) {
+  const Pe = 34, Pd = 8, Pt = 22, Pb = 24, n = serie.length, bw = (W - Pe - Pd) / n, [nome, fmt] = DB_SERIES[chave];
   const max = Math.max(1, ...serie.map(d => d[chave]));
   const barras = serie.map((d, i) => {
-    const h = Math.max(d[chave] ? 3 : 0, (d[chave] / max) * (H - P * 2));
-    return `<rect x="${(P + i * bw + 2).toFixed(1)}" y="${(H - P - h).toFixed(1)}" width="${(bw - 4).toFixed(1)}" height="${h.toFixed(1)}" rx="3"><title>${dbDia(d.dia)}: ${esc(fmt(d[chave]))} — ${nome.toLowerCase()}</title></rect>`;
+    const h = Math.max(d[chave] ? 3 : 0, (d[chave] / max) * (H - Pt - Pb));
+    return `<rect x="${(Pe + i * bw + 1).toFixed(1)}" y="${(H - Pb - h).toFixed(1)}" width="${Math.max(2, bw - 2).toFixed(1)}" height="${h.toFixed(1)}" rx="3"><title>${dbDia(d.dia)}: ${esc(fmt(d[chave]))} — ${nome.toLowerCase()}</title></rect>`;
   }).join('');
-  const rot = serie.map((d, i) => (i % 5 === 4 || i === n - 1 ? `<text x="${(P + i * bw + bw / 2).toFixed(1)}" y="${H - 6}">${dbDia(d.dia)}</text>` : '')).join('');
-  return `<svg class="db-graf" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${nome} nos últimos 30 dias">
-    <line x1="${P}" x2="${W - P}" y1="${P}" y2="${P}" class="grade"/><line x1="${P}" x2="${W - P}" y1="${H / 2}" y2="${H / 2}" class="grade"/>
-    <text x="${P}" y="${P - 8}" class="topo">${esc(fmt(max))}</text>${barras}${rot}</svg>`;
+  const passo = bw < 18 ? 5 : bw < 30 ? 3 : 2;
+  const rot = serie.map((d, i) => ((n - 1 - i) % passo === 0 ? `<text x="${(Pe + i * bw + bw / 2).toFixed(1)}" y="${H - 7}">${dbDia(d.dia)}</text>` : '')).join('');
+  const meio = Pt + (H - Pt - Pb) / 2;
+  return `<svg class="db-graf" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${nome} nos últimos 30 dias">
+    <line x1="${Pe}" x2="${W - Pd}" y1="${Pt}" y2="${Pt}" class="grade"/><line x1="${Pe}" x2="${W - Pd}" y1="${meio}" y2="${meio}" class="grade"/>
+    <text x="${Pe}" y="${Pt - 7}" class="topo">${esc(fmt(max))}</text>${barras}${rot}</svg>`;
+}
+let dbSerieAtual = 'cliques';
+function dbDesenharGrafico() {
+  const g = $('#db-graf');
+  if (!g || !DASH) return;
+  g.innerHTML = '';
+  g.innerHTML = dbGrafico(DASH.serie, dbSerieAtual, Math.max(280, g.clientWidth), Math.max(180, g.clientHeight));
+}
+window.addEventListener('resize', () => { clearTimeout(dbDesenharGrafico.t); dbDesenharGrafico.t = setTimeout(dbDesenharGrafico, 150); });
+// Quanto tempo faz que o resumo foi lido
+let dbLidoEm = 0;
+const dbTextoLido = () => { const m = Math.floor((Date.now() - dbLidoEm) / 60000); return m < 1 ? 'atualizado agora' : `atualizado há ${m} min`; };
+setInterval(() => { const e = $('#db-lido'); if (e) e.textContent = dbTextoLido(); }, 30000);
+
+// Cores dos gráficos: sempre na mesma ordem (conferidas nos temas claro e escuro)
+const DB_CORES = ['#0d9255', '#1f77d0', '#c9700f', '#8a5cd6', '#d9486a', '#0fa3b1'];
+const DB_OUTROS = '#8a9a91';
+const dbPct = (v, t) => `${t ? Math.round((v / t) * 100) : 0}%`;
+// Rosca com a lista ao lado. A cor segue o item (ordemFixa), não a posição; depois da 6ª cor, vira "Outros"
+function dbRosca(l, nome, ordemFixa) {
+  const total = l.reduce((s, x) => s + x.n, 0);
+  if (!total) return '<p class="hint">Ainda sem cliques nesta semana.</p>';
+  const ordem = ordemFixa.filter(k => l.some(x => x.k === k));
+  const fatias = [];
+  for (const x of l) {
+    const i = ordem.indexOf(x.k);
+    if (i >= 0 && i < DB_CORES.length) fatias.push({ ...x, nome: nome(x), cor: DB_CORES[ordemFixa.indexOf(x.k) % DB_CORES.length] });
+    else { const o = fatias.find(f => f.outros); if (o) o.n += x.n; else fatias.push({ k: 'outros', outros: true, n: x.n, nome: 'Outros', cor: DB_OUTROS }); }
+  }
+  const R = 42, C = 2 * Math.PI * R;
+  let ini = 0;
+  const arcos = fatias.map(f => {
+    const tam = (f.n / total) * C, gap = fatias.length > 1 ? 2 : 0;
+    const s = `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${f.cor}" stroke-width="16" stroke-dasharray="${Math.max(1, tam - gap).toFixed(2)} ${(C - Math.max(1, tam - gap)).toFixed(2)}" stroke-dashoffset="${(-ini).toFixed(2)}"><title>${esc(f.nome)}: ${f.n.toLocaleString('pt-BR')} (${dbPct(f.n, total)})</title></circle>`;
+    ini += tam;
+    return s;
+  }).join('');
+  return `<div class="dp-rosca"><svg viewBox="0 0 120 120" role="img" aria-label="Divisão de ${total} cliques"><g transform="rotate(-90 60 60)">${arcos}</g><text x="60" y="58" class="t1">${total.toLocaleString('pt-BR')}</text><text x="60" y="73" class="t2">cliques</text></svg>
+    <ul class="dp-legenda">${fatias.map(f => `<li><i style="background:${f.cor}"></i><span title="${esc(f.nome)}">${esc(f.nome)}</span><b>${f.n.toLocaleString('pt-BR')}</b><small>${dbPct(f.n, total)}</small></li>`).join('')}</ul></div>`;
+}
+// Barras na horizontal: um assunto só, uma cor, com o total e a porcentagem de cada linha
+function dbBarras(l, nome) {
+  const total = l.reduce((s, x) => s + x.n, 0), max = Math.max(1, ...l.map(x => x.n));
+  if (!total) return '<p class="hint">Ainda sem cliques nesta semana.</p>';
+  return `<div class="dp-barras">${l.map(x => `<div title="${esc(nome(x))}: ${x.n.toLocaleString('pt-BR')} (${dbPct(x.n, total)})"><span>${esc(nome(x))}</span><i><u style="width:${(x.n / max) * 100}%"></u></i><b>${x.n.toLocaleString('pt-BR')}</b><small>${dbPct(x.n, total)}</small></div>`).join('')}</div>`;
 }
 
 // Resumo: o que dá resultado (cliques da última semana e o que as pessoas buscam)
@@ -319,28 +367,43 @@ let dpAba = 'cliques';
 function mostrarDesempenho(s) {
   const el = $('#dash-desempenho');
   if (!s) { el.innerHTML = ''; return; }
-  const barras = (l, nome) => { const max = Math.max(1, ...l.map(x => x.n));
-    return l.map(x => `<div class="dp-barra"><span>${esc(nome(x))}</span><b>${x.n.toLocaleString('pt-BR')}</b><i style="width:${(x.n / max) * 100}%"></i></div>`).join('') || '<p class="hint">Ainda sem cliques registrados nesta semana.</p>'; };
   const loja = id => STORE_LIST.find(x => x.id === id)?.name || id;
   const cat = c => CATEGORIES_NOMES[c] || c;
+  const reais = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const ORDEM_LOJAS = ['shopee', 'mercadolivre', 'amazon', 'magalu', 'aliexpress', 'kabum'];
   const blocos = dpAba === 'buscas' ? `
-    <div class="panel"><h2>Mais pesquisados</h2><ul class="dp-lista dp-rola">${s.buscas.mais.map(b => `<li><span>${esc(b.termo)}</span><b>${b.vezes}</b></li>`).join('') || '<li class="hint">Nenhuma busca registrada ainda.</li>'}</ul></div>
-    <div class="panel"><h2>Buscam e não acham</h2><ul class="dp-lista dp-rola">${s.buscas.sem.slice(0, 12).map(b => `<li><span>${esc(b.termo)} (${b.vezes}x)</span><button class="btn small" type="button" data-minerar="${esc(b.termo)}">Minerar</button></li>`).join('') || '<li class="hint">Nenhuma até agora.</li>'}</ul></div>
-    <div class="panel"><h2>Acrescentados pela busca</h2><ul class="dp-lista dp-rola">${(s.termos_auto || []).map(t => `<li><span>${esc(t.termo)}</span><b>${t.gravadas} ofertas</b></li>`).join('') || '<li class="hint">Nenhum ainda.</li>'}</ul></div>` : `
-    <div class="panel"><h2>Por loja</h2>${barras(s.cliques.por_loja, x => loja(x.store_id))}</div>
-    <div class="panel"><h2>Por categoria</h2>${barras(s.cliques.por_categoria, x => cat(x.categoria))}</div>
-    <div class="panel"><h2>Por origem</h2>${barras(s.origens || [], x => ORIGENS[x.origem] || x.origem)}</div>
-    <div class="panel"><h2>Ofertas mais clicadas</h2><ul class="dp-lista dp-rola">${s.cliques.top.map(o => `<li><span title="${esc(o.produto)}">${esc(o.produto)}</span><b>${o.link_clicks}</b></li>`).join('') || '<li class="hint">Nenhum clique ainda.</li>'}</ul></div>`;
+    <div class="dp-tres">
+      <div class="panel"><h2>Mais pesquisados</h2><ol class="dp-rank">${s.buscas.mais.map((b, i) => `<li><a href="/?q=${encodeURIComponent(b.termo)}" target="_blank" rel="noopener"><i>${i + 1}</i><span>${esc(b.termo)}</span><small>${b.vezes} buscas</small></a></li>`).join('') || '<li class="hint">Nenhuma busca registrada ainda.</li>'}</ol></div>
+      <div class="panel"><h2>Buscam e não acham</h2><ul class="dp-lista dp-rola">${s.buscas.sem.slice(0, 30).map(b => `<li><span>${esc(b.termo)} (${b.vezes}x)</span><button class="btn small" type="button" data-minerar="${esc(b.termo)}">Minerar</button></li>`).join('') || '<li class="hint">Nenhuma até agora.</li>'}</ul></div>
+      <div class="panel"><h2>Acrescentados pela busca</h2><ul class="dp-lista dp-rola">${(s.termos_auto || []).map(t => `<li><span>${esc(t.termo)}</span><b>${t.gravadas} ofertas</b></li>`).join('') || '<li class="hint">Nenhum ainda.</li>'}</ul></div>
+    </div>` : `
+    <div class="dp-tres">
+      <div class="panel"><h2>Por loja</h2>${dbRosca(s.cliques.por_loja.map(x => ({ ...x, k: x.store_id })), x => loja(x.k), ORDEM_LOJAS)}</div>
+      <div class="panel"><h2>Por categoria</h2>${dbBarras(s.cliques.por_categoria, x => cat(x.categoria))}</div>
+      <div class="panel"><h2>Por origem</h2>${dbRosca((s.origens || []).map(x => ({ ...x, k: x.origem })), x => ORIGENS[x.k] || x.k, Object.keys(ORIGENS))}</div>
+    </div>
+    <div class="panel dp-top"><h2>Ofertas mais clicadas</h2>
+      <ol class="dp-rank">${s.cliques.top.map((o, i) => `<li><a href="/oferta/${Number(o.id)}" target="_blank" rel="noopener" title="${esc(o.produto)}"><i>${i + 1}</i><img class="dp-foto" src="/img/o/${Number(o.id)}.jpg" alt="" width="40" height="40" loading="lazy" onerror="this.style.visibility='hidden'"><span>${esc(o.produto)}</span><em>${lojaLogo(o.store_id, loja(o.store_id))}</em><b>${reais(o.preco_atual)}</b><small>${o.link_clicks.toLocaleString('pt-BR')} cliques</small></a></li>`).join('') || '<li class="hint">Nenhum clique ainda.</li>'}</ol>
+    </div>`;
+  const totalErros = (s.erros || []).reduce((t, x) => t + x.vezes, 0);
   el.innerHTML = `<div class="dp-cab"><h2>Desempenho da semana</h2>
       <div class="db-seg" role="tablist"><button type="button" data-dp="cliques" aria-selected="${dpAba !== 'buscas'}">Cliques</button><button type="button" data-dp="buscas" aria-selected="${dpAba === 'buscas'}">Buscas</button></div></div>
-    <div class="dp-grade">${blocos}</div>
-    ${s.erros?.length ? `<div class="panel" style="margin-top:12px"><h2>Erros do servidor (24 h)</h2><ul class="dp-lista">${s.erros.map(x => `<li><span title="${esc(x.mensagem)}">${esc(x.rota || '')}: ${esc(x.mensagem)}</span><b>${x.vezes}</b></li>`).join('')}</ul></div>` : ''}`;
+    ${blocos}
+    ${s.erros?.length ? `<details class="db-console" id="db-console">
+      <summary><i class="db-nivel critico"></i><b>Erros do servidor nas últimas 24 h</b><span>Ocorrências: ${totalErros.toLocaleString('pt-BR')}</span><button class="btn small" type="button" id="db-resolver">Marcar como resolvido</button></summary>
+      <ul>${s.erros.map(x => `<li><code>${esc(x.rota || 'servidor')}</code><span>${esc(x.mensagem)}</span><small>${x.vezes}× · última às ${fmtDate(x.ultima)}</small></li>`).join('')}</ul>
+    </details>` : ''}`;
 }
 const ORIGENS = { postagem: 'Postagens (grupos e redes)', site: 'Navegando no site', busca_site: 'Busca do site', pagina_categoria: 'Páginas de categoria', buscador: 'Google e buscadores', rede_social: 'Redes sociais', outro_site: 'Outros sites', direto: 'Acesso direto' };
 const CATEGORIES_NOMES = { informatica: 'Informática', celulares: 'Celulares', games: 'Games', audio_tv: 'TV e áudio', eletrodomesticos: 'Eletrodomésticos', cozinha: 'Cozinha', casa: 'Casa', ferramentas: 'Ferramentas', beleza: 'Beleza', saude: 'Saúde', esporte: 'Esporte', moda: 'Moda', brinquedos: 'Brinquedos', automotivo: 'Automotivo', pets: 'Pets', limpeza: 'Limpeza', alimentos: 'Alimentos', outros: 'Outros' };
 $('#dash-desempenho').addEventListener('click', async e => {
   const aba = e.target.closest('[data-dp]');
   if (aba) { dpAba = aba.dataset.dp; return mostrarDesempenho(DASH?.saude); }
+  if (e.target.closest('#db-resolver')) {
+    e.preventDefault();
+    try { await api('/api/admin/erros/resolver', { method: 'POST' }); await loadDashboard(); } catch (err) { globalMsg(err.message, false); }
+    return;
+  }
   const b = e.target.closest('[data-minerar]');
   if (!b) return;
   b.disabled = true; b.textContent = 'Minerando…';
@@ -399,98 +462,127 @@ async function loadDashboard() {
   $('#sac-badge').textContent = p.sac_fila; $('#sac-badge').classList.toggle('hidden', !p.sac_fila);
   $('#chatmod-badge').textContent = p.xingamentos; $('#chatmod-badge').classList.toggle('hidden', !p.xingamentos);
   $('#acessos-badge').textContent = p.acessos_suspeitos || 0; $('#acessos-badge').classList.toggle('hidden', !p.acessos_suspeitos);
-  const soma7 = d.serie.slice(-7).reduce((s, x) => s + x.cliques, 0);
-  const serie0 = Object.keys(DB_SERIES).find(c => d.serie.some(x => x[c])) || 'cliques'; // abre numa série com dados
+    const serie0 = Object.keys(DB_SERIES).find(c => d.serie.some(x => x[c])) || 'cliques'; // abre numa série com dados
   // O que precisa de atenção (cada item abre a página certa)
   const acoes = [];
-  const add = (n, txt, aba, forte, ico = 'alerta', secao = '') => { if (n) acoes.push({ txt, aba, forte, ico, secao }); };
-  add(p.cartao_sem_chave, '<b>Cartões salvos desligados:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro', 'Formas de recebimento');
-  add(p.sac_fila, `<b>${p.sac_fila} chamado(s) no SAC</b> esperando atendimento`, 'sac', true, 'sino');
-  add(p.xingamentos, `<b>${p.xingamentos} conversa(s) com xingamentos</b> para revisar`, 'chatmod', true);
-  add(p.acessos_suspeitos, `<b>${p.acessos_suspeitos} conta(s) acessada(s) de lugares distantes</b> em pouco tempo (últimas 24 h)`, 'acessos', true);
-  add(p.cadastros, `<b>${p.cadastros} cadastro(s) de empresa</b> esperando aprovação`, 'users', true);
-  add(p.assinaturas, `<b>${p.assinaturas} pedido(s) de assinatura</b> para confirmar o pagamento`, 'planos', true, 'dinheiro');
-  add(p.leads, `<b>${p.leads} empresa(s)</b> querem anunciar no site`, 'ads', false, 'sino');
-  add(p.avisos, `<b>${p.avisos} aviso(s)</b> de saldo de afiliado`, 'ganhos', false, 'sino');
-  add(m.problemas.length, `<b>${m.problemas.length} loja(s) com problema</b> na mineração: ${esc(m.problemas.map(x => x.nome).join(', '))}`, 'mining', false);
-  add(p.postagens_erro, `<b>${p.postagens_erro} postagem(ns)</b> com erro nos últimos 3 dias`, 'social', false);
-  add(p.clientes_vencendo, `<b>${p.clientes_vencendo} cliente(s) da ferramenta</b> vencem em até 5 dias`, 'clientes', false, 'pessoas');
-  for (const a of d.saude?.alertas || []) add(1, a.texto, a.aba, a.forte, 'alerta', /backup/i.test(a.texto) ? 'Backup' : '');
-  acoes.sort((a, b) => Number(Boolean(b.forte)) - Number(Boolean(a.forte)));
+  const add = (n, txt, aba, nivel, acao, secao = '', erros = false) => { if (n) acoes.push({ txt, aba, nivel, acao, secao, erros }); };
+  add(p.cartao_sem_chave, '<b>Cartões salvos desligados:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', 'atencao', 'Configurar', 'Formas de recebimento');
+  add(p.sac_fila, `<b>${p.sac_fila} chamado(s) no SAC</b> esperando atendimento`, 'sac', 'atencao', 'Atender');
+  add(p.xingamentos, `<b>${p.xingamentos} conversa(s) com xingamentos</b> para revisar`, 'chatmod', 'atencao', 'Revisar');
+  add(p.acessos_suspeitos, `<b>${p.acessos_suspeitos} conta(s) acessada(s) de lugares distantes</b> em pouco tempo (últimas 24 h)`, 'acessos', 'critico', 'Ver acessos');
+  add(p.cadastros, `<b>${p.cadastros} cadastro(s) de empresa</b> esperando aprovação`, 'users', 'atencao', 'Aprovar');
+  add(p.assinaturas, `<b>${p.assinaturas} pedido(s) de assinatura</b> para confirmar o pagamento`, 'planos', 'atencao', 'Confirmar');
+  add(p.leads, `<b>${p.leads} empresa(s)</b> querem anunciar no site`, 'ads', 'info', 'Ver pedidos');
+  add(p.avisos, `<b>${p.avisos} aviso(s)</b> de saldo de afiliado`, 'ganhos', 'info', 'Ver saldo');
+  add(m.problemas.length, `<b>${m.problemas.length} loja(s) com problema</b> na mineração: ${esc(m.problemas.map(x => x.nome).join(', '))}`, 'mining',
+    m.problemas.some(x => ['blocked', 'error'].includes(x.status)) ? 'critico' : 'atencao', 'Ver mineração');
+  add(p.postagens_erro, `<b>${p.postagens_erro} postagem(ns)</b> com erro nos últimos 3 dias`, 'social', 'atencao', 'Ver postagens');
+  add(p.clientes_vencendo, `<b>${p.clientes_vencendo} cliente(s) da ferramenta</b> vencem em até 5 dias`, 'clientes', 'info', 'Ver clientes');
+  for (const a of d.saude?.alertas || []) {
+    if (a.aba === 'aff') add(1, a.texto, a.aba, 'atencao', 'Inserir link');
+    else if (a.aba === 'dash') add(1, a.texto.replace(': veja a lista no fim do resumo', ''), 'dash', 'critico', 'Ver erros', '', true);
+    else if (a.aba === 'account') add(1, a.texto, a.aba, /falhou/i.test(a.texto) ? 'critico' : a.forte ? 'atencao' : 'info', a.forte ? 'Ver backup' : 'Escolher pasta', 'Backup');
+    else add(1, a.texto, a.aba, a.forte ? 'critico' : 'atencao', 'Ver mineração');
+  }
+  const PESO = { critico: 0, atencao: 1, info: 2 };
+  acoes.sort((a, b) => PESO[a.nivel] - PESO[b.nivel]);
+  const criticos = acoes.filter(a => a.nivel === 'critico').length;
+  const NOME_NIVEL = { critico: 'Crítico', atencao: 'Atenção', info: 'Informativo' };
+  dbSerieAtual = serie0;
+  dbLidoEm = Date.now();
   mostrarDesempenho(d.saude);
-  const kpi = (aba, ico, rot, val, sub) => `<button class="db-kpi" type="button" data-db-ir="${aba}"><i class="db-kpi-ico">${dbIco(ico)}</i><span>${rot}</span><b>${val}</b><small>${sub}</small></button>`;
+  const kpi = (aba, ico, rot, val, sub) => `<button class="db-kpi" type="button" data-db-ir="${aba}"><span>${rot}</span><i class="db-kpi-ico">${dbIco(ico)}</i><b>${val}</b><small>${sub}</small></button>`;
   const statusPedido = { pago: 'Pago', enviado: 'Enviado', concluido: 'Concluído', cancelado: 'Cancelado' };
   const statusPag = { pendente: 'Aguardando', aprovado: 'Aprovado', recusado: 'Recusado', cancelado: 'Cancelado', expirado: 'Expirado' };
   const tipo = { empresa: 'Empresa', consumidor: 'Consumidor', afiliado: 'Ferramenta' };
   const usd = k.receita.afiliados_usd ? ` + US$ ${k.receita.afiliados_usd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '';
   const cab = (titulo, aba, botao) => `<div class="db-cab"><h2>${titulo}</h2><button class="btn small" type="button" data-db-ir="${aba}">${botao}</button></div>`;
+  // Dinheiro: o saldo em destaque; as linhas zeradas ficam recolhidas
+  const linhas = [
+    [`Assinaturas (${dbNum(k.receita.assinaturas_n)})`, k.receita.assinaturas, brl(k.receita.assinaturas)],
+    ['Taxa do site sobre pedidos', k.receita.taxa_pedidos, brl(k.receita.taxa_pedidos)],
+    [`Comissões de afiliado (${dbNum(k.receita.afiliados_n)})`, k.receita.afiliados + (k.receita.afiliados_usd || 0), `${brl(k.receita.afiliados)}${usd}`],
+    ['Afiliados: a liberar', k.afiliados.a_liberar, brl(k.afiliados.a_liberar)],
+    [`Vendido pelas lojas (${dbNum(k.pedidos.n)})`, k.pedidos.valor, brl(k.pedidos.valor)],
+  ];
+  const linha = ([a, , c]) => `<div><dt>${a}</dt><dd>${c}</dd></div>`;
+  const comValor = linhas.filter(l => l[1] > 0), zeradas = linhas.filter(l => !(l[1] > 0));
+  const sacar = k.afiliados.sacar || [];
+  const botaoSacar = sacar.length === 1 && sacar[0].portal
+    ? `<a class="btn primary small" href="${esc(sacar[0].portal)}" target="_blank" rel="noopener" title="Abre o portal: ${esc(sacar[0].nome)}">Sacar</a>`
+    : `<button class="btn ${sacar.length ? 'primary ' : ''}small" type="button" data-db-ir="ganhos">${sacar.length ? 'Sacar' : 'Ver ganhos'}</button>`;
+  const PILL = { ok: ['b-ok', 'Ativo'], blocked: ['b-blocked', 'Bloqueado'], error: ['b-error', 'Erro'], not_configured: ['b-none', 'Falta configurar'], running: ['b-ok', 'Minerando'], disabled: ['b-none', 'Desligado'] };
+  const noAr = Object.fromEntries((d.saude?.lojas || []).map(l => [l.id, l.ofertas]));
 
   el.innerHTML = `
     <div class="db-topo">
-      <div><h1>Painel</h1><p>Atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p></div>
-      <div class="row"><button class="btn" type="button" id="db-atualizar">Atualizar</button><button class="btn" type="button" data-db-ir="offers" data-db-secao="Adicionar oferta">Oferta manual</button>
+      <div><h1>Painel</h1><p class="db-status"><i class="db-pulso ${criticos ? 'alerta' : ''}"></i>${criticos ? `${criticos} crítico${criticos > 1 ? 's' : ''}` : 'Operacional'} · <span id="db-lido">${dbTextoLido()}</span></p></div>
+      <div class="row db-acoes-topo">
+        <button class="btn db-ico-btn" type="button" id="db-atualizar" title="Atualizar" aria-label="Atualizar">${dbIco('refresh')}</button>
+        <button class="btn db-manual" type="button" data-db-ir="offers" data-db-secao="Adicionar oferta">+ Oferta manual</button>
         <button class="btn primary" type="button" id="db-minerar" ${m.rodando ? 'disabled' : ''}>${m.rodando ? 'Minerando…' : 'Minerar agora'}</button></div>
     </div>
 
     <div class="db-kpis">
-      ${kpi('offers', 'ofertas', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbNum(k.ofertas.novas24h)} novas em 24 h`)}
-      ${kpi('offers', 'clique', 'Cliques em 7 dias', dbNum(k.cliques.d7), k.cliques.var == null ? `${dbNum(k.cliques.total)} no total` : `${dbVar(k.cliques.var)} sobre a semana anterior`)}
-      ${kpi('users', 'pessoas', 'Usuários', dbNum(k.usuarios.total), `${dbNum(k.usuarios.novos7)} novos em 7 dias`)}
-      ${kpi('ganhos', 'dinheiro', 'Receita em 30 dias', brl(k.receita.total), k.receita.var == null ? 'assinaturas, taxa e afiliados' : `${dbVar(k.receita.var)} sobre o mês anterior`)}
+      ${kpi('offers', 'ofertas', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbVar(k.ofertas.var)} ${dbNum(k.ofertas.novas7d)} novas em 7 dias`)}
+      ${kpi('offers', 'clique', 'Cliques em 7 dias', dbNum(k.cliques.d7), `${dbVar(k.cliques.var)} sobre a semana anterior`)}
+      ${kpi('users', 'pessoas', 'Usuários', dbNum(k.usuarios.total), `${dbVar(k.usuarios.var)} ${dbNum(k.usuarios.novos7)} novos em 7 dias`)}
+      ${kpi('ganhos', 'dinheiro', 'Receita em 30 dias', brl(k.receita.total), `${dbVar(k.receita.var)} sobre o mês anterior`)}
     </div>
 
-    <div class="db-colunas">
-      <div class="db-coluna">
-        <section class="panel">
-          <div class="db-cab"><h2>Precisa da sua atenção</h2>${acoes.length ? `<span class="db-num">${acoes.length}</span>` : ''}</div>
-          ${acoes.length ? `<ul class="db-acoes">${acoes.map(a => `<li><button type="button" class="${a.forte ? 'forte' : ''}" data-db-ir="${a.aba}" data-db-secao="${esc(a.secao)}">${dbIco(a.ico)}<span>${a.txt}</span>${dbIco('seta')}</button></li>`).join('')}</ul>`
-            : `<p class="db-ok">${dbIco('ok')} Tudo em dia. Nenhuma pendência agora.</p>`}
-        </section>
-        <section class="panel">
-          <div class="db-cab"><h2>Últimos 30 dias</h2>
-            <div class="db-seg" role="tablist">${Object.entries(DB_SERIES).map(([c, [nome]]) => `<button type="button" data-serie="${c}" aria-selected="${c === serie0}">${nome}</button>`).join('')}</div></div>
-          <div id="db-graf">${dbGrafico(d.serie, serie0)}</div>
-        </section>
-      </div>
+    <div class="db-mosaico">
+      <section class="panel db-atencao">
+        <div class="db-cab"><h2>Precisa da sua atenção</h2>${acoes.length ? `<span class="db-num">${acoes.length}</span>` : ''}</div>
+        ${acoes.length ? `<ul class="db-alertas">${acoes.map(a => `<li class="${a.nivel}"><i class="db-nivel ${a.nivel}" title="${NOME_NIVEL[a.nivel]}"></i><span>${a.txt}</span><button class="btn small" type="button" ${a.erros ? 'data-db-erros' : `data-db-ir="${a.aba}" data-db-secao="${esc(a.secao)}"`}>${a.acao}</button></li>`).join('')}</ul>`
+          : `<p class="db-ok">${dbIco('ok')} Tudo em dia. Nenhuma pendência agora.</p>`}
+      </section>
 
-      <div class="db-coluna">
-        <section class="panel">
-          ${cab('Mineração', 'mining', 'Detalhes')}
-          <p class="db-nota">${m.rodando ? 'Mineração em andamento…' : m.ultima ? `Última rodada: ${new Date(m.ultima).toLocaleString('pt-BR')}` : 'Nenhuma rodada desde que o servidor iniciou'} · <b>${m.ok} de ${m.total}</b> lojas funcionando</p>
-          <div class="db-lojas">${m.lojas.map(l => `<div class="db-loja" title="${esc(STATUS_LABEL[l.status] || 'Ainda não rodou')}"><span class="db-loja-nome">${lojaLogo(l.id || l.nome, l.nome)}</span><span class="row" style="gap:6px"><small class="hint" style="margin:0">${dbNum(l.saved)}</small><i class="db-ponto ${esc(l.status)}"></i></span></div>`).join('')}</div>
-          ${m.problemas.map(x => `<p class="db-falha" title="${esc(x.msg || STATUS_LABEL[x.status] || '')}"><b>${esc(x.nome)}:</b> ${esc(x.msg || STATUS_LABEL[x.status] || '')}</p>`).join('')}
-        </section>
-        <section class="panel">
-          ${cab('Dinheiro em 30 dias', 'ganhos', 'Ganhos')}
-          <dl class="db-linhas">
-            <div><dt>Assinaturas (${dbNum(k.receita.assinaturas_n)})</dt><dd>${brl(k.receita.assinaturas)}</dd></div>
-            <div><dt>Taxa do site sobre pedidos</dt><dd>${brl(k.receita.taxa_pedidos)}</dd></div>
-            <div><dt>Comissões de afiliado (${dbNum(k.receita.afiliados_n)})</dt><dd>${brl(k.receita.afiliados)}${usd}</dd></div>
-            <div><dt>Afiliados: disponível para saque</dt><dd>${brl(k.afiliados.disponivel)}</dd></div>
-            ${k.afiliados.a_liberar ? `<div><dt>Afiliados: a liberar</dt><dd>${brl(k.afiliados.a_liberar)}</dd></div>` : ''}
-            ${k.pedidos.n ? `<div><dt>Vendido pelas lojas (${dbNum(k.pedidos.n)})</dt><dd>${brl(k.pedidos.valor)}</dd></div>` : ''}
-          </dl>
-          ${k.afiliados.pode_sacar?.length ? `<p class="db-nota" style="margin:8px 0 0">Pode sacar agora: <b>${esc(k.afiliados.pode_sacar.join(', '))}</b></p>` : ''}
-        </section>
-        ${d.ultimos_cadastros.length ? `<section class="panel">
-          ${cab('Novos cadastros', 'users', 'Ver usuários')}
-          <ul class="db-lista">${d.ultimos_cadastros.slice(0, 4).map(u => `<li><span class="db-txt"><b>${esc(u.empresa_nome || u.nome || u.email)}</b><br><small>${esc(tipo[u.tipo] || 'Sem perfil')} · ${fmtDate(u.created_at)}</small></span><span class="badge b-${esc(u.status)}">${esc({ active: 'Ativo', pending: 'Pendente', onboarding: 'Escolhendo perfil', suspended: 'Suspenso', banned: 'Banido', rejected: 'Recusado' }[u.status] || u.status)}</span></li>`).join('')}</ul>
-        </section>` : ''}
-        ${d.ultimos_pedidos.length ? `<section class="panel">
-          ${cab('Últimos pedidos', 'atendimento', 'Ver pedidos')}
-          <ul class="db-lista">${d.ultimos_pedidos.slice(0, 4).map(x => `<li><span class="db-txt"><b>PD-${String(x.id).padStart(6, '0')}</b> · ${esc(x.produto)}<br><small>${esc(x.loja)} · ${fmtDate(x.pago_em)}</small></span><b class="num">${brl(x.total)}</b><span class="badge b-${x.status === 'cancelado' ? 'banned' : 'active'}">${esc(statusPedido[x.status] || x.status)}</span></li>`).join('')}</ul>
-        </section>` : ''}
-        ${d.ultimos_pagamentos.length ? `<section class="panel">
-          ${cab('Últimas assinaturas', 'planos', 'Ver planos')}
-          <ul class="db-lista">${d.ultimos_pagamentos.slice(0, 4).map(x => `<li><span class="db-txt"><b>${esc(x.nome || x.email)}</b><br><small>${esc(x.plano)} · ${fmtDate(x.created_at)}</small></span><b class="num">${brl(x.valor)}</b><span class="badge ${(PED_STATUS[x.status] || ['b-none'])[0]}">${esc(statusPag[x.status] || x.status)}</span></li>`).join('')}</ul>
-        </section>` : ''}
-      </div>
+      <section class="panel db-dinheiro-card">
+        ${cab('Dinheiro em 30 dias', 'ganhos', 'Ganhos')}
+        <div class="db-saldo"><div><small>Disponível para saque</small><b>${brl(k.afiliados.disponivel)}</b>${k.afiliados.pode_sacar?.length ? `<small>${esc(k.afiliados.pode_sacar.join(', '))}</small>` : ''}</div>${botaoSacar}</div>
+        <dl class="db-linhas">${comValor.map(linha).join('')}</dl>
+        ${zeradas.length ? `<details class="db-zeradas"><summary>${zeradas.length} linha${zeradas.length > 1 ? 's' : ''} sem valor</summary><dl class="db-linhas">${zeradas.map(linha).join('')}</dl></details>` : ''}
+      </section>
+
+      <section class="panel db-grafico">
+        <div class="db-cab"><h2>Últimos 30 dias</h2>
+          <div class="db-seg" role="tablist">${Object.entries(DB_SERIES).map(([c, [nome]]) => `<button type="button" data-serie="${c}" aria-selected="${c === serie0}">${nome}</button>`).join('')}</div></div>
+        <div id="db-graf"></div>
+      </section>
+
+      <section class="panel db-mineracao">
+        ${cab('Mineração', 'mining', 'Detalhes')}
+        <p class="db-nota">${m.rodando ? 'Mineração em andamento…' : m.ultima ? `Última rodada: ${new Date(m.ultima).toLocaleString('pt-BR')}` : 'Nenhuma rodada desde que o servidor iniciou'} · <b>${m.ok} de ${m.total}</b> funcionando</p>
+        <table class="db-lojas-tab"><thead><tr><th>Loja</th><th>Ofertas no ar</th><th>Situação</th></tr></thead><tbody>${m.lojas.map(l => { const [c, t] = PILL[l.status] || ['b-none', 'Sem rodada']; return `<tr><td>${lojaLogo(l.id, l.nome)}</td><td>${dbNum(noAr[l.id])}</td><td><span class="badge ${c}">${t}</span></td></tr>`; }).join('')}</tbody></table>
+        ${m.problemas.map(x => `<p class="db-falha" title="${esc(x.msg || STATUS_LABEL[x.status] || '')}"><b>${esc(x.nome)}:</b> ${esc(x.msg || STATUS_LABEL[x.status] || '')}</p>`).join('')}
+      </section>
+    </div>
+
+    <div class="db-tres">
+      <section class="panel">
+        ${cab('Novos cadastros', 'users', 'Ver usuários')}
+        ${d.ultimos_cadastros.length ? `<ul class="db-lista">${d.ultimos_cadastros.slice(0, 4).map(u => `<li><span class="db-txt"><b>${esc(u.empresa_nome || u.nome || u.email)}</b><br><small>${esc(tipo[u.tipo] || 'Sem perfil')} · ${fmtDate(u.created_at)}</small></span><span class="badge b-${esc(u.status)}">${esc({ active: 'Ativo', pending: 'Pendente', onboarding: 'Escolhendo perfil', suspended: 'Suspenso', banned: 'Banido', rejected: 'Recusado' }[u.status] || u.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhum cadastro ainda.</p>'}
+      </section>
+      <section class="panel">
+        ${cab('Últimas assinaturas', 'planos', 'Ver planos')}
+        ${d.ultimos_pagamentos.length ? `<ul class="db-lista">${d.ultimos_pagamentos.slice(0, 4).map(x => `<li><span class="db-txt"><b>${esc(x.nome || x.email)}</b><br><small>${esc(x.plano)} · ${fmtDate(x.created_at)}</small></span><b class="num">${brl(x.valor)}</b><span class="badge ${(PED_STATUS[x.status] || ['b-none'])[0]}">${esc(statusPag[x.status] || x.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhuma assinatura ainda.</p>'}
+      </section>
+      ${d.ultimos_pedidos.length ? `<section class="panel">
+        \${cab('Últimos pedidos', 'atendimento', 'Ver pedidos')}
+        \${d.ultimos_pedidos.length ? \`<ul class="db-lista">\${d.ultimos_pedidos.slice(0, 4).map(x => \`<li><span class="db-txt"><b>PD-\${String(x.id).padStart(6, '0')}</b> · \${esc(x.produto)}<br><small>\${esc(x.loja)} · \${fmtDate(x.pago_em)}</small></span><b class="num">\${brl(x.total)}</b><span class="badge b-\${x.status === 'cancelado' ? 'banned' : 'active'}">\${esc(statusPedido[x.status] || x.status)}</span></li>\`).join('')}</ul>\` : ''}
+      </section>` : ''}
     </div>`;
 
+  dbDesenharGrafico();
+  el.querySelectorAll('[data-db-erros]').forEach(b => b.addEventListener('click', () => {
+    const c = $('#db-console');
+    if (c) { c.open = true; c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  }));
   el.querySelectorAll('[data-db-ir]').forEach(b => b.addEventListener('click', () => { abrirAba(b.dataset.dbIr); if (b.dataset.dbSecao) dobraAbrir(b.dataset.dbIr, b.dataset.dbSecao); }));
   el.querySelectorAll('[data-serie]').forEach(b => b.addEventListener('click', () => {
     el.querySelectorAll('[data-serie]').forEach(x => x.setAttribute('aria-selected', x === b));
-    $('#db-graf').innerHTML = dbGrafico(DASH.serie, b.dataset.serie);
+    dbSerieAtual = b.dataset.serie;
+    dbDesenharGrafico();
   }));
   $('#db-atualizar').addEventListener('click', loadDashboard);
   $('#db-minerar').addEventListener('click', async () => {

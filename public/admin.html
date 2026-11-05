@@ -503,14 +503,108 @@
   .db-seg button[aria-selected="true"] { background: var(--azul); }
   .logo-tag { background: var(--azul-soft); color: var(--azul-texto); }
   .db-acoes .tab-ico { color: var(--azul-texto); }
+  /* ── Tela inicial nova ── */
+  .db-status { display: flex; align-items: center; gap: 7px; }
+  .db-pulso { width: 9px; height: 9px; border-radius: 50%; background: var(--green); animation: db-pulso 2s ease-out infinite; }
+  .db-pulso.alerta { background: var(--red); animation: none; }
+  @keyframes db-pulso { 0% { box-shadow: 0 0 0 0 rgba(43, 182, 115, .5); } 100% { box-shadow: 0 0 0 9px rgba(43, 182, 115, 0); } }
+  .db-acoes-topo { align-items: center; gap: 8px; }
+  .db-ico-btn { width: 42px; height: 42px; padding: 0; display: grid; place-items: center; }
+  .db-ico-btn .tab-ico { width: 19px; height: 19px; }
+  .db-manual { min-height: 42px; border-color: var(--green-line); color: var(--green); background: var(--green-soft); font-weight: 700; }
+  #db-minerar { min-height: 42px; }
+  /* Números */
+  .db-kpi { position: relative; display: block; padding: 14px 16px; }
+  .db-kpi > span { display: block; padding-right: 30px; }
+  a.btn { text-decoration: none; }
+  .db-kpi b { display: block; margin: 2px 0 4px; }
+  .db-kpi small { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  .db-kpi .db-kpi-ico { position: absolute; top: 12px; right: 12px; width: auto; height: auto; background: none; border-radius: 0; display: block; }
+  .db-kpi small .db-var { flex: none; }
+  /* Mosaico: sem vão, cada linha do tamanho do quadro maior */
+  .db-mosaico { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+  .db-mosaico .panel { margin: 0; min-width: 0; display: flex; flex-direction: column; }
+  .db-tres, .dp-tres { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 12px; }
+  .db-tres .panel, .dp-tres .panel { margin: 0; min-width: 0; }
+  #db-graf { flex: 1; min-height: 190px; overflow: hidden; }
+  .db-graf { display: block; width: auto; height: auto; }
+  .db-graf text { font-size: 11px; }
+  /* Alertas */
+  .db-alertas { list-style: none; margin: 0; padding: 0; display: grid; }
+  .db-alertas li { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-top: 1px solid var(--border); font-size: 13px; }
+  .db-alertas li:first-child { border-top: 0; }
+  .db-alertas li > span { flex: 1; min-width: 0; }
+  .db-alertas .btn { flex: none; }
+  .db-nivel { flex: none; width: 10px; height: 10px; border-radius: 3px; }
+  .db-nivel.critico { background: #dc3545; } .db-nivel.atencao { background: #e0900f; } .db-nivel.info { background: var(--azul); }
+  .db-alertas li.critico { background: linear-gradient(90deg, rgba(220, 53, 69, .1), transparent 45%); }
+  /* Dinheiro */
+  .db-saldo { flex: 1 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; margin-bottom: 8px; border-radius: 10px; background: var(--green-soft); }
+  .db-saldo small { display: block; font-size: 12px; color: var(--muted); }
+  .db-saldo b { display: block; font-size: 24px; font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+  .db-zeradas { padding-top: 6px; font-size: 12.5px; color: var(--muted); }
+  .db-zeradas summary { cursor: pointer; }
+  /* Mineração */
+  .db-lojas-tab th { padding: 2px 4px 6px; font-size: 11.5px; }
+  .db-lojas-tab td { padding: 6px 4px; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .db-lojas-tab tr:last-child td { border-bottom: 0; }
+  .db-lojas-tab th:nth-child(2), .db-lojas-tab td:nth-child(2) { text-align: right; }
+  .db-lojas-tab th:nth-child(3), .db-lojas-tab td:nth-child(3) { text-align: right; }
+  /* Gráficos da semana */
+  .dp-rosca { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+  .dp-rosca svg { flex: none; width: 132px; height: 132px; }
+  .dp-rosca .t1 { font-size: 18px; font-weight: 800; text-anchor: middle; fill: var(--text); }
+  .dp-rosca .t2 { font-size: 10px; text-anchor: middle; fill: var(--muted); }
+  .dp-rosca circle:hover { stroke-width: 19; }
+  .dp-legenda { flex: 1; min-width: 0; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 12.5px; }
+  .dp-legenda li { display: flex; align-items: center; gap: 6px; }
+  .dp-legenda i { flex: none; width: 10px; height: 10px; border-radius: 3px; }
+  .dp-legenda span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dp-legenda small, .dp-barras small { flex: none; width: 36px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dp-barras { display: grid; gap: 7px; margin-top: 10px; font-size: 12.5px; }
+  .dp-barras > div { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto 36px; align-items: center; gap: 7px; }
+  .dp-barras span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dp-barras i { display: block; height: 14px; }
+  .dp-barras u { display: block; height: 100%; min-width: 3px; border-radius: 0 4px 4px 0; background: var(--azul-texto); text-decoration: none; }
+  .dp-barras > div:hover u { filter: brightness(1.15); }
+  /* Listas numeradas, como no painel do afiliado */
+  .dp-top { margin: 12px 0 0; }
+  .dp-rank { list-style: none; margin: 8px 0 0; padding: 0 6px 0 0; max-height: 440px; overflow-y: auto; scrollbar-width: thin; }
+  .dp-rank li + li { border-top: 1px solid var(--border); }
+  .dp-rank a { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 4px; color: var(--text); font-size: 13.5px; text-decoration: none; }
+  .dp-rank a:hover { background: var(--surface-2); color: var(--azul-texto); }
+  .dp-rank i { flex: none; width: 24px; font-style: normal; font-weight: 800; color: var(--azul-texto); text-align: right; font-variant-numeric: tabular-nums; }
+  .dp-rank span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dp-rank em { flex: none; display: flex; align-items: center; width: 92px; font-style: normal; font-size: 12px; }
+  .dp-rank b { flex: none; width: 92px; text-align: right; color: var(--green); font-variant-numeric: tabular-nums; }
+  .dp-rank small { flex: none; min-width: 70px; text-align: right; color: var(--muted); font-size: 12px; }
+  .dp-foto { flex: none; width: 40px; height: 40px; padding: 2px; object-fit: contain; border-radius: 7px; background: #fff; }
+  /* Erros do servidor */
+  .db-console { margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  .db-console summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; list-style: none; }
+  .db-console summary::-webkit-details-marker { display: none; }
+  .db-console summary span { flex: 1; font-size: 12.5px; color: var(--muted); }
+  .db-console ul { list-style: none; margin: 0; padding: 10px 16px; border-top: 1px solid var(--border); display: grid; gap: 8px; font-size: 12.5px; }
+  .db-console li { display: grid; gap: 2px; }
+  .db-console code { font-family: ui-monospace, Consolas, monospace; color: var(--azul-texto); }
+  .db-console li span { overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; }
+  .db-console small { color: var(--muted); }
+  @media (max-width: 1100px) { .db-mosaico { grid-template-columns: minmax(0, 1fr); } #db-graf { height: 220px; flex: none; } }
+  @media (max-width: 600px) {
+    .db-alertas li { flex-wrap: wrap; } .db-alertas li > span { flex-basis: calc(100% - 22px); } .db-alertas .btn { margin-left: 20px; }
+    .dp-rosca { flex-direction: column; align-items: stretch; } .dp-rosca svg { align-self: center; }
+    .dp-rank em, .dp-rank small { display: none; } .dp-rank b { width: auto; }
+    .db-acoes-topo { width: 100%; } .db-manual, #db-minerar { flex: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { .db-pulso { animation: none; } }
 </style>
-<script src="/js/tema.js?v=20261277"></script>
-<script src="/js/dialogo.js?v=20261277"></script>
-<script src="/js/modelo-post.js?v=20261277"></script>
-<script src="/js/avisos-entrada.js?v=20261277"></script>
-<script src="/js/capi-minerando.js?v=20261277" defer></script>
-<script src="/js/cadastro-auto.js?v=20261277" defer></script>
-<script src="/js/seletor.js?v=20261277" defer></script>
+<script src="/js/tema.js?v=20261278"></script>
+<script src="/js/dialogo.js?v=20261278"></script>
+<script src="/js/modelo-post.js?v=20261278"></script>
+<script src="/js/avisos-entrada.js?v=20261278"></script>
+<script src="/js/capi-minerando.js?v=20261278" defer></script>
+<script src="/js/cadastro-auto.js?v=20261278" defer></script>
+<script src="/js/seletor.js?v=20261278" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1852,6 +1946,6 @@
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261277"></script>
+<script src="/js/admin.js?v=20261278"></script>
 </body>
 </html>

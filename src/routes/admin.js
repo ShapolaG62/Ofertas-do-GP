@@ -73,6 +73,7 @@ router.post('/api/admin/logout', (req, res) => {
 
 // Daqui para baixo, tudo exige login.
 router.use('/api/admin', auth.requireAdmin);
+router.post('/api/admin/erros/resolver', (req, res) => { require('../erros-site').limpar(); res.json({ ok: true }); });
 
 router.post('/api/admin/password', (req, res) => {
   const { current, next } = req.body || {};

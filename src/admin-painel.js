@@ -42,7 +42,8 @@ function dashboard() {
   // Ofertas
   const ativo = offers.activeClause();
   const ofertasNoAr = um(`SELECT COUNT(*) n FROM offers o WHERE ${ativo.sql}`, ...ativo.params).n || 0;
-  const ofertasNovas = um(`SELECT SUM(created_at >= datetime('now', '-1 day')) d1, SUM(created_at >= datetime('now', '-7 days')) d7 FROM offers`);
+  const ofertasNovas = um(`SELECT SUM(created_at >= datetime('now', '-1 day')) d1, SUM(created_at >= datetime('now', '-7 days')) d7,
+    SUM(created_at >= datetime('now', '-14 days') AND created_at < datetime('now', '-7 days')) ant FROM offers`);
   const cliques7 = um(`SELECT COALESCE(SUM(n), 0) n FROM cliques_dia WHERE dia >= date('now', '-6 days')`).n || 0;
   const cliquesAnt = um(`SELECT COALESCE(SUM(n), 0) n FROM cliques_dia WHERE dia >= date('now', '-13 days') AND dia < date('now', '-6 days')`).n || 0;
   const cliquesTotal = um('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers').n || 0;
@@ -74,7 +75,8 @@ function dashboard() {
   let afiliados = { disponivel: 0, a_liberar: 0 };
   try {
     const g = require('./ganhos').painel().filter(p => p.ativo);
-    afiliados = { disponivel: r2(g.reduce((s, p) => s + p.disponivel, 0)), a_liberar: r2(g.reduce((s, p) => s + p.a_liberar, 0)), pode_sacar: g.filter(p => p.pode_sacar).map(p => p.nome) };
+    afiliados = { disponivel: r2(g.reduce((s, p) => s + p.disponivel, 0)), a_liberar: r2(g.reduce((s, p) => s + p.a_liberar, 0)), pode_sacar: g.filter(p => p.pode_sacar).map(p => p.nome),
+      sacar: g.filter(p => p.pode_sacar).map(p => ({ nome: p.nome, portal: /^https:\/\//.test(p.portal || '') ? p.portal : null })) };
   } catch { /* sem ganhos */ }
 
   let saude = null;
@@ -102,7 +104,7 @@ function dashboard() {
     rodando: st.running, ultima: st.lastRun?.finishedAt || null,
     ok: auto.filter(s => s.status === 'ok').length, total: auto.length,
     problemas: auto.filter(s => s.status && !['ok', 'disabled', 'running'].includes(s.status)).map(s => ({ id: s.id, nome: s.name, status: s.status, msg: s.message })),
-    lojas: auto.map(s => ({ nome: s.name, status: s.status || 'none', saved: s.saved || 0 })),
+    lojas: auto.map(s => ({ id: s.id, nome: s.name, status: s.status || 'none', saved: s.saved || 0 })),
   };
 
   // Série de 30 dias
@@ -130,7 +132,7 @@ function dashboard() {
   return {
     saude,
     kpis: {
-      ofertas: { no_ar: ofertasNoAr, novas24h: ofertasNovas.d1 || 0, novas7d: ofertasNovas.d7 || 0 },
+      ofertas: { no_ar: ofertasNoAr, novas24h: ofertasNovas.d1 || 0, novas7d: ofertasNovas.d7 || 0, var: variacao(ofertasNovas.d7 || 0, ofertasNovas.ant || 0) },
       cliques: { d7: cliques7, var: variacao(cliques7, cliquesAnt), total: cliquesTotal },
       usuarios: { total: usuarios.total || 0, empresas: usuarios.empresas || 0, consumidores: usuarios.consumidores || 0, novos7: usuarios.novos7 || 0, var: variacao(usuarios.novos7 || 0, usuarios.novosAnt || 0), clientes: clientesAtivos },
       receita: {

@@ -2888,14 +2888,14 @@ body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --fo
 .v2 .store-tab[aria-pressed="true"] { background: var(--acao); color: #fff; }
 
 /* Faixa com a Capi */
-.v2 .hero { padding: 16px 0 0; }
+.v2 .hero { padding: 34px 0 0; }
 .v2 .hero-grid { display: block; }
 .v2 .hero-art, .v2 .hero p.lead, .v2 .hero-stats, .v2 .featured, .v2 .hero-meta { display: none; }
 .v2 .hero h1 { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* continua para o Google e leitores de tela */
-.faixa { display: flex; align-items: flex-end; gap: 22px; padding: 0 32px 0 22px; border-radius: 14px; color: #fff; overflow: hidden;
-  background: linear-gradient(100deg, #14b85c 0%, #0c9463 34%, #0d7f98 70%, #0b6bb5 100%); }
-.faixa > img { width: 179px; height: 140px; flex: none; margin-top: 8px; }
-.faixa-txt { align-self: center; min-width: 0; padding-block: 12px; }
+.faixa { position: relative; display: flex; align-items: center; min-height: 148px; padding: 0 32px 0 238px; border-radius: 14px; color: #fff;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='132' height='88'%3E%3Cg font-family='Arial,Helvetica,sans-serif' font-weight='900' font-size='24' fill='%23fff' fill-opacity='.13' text-anchor='middle'%3E%3Ctext transform='translate(33 32) rotate(-28)'%3EO!%3C/text%3E%3Ctext transform='translate(99 76) rotate(-28)'%3EO!%3C/text%3E%3C/g%3E%3C/svg%3E"), linear-gradient(100deg, #14b85c 0%, #0c9463 34%, #0d7f98 70%, #0b6bb5 100%); }
+.faixa > img { position: absolute; left: 14px; bottom: 0; width: 222px; height: 174px; } /* maior que a faixa: a cabeça sai por cima */
+.faixa-txt { min-width: 0; padding-block: 12px; }
 .faixa-tit { margin: 0; font-size: 28px; line-height: 1.14; font-weight: 800; letter-spacing: -.02em; }
 .faixa-sub { margin: 4px 0 0; font-size: 17px; }
 .faixa-btn { display: inline-flex; align-items: center; min-height: 40px; margin-top: 10px; padding: 0 18px; border-radius: 8px; background: #fff; color: #0a5269; font-weight: 700; font-size: 15px; text-decoration: none; }
@@ -2981,13 +2981,13 @@ body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --fo
 .v2 .card-enviar { order: 5; }
 
 @media (max-width: 720px) {
-  .v2 .hero { padding-top: 10px; }
-  .faixa { gap: 8px; padding: 0 12px 0 6px; border-radius: 12px; }
-  .faixa > img { width: 102px; height: 80px; margin-top: 8px; }
-  .faixa-txt { padding-block: 8px; }
-  .faixa-tit { font-size: 16px; line-height: 1.2; }
+  .v2 .hero { padding-top: 24px; }
+  .faixa { min-height: 96px; padding: 0 8px 0 142px; border-radius: 12px; background-size: 92px 61px, auto; }
+  .faixa > img { left: -2px; width: 146px; height: 114px; }
+  .faixa-txt { padding-block: 6px; }
+  .faixa-tit { font-size: 14.5px; line-height: 1.2; text-wrap: balance; }
   .faixa-sub { display: none; }
-  .faixa-btn { min-height: 34px; margin-top: 6px; padding: 0 12px; font-size: 13px; }
+  .faixa-btn { min-height: 32px; margin-top: 5px; padding: 0 8px; font-size: 12.5px; }
   .v2 .brand-name { font-size: 22px; display: inline; }
   .v2 .catalog { padding-block: 12px 40px; }
   .v2 .card-media { margin: 6px 6px 0; }
@@ -3001,3 +3001,4 @@ body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --fo
 /* Topo do celular: com login há mais botões; o nome sai e fica o ícone da Capi, para nenhum botão ser cortado */
 @media (max-width: 720px) { .v2 .header-row:has(#conta-btn:not([hidden])) .brand-name { display: none; } }
 @media (max-width: 360px) { .v2 .brand-name { display: none; } }
+@media (max-width: 360px) { .faixa { padding-left: 112px; } .faixa > img { width: 118px; height: 92px; } }

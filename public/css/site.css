@@ -3226,3 +3226,111 @@ button.ex-lembrete { cursor: pointer; }
   .ex-saldos { grid-template-columns: minmax(0, 1fr); }
   .ex-saque { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ── Página de entrar: carrossel das lojas ── */
+.lp-lojas { display: block; padding: 22px 0 8px; min-width: 0; max-width: 100%; contain: inline-size; overflow: hidden; }
+.lp-lojas-tit { margin: 0 0 12px; text-align: center; font-size: 13px; font-weight: 700; color: var(--ink-3); }
+.lp-carrossel { display: flex; overflow: hidden; -webkit-mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.lp-faixa-lojas { flex: none; display: flex; align-items: center; gap: 0; margin: 0; padding: 0; list-style: none; animation: lp-rolar 26s linear infinite; }
+.lp-faixa-lojas li { flex: none; width: clamp(150px, 19vw, 230px); display: grid; place-items: center; height: 44px; }
+.lp-faixa-lojas .store-marca { height: 26px; }
+.lp-faixa-lojas .marca-mercadolivre { height: 34px; } .lp-faixa-lojas .marca-amazon { height: 30px; }
+.lp-faixa-lojas .marca-shopee { height: 32px; } .lp-faixa-lojas .marca-aliexpress { height: 24px; }
+.lp-carrossel:hover .lp-faixa-lojas { animation-play-state: paused; }
+@keyframes lp-rolar { to { transform: translateX(-100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .lp-carrossel { -webkit-mask: none; mask: none; justify-content: center; }
+  .lp-faixa-lojas { flex-wrap: wrap; justify-content: center; animation: none; flex: 1; }
+  .lp-faixa-lojas[aria-hidden="true"] { display: none; }
+}
+
+/* ── Página de entrar: demonstrações ── */
+.dm { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: stretch; text-align: left; }
+.dm-lista { display: grid; gap: 6px; align-content: start; }
+.dm-lista button { position: relative; overflow: hidden; display: grid; gap: 1px; width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink-2); font: inherit; text-align: left; cursor: pointer; }
+.dm-lista button b { font-size: 14.5px; font-weight: 700; color: var(--ink); }
+.dm-lista button small { font-size: 12.5px; color: var(--ink-3); }
+.dm-lista button:hover { border-color: var(--line-strong); }
+.dm-lista button[aria-selected="true"] { border-color: var(--brand); background: var(--brand-soft); }
+.dm-lista button[aria-selected="true"] b { color: var(--brand-strong); }
+.dm-prog { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; transform: scaleX(0); transform-origin: left; background: var(--brand); }
+.rodando .dm-prog { animation: dm-prog 7s linear forwards; }
+@keyframes dm-prog { to { transform: scaleX(1); } }
+.dm-palco { position: relative; min-height: 396px; display: grid; padding: 20px; border: 1px solid var(--line-strong); border-radius: 14px; background: radial-gradient(70% 80% at 80% 0%, rgba(46, 229, 143, .1), transparent 70%), var(--surface); overflow: hidden; }
+.dm-cena { display: grid; align-content: center; animation: dm-entra .4s ease-out; min-width: 0; }
+.dm-cena > div { position: relative; display: grid; gap: 14px; justify-items: center; width: min(460px, 100%); margin: 0 auto; }
+@keyframes dm-entra { from { opacity: 0; transform: translateY(10px); } }
+.dm-ex { position: absolute; right: 0; top: -6px; padding: 2px 8px; border: 1px solid var(--line-strong); border-radius: 999px; font-size: 11px; font-weight: 700; color: var(--ink-3); }
+.dm-hist, .dm-cupom, .dm-filtros, .dm-postar, .dm-reserva, .dm-painel { padding-top: 22px; }
+.dm-seg, .dm-chips, .dm-horas { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.dm-palco button:not(.dm-tag):not(.btn) { min-height: 38px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; color: var(--ink-2); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.dm-palco button[aria-pressed="true"]:not(.dm-tag) { background: var(--brand); border-color: var(--brand); color: #052013; }
+.dm-resposta { margin: 0; min-height: 44px; text-align: center; font-size: 14.5px; color: var(--ink-2); }
+.dm-resposta b { color: var(--ink); }
+
+/* Garimpo */
+.dm-logos { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; width: 100%; justify-items: center; align-items: center; }
+.dm-logo { display: grid; place-items: center; height: 32px; animation: dm-logo 3.5s ease-in-out infinite; animation-delay: calc(var(--i) * .35s); }
+.dm-logo img { height: 22px; width: auto; }
+.dm-logo .marca-mercadolivre { height: 30px; } .dm-logo .marca-amazon { height: 26px; } .dm-logo .marca-shopee { height: 28px; } .dm-logo .marca-aliexpress { height: 20px; }
+@keyframes dm-logo { 0%, 100% { opacity: .55; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-5px); } }
+.dm-capi { width: 180px; height: auto; transform-origin: 55% 90%; animation: dm-capi 1.4s ease-in-out infinite; }
+@keyframes dm-capi { 50% { transform: rotate(-2.5deg) translateY(2px); } }
+.dm-num { margin: 0; font-size: 15px; color: var(--ink-2); text-align: center; }
+.dm-num b { display: block; font-family: Sora, Figtree, sans-serif; font-size: 34px; line-height: 1.1; color: var(--brand); font-variant-numeric: tabular-nums; }
+/* Histórico de preço */
+.dm-graf { width: 100%; height: auto; }
+.dm-grade { stroke: var(--line-strong); stroke-dasharray: 3 5; stroke-width: 1; fill: none; }
+#dm-linha { stroke: var(--brand); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 600; animation: dm-linha 1s ease-out; }
+#dm-linha[data-tipo="falso"] { stroke: #ff7b6b; }
+@keyframes dm-linha { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
+/* Cupom */
+.dm-produto { position: relative; display: flex; gap: 14px; align-items: center; width: 100%; padding: 14px; border-radius: 12px; background: var(--surface-2); }
+.dm-produto > img { flex: none; padding: 6px; border-radius: 10px; background: #f0f2f1; }
+.dm-off { position: absolute; left: 8px; top: 8px; padding: 2px 7px; border-radius: 6px; background: #ef4444; color: #fff; font-size: 12px; font-weight: 700; }
+.dm-preco { margin: 2px 0; font-size: 28px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.dm-produto small { color: var(--ink-3); }
+.dm-tag { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 46px; padding: 8px 12px; border: 1.5px dashed var(--brand); border-radius: 10px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+.dm-tag em { font-style: normal; font-size: 13px; color: var(--ink-2); }
+.dm-tag[aria-pressed="true"] { background: var(--brand-soft); animation: dm-pop .3s ease-out; }
+@keyframes dm-pop { 50% { transform: scale(1.03); } }
+/* Filtros */
+.dm-conta { margin: 0; font-size: 13.5px; color: var(--ink-3); }
+.dm-itens { list-style: none; width: 100%; min-height: 216px; margin: 0; padding: 0; display: grid; gap: 4px; align-content: start; }
+.dm-itens li { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-radius: 8px; background: var(--surface-2); font-size: 14px; animation: dm-entra .3s ease-out backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.dm-itens span { flex: 1; min-width: 0; }
+.dm-itens i { font-style: normal; font-size: 12px; font-weight: 700; color: #ff8f80; }
+.dm-itens b { color: var(--brand); font-variant-numeric: tabular-nums; }
+.dm-itens .dm-vazio { justify-content: center; color: var(--ink-3); }
+/* Postagem */
+.dm-chat { width: 100%; min-height: 190px; display: grid; align-items: end; padding: 14px; border-radius: 12px; background: #0b1a14; }
+.dm-bolha { justify-self: end; display: grid; gap: 3px; width: min(270px, 100%); padding: 10px 12px; border-radius: 12px 12px 3px 12px; background: #0d5a3a; color: #eafff3; font-size: 14px; animation: dm-bolha .35s ease-out; }
+.dm-bolha s { opacity: .7; } .dm-link { color: #7fe9b8; text-decoration: underline; } .dm-bolha small { justify-self: end; font-size: 11px; opacity: .75; }
+@keyframes dm-bolha { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+/* Número reserva */
+.dm-reserva ul { list-style: none; width: 100%; margin: 0; padding: 0; display: grid; gap: 8px; }
+.dm-reserva li { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 10px; background: var(--surface-2); transition: opacity .2s; }
+.dm-reserva li > i { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 4px rgba(46, 229, 143, .18); }
+.dm-reserva li.off > i { background: #ff6b5a; box-shadow: 0 0 0 4px rgba(255, 107, 90, .18); }
+.dm-reserva li.off { opacity: .75; }
+.dm-reserva small { display: block; color: var(--ink-3); }
+/* Comissão e membros */
+.dm-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.dm-kpis div { padding: 12px 14px; border-radius: 10px; background: var(--surface-2); }
+.dm-kpis small { display: block; font-size: 12.5px; color: var(--ink-3); }
+.dm-kpis b { font-size: 24px; color: var(--brand); font-variant-numeric: tabular-nums; }
+.dm-barras { display: flex; align-items: flex-end; gap: 8px; width: 100%; height: 130px; }
+.dm-barras i { flex: 1; height: var(--h); border-radius: 5px 5px 0 0; background: var(--brand); transform-origin: bottom; animation: dm-barra .5s ease-out backwards; animation-delay: calc(var(--i) * 60ms); }
+@keyframes dm-barra { from { transform: scaleY(0); } }
+@media (max-width: 860px) {
+  .dm { grid-template-columns: minmax(0, 1fr); }
+  .dm-lista { display: flex; overflow-x: auto; scrollbar-width: none; gap: 6px; margin-inline: -12px; padding-inline: 12px; }
+  .dm-lista::-webkit-scrollbar { display: none; }
+  .dm-lista button { flex: none; width: auto; max-width: 74vw; padding: 9px 13px; }
+  .dm-lista button small { display: none; }
+  .dm-palco { min-height: 420px; padding: 14px; }
+  .dm-capi { width: 150px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dm-cena, .dm-logo, .dm-capi, .dm-itens li, .dm-bolha, .dm-barras i, #dm-linha, .dm-tag { animation: none !important; }
+}

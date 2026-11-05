@@ -35,7 +35,7 @@
       <span class="brand-name">Ofertou<b>!</b></span>
     </a>
     <nav class="lp-nav" id="lp-nav" hidden aria-label="Seções">
-      <a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a>
+      <a href="#demonstracoes">Veja funcionando</a><a href="#como-funciona">Como funciona</a><a href="#recursos">Recursos</a><a href="#planos">Planos</a><a href="#duvidas">Dúvidas</a>
     </nav>
     <div class="header-actions">
       <a class="btn btn-sm btn-primary" href="#entrar" id="header-entrar" hidden>Entrar</a>
@@ -148,12 +148,25 @@
 
       <!-- Lojas -->
       <section class="lp-lojas" aria-label="Lojas acompanhadas">
-        <span>Ofertas de</span>
-        <b>Amazon</b><b>Mercado Livre</b><b>AliExpress</b><b>Shopee</b><b>KaBuM!</b><b>Magalu</b>
-        <span>e lojas parceiras</span>
+        <p class="lp-lojas-tit">Ofertas mineradas em</p>
+        <div class="lp-carrossel">
+          <ul class="lp-faixa-lojas"><li><img class="store-marca marca-mercadolivre" src="/images/lojas/mercadolivre-escuro.webp" alt="Mercado Livre" loading="lazy"></li><li><img class="store-marca marca-amazon" src="/images/lojas/amazon-escuro.webp" alt="Amazon" loading="lazy"></li><li><img class="store-marca marca-shopee" src="/images/lojas/shopee.svg" alt="Shopee" loading="lazy"></li><li><img class="store-marca marca-magalu" src="/images/lojas/magalu.svg" alt="Magalu" loading="lazy"></li><li><img class="store-marca marca-aliexpress" src="/images/lojas/aliexpress.webp" alt="AliExpress" loading="lazy"></li><li><img class="store-marca marca-kabum" src="/images/lojas/kabum-escuro.svg" alt="KaBuM!" loading="lazy"></li></ul>
+          <ul class="lp-faixa-lojas" aria-hidden="true"><li><img class="store-marca marca-mercadolivre" src="/images/lojas/mercadolivre-escuro.webp" alt="" loading="lazy"></li><li><img class="store-marca marca-amazon" src="/images/lojas/amazon-escuro.webp" alt="" loading="lazy"></li><li><img class="store-marca marca-shopee" src="/images/lojas/shopee.svg" alt="" loading="lazy"></li><li><img class="store-marca marca-magalu" src="/images/lojas/magalu.svg" alt="" loading="lazy"></li><li><img class="store-marca marca-aliexpress" src="/images/lojas/aliexpress.webp" alt="" loading="lazy"></li><li><img class="store-marca marca-kabum" src="/images/lojas/kabum-escuro.svg" alt="" loading="lazy"></li></ul>
+        </div>
       </section>
 
-      <!-- Como funciona -->
+      <!-- Demonstrações -->
+      <section class="lp-sec" id="demonstracoes">
+        <div class="lp-head">
+          <p class="lp-kicker">Veja funcionando</p>
+          <h2>Toque e descubra o que o Ofertou! faz</h2>
+        </div>
+        <div class="dm">
+          <div class="dm-lista" id="dm-lista" role="tablist" aria-label="Demonstrações"></div>
+          <div class="dm-palco" id="dm-palco" role="tabpanel" aria-live="polite"></div>
+        </div>
+      </section>
+
       <section class="lp-sec" id="como-funciona">
         <div class="lp-head">
           <p class="lp-kicker">Como funciona</p>
@@ -746,5 +759,6 @@
 <script src="/js/conta.js?v=20261267" defer></script>
 <script src="/js/calculadora.js?v=20261267" defer></script>
 <script src="/js/chat-topo.js?v=20261267" defer></script>
+<script src="/js/lp-demos.js?v=20261267" defer></script>
 </body>
 </html>

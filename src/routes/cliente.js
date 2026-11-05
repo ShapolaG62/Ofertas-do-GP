@@ -30,6 +30,7 @@ router.post('/api/cliente/sair', (req, res) => {
 });
 
 router.get('/api/cliente/me', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const c = clientes.atual(req);
   res.json({ cliente: c ? clientes.publico(c) : null, parceiro_pendente: c ? pendenteCliente(c) : [] });
 });

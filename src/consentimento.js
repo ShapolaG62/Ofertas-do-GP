@@ -71,6 +71,11 @@ function pendentesParceiro({ dono, email, papeis }) {
   return papeis.filter(p => !db.get(`SELECT 1 FROM consentimentos WHERE (dono = ? OR (email IS NOT NULL AND email = ?)) AND versao >= ?
     AND ',' || parceiro || ',' LIKE ?`, dono, String(email || '').toLowerCase(), VERSAO_PARCEIRO, `%,${p},%`));
 }
+// Último aceite dos Termos do Afiliado de um cliente: { em, versao, ip, origem } ou nulo (mostrado no painel do administrador)
+function aceiteAfiliado({ dono, email }) {
+  return db.get(`SELECT created_at AS em, versao, ip, origem FROM consentimentos WHERE (dono = ? OR (email IS NOT NULL AND email = ?))
+    AND versao >= ? AND ',' || parceiro || ',' LIKE '%,afiliado,%' ORDER BY id DESC LIMIT 1`, dono, String(email || '').toLowerCase(), VERSAO_PARCEIRO) || null;
+}
 // Aceite feito depois (janela ao entrar): só as caixas que faltavam
 function aceitarParceiro({ dono, email, papeis, b, req }) {
   const falta = pendentesParceiro({ dono, email, papeis });
@@ -91,4 +96,4 @@ function papeisDe({ tipo = null, ferramenta = false } = {}) {
   return p;
 }
 
-module.exports = { VERSAO, VERSAO_PARCEIRO, validar, validarParceiro, papeisDe, pendentesParceiro, aceitarParceiro, registrar, historico };
+module.exports = { VERSAO, VERSAO_PARCEIRO, validar, validarParceiro, papeisDe, pendentesParceiro, aceiteAfiliado, aceitarParceiro, registrar, historico };

@@ -159,6 +159,7 @@ router.post('/api/conta/sair', (req, res) => {
 
 // Sessão atual (não exige login: responde user null quando ninguém está logado).
 router.get('/api/conta/me', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   const u = users.currentUser(req);
   if (!u) return res.json({ user: null, admin: auth.isLoggedIn(req) });
   res.json({ user: users.publicUser(u), loja: u.tipo === 'empresa' ? lojas.getByUser(u.id) : null, parceiro_pendente: parceiroPendente(u) });

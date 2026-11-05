@@ -141,6 +141,24 @@ test('lembrete da planilha: só para lojas com link de afiliado e sem envio rece
   assert.equal(cg.lembretePlanilha(C)[0].dias, 8);
 });
 
+test('Termos do Afiliado: pede uma vez e fica registrado na ficha do cliente', () => {
+  const cons = require('../src/consentimento');
+  const email = 'termos@exemplo.test';
+  const id = novoCliente(email);
+  const quem = { dono: `c:${id}`, email, papeis: ['afiliado'] };
+  const ficha = () => clientes.listar().find(c => c.id === id).aceite_termos;
+  assert.deepEqual(cons.pendentesParceiro(quem), ['afiliado']);
+  assert.equal(ficha(), null);
+  assert.throws(() => cons.aceitarParceiro({ ...quem, b: {} }), /aceite os Termos/i);
+  cons.aceitarParceiro({ ...quem, b: { aceite_afiliado: true }, req: { ip: '203.0.113.9', get: () => 'Teste' } });
+  assert.deepEqual(cons.pendentesParceiro(quem), [], 'não pede de novo');
+  assert.equal(ficha().ip, '203.0.113.9');
+  assert.equal(ficha().versao, cons.VERSAO_PARCEIRO);
+  cons.aceitarParceiro({ ...quem, b: {} });
+  assert.equal(db.get(`SELECT COUNT(*) n FROM consentimentos WHERE dono = ?`, `c:${id}`).n, 1, 'não duplica o registro');
+  assert.equal(clientes.listar().find(c => c.id === A).aceite_termos, null, 'não vale para outro cliente');
+});
+
 test('configuração do cliente: a contagem interna não pode ser editada', () => {
   clientes.salvarConfig(A, { grupos_convite_entradas: '{"x":999}', ganhos_sync_estado: 'x', ml_ganho_estimado: '{"valor":999999}' });
   assert.equal(db.get(`SELECT value FROM cliente_config WHERE cliente_id = ? AND key = 'ml_ganho_estimado'`, A), undefined);

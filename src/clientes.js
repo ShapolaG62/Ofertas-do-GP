@@ -85,11 +85,12 @@ const getById = id => db.get('SELECT * FROM clientes WHERE id = ?', id);
 const vencido = c => c.validade < nowSql();
 
 function listar() {
+  const { aceiteAfiliado } = require('./consentimento');
   return db.all(
     `SELECT c.id, c.nome, c.email, c.status, c.validade, c.observacoes, c.created_at, c.last_login_at,
        (c.validade < datetime('now')) AS vencido,
        (SELECT COUNT(*) FROM social_posts p WHERE p.cliente_id = c.id AND p.ok = 1) AS postagens
-     FROM clientes c ORDER BY c.created_at DESC`);
+     FROM clientes c ORDER BY c.created_at DESC`).map(c => ({ ...c, aceite_termos: aceiteAfiliado({ dono: `c:${c.id}`, email: c.email }) }));
 }
 
 // ── Login do cliente ─────────────────────────────────────────────────────────

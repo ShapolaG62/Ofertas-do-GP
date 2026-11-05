@@ -1910,6 +1910,9 @@ async function loadClientes() {
     return `<tr>
       <td><b>${esc(c.nome)}</b><br><span class="hint" style="margin:0">${esc(c.email)}</span>${c.observacoes ? `<br><span class="hint" style="margin:0">${esc(c.observacoes)}</span>` : ''}</td>
       <td>${sit}</td>
+      <td>${c.aceite_termos
+        ? `<span class="badge b-active" title="Termos do Afiliado, versão ${esc(c.aceite_termos.versao)}${c.aceite_termos.ip ? ` · IP ${esc(c.aceite_termos.ip)}` : ''}">Aceito</span><br><span class="hint" style="margin:0">${fmtDate(c.aceite_termos.em)}</span>`
+        : '<span class="badge b-pending">Ainda não aceitou</span>'}</td>
       <td class="num">${fmtDia(c.validade)}</td>
       <td class="num">${fmtDate(c.last_login_at)}</td>
       <td class="num">${c.postagens}</td>
@@ -1920,7 +1923,7 @@ async function loadClientes() {
         <button class="btn small" data-cli="senha" data-id="${c.id}">Nova senha</button>
         <button class="btn small danger" data-cli="excluir" data-id="${c.id}">Excluir</button>
       </td></tr>`;
-  }).join('') : '<tr><td colspan="6" class="hint">Nenhum cliente cadastrado.</td></tr>';
+  }).join('') : '<tr><td colspan="7" class="hint">Nenhum cliente cadastrado.</td></tr>';
 }
 
 $('#cli-criar').addEventListener('click', async () => {

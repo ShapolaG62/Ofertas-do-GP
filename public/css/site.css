@@ -3337,3 +3337,106 @@ button.ex-lembrete { cursor: pointer; }
 .explore-links[hidden] { display: none; }
 .ex-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .ex-chips .chip { text-decoration: none; }
+
+/* ── Demonstrações com imagens: produtos fictícios, postagens e propaganda ── */
+.dm-palco { min-height: 548px; }
+.dm-cena > div { width: min(640px, 100%); }
+.dm-foto { flex: none; display: grid; place-items: center; width: 56px; height: 56px; border-radius: 10px; background: #eef1f0; }
+.dm-foto img { width: 82%; height: 82%; object-fit: contain; }
+.dm-ex { right: 0; top: -8px; }
+/* Garimpo: das lojas para as ofertas */
+.dm-garimpo { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr) minmax(0, 1.25fr); align-items: center; gap: 14px; width: min(760px, 100%) !important; }
+.dm-garimpo .dm-logos { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.dm-capi-box { position: relative; display: grid; justify-items: center; gap: 6px; }
+.dm-capi-box::before, .dm-capi-box::after { content: ""; position: absolute; top: 34%; width: 44px; height: 3px; background: repeating-linear-gradient(90deg, var(--brand) 0 8px, transparent 8px 14px); animation: dm-fluxo 1s linear infinite; }
+.dm-capi-box::before { left: -30px; } .dm-capi-box::after { right: -30px; }
+@keyframes dm-fluxo { to { background-position: 14px 0; } }
+.dm-saida { display: grid; gap: 8px; }
+.dm-mini { display: flex; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface-2); animation: dm-mini .5s ease-out backwards; animation-delay: calc(.4s + var(--i) * .35s); }
+@keyframes dm-mini { from { opacity: 0; transform: translateX(-14px); } }
+.dm-mini b { display: block; font-size: 13px; line-height: 1.25; }
+.dm-mini span:not(.dm-foto) { font-size: 14px; font-weight: 800; color: var(--brand); }
+.dm-mini i, .dm-vitrine i { font-style: normal; color: #ff8f80; font-size: 12px; font-weight: 800; }
+.dm-num b { font-size: 28px; } .dm-num span { font-size: 12.5px; }
+/* Histórico com o produto */
+.dm-hist-prod { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px; border-radius: 12px; background: var(--surface-2); }
+.dm-hist-prod b { display: block; } .dm-hist-prod small { color: var(--ink-3); }
+/* Cartão de oferta */
+.dm-cartao { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; width: 100%; padding: 12px; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--surface-2); }
+.dm-cartao-foto { position: relative; display: grid; place-items: center; aspect-ratio: 1; padding: 22px 22px 58px; border-radius: 12px; background: #eef1f0; }
+.dm-cartao-foto > img { width: 100%; height: 100%; object-fit: contain; }
+.dm-cartao-foto .dm-off { left: 10px; top: 10px; font-size: 14px; padding: 3px 9px; }
+.dm-cartao-foto .dm-tag { position: absolute; left: 8px; right: 8px; bottom: 8px; width: auto; background: #fff; color: #17212a; border-color: #0a7a43; font-size: 13px; }
+.dm-cartao-foto .dm-tag[aria-pressed="true"] { background: #dff2e6; }
+.dm-cartao-foto .dm-tag b { color: #075f34; } .dm-cartao-foto .dm-tag em { color: #46555f; flex-basis: 100%; text-align: center; font-size: 12px; }
+.dm-cartao-txt { display: grid; align-content: center; gap: 6px; }
+.dm-cartao-txt > b { font-size: 18px; line-height: 1.25; }
+.dm-cartao-txt small { color: var(--ink-3); }
+.dm-ver { display: grid; place-items: center; min-height: 42px; margin-top: 6px; border-radius: 9px; background: var(--brand); color: #052013; font-weight: 800; }
+.dm-preco { font-size: 34px; }
+/* Filtros com fotos */
+.dm-itens { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-height: 260px; }
+.dm-itens li { padding: 8px; border: 1px solid var(--line); }
+.dm-itens .dm-foto { width: 60px; height: 60px; }
+.dm-itens li > span:not(.dm-foto) { font-size: 13px; line-height: 1.25; font-weight: 600; }
+.dm-itens em { flex: none; display: grid; justify-items: end; font-style: normal; }
+.dm-itens .dm-vazio { grid-column: 1 / -1; }
+/* Celular com as postagens */
+.dm-celular { width: 278px; height: 410px; overflow: hidden; border: 7px solid #232a27; border-radius: 30px; background: #0b1a14; box-shadow: 0 22px 50px -22px #000; animation: dm-entra .35s ease-out; }
+.dm-app { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #fff; }
+.dm-app i { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 255, 255, .22); font-style: normal; font-weight: 800; font-size: 13px; }
+.dm-app b { display: block; font-size: 13px; line-height: 1.2; } .dm-app small { font-size: 11px; opacity: .8; }
+.dm-app.zap { background: #075e54; } .dm-app.tg { background: #2b6c9b; } .dm-app.ig { background: #0f1412; }
+.dm-tela { height: calc(100% - 50px); display: grid; align-items: end; padding: 10px; }
+.dm-tela.zap { background: #0b141a; } .dm-tela.tg { background: #0e1621; } .dm-tela.ig { background: #0f1412; align-items: start; padding: 0; }
+.dm-post { display: grid; gap: 2px; padding: 6px 6px 8px; color: #e9edef; font-size: 13px; line-height: 1.35; animation: dm-bolha .35s ease-out; }
+.dm-post > img { width: 100%; height: 150px; object-fit: contain; padding: 8px; margin-bottom: 4px; border-radius: 8px; background: #eef1f0; }
+.dm-post > b, .dm-post > span, .dm-post > small { padding-inline: 4px; }
+.dm-post small { justify-self: end; font-size: 10.5px; opacity: .7; } .dm-post s { opacity: .7; }
+.dm-post.zap { border-radius: 10px 10px 2px 10px; background: #005c4b; } .dm-post.tg { border-radius: 12px 12px 12px 2px; background: #182533; }
+.dm-post .dm-link { color: #53bdeb; text-decoration: underline; }
+.dm-post.ig { padding: 0; } .dm-post.ig p { margin: 0; padding: 10px 12px; }
+.dm-ig-foto { position: relative; display: grid; place-items: center; height: 262px; padding: 26px; background: radial-gradient(circle at 50% 40%, #fff, #dfe7e3); }
+.dm-ig-foto img { width: 100%; height: 100%; object-fit: contain; }
+.dm-ig-foto span { position: absolute; right: 10px; top: 10px; padding: 4px 10px; border-radius: 8px; background: #ef4444; color: #fff; font-weight: 800; }
+/* Propaganda */
+.dm-banner { display: grid; grid-template-columns: minmax(0, 1fr) 170px; align-items: center; width: 100%; overflow: hidden; border-radius: 14px; color: #fff; text-decoration: none; background: linear-gradient(110deg, #0a7a43, #0b4f3a 60%, #10291c); border: 1px solid #1b6b49; }
+.dm-banner-txt { display: grid; gap: 4px; padding: 18px; justify-items: start; }
+.dm-banner small { padding: 2px 8px; border-radius: 6px; background: rgba(255, 255, 255, .16); font-size: 11px; font-weight: 700; }
+.dm-banner strong { font-family: Sora, Figtree, sans-serif; font-size: 24px; line-height: 1.12; }
+.dm-banner span { font-size: 13.5px; opacity: .9; }
+.dm-banner em { margin-top: 6px; padding: 8px 14px; border-radius: 8px; background: #fff; color: #075f34; font-style: normal; font-weight: 800; font-size: 13px; }
+.dm-banner > img { width: calc(100% - 20px); height: 170px; margin: 10px; object-fit: contain; padding: 14px; border-radius: 12px; background: #eef1f0; }
+.dm-vitrine { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.dm-vitrine article { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+.dm-vitrine b { flex: 1 1 100px; font-size: 13px; line-height: 1.25; }
+.dm-vitrine span:not(.dm-foto) { flex-basis: 100%; font-weight: 800; color: var(--brand); }
+.dm-resposta a { color: var(--brand-strong); }
+@media (max-width: 860px) {
+  .dm-palco { min-height: 588px; }
+  .dm-garimpo { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .dm-garimpo .dm-logos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dm-capi-box::before, .dm-capi-box::after { display: none; }
+  .dm-capi { width: 120px; }
+  .dm-cartao { grid-template-columns: minmax(0, 1fr); }
+  .dm-cartao-foto { aspect-ratio: auto; height: 230px; }
+  .dm-preco { font-size: 28px; } .dm-cartao-txt > b { font-size: 16px; }
+  .dm-itens { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .dm-itens { gap: 5px; } .dm-itens li { padding: 5px 8px; } .dm-itens .dm-foto { width: 44px; height: 44px; }
+  .dm-banner { grid-template-columns: minmax(0, 1fr) 104px; }
+  .dm-banner strong { font-size: 19px; } .dm-banner > img { height: 120px; padding: 8px; margin: 6px; width: calc(100% - 12px); }
+  .dm-ex { position: static; justify-self: end; }
+  .dm-hist, .dm-cupom, .dm-filtros, .dm-postar, .dm-reserva, .dm-painel, .dm-propaganda { padding-top: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .dm-mini, .dm-capi-box::before, .dm-capi-box::after, .dm-celular, .dm-post { animation: none !important; } }
+.dm-propaganda { padding-top: 22px; }
+.dm-vitrine .dm-foto { width: 84px; height: 84px; }
+.dm-vitrine b { font-size: 14px; }
+.dm-mini .dm-foto { width: 64px; height: 64px; }
+.dm-itens .dm-foto { flex: none; min-width: 0; }
+.dm-cartao-foto > img { min-height: 0; }
+@media (max-width: 860px) {
+  .dm-palco { min-height: 640px; }
+  .dm-cartao-foto { display: block; height: 250px; padding: 14px 14px 0; }
+  .dm-cartao-foto > img { display: block; height: 146px; margin: 0 auto; }
+}

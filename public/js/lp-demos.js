@@ -9,7 +9,13 @@
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const LOGOS = [['mercadolivre', 'mercadolivre-escuro.webp', 'Mercado Livre'], ['amazon', 'amazon-escuro.webp', 'Amazon'], ['shopee', 'shopee.svg', 'Shopee'], ['magalu', 'magalu.svg', 'Magalu'], ['aliexpress', 'aliexpress.webp', 'AliExpress'], ['kabum', 'kabum-escuro.svg', 'KaBuM!']];
   const reais = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  const EX = '<span class="dm-ex">Exemplo</span>';
+  const EX = '<span class="dm-ex">Exemplo · produto fictício</span>';
+  const foto = (n, cl = 'dm-foto') => `<span class="${cl}"><img src="/images/exemplos/${n}.svg" alt="" loading="lazy"></span>`;
+  const P = {
+    fone: { n: 'Fone CapiSom X2', img: 'fone', de: 299.9, por: 149.9, off: 50, cupom: 'CAPI10', dep: 134.91 },
+    fritadeira: { n: 'Fritadeira ChefCapi 5 L', img: 'airfryer', de: 499.9, por: 289.9, off: 42 },
+    relogio: { n: 'Relógio CapiFit S3', img: 'relogio', de: 279.9, por: 99.9, off: 64 },
+  };
 
   const DEMOS = [
     { id: 'garimpo', tit: 'A Capi garimpa', sub: 'As lojas, várias vezes por dia',
@@ -17,8 +23,8 @@
         const total = document.querySelector('#lp-ao-vivo')?.textContent.match(/[\d.]+/)?.[0];
         return `<div class="dm-garimpo">
           <div class="dm-logos">${LOGOS.map(([id, arq, nome], i) => `<span class="dm-logo" style="--i:${i}"><img src="/images/lojas/${arq}" alt="${nome}" class="marca-${id}"></span>`).join('')}</div>
-          <img class="dm-capi" src="/images/capi-faixa.webp" alt="" width="409" height="320">
-          <p class="dm-num"><b data-conta="${total ? Number(total.replace(/\./g, '')) : 0}">${total || 'Milhares'}</b> <span>${total ? 'ofertas no ar agora' : 'de ofertas no ar'}</span></p>
+          <div class="dm-capi-box"><img class="dm-capi" src="/images/capi-faixa.webp" alt="" width="409" height="320"><p class="dm-num"><b data-conta="${total ? Number(total.replace(/\./g, '')) : 0}">${total || 'Milhares'}</b> <span>${total ? 'ofertas no ar agora' : 'de ofertas no ar'}</span></p></div>
+          <div class="dm-saida">${Object.values(P).map((p, i) => `<article class="dm-mini" style="--i:${i}">${foto(p.img)}<div><b>${p.n}</b><span><i>-${p.off}%</i> ${reais(p.por)}</span></div></article>`).join('')}</div>
         </div>`;
       },
       vida: el => { // contagem até o total real
@@ -38,6 +44,7 @@
 
     { id: 'desconto', tit: 'Desconto de mentira, não', sub: 'O histórico mostra a verdade',
       html: () => `<div class="dm-hist">${EX}
+        <div class="dm-hist-prod">${foto('fone')}<div><b>${P.fone.n}</b><small>Preço nos últimos 30 dias</small></div></div>
         <div class="dm-seg" role="group" aria-label="Tipo de desconto">
           <button type="button" data-hist="real" aria-pressed="true">Desconto real</button><button type="button" data-hist="falso" aria-pressed="false">Desconto suspeito</button>
         </div>
@@ -59,15 +66,16 @@
 
     { id: 'cupom', tit: 'Cupom já na conta', sub: 'Toque e veja o preço final',
       html: () => `<div class="dm-cupom">${EX}
-        <article class="dm-produto"><span class="dm-off" id="dm-off">-39%</span><img src="/images/pet-capi-head.png" alt="" width="84" height="84"><div>
-          <b>Produto de exemplo</b><p class="dm-preco" id="dm-preco"></p><small id="dm-sem"></small></div></article>
-        <button class="dm-tag" type="button" id="dm-tag" aria-pressed="false"><span>Cupom</span> <b>OFERTA10</b> <em id="dm-tag-txt">Toque para aplicar</em></button></div>`,
+        <article class="dm-cartao">
+          <div class="dm-cartao-foto"><span class="dm-off" id="dm-off">-50%</span><img src="/images/exemplos/fone.svg" alt=""><button class="dm-tag" type="button" id="dm-tag" aria-pressed="false"><span>Cupom</span> <b>CAPI10</b> <em id="dm-tag-txt">Toque para aplicar</em></button></div>
+          <div class="dm-cartao-txt"><b>${P.fone.n}</b><p class="dm-preco" id="dm-preco"></p><small id="dm-sem"></small><span class="dm-ver">Ver oferta</span></div>
+        </article></div>`,
       vida: el => {
         let on = false;
         const pintar = () => {
-          el.querySelector('#dm-preco').textContent = reais(on ? 89.91 : 99.90);
-          el.querySelector('#dm-sem').textContent = on ? `ou ${reais(99.90)} sem cupom` : `de ${reais(163.90)}`;
-          el.querySelector('#dm-off').textContent = on ? '-45%' : '-39%';
+          el.querySelector('#dm-preco').textContent = reais(on ? P.fone.dep : P.fone.por);
+          el.querySelector('#dm-sem').textContent = on ? `ou ${reais(P.fone.por)} sem cupom` : `de ${reais(P.fone.de)}`;
+          el.querySelector('#dm-off').textContent = on ? '-55%' : '-50%';
           const t = el.querySelector('#dm-tag'); t.setAttribute('aria-pressed', String(on));
           el.querySelector('#dm-tag-txt').textContent = on ? 'Aplicado: 10% a menos' : 'Toque para aplicar';
         };
@@ -80,12 +88,12 @@
         <div class="dm-chips"><button type="button" data-f="ate100" aria-pressed="false">Até R$ 100</button><button type="button" data-f="d30" aria-pressed="false">30% ou mais</button><button type="button" data-f="cupom" aria-pressed="false">Com cupom</button></div>
         <p class="dm-conta" id="dm-conta"></p><ul class="dm-itens" id="dm-itens"></ul></div>`,
       vida: el => {
-        const I = [['Fone sem fio', 89.9, 45, 1], ['Air fryer 5 L', 249.9, 38, 0], ['Mouse gamer', 59.9, 22, 0], ['Smartwatch', 99.9, 64, 1], ['Monitor 24"', 699, 31, 1], ['Garrafa térmica', 39.9, 12, 0]];
+        const I = [['Fone CapiSom X2', 89.9, 45, 1, 'fone'], ['Fritadeira ChefCapi', 249.9, 38, 0, 'airfryer'], ['Tênis CapiRun', 59.9, 22, 0, 'tenis'], ['Relógio CapiFit S3', 99.9, 64, 1, 'relogio'], ['Monitor CapiView 24"', 699, 31, 1, 'monitor'], ['Garrafa CapiTerm', 39.9, 12, 0, 'garrafa']];
         const on = new Set();
         const pintar = () => {
           const l = I.filter(x => (!on.has('ate100') || x[1] <= 100) && (!on.has('d30') || x[2] >= 30) && (!on.has('cupom') || x[3]));
           el.querySelector('#dm-conta').textContent = `${l.length} de ${I.length} ofertas`;
-          el.querySelector('#dm-itens').innerHTML = l.map((x, i) => `<li style="--i:${i}"><span>${x[0]}</span><i>-${x[2]}%</i><b>${reais(x[1])}</b></li>`).join('') || '<li class="dm-vazio">Nada com esses filtros. Tire um deles.</li>';
+          el.querySelector('#dm-itens').innerHTML = l.map((x, i) => `<li style="--i:${i}">${foto(x[4])}<span>${x[0]}</span><em><i>-${x[2]}%</i><b>${reais(x[1])}</b></em></li>`).join('') || '<li class="dm-vazio">Nada com esses filtros. Tire um deles.</li>';
         };
         el.querySelector('.dm-chips').addEventListener('click', e => {
           const b = e.target.closest('[data-f]'); if (!b) return;
@@ -96,20 +104,34 @@
         pintar();
       } },
 
-    { id: 'postar', tit: 'Para afiliados: posta sozinho', sub: 'Com o seu link, no seu horário',
+    { id: 'postar', tit: 'Veja a postagem pronta', sub: 'WhatsApp, Telegram e Instagram',
       html: () => `<div class="dm-postar">${EX}
-        <div class="dm-horas" role="group" aria-label="Horário do envio"><button type="button" data-h="09:00" aria-pressed="true">09:00</button><button type="button" data-h="14:00" aria-pressed="false">14:00</button><button type="button" data-h="20:00" aria-pressed="false">20:00</button></div>
-        <div class="dm-chat" id="dm-chat"></div></div>`,
+        <div class="dm-seg" role="group" aria-label="Rede"><button type="button" data-rede="whatsapp" aria-pressed="true">WhatsApp</button><button type="button" data-rede="telegram" aria-pressed="false">Telegram</button><button type="button" data-rede="instagram" aria-pressed="false">Instagram</button></div>
+        <div class="dm-celular" id="dm-celular"></div></div>`,
       vida: el => {
-        const M = { '09:00': ['Fone sem fio', 89.9, 149.9], '14:00': ['Air fryer 5 L', 249.9, 399.9], '20:00': ['Smartwatch', 99.9, 279.9] };
-        const mostrar = h => {
-          const [n, p, de] = M[h];
-          el.querySelector('#dm-chat').innerHTML = `<div class="dm-bolha"><b>${n}</b><span>De <s>${reais(de)}</s></span><span>Por <b>${reais(p)}</b></span><span class="dm-link">seu-link-de-afiliado</span><small>${h} ✓✓</small></div>`;
-          el.querySelectorAll('[data-h]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.h === h)));
+        const p = P.fritadeira;
+        const R = {
+          whatsapp: `<header class="dm-app zap"><i>A</i><div><b>Achados do Grupo</b><small>874 membros</small></div></header>
+            <div class="dm-tela zap"><div class="dm-post zap"><img src="/images/exemplos/${p.img}.svg" alt=""><b>${p.n}</b><span>De <s>${reais(p.de)}</s></span><span>Por <b>${reais(p.por)}</b> · ${p.off}% OFF</span><span class="dm-link">seu-link-de-afiliado</span><small>09:00 ✓✓</small></div></div>`,
+          telegram: `<header class="dm-app tg"><i>O</i><div><b>Ofertas do Dia</b><small>3.310 inscritos</small></div></header>
+            <div class="dm-tela tg"><div class="dm-post tg"><img src="/images/exemplos/${p.img}.svg" alt=""><b>${p.n}</b><span>De <s>${reais(p.de)}</s> por <b>${reais(p.por)}</b></span><span class="dm-link">seu-link-de-afiliado</span><small>14:00</small></div></div>`,
+          instagram: `<header class="dm-app ig"><i>S</i><div><b>suas.ofertas</b><small>Agora</small></div></header>
+            <div class="dm-tela ig"><div class="dm-post ig"><div class="dm-ig-foto"><img src="/images/exemplos/${p.img}.svg" alt=""><span>-${p.off}%</span></div><p><b>${p.n}</b> por <b>${reais(p.por)}</b>. Link na bio.</p></div></div>`,
         };
-        el.querySelector('.dm-horas').addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (b) mostrar(b.dataset.h); });
-        mostrar('09:00');
+        const mostrar = r => {
+          el.querySelector('#dm-celular').innerHTML = R[r];
+          el.querySelectorAll('[data-rede]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.rede === r)));
+        };
+        el.querySelector('.dm-seg').addEventListener('click', e => { const b = e.target.closest('[data-rede]'); if (b) mostrar(b.dataset.rede); });
+        mostrar('whatsapp');
       } },
+
+    { id: 'propaganda', tit: 'Sua propaganda aqui', sub: 'Quem anuncia aparece na vitrine',
+      html: () => `<div class="dm-propaganda">${EX}
+        <a class="dm-banner" href="/anuncie"><div class="dm-banner-txt"><small>Patrocinado</small><strong>Som de verdade, sem fio.</strong><span>Fone CapiSom X2 com 40 horas de bateria.</span><em>Quero conhecer</em></div><img src="/images/exemplos/fone.svg" alt=""></a>
+        <div class="dm-vitrine">${[P.fritadeira, P.relogio].map(p => `<article>${foto(p.img)}<b>${p.n}</b><span><i>-${p.off}%</i> ${reais(p.por)}</span></article>`).join('')}</div>
+        <p class="dm-resposta">Tem uma marca? <a href="/anuncie">Anuncie para quem já está procurando desconto.</a></p></div>`,
+      },
 
     { id: 'reserva', tit: 'Número reserva', sub: 'Um número parou? O outro segue',
       html: () => `<div class="dm-reserva">${EX}

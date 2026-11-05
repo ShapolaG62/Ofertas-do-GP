@@ -7,7 +7,10 @@
   const lista = document.querySelector('#dm-lista');
   if (!palco || !lista) return;
   const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const LOGOS = [['mercadolivre', 'mercadolivre-escuro.webp', 'Mercado Livre'], ['amazon', 'amazon-escuro.webp', 'Amazon'], ['shopee', 'shopee.svg', 'Shopee'], ['magalu', 'magalu.svg', 'Magalu'], ['aliexpress', 'aliexpress.webp', 'AliExpress'], ['kabum', 'kabum-escuro.svg', 'KaBuM!']];
+  const LOGOS = [['mercadolivre', 'webp', 'Mercado Livre', 1], ['amazon', 'webp', 'Amazon', 1], ['shopee', 'svg', 'Shopee'], ['magalu', 'svg', 'Magalu'], ['aliexpress', 'webp', 'AliExpress'], ['kabum', 'svg', 'KaBuM!', 1]];
+  const logoImg = ([id, ext, nome, duas]) => (duas
+    ? `<img src="/images/lojas/${id}.${ext}" alt="${nome}" class="marca-${id} tema-claro"><img src="/images/lojas/${id}-escuro.${ext}" alt="${nome}" class="marca-${id} tema-escuro">`
+    : `<img src="/images/lojas/${id}.${ext}" alt="${nome}" class="marca-${id}">`);
   const reais = v => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const EX = '<span class="dm-ex">Exemplo · produto fictício</span>';
   const foto = (n, cl = 'dm-foto') => `<span class="${cl}"><img src="/images/exemplos/${n}.svg" alt="" loading="lazy"></span>`;
@@ -22,7 +25,7 @@
       html: () => {
         const total = document.querySelector('#lp-ao-vivo')?.textContent.match(/[\d.]+/)?.[0];
         return `<div class="dm-garimpo">
-          <div class="dm-logos">${LOGOS.map(([id, arq, nome], i) => `<span class="dm-logo" style="--i:${i}"><img src="/images/lojas/${arq}" alt="${nome}" class="marca-${id}"></span>`).join('')}</div>
+          <div class="dm-logos">${LOGOS.map((l, i) => `<span class="dm-logo" style="--i:${i}">${logoImg(l)}</span>`).join('')}</div>
           <div class="dm-capi-box"><img class="dm-capi" src="/images/capi-faixa.webp" alt="" width="409" height="320"><p class="dm-num"><b data-conta="${total ? Number(total.replace(/\./g, '')) : 0}">${total || 'Milhares'}</b> <span>${total ? 'ofertas no ar agora' : 'de ofertas no ar'}</span></p></div>
           <div class="dm-saida">${Object.values(P).map((p, i) => `<article class="dm-mini" style="--i:${i}">${foto(p.img)}<div><b>${p.n}</b><span><i>-${p.off}%</i> ${reais(p.por)}</span></div></article>`).join('')}</div>
         </div>`;

@@ -79,11 +79,20 @@ router.get('/api/cliente/painel', (req, res) => {
   const porDia = db.all(`SELECT date(created_at, '-3 hours') AS dia, SUM(ok) AS ok, SUM(1 - ok) AS erro FROM social_posts
     WHERE cliente_id = ? AND date(created_at, '-3 hours') >= date('now', '-3 hours', ?) GROUP BY dia ORDER BY dia`, cid, desde);
   const mapa = Object.fromEntries(porDia.map(r => [r.dia, r]));
+  const porLoja = {};
+  for (const l of db.all(`SELECT date(p.created_at, '-3 hours') AS dia, COALESCE(o.store_id, 'outros') AS loja, COUNT(*) AS n
+    FROM social_posts p LEFT JOIN offers o ON o.id = p.offer_id
+    WHERE p.cliente_id = ? AND p.ok = 1 AND date(p.created_at, '-3 hours') >= date('now', '-3 hours', ?) GROUP BY dia, loja`, cid, desde)) {
+    (porLoja[l.dia] ||= {})[l.loja] = l.n;
+  }
   const serie = [];
   for (let i = dias - 1; i >= 0; i--) {
     const d = new Date(Date.now() - 3 * 3600000 - i * 86400000).toISOString().slice(0, 10);
-    serie.push({ dia: d, ok: mapa[d]?.ok || 0, erro: mapa[d]?.erro || 0 });
+    serie.push({ dia: d, ok: mapa[d]?.ok || 0, erro: mapa[d]?.erro || 0, lojas: porLoja[d] || {} });
   }
+  require('../cliente-ganhos'); // garante a tabela de vendas
+  const comissao = db.get(`SELECT COALESCE(SUM(comissao), 0) AS v FROM cliente_vendas
+    WHERE cliente_id = ? AND status <> 'cancelada' AND date(data_venda) >= date('now', '-3 hours', ?)`, cid, desde).v;
   const s = clientes.config(cid);
   const dono = db.get('SELECT id FROM users WHERE cliente_id = ?', cid);
   const cliques = db.get('SELECT valor FROM metricas WHERE dono = ? AND chave = ?', dono ? `u:${dono.id}` : `c:${cid}`, 'cliques_links')?.valor || 0;
@@ -93,7 +102,7 @@ router.get('/api/cliente/painel', (req, res) => {
     enviados: serie.reduce((a, d) => a + d.ok, 0), falhas: serie.reduce((a, d) => a + d.erro, 0),
     redes: require('../social').listarRedes(s), contingencia: Boolean(whatsapp.configReserva(s) && !whatsapp.configReserva(s).erro),
     grupos_whatsapp: whatsapp.gruposEscolhidos(s).length, fila: agenda.pendentes(cid), agenda: agenda.estado(cid),
-    cliques, ultimo_envio: ultimo, sem_afiliado: clientes.lojasSemAfiliado(s),
+    cliques, comissao, ultimo_envio: ultimo, sem_afiliado: clientes.lojasSemAfiliado(s),
   });
 });
 

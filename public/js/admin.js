@@ -418,7 +418,7 @@ async function loadDashboard() {
   for (const a of d.saude?.alertas || []) add(1, a.texto, a.aba, a.forte, 'alerta', /backup/i.test(a.texto) ? 'Backup' : '');
   acoes.sort((a, b) => Number(Boolean(b.forte)) - Number(Boolean(a.forte)));
   mostrarDesempenho(d.saude);
-  const kpi = (aba, rot, val, sub) => `<button class="db-kpi" type="button" data-db-ir="${aba}"><span>${rot}</span><b>${val}</b><small>${sub}</small></button>`;
+  const kpi = (aba, ico, rot, val, sub) => `<button class="db-kpi" type="button" data-db-ir="${aba}"><i class="db-kpi-ico">${dbIco(ico)}</i><span>${rot}</span><b>${val}</b><small>${sub}</small></button>`;
   const statusPedido = { pago: 'Pago', enviado: 'Enviado', concluido: 'Concluído', cancelado: 'Cancelado' };
   const statusPag = { pendente: 'Aguardando', aprovado: 'Aprovado', recusado: 'Recusado', cancelado: 'Cancelado', expirado: 'Expirado' };
   const tipo = { empresa: 'Empresa', consumidor: 'Consumidor', afiliado: 'Ferramenta' };
@@ -433,10 +433,10 @@ async function loadDashboard() {
     </div>
 
     <div class="db-kpis">
-      ${kpi('offers', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbNum(k.ofertas.novas24h)} novas em 24 h`)}
-      ${kpi('offers', 'Cliques em 7 dias', dbNum(k.cliques.d7), k.cliques.var == null ? `${dbNum(k.cliques.total)} no total` : `${dbVar(k.cliques.var)} sobre a semana anterior`)}
-      ${kpi('users', 'Usuários', dbNum(k.usuarios.total), `${dbNum(k.usuarios.novos7)} novos em 7 dias`)}
-      ${kpi('ganhos', 'Receita em 30 dias', brl(k.receita.total), k.receita.var == null ? 'assinaturas, taxa e afiliados' : `${dbVar(k.receita.var)} sobre o mês anterior`)}
+      ${kpi('offers', 'ofertas', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbNum(k.ofertas.novas24h)} novas em 24 h`)}
+      ${kpi('offers', 'clique', 'Cliques em 7 dias', dbNum(k.cliques.d7), k.cliques.var == null ? `${dbNum(k.cliques.total)} no total` : `${dbVar(k.cliques.var)} sobre a semana anterior`)}
+      ${kpi('users', 'pessoas', 'Usuários', dbNum(k.usuarios.total), `${dbNum(k.usuarios.novos7)} novos em 7 dias`)}
+      ${kpi('ganhos', 'dinheiro', 'Receita em 30 dias', brl(k.receita.total), k.receita.var == null ? 'assinaturas, taxa e afiliados' : `${dbVar(k.receita.var)} sobre o mês anterior`)}
     </div>
 
     <div class="db-colunas">

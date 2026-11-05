@@ -102,18 +102,28 @@
       kpi('enviados', 'Mensagens enviadas', num(d.enviados), d.falhas ? `${num(d.falhas)} com falha ${periodo}` : periodo, 'verde'),
       kpi('conexoes', 'Redes conectadas', `${prontas.length}/${d.redes.length}`, prontas.length ? prontas.map(r => r.nome).join(', ') : 'nenhuma ainda', 'azul'),
       kpi('fila', 'Na fila', num(d.fila), d.agenda.ativa ? `agendamento ligado${d.agenda.proximo ? ` · próximo ${d.agenda.proximo}` : ''}` : 'agendamento desligado', 'laranja'),
-      kpi('cliques', 'Cliques nos seus links', num(d.cliques), 'desde o começo', 'roxo'),
+      kpi('cliques', 'Comissão', Number(d.comissao || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), `${num(d.cliques)} cliques nos seus links`, 'roxo'),
     ].join('');
     // Gráfico de barras (enviadas e falhas por dia)
     const max = Math.max(1, ...d.serie.map(x => x.ok + x.erro));
     const rot = s => new Date(s + 'T12:00:00Z').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     $('#cli-graf-sub').textContent = `Volume de mensagens ${periodo}${d.ultimo_envio ? ` · último envio em ${fmtDate(d.ultimo_envio)}` : ''}`;
-    $('#cli-graf').innerHTML = `<div class="cli-barras" style="--n:${d.serie.length}">${d.serie.map(x => `
-      <div class="cli-barra" title="${rot(x.dia)}: ${x.ok} enviada(s)${x.erro ? `, ${x.erro} com falha` : ''}">
-        <span class="cli-barra-pilha"><i class="ok" style="height:${(x.ok / max) * 100}%"></i><i class="erro" style="height:${(x.erro / max) * 100}%"></i></span>
+    const LOJA = { mercadolivre: ['Mercado Livre', '#ffd400'], shopee: ['Shopee', '#ee4d2d'], amazon: ['Amazon', '#ff9900'], magalu: ['Magalu', '#0086ff'], aliexpress: ['AliExpress', '#c81e1e'], kabum: ['KaBuM!', '#14418b'], outros: ['Outras', '#8a9a91'] };
+    const corDe = l => (LOJA[l] || LOJA.outros)[1];
+    const nomeDe = l => (LOJA[l] || LOJA.outros)[0];
+    const usadas = [...new Set(d.serie.flatMap(x => Object.keys(x.lojas || {})))];
+    $('#cli-graf').innerHTML = `<div class="cli-barras" style="--n:${d.serie.length}">${d.serie.map(x => {
+      const partes = Object.entries(x.lojas || {});
+      const dica = partes.map(([l, n]) => `${nomeDe(l)}: ${n}`).join(', ');
+      return `<div class="cli-barra" title="${rot(x.dia)}: ${x.ok} enviada(s)${dica ? ` (${esc(dica)})` : ''}${x.erro ? `, ${x.erro} com falha` : ''}">
+        <span class="cli-barra-pilha">${partes.map(([l, n]) => `<i style="height:${(n / max) * 100}%;background:${corDe(l)}"></i>`).join('')}<i class="erro" style="height:${(x.erro / max) * 100}%"></i></span>
         <small>${d.serie.length > 10 ? (x.dia.endsWith('01') || x.dia.endsWith('15') ? rot(x.dia) : '') : rot(x.dia)}</small>
-      </div>`).join('')}</div>
-      <div class="cli-legenda"><span><i class="ok"></i>Enviadas</span><span><i class="erro"></i>Com falha</span></div>`;
+      </div>`;
+    }).join('')}</div>
+      <div class="cli-legenda">${usadas.map(l => `<span><i style="background:${corDe(l)}"></i>${esc(nomeDe(l))}</span>`).join('')}<span><i class="erro"></i>Com falha</span></div>`;
+    // Rosca: redes conectadas
+    const pct = d.redes.length ? (prontas.length / d.redes.length) * 100 : 0;
+    $('#cli-rosca').innerHTML = `<div class="cli-rosca" style="--pct:${pct}%"><div><b>${prontas.length}</b><small>de ${d.redes.length}</small></div></div>`;
     // Conexões
     const linha = (ok, nome, det) => `<li class="${ok ? 'on' : 'off'}"><span class="cli-ponto"></span><div><b>${esc(nome)}</b><small>${esc(det)}</small></div></li>`;
     $('#cli-conexoes').innerHTML = d.redes.map(r => r.id === 'whatsapp'

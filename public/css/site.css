@@ -3334,3 +3334,6 @@ button.ex-lembrete { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .dm-cena, .dm-logo, .dm-capi, .dm-itens li, .dm-bolha, .dm-barras i, #dm-linha, .dm-tag { animation: none !important; }
 }
+.explore-links[hidden] { display: none; }
+.ex-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ex-chips .chip { text-decoration: none; }

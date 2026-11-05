@@ -61,8 +61,8 @@ test('busca confirmada e listas de mais pesquisados', async () => {
   const r = await json('/api/offers/termo', { q: '#perfil' });
   assert.deepEqual(await r.json(), { status: 'ignorado' });
   assert.deepEqual(await (await pede('/api/offers/termo?q=nada')).json(), { status: 'cadastrado' });
-  const p = await (await pede('/api/offers/populares')).json();
-  assert.ok(Array.isArray(p.buscados) && Array.isArray(p.clicados));
+  assert.notEqual((await pede('/api/offers/populares')).status, 200, 'as listas não são públicas');
+  assert.equal((await pede('/api/cliente/populares')).status, 401);
 });
 
 test('visitante: sessão sem erro e áreas fechadas', async () => {

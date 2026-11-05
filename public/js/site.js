@@ -958,14 +958,6 @@
   readUrl();
   if (state.q && !PAGINA_SEO) setTimeout(() => pedirMineracao(state.q), 300); // abriu um link de busca
   // Mais pesquisados e mais clicados, no fim da página
-  fetch('/api/offers/populares').then(r => r.json()).then(p => {
-    if (!p.buscados?.length && !p.clicados?.length) return;
-    $('#pop-buscados').innerHTML = p.buscados.map(b => `<a class="chip" href="/?q=${encodeURIComponent(b.termo)}">${esc(b.termo)}</a>`).join('');
-    $('#pop-buscados').parentElement.hidden = !p.buscados.length;
-    $('#pop-clicados').innerHTML = p.clicados.map(o => `<li><a href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"><span>${esc(o.produto)}</span><b class="num">R$ ${brl(o.preco_atual)}</b></a></li>`).join('');
-    $('#pop-clicados').parentElement.hidden = !p.clicados.length;
-    $('#populares').hidden = false;
-  }).catch(() => {});
   if (new URLSearchParams(location.search).has('expirada')) {
     $('#expired-notice').hidden = false;
     history.replaceState(null, '', location.pathname);

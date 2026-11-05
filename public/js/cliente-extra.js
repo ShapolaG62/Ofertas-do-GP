@@ -174,6 +174,19 @@
     try { await api('/api/cliente/site-grupo/zerar', { method: 'POST' }); await carregarSite(); } catch (err) { aviso(err.message); }
   });
 
+  // O que está em alta (dashboard): carrega quando o painel aparece, depois do login
+  async function carregarAlta() {
+    const d = await api('/api/cliente/populares');
+    $('#alta-buscados').innerHTML = d.buscados.map(b => `<a class="chip" href="/?q=${encodeURIComponent(b.termo)}">${esc(b.termo)}</a>`).join('') || '<p class="cli-hint">Ainda sem dados.</p>';
+    $('#alta-clicados').innerHTML = d.clicados.map(o => `<div class="ex-lin"><span title="${esc(o.produto)}">${esc(o.produto)}</span><b>${brl(o.preco_atual)}</b></div>`).join('') || '<p class="cli-hint">Ainda sem dados.</p>';
+    $('#cli-alta').hidden = !d.buscados.length && !d.clicados.length;
+  }
+  const app = $('#view-app');
+  let altaFeita = false;
+  const talvezAlta = () => { if (!altaFeita && app && !app.hidden) { altaFeita = true; carregarAlta().catch(() => { altaFeita = false; }); } };
+  if (app) new MutationObserver(talvezAlta).observe(app, { attributes: true, attributeFilter: ['hidden'] });
+  talvezAlta();
+
   // Carrega cada aba ao abrir
   const CARGA = { comissao: carregarComissao, membros: carregarMembros, sitegrupo: carregarSite };
   document.querySelector('.tabs-line')?.addEventListener('click', e => {

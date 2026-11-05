@@ -128,6 +128,9 @@ router.delete('/api/cliente/comissao/saque/:id', (req, res) => {
   try { res.json(require('../cliente-ganhos').excluirSaque(req.cliente.id, req.params.id)); } catch (err) { sendError(res, err); }
 });
 
+// ── O que está em alta ──
+router.get('/api/cliente/populares', (req, res) => res.json(require('../populares').populares()));
+
 // ── Monitor de membros ──
 router.get('/api/cliente/membros', (req, res) => res.json(require('../membros-grupo').resumo(req.cliente.id, req.query.dias)));
 router.post('/api/cliente/membros/atualizar', async (req, res) => {

@@ -11,10 +11,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f5f2; --surface: #ffffff; --surface-2: #f7f8f6; --surface-3: #eef0ec;
-    --border: #e2e6e1; --border-strong: #cfd5cf;
+    --bg: #f2f7f3; --surface: #ffffff; --surface-2: #f4f9f5; --surface-3: #e7f0e9;
+    --border: #dbe6dd; --border-strong: #c1d0c4;
     --text: #161b18; --muted: #5d6761; --dim: #8b948f;
-    --green: #0c8f4f; --green-soft: #e5f3eb; --green-line: #9fd3b6;
+    --green: #0a7a43; --green-soft: #dff2e6; --green-line: #9fd3b6;
     --red: #c2341f; --yellow: #9a6a00; --blue: #2563eb;
     --radius: 14px;
     color-scheme: light;
@@ -210,7 +210,7 @@
   /* Barra do topo: pesquisar oferta ou colar link (Ctrl K) */
   .top-busca-area { position: relative; display: flex; justify-content: center; min-width: 0; }
   .top-busca { width: min(520px, 100%); display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 12px;
-    border: 1px solid var(--line, #333); background: var(--panel, #161b18); color: var(--muted, #8a9a91); }
+    border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--muted); }
   .top-busca:focus-within { border-color: var(--green, #2bb673); box-shadow: 0 0 0 3px rgba(43, 182, 115, .15); }
   .top-busca svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
   .top-busca input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--text); font: inherit; font-size: 14px; }
@@ -350,13 +350,13 @@
   @media (max-width: 520px) { .db-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .db-kpi b { font-size: 19px; } .db-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; } }
   @media (max-width: 640px) { .offer-title { max-width: 180px; } th.hide-sm, td.hide-sm { display: none; } }
 </style>
-<script src="/js/tema.js?v=20261256"></script>
-<script src="/js/dialogo.js?v=20261256"></script>
-<script src="/js/modelo-post.js?v=20261256"></script>
-<script src="/js/avisos-entrada.js?v=20261256"></script>
-<script src="/js/capi-minerando.js?v=20261256" defer></script>
-<script src="/js/cadastro-auto.js?v=20261256" defer></script>
-<script src="/js/seletor.js?v=20261256" defer></script>
+<script src="/js/tema.js?v=20261257"></script>
+<script src="/js/dialogo.js?v=20261257"></script>
+<script src="/js/modelo-post.js?v=20261257"></script>
+<script src="/js/avisos-entrada.js?v=20261257"></script>
+<script src="/js/capi-minerando.js?v=20261257" defer></script>
+<script src="/js/cadastro-auto.js?v=20261257" defer></script>
+<script src="/js/seletor.js?v=20261257" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1682,6 +1682,6 @@
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261256"></script>
+<script src="/js/admin.js?v=20261257"></script>
 </body>
 </html>

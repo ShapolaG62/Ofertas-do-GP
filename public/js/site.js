@@ -274,7 +274,7 @@
           <button class="rl-abrir" type="button" data-abrir-cupons aria-expanded="${aberto}" aria-label="Ver os cupons">${RL_SETA}</button>
         </div>${aberto ? `<ul class="filter-list cupons-list rl-sub">
         <li><button class="filter-option" type="button" data-cupom="" aria-pressed="${!state.cupom}"><span>Com ou sem cupom</span></button></li>
-        <li><button class="filter-option" type="button" data-cupom="1" aria-pressed="${state.cupom === '1'}"><span>🎟️ Só com cupom</span><span class="count">${c.total}</span></button></li>
+        <li><button class="filter-option" type="button" data-cupom="1" aria-pressed="${state.cupom === '1'}"><span>Só com cupom</span><span class="count">${c.total}</span></button></li>
         ${codigos}</ul>` : ''}</li>`;
   }
 
@@ -344,8 +344,8 @@
         <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span>${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low" title="Menor preço em 30 dias">Menor preço</span>' : ''}${comissaoHtml(o)}</div>
         <button class="card-select poster-only" type="button" data-select="${o.id}" aria-label="Escolher para postar"><svg><use href="#i-check"/></svg></button>
         ${o.cupom ? (cupomMl(o.cupom)
-          ? `<button class="card-cupom card-cupom-ml" type="button" data-cupom-ml="${esc(o.cupom_texto || '')}" title="${esc(o.cupom_texto || 'Cupom')}: ative em Cupons no app do Mercado Livre">🎟️ <b>${esc(o.cupom_texto || 'Cupom')}</b> <span>ative em Cupons</span></button>`
-          : `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom ${esc(o.cupom)}${o.cupom_texto ? ` (${esc(o.cupom_texto)})` : ''}">🎟️ <i class="cupom-rot">Cupom</i> <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>`) : ''}
+          ? `<button class="card-cupom card-cupom-ml" type="button" data-cupom-ml="${esc(o.cupom_texto || '')}" title="${esc(o.cupom_texto || 'Cupom')}: ative em Cupons no app do Mercado Livre"><b>${esc(o.cupom_texto || 'Cupom')}</b> <span>ative em Cupons</span></button>`
+          : `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom ${esc(o.cupom)}${o.cupom_texto ? ` (${esc(o.cupom_texto)})` : ''}"><i class="cupom-rot">Cupom</i> <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>`) : ''}
       </div>
       <div class="card-body">
         <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}${minerada && !o.cupom ? `<span class="card-verif" title="Conferido ${timeAgo(o.last_seen_at)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Preço verificado</span>` : ''}</div>

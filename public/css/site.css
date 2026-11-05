@@ -3337,3 +3337,5 @@ button.ex-lembrete { cursor: pointer; }
 .explore-links[hidden] { display: none; }
 .ex-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .ex-chips .chip { text-decoration: none; }
+.rl-sub { overflow-x: hidden; }
+.rl-sub .filter-option { min-width: 0; width: 100%; }

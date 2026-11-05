@@ -464,12 +464,12 @@
 
   /* Painel em tela cheia: menu lateral de altura inteira, com o logo no alto */
   @media (min-width: 901px) {
-    .wrap { max-width: none; padding-left: 276px; padding-right: 24px; }
+    .wrap { max-width: none; padding-left: 296px; padding-right: 24px; }
     header.top { z-index: 35; box-shadow: none; clip-path: none; margin-left: -24px; margin-right: -24px; padding: 10px 24px; width: auto; }
     header.top > .logo { display: none; }
     .side-logo { display: flex !important; }
     .layout { display: block; }
-    .side { position: fixed; left: 0; top: 0; bottom: 0; z-index: 30; width: 252px; max-height: none; padding: 12px 10px 14px; border-width: 0 1px 0 0; border-radius: 0; overflow-y: auto; align-content: start; }
+    .side { position: fixed; left: 0; top: 0; bottom: 0; z-index: 30; width: 272px; max-height: none; padding: 12px 10px 14px; border-width: 0 1px 0 0; border-radius: 0; overflow-y: auto; align-content: start; }
     .btn-voltar-painel { display: none !important; }
     header.top .top-busca-area { justify-content: flex-start; }
   }
@@ -477,6 +477,18 @@
   .db-kpi-ico { grid-row: 1 / span 3; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: var(--green-soft); }
   .db-kpi .db-kpi-ico .tab-ico { width: 20px; height: 20px; margin: 0; }
   @media (max-width: 600px) { .db-kpi { grid-template-columns: minmax(0, 1fr); } .db-kpi-ico { display: none; } }
+  /* Menu lateral um pouco maior, só no computador */
+  @media (min-width: 901px) {
+    .side { padding: 8px 10px 8px 12px; gap: 2px; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+    .side::-webkit-scrollbar { display: block; width: 6px; }
+    .side::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+    .side .tab { gap: 12px; padding: 5px 10px; font-size: 15px; border-radius: 10px; }
+    .side .tab .tab-ico { width: 20px; height: 20px; flex: none; }
+    .side-grupo { margin: 7px 10px 2px; font-size: 12.5px; }
+    .painel-busca { min-height: 38px; font-size: 14.5px; margin-bottom: 4px; }
+    .side-logo { font-size: 22px; padding-bottom: 6px !important; }
+    .side-logo img { width: 36px; height: 36px; }
+  }
 </style>
 <script src="/js/tema.js?v=20261272"></script>
 <script src="/js/dialogo.js?v=20261272"></script>

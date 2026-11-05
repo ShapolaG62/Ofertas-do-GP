@@ -57,6 +57,8 @@ $('#login-form').addEventListener('submit', async e => {
   }
 });
 
+// Menu Conta: fecha ao tocar fora
+document.addEventListener('click', e => { const m = $('#top-conta'); if (m?.open && !m.contains(e.target)) m.open = false; });
 $('#logout').addEventListener('click', async () => { await api('/api/admin/logout', { method: 'POST' }); location.reload(); });
 
 // ── Aplicativo ────────────────────────────────────────────────────────────────
@@ -85,30 +87,24 @@ const PAGINAS = {
   offers: ['Ofertas', 'Adicione ofertas à mão e gerencie as que estão no site: buscar, ocultar, editar e ver os cliques.'],
   mining: ['Mineração', 'Situação de cada loja, busca pontual e as regras da mineração automática (lojas, termos e frequência).'],
   social: ['Redes sociais', 'Postagem automática das ofertas no WhatsApp, Telegram, Facebook/Instagram e X, com fila e histórico.'],
-  chatmod: ['Moderação do chat', 'Conversas em que alguém usou xingamentos: veja o histórico com a hora de cada ocorrência e aplique advertência, bloqueio das mensagens, suspensão ou banimento.'],
-  sac: ['SAC (fila de atendimento)', 'Chamados do Suporte Ofertou!: assuma um chamado da fila, converse com o cliente e marque como resolvido.'],
-  equipe: ['Equipe (staff)', 'Pessoas da equipe com os cargos (Proprietário, Gerente, Admin, Moderador e Suporte) e, na aba Cargos e permissões, o que cada cargo pode fazer na Área de trabalho.'],
+  chatmod: ['Moderação', 'Conversas em que alguém usou xingamentos: veja o histórico com a hora de cada ocorrência e aplique advertência, bloqueio das mensagens, suspensão ou banimento.'],
+  sac: ['SAC', 'Chamados do Suporte Ofertou!: assuma um chamado da fila, converse com o cliente e marque como resolvido.'],
+  equipe: ['Equipe', 'Pessoas da equipe com os cargos (Proprietário, Gerente, Admin, Moderador e Suporte) e, na aba Cargos e permissões, o que cada cargo pode fazer na Área de trabalho.'],
   users: ['Usuários', 'Cadastros do site: aprove empresas, modere contas e configure o login com Google.'],
   atendimento: ['Lojas e pedidos', 'Empresas parceiras, o Mercado Pago das lojas, pedidos feitos pelo site e as conversas de atendimento.'],
-  clientes: ['Clientes da ferramenta', 'Quem comprou acesso à ferramenta de afiliados: validade, bloqueio e links.'],
-  planos: ['Planos e pagamentos', 'Planos à venda, pedidos de assinatura, formas de recebimento (Mercado Pago), app e e-mail de confirmação.'],
-  ganhos: ['Ganhos de afiliados', 'Comissões das plataformas, vendas importadas, saques e avisos de saldo para sacar.'],
+  clientes: ['Clientes', 'Quem comprou acesso à ferramenta de afiliados: validade, bloqueio e links.'],
+  planos: ['Planos', 'Planos à venda, pedidos de assinatura, formas de recebimento (Mercado Pago), app e e-mail de confirmação.'],
+  ganhos: ['Ganhos', 'Comissões das plataformas, vendas importadas, saques e avisos de saldo para sacar.'],
   aff: ['Links de afiliado', 'Suas tags e credenciais de afiliado de cada loja. Ao salvar, todos os links das ofertas são atualizados.'],
   ads: ['Publicidade', 'Google AdSense, campanhas de anunciantes e pedidos de empresas que querem anunciar.'],
   site: ['Site', 'Links das redes sociais, Google Analytics e os dados do responsável pelo site (LGPD).'],
-  account: ['Conta e senha', 'Troque a senha do painel.'],
+  account: ['Senha e backup', 'Senha do painel, login em duas etapas e backup do banco de dados.'],
 };
 for (const [aba, [titulo, desc]] of Object.entries(PAGINAS)) {
   const corpo = document.querySelector(`.tab-body[data-body="${aba}"]`);
   if (!corpo) continue;
-  const secoes = [...corpo.querySelectorAll(':scope > .panel > h2, :scope > form > .panel > h2, :scope > .panel > .row > h2, :scope > .panel > .row > div > h2')];
-  secoes.forEach((h, i) => { h.closest('.panel').id ||= `sec-${aba}-${i}`; });
-  corpo.insertAdjacentHTML('afterbegin', `<header class="page-head"><h1>${titulo}</h1><p>${desc}</p>${secoes.length > 2 ? `<nav class="page-sec">${secoes.map(h => `<a href="#${h.closest('.panel').id}" data-ir-sec>${esc(h.textContent.replace(/[🔔]/gu, '').trim())}</a>`).join('')}</nav>` : ''}</header>`);
+  corpo.insertAdjacentHTML('afterbegin', `<header class="page-head"><h1>${titulo}</h1><p>${desc}</p></header>`);
 }
-document.addEventListener('click', e => {
-  const a = e.target.closest('[data-ir-sec]');
-  if (a) { e.preventDefault(); document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' }); }
-});
 // ── Login em duas etapas ──
 let F2 = { ativo: false };
 async function f2Carregar() {
@@ -228,6 +224,61 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'planos') { loadPlanos().then(loadPedidos).catch(e => globalMsg(e.message, false)); $('#rc-webhook-url').textContent = `${location.origin}/api/app/webhook/revenuecat`; }
 }));
 
+const semAcentoP = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// ── Seções que abrem e fecham: o trabalho do dia fica aberto, as configurações recolhidas ────
+// Títulos abertos da primeira vez; a escolha de cada pessoa fica guardada neste navegador
+const DOBRA_ABERTAS = ['Ofertas cadastradas', 'Links de afiliado', 'Situação das lojas', 'Busca pontual', 'Usuários', 'Pedidos de assinatura', 'Planos à venda',
+  'Saldo por plataforma', 'Vendas registradas', 'Buscar ticket', 'Pedidos às lojas', 'Clientes da ferramenta', 'Postagem automática nas redes sociais', 'Postagens agendadas',
+  'Histórico de postagens', 'Campanhas de anunciantes', 'Pedidos de empresas', 'Varredura de IP', 'Avisos', 'Backup do banco de dados', 'Trocar senha'];
+const DOBRA_CHAVE = 'ofertou-painel-dobras';
+const dobraLer = () => { try { return JSON.parse(localStorage.getItem(DOBRA_CHAVE)) || {}; } catch { return {}; } };
+function dobraDefinir(painel, aberto, guardar = true) {
+  painel.classList.toggle('fechado', !aberto);
+  const h2 = painel.querySelector(':scope > .dobra-cab h2, :scope > h2.dobra-cab');
+  h2?.setAttribute('aria-expanded', String(aberto));
+  if (guardar && h2) { const m = dobraLer(); m[painel.dataset.dobra] = aberto; try { localStorage.setItem(DOBRA_CHAVE, JSON.stringify(m)); } catch { /* sem armazenamento */ } }
+}
+function dobraMontar() {
+  const salvas = dobraLer();
+  document.querySelectorAll('.tab-body:not([data-body="dash"])').forEach(corpo => {
+    const paineis = [...corpo.querySelectorAll('.panel')].filter(p => !p.parentElement.closest('.panel') && !p.hasAttribute('hidden') && !p.classList.contains('hidden'));
+    if (paineis.length < 2) return; // seção única: fica sempre aberta
+    for (const p of paineis) {
+      const cab = [...p.children].find(c => c.matches('h2') || c.querySelector(':scope > h2, :scope > div > h2'));
+      const h2 = cab && (cab.matches('h2') ? cab : cab.querySelector('h2'));
+      if (!h2) continue;
+      const titulo = h2.textContent.trim();
+      p.classList.add('dobra');
+      p.dataset.dobra = `${corpo.dataset.body}:${titulo}`;
+      cab.classList.add('dobra-cab');
+      h2.classList.add('dobra-tit');
+      h2.setAttribute('role', 'button');
+      h2.tabIndex = 0;
+      const alternar = () => dobraDefinir(p, p.classList.contains('fechado'));
+      h2.addEventListener('click', alternar);
+      h2.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternar(); } });
+      dobraDefinir(p, p.dataset.dobra in salvas ? salvas[p.dataset.dobra] : DOBRA_ABERTAS.includes(titulo), false);
+    }
+    // Nenhuma aberta na lista e nada escolhido antes: abre a primeira, para a aba não parecer vazia
+    const dobras = paineis.filter(p => p.classList.contains('dobra'));
+    if (dobras.length && dobras.every(p => p.classList.contains('fechado') && !(p.dataset.dobra in salvas))) dobraDefinir(dobras[0], true, false);
+  });
+}
+dobraMontar();
+// Abre a seção cujo título contém o texto (atalhos da tela inicial e busca do menu)
+function dobraAbrir(aba, texto) {
+  const q = semAcentoP(texto);
+  const p = [...document.querySelectorAll(`.tab-body[data-body="${aba}"] .panel.dobra`)].find(x => semAcentoP(x.querySelector('h2')?.textContent).includes(q));
+  if (p) { dobraDefinir(p, true, false); p.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70); }
+}
+// Quando o painel leva a um campo dentro de uma seção fechada, a seção abre primeiro
+const rolarOriginal = Element.prototype.scrollIntoView;
+Element.prototype.scrollIntoView = function (...a) {
+  const fechado = this.closest?.('.panel.fechado');
+  if (fechado) dobraDefinir(fechado, true, false);
+  return rolarOriginal.apply(this, a);
+};
+
 // ── Dashboard (aba Painel) ────────────────────────────────────────────────────
 const DB_ICO = {
   ofertas: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/>',
@@ -262,6 +313,7 @@ function dbGrafico(serie, chave) {
 }
 
 // Resumo: o que dá resultado (cliques da última semana e o que as pessoas buscam)
+let dpAba = 'cliques';
 function mostrarDesempenho(s) {
   const el = $('#dash-desempenho');
   if (!s) { el.innerHTML = ''; return; }
@@ -269,20 +321,24 @@ function mostrarDesempenho(s) {
     return l.map(x => `<div class="dp-barra"><span>${esc(nome(x))}</span><b>${x.n.toLocaleString('pt-BR')}</b><i style="width:${(x.n / max) * 100}%"></i></div>`).join('') || '<p class="hint">Ainda sem cliques registrados nesta semana.</p>'; };
   const loja = id => STORE_LIST.find(x => x.id === id)?.name || id;
   const cat = c => CATEGORIES_NOMES[c] || c;
-  el.innerHTML = `<div class="dp-grade" style="margin-top:16px">
-    <div class="panel"><h2>Cliques por loja</h2><p class="hint">Últimos 7 dias, sem contar robôs.</p>${barras(s.cliques.por_loja, x => loja(x.store_id))}</div>
-    <div class="panel"><h2>Cliques por categoria</h2><p class="hint">Últimos 7 dias.</p>${barras(s.cliques.por_categoria, x => cat(x.categoria))}</div>
-    <div class="panel"><h2>De onde vêm os cliques</h2><p class="hint">Últimos 7 dias. "Acesso direto" inclui apps que não informam a origem.</p>${barras(s.origens || [], x => ORIGENS[x.origem] || x.origem)}</div>
-    <div class="panel"><h2>Ofertas mais clicadas</h2><ul class="dp-lista dp-rola">${s.cliques.top.map(o => `<li><span title="${esc(o.produto)}">${esc(o.produto)}</span><b>${o.link_clicks}</b></li>`).join('') || '<li class="hint">Nenhum clique ainda.</li>'}</ul></div>
+  const blocos = dpAba === 'buscas' ? `
     <div class="panel"><h2>Mais pesquisados</h2><ul class="dp-lista dp-rola">${s.buscas.mais.map(b => `<li><span>${esc(b.termo)}</span><b>${b.vezes}</b></li>`).join('') || '<li class="hint">Nenhuma busca registrada ainda.</li>'}</ul></div>
-    <div class="panel"><h2>Buscam e não acham</h2><p class="hint">Minere esses termos para trazer o que estão procurando.</p><ul class="dp-lista">${s.buscas.sem.slice(0, 12).map(b => `<li><span>${esc(b.termo)} (${b.vezes}x)</span><button class="btn small" type="button" data-minerar="${esc(b.termo)}">Minerar</button></li>`).join('') || '<li class="hint">Nenhuma até agora.</li>'}</ul></div>
-    <div class="panel"><h2>Termos acrescentados pela busca</h2><p class="hint">Pesquisados no site, minerados na hora e agora na lista de termos. Para tirar, edite a lista em Mineração.</p><ul class="dp-lista dp-rola">${(s.termos_auto || []).map(t => `<li><span>${esc(t.termo)}</span><b>${t.gravadas} ofertas</b></li>`).join('') || '<li class="hint">Nenhum ainda.</li>'}</ul></div>
-    ${s.erros?.length ? `<div class="panel"><h2>Erros do servidor (24 h)</h2><ul class="dp-lista">${s.erros.map(x => `<li><span title="${esc(x.mensagem)}">${esc(x.rota || '')}: ${esc(x.mensagem)}</span><b>${x.vezes}</b></li>`).join('')}</ul></div>` : ''}
-  </div>`;
+    <div class="panel"><h2>Buscam e não acham</h2><ul class="dp-lista dp-rola">${s.buscas.sem.slice(0, 12).map(b => `<li><span>${esc(b.termo)} (${b.vezes}x)</span><button class="btn small" type="button" data-minerar="${esc(b.termo)}">Minerar</button></li>`).join('') || '<li class="hint">Nenhuma até agora.</li>'}</ul></div>
+    <div class="panel"><h2>Acrescentados pela busca</h2><ul class="dp-lista dp-rola">${(s.termos_auto || []).map(t => `<li><span>${esc(t.termo)}</span><b>${t.gravadas} ofertas</b></li>`).join('') || '<li class="hint">Nenhum ainda.</li>'}</ul></div>` : `
+    <div class="panel"><h2>Por loja</h2>${barras(s.cliques.por_loja, x => loja(x.store_id))}</div>
+    <div class="panel"><h2>Por categoria</h2>${barras(s.cliques.por_categoria, x => cat(x.categoria))}</div>
+    <div class="panel"><h2>Por origem</h2>${barras(s.origens || [], x => ORIGENS[x.origem] || x.origem)}</div>
+    <div class="panel"><h2>Ofertas mais clicadas</h2><ul class="dp-lista dp-rola">${s.cliques.top.map(o => `<li><span title="${esc(o.produto)}">${esc(o.produto)}</span><b>${o.link_clicks}</b></li>`).join('') || '<li class="hint">Nenhum clique ainda.</li>'}</ul></div>`;
+  el.innerHTML = `<div class="dp-cab"><h2>Desempenho da semana</h2>
+      <div class="db-seg" role="tablist"><button type="button" data-dp="cliques" aria-selected="${dpAba !== 'buscas'}">Cliques</button><button type="button" data-dp="buscas" aria-selected="${dpAba === 'buscas'}">Buscas</button></div></div>
+    <div class="dp-grade">${blocos}</div>
+    ${s.erros?.length ? `<div class="panel" style="margin-top:12px"><h2>Erros do servidor (24 h)</h2><ul class="dp-lista">${s.erros.map(x => `<li><span title="${esc(x.mensagem)}">${esc(x.rota || '')}: ${esc(x.mensagem)}</span><b>${x.vezes}</b></li>`).join('')}</ul></div>` : ''}`;
 }
 const ORIGENS = { postagem: 'Postagens (grupos e redes)', site: 'Navegando no site', busca_site: 'Busca do site', pagina_categoria: 'Páginas de categoria', buscador: 'Google e buscadores', rede_social: 'Redes sociais', outro_site: 'Outros sites', direto: 'Acesso direto' };
 const CATEGORIES_NOMES = { informatica: 'Informática', celulares: 'Celulares', games: 'Games', audio_tv: 'TV e áudio', eletrodomesticos: 'Eletrodomésticos', cozinha: 'Cozinha', casa: 'Casa', ferramentas: 'Ferramentas', beleza: 'Beleza', saude: 'Saúde', esporte: 'Esporte', moda: 'Moda', brinquedos: 'Brinquedos', automotivo: 'Automotivo', pets: 'Pets', limpeza: 'Limpeza', alimentos: 'Alimentos', outros: 'Outros' };
 $('#dash-desempenho').addEventListener('click', async e => {
+  const aba = e.target.closest('[data-dp]');
+  if (aba) { dpAba = aba.dataset.dp; return mostrarDesempenho(DASH?.saude); }
   const b = e.target.closest('[data-minerar]');
   if (!b) return;
   b.disabled = true; b.textContent = 'Minerando…';
@@ -311,7 +367,6 @@ $('#susp-lista').addEventListener('click', async e => {
 });
 
 // Buscar no painel: encontra a aba pelo nome ou por um título dentro dela (ex.: "backup", "cupons", "kabum"); Enter abre a primeira
-const semAcentoP = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const ABAS_TEXTO = () => [...document.querySelectorAll('.side .tab')].map(t => {
   const corpo = document.querySelector(`.tab-body[data-body="${t.dataset.tab}"]`);
   const titulos = corpo ? [...corpo.querySelectorAll('h2, h3, h4, label.field')].map(x => x.textContent).join(' ') : '';
@@ -329,7 +384,9 @@ $('#painel-busca').addEventListener('input', e => {
 $('#painel-busca').addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   e.preventDefault();
-  [...document.querySelectorAll('.side .tab')].find(t => t.style.display !== 'none')?.click();
+  const alvo = [...document.querySelectorAll('.side .tab')].find(t => t.style.display !== 'none');
+  alvo?.click();
+  if (alvo && e.target.value.trim()) dobraAbrir(alvo.dataset.tab, e.target.value.trim());
 });
 
 async function loadDashboard() {
@@ -344,8 +401,8 @@ async function loadDashboard() {
   const serie0 = Object.keys(DB_SERIES).find(c => d.serie.some(x => x[c])) || 'cliques'; // abre numa série com dados
   // O que precisa de atenção (cada item abre a página certa)
   const acoes = [];
-  const add = (n, txt, aba, forte, ico = 'alerta') => { if (n) acoes.push({ txt, aba, forte, ico }); };
-  add(p.cartao_sem_chave, '<b>Cartões salvos desligados:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro');
+  const add = (n, txt, aba, forte, ico = 'alerta', secao = '') => { if (n) acoes.push({ txt, aba, forte, ico, secao }); };
+  add(p.cartao_sem_chave, '<b>Cartões salvos desligados:</b> cole a Public Key do Mercado Pago em Formas de recebimento', 'planos', true, 'dinheiro', 'Formas de recebimento');
   add(p.sac_fila, `<b>${p.sac_fila} chamado(s) no SAC</b> esperando atendimento`, 'sac', true, 'sino');
   add(p.xingamentos, `<b>${p.xingamentos} conversa(s) com xingamentos</b> para revisar`, 'chatmod', true);
   add(p.acessos_suspeitos, `<b>${p.acessos_suspeitos} conta(s) acessada(s) de lugares distantes</b> em pouco tempo (últimas 24 h)`, 'acessos', true);
@@ -356,86 +413,79 @@ async function loadDashboard() {
   add(m.problemas.length, `<b>${m.problemas.length} loja(s) com problema</b> na mineração: ${esc(m.problemas.map(x => x.nome).join(', '))}`, 'mining', false);
   add(p.postagens_erro, `<b>${p.postagens_erro} postagem(ns)</b> com erro nos últimos 3 dias`, 'social', false);
   add(p.clientes_vencendo, `<b>${p.clientes_vencendo} cliente(s) da ferramenta</b> vencem em até 5 dias`, 'clientes', false, 'pessoas');
-  for (const a of d.saude?.alertas || []) add(1, a.texto, a.aba, a.forte);
+  for (const a of d.saude?.alertas || []) add(1, a.texto, a.aba, a.forte, 'alerta', /backup/i.test(a.texto) ? 'Backup' : '');
+  acoes.sort((a, b) => Number(Boolean(b.forte)) - Number(Boolean(a.forte)));
   mostrarDesempenho(d.saude);
-  const kpi = (aba, ico, rot, val, sub) => `<button class="db-kpi" type="button" data-db-ir="${aba}">${dbIco(ico)}<span>${rot}</span><b>${val}</b><small>${sub}</small></button>`;
+  const kpi = (aba, rot, val, sub) => `<button class="db-kpi" type="button" data-db-ir="${aba}"><span>${rot}</span><b>${val}</b><small>${sub}</small></button>`;
   const statusPedido = { pago: 'Pago', enviado: 'Enviado', concluido: 'Concluído', cancelado: 'Cancelado' };
   const statusPag = { pendente: 'Aguardando', aprovado: 'Aprovado', recusado: 'Recusado', cancelado: 'Cancelado', expirado: 'Expirado' };
   const tipo = { empresa: 'Empresa', consumidor: 'Consumidor', afiliado: 'Ferramenta' };
-  const loja = id => STORE_LIST.find(s => s.id === id)?.name || id;
+  const usd = k.receita.afiliados_usd ? ` + US$ ${k.receita.afiliados_usd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '';
+  const cab = (titulo, aba, botao) => `<div class="db-cab"><h2>${titulo}</h2><button class="btn small" type="button" data-db-ir="${aba}">${botao}</button></div>`;
 
   el.innerHTML = `
     <div class="db-topo">
-      <div><h1>Painel</h1><p>Resumo do Ofertou! agora · atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p></div>
-      <div class="row"><button class="btn" type="button" id="db-atualizar">Atualizar</button><button class="btn" type="button" data-db-ir="offers">+ Oferta manual</button>
+      <div><h1>Painel</h1><p>Atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p></div>
+      <div class="row"><button class="btn" type="button" id="db-atualizar">Atualizar</button><button class="btn" type="button" data-db-ir="offers" data-db-secao="Adicionar oferta">Oferta manual</button>
         <button class="btn primary" type="button" id="db-minerar" ${m.rodando ? 'disabled' : ''}>${m.rodando ? 'Minerando…' : 'Minerar agora'}</button></div>
     </div>
 
     <div class="db-kpis">
-      ${kpi('offers', 'ofertas', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbNum(k.ofertas.novas24h)} novas nas últimas 24 h`)}
-      ${kpi('offers', 'clique', 'Cliques (7 dias)', dbNum(k.cliques.d7), `${dbVar(k.cliques.var)} · ${dbNum(k.cliques.total)} no total`)}
-      ${kpi('users', 'pessoas', 'Usuários', dbNum(k.usuarios.total), `${dbNum(k.usuarios.empresas)} empresas · ${dbNum(k.usuarios.novos7)} novos em 7 dias ${dbVar(k.usuarios.var)}`)}
-      ${kpi('planos', 'dinheiro', 'Receita bruta (30 dias)', brl(k.receita.total), `${dbVar(k.receita.var)} assinaturas + taxa do site + afiliados`)}
-      ${kpi('ganhos', 'dinheiro', 'Ganhos de afiliado (30 dias)', brl(k.receita.afiliados), `${dbVar(k.receita.afiliados_var)} ${dbNum(k.receita.afiliados_n)} venda(s)${k.receita.afiliados_usd ? ` · + US$ ${k.receita.afiliados_usd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}`)}
-      ${kpi('atendimento', 'sacola', 'Pedidos às lojas (30 dias)', dbNum(k.pedidos.n), `${brl(k.pedidos.valor)} vendidos pelas lojas`)}
+      ${kpi('offers', 'Ofertas no ar', dbNum(k.ofertas.no_ar), `${dbNum(k.ofertas.novas24h)} novas em 24 h`)}
+      ${kpi('offers', 'Cliques em 7 dias', dbNum(k.cliques.d7), k.cliques.var == null ? `${dbNum(k.cliques.total)} no total` : `${dbVar(k.cliques.var)} sobre a semana anterior`)}
+      ${kpi('users', 'Usuários', dbNum(k.usuarios.total), `${dbNum(k.usuarios.novos7)} novos em 7 dias`)}
+      ${kpi('ganhos', 'Receita em 30 dias', brl(k.receita.total), k.receita.var == null ? 'assinaturas, taxa e afiliados' : `${dbVar(k.receita.var)} sobre o mês anterior`)}
     </div>
 
-    <div class="db-grade">
-      <section class="panel">
-        <h2>Precisa da sua atenção</h2>
-        ${acoes.length ? `<ul class="db-acoes">${acoes.map(a => `<li><button type="button" class="${a.forte ? 'forte' : ''}" data-db-ir="${a.aba}">${dbIco(a.ico)}<span>${a.txt}</span>${dbIco('seta')}</button></li>`).join('')}</ul>`
-          : `<p class="db-ok">${dbIco('ok')} Tudo em dia. Nenhuma pendência agora.</p>`}
-      </section>
+    <div class="db-colunas">
+      <div class="db-coluna">
+        <section class="panel">
+          <div class="db-cab"><h2>Precisa da sua atenção</h2>${acoes.length ? `<span class="db-num">${acoes.length}</span>` : ''}</div>
+          ${acoes.length ? `<ul class="db-acoes">${acoes.map(a => `<li><button type="button" class="${a.forte ? 'forte' : ''}" data-db-ir="${a.aba}" data-db-secao="${esc(a.secao)}">${dbIco(a.ico)}<span>${a.txt}</span>${dbIco('seta')}</button></li>`).join('')}</ul>`
+            : `<p class="db-ok">${dbIco('ok')} Tudo em dia. Nenhuma pendência agora.</p>`}
+        </section>
+        <section class="panel">
+          <div class="db-cab"><h2>Últimos 30 dias</h2>
+            <div class="db-seg" role="tablist">${Object.entries(DB_SERIES).map(([c, [nome]]) => `<button type="button" data-serie="${c}" aria-selected="${c === serie0}">${nome}</button>`).join('')}</div></div>
+          <div id="db-graf">${dbGrafico(d.serie, serie0)}</div>
+        </section>
+      </div>
 
-      <section class="panel">
-        <div class="row" style="justify-content:space-between"><h2>Últimos 30 dias</h2>
-          <div class="db-seg" role="tablist">${Object.entries(DB_SERIES).map(([c, [nome]]) => `<button type="button" data-serie="${c}" aria-selected="${c === serie0}">${nome}</button>`).join('')}</div></div>
-        <div id="db-graf">${dbGrafico(d.serie, serie0)}</div>
-        ${soma7 === 0 && k.cliques.total ? '<p class="hint" style="margin:0">Os cliques por dia começaram a ser contados agora; o gráfico enche com o uso do site.</p>' : ''}
-      </section>
-
-      <section class="panel">
-        <div class="row" style="justify-content:space-between"><h2>Mineração</h2><button class="btn small" type="button" data-db-ir="mining">Detalhes</button></div>
-        <p class="hint" style="margin:0">${m.rodando ? 'Mineração em andamento…' : m.ultima ? `Última rodada terminou em ${new Date(m.ultima).toLocaleString('pt-BR')}.` : 'Nenhuma rodada desde que o servidor iniciou.'}
-          <b>${m.ok} de ${m.total}</b> lojas automáticas funcionando.</p>
-        <div class="db-lojas">${m.lojas.map(l => `<div class="db-loja" title="${esc(STATUS_LABEL[l.status] || 'Ainda não rodou')}"><span>${esc(l.nome)}</span><span class="row" style="gap:6px"><small class="hint" style="margin:0">${dbNum(l.saved)}</small><i class="db-ponto ${esc(l.status)}"></i></span></div>`).join('')}</div>
-        ${m.problemas.length ? `<ul class="db-lista">${m.problemas.map(x => `<li><i class="db-ponto ${esc(x.status)}"></i><span class="db-txt"><b>${esc(x.nome)}:</b> ${esc(x.msg || STATUS_LABEL[x.status] || '')}</span></li>`).join('')}</ul>` : ''}
-      </section>
-
-      <section class="panel">
-        <div class="row" style="justify-content:space-between"><h2>Dinheiro</h2><button class="btn small" type="button" data-db-ir="ganhos">Ganhos</button></div>
-        <div class="db-dinheiro">
-          <div><span>Assinaturas (30 dias)</span><b>${brl(k.receita.assinaturas)}</b><small>${dbNum(k.receita.assinaturas_n)} pagamento(s)</small></div>
-          <div><span>Taxa do site (30 dias)</span><b>${brl(k.receita.taxa_pedidos)}</b><small>sobre pedidos às lojas</small></div>
-          <div><span>Afiliados (30 dias)</span><b>${brl(k.receita.afiliados)}</b><small>comissões das vendas${k.receita.afiliados_usd ? ` + US$ ${k.receita.afiliados_usd.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}</small></div>
-          <div class="db-total"><span>Receita bruta (30 dias)</span><b>${brl(k.receita.total)}</b><small>soma de todas as receitas do site</small></div>
-          <div><span>Afiliados disponível</span><b>${brl(k.afiliados.disponivel)}</b><small>${brl(k.afiliados.a_liberar)} a liberar</small></div>
-        </div>
-        ${k.afiliados.pode_sacar?.length ? `<p class="hint" style="margin:0">Pode sacar agora: <b>${esc(k.afiliados.pode_sacar.join(', '))}</b>.</p>` : ''}
-      </section>
-
-      <section class="panel">
-        <div class="row" style="justify-content:space-between"><h2>Ofertas mais clicadas</h2><button class="btn small" type="button" data-db-ir="offers">Ver ofertas</button></div>
-        ${d.top_ofertas.length ? `<ul class="db-lista">${d.top_ofertas.map(o => `<li><span class="db-txt">${esc(o.produto)}<br><small>${esc(loja(o.store_id))} · ${brl(o.preco_atual)} · -${o.desconto_pct}%</small></span><b class="num">${dbNum(o.link_clicks)} cliques</b></li>`).join('')}</ul>` : '<p class="hint">Nenhuma oferta no ar.</p>'}
-      </section>
-
-      <section class="panel">
-        <div class="row" style="justify-content:space-between"><h2>Novos cadastros</h2><button class="btn small" type="button" data-db-ir="users">Ver usuários</button></div>
-        ${d.ultimos_cadastros.length ? `<ul class="db-lista">${d.ultimos_cadastros.map(u => `<li><span class="db-txt"><b>${esc(u.empresa_nome || u.nome || u.email)}</b><br><small>${esc(tipo[u.tipo] || 'Sem perfil')} · ${fmtDate(u.created_at)}</small></span><span class="badge b-${esc(u.status)}">${esc({ active: 'Ativo', pending: 'Pendente', onboarding: 'Escolhendo perfil', suspended: 'Suspenso', banned: 'Banido', rejected: 'Recusado' }[u.status] || u.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhum cadastro ainda.</p>'}
-      </section>
-
-      <section class="panel">
-        <div class="row" style="justify-content:space-between"><h2>Últimos pedidos às lojas</h2><button class="btn small" type="button" data-db-ir="atendimento">Ver pedidos</button></div>
-        ${d.ultimos_pedidos.length ? `<ul class="db-lista">${d.ultimos_pedidos.map(x => `<li><span class="db-txt"><b>PD-${String(x.id).padStart(6, '0')}</b> · ${esc(x.produto)}<br><small>${esc(x.loja)} · pago em ${fmtDate(x.pago_em)}</small></span><b class="num">${brl(x.total)}</b><span class="badge b-${x.status === 'cancelado' ? 'banned' : 'active'}">${esc(statusPedido[x.status] || x.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhum pedido pago ainda.</p>'}
-      </section>
-
-      <section class="panel">
-        <div class="row" style="justify-content:space-between"><h2>Últimas assinaturas</h2><button class="btn small" type="button" data-db-ir="planos">Ver planos</button></div>
-        ${d.ultimos_pagamentos.length ? `<ul class="db-lista">${d.ultimos_pagamentos.map(x => `<li><span class="db-txt"><b>${esc(x.nome || x.email)}</b><br><small>${esc(x.plano)} · ${fmtDate(x.created_at)}</small></span><b class="num">${brl(x.valor)}</b><span class="badge ${(PED_STATUS[x.status] || ['b-none'])[0]}">${esc(statusPag[x.status] || x.status)}</span></li>`).join('')}</ul>` : '<p class="hint">Nenhuma assinatura ainda.</p>'}
-      </section>
+      <div class="db-coluna">
+        <section class="panel">
+          ${cab('Mineração', 'mining', 'Detalhes')}
+          <p class="db-nota">${m.rodando ? 'Mineração em andamento…' : m.ultima ? `Última rodada: ${new Date(m.ultima).toLocaleString('pt-BR')}` : 'Nenhuma rodada desde que o servidor iniciou'} · <b>${m.ok} de ${m.total}</b> lojas funcionando</p>
+          <div class="db-lojas">${m.lojas.map(l => `<div class="db-loja" title="${esc(STATUS_LABEL[l.status] || 'Ainda não rodou')}"><span>${esc(l.nome)}</span><span class="row" style="gap:6px"><small class="hint" style="margin:0">${dbNum(l.saved)}</small><i class="db-ponto ${esc(l.status)}"></i></span></div>`).join('')}</div>
+          ${m.problemas.map(x => `<p class="db-falha" title="${esc(x.msg || STATUS_LABEL[x.status] || '')}"><b>${esc(x.nome)}:</b> ${esc(x.msg || STATUS_LABEL[x.status] || '')}</p>`).join('')}
+        </section>
+        <section class="panel">
+          ${cab('Dinheiro em 30 dias', 'ganhos', 'Ganhos')}
+          <dl class="db-linhas">
+            <div><dt>Assinaturas (${dbNum(k.receita.assinaturas_n)})</dt><dd>${brl(k.receita.assinaturas)}</dd></div>
+            <div><dt>Taxa do site sobre pedidos</dt><dd>${brl(k.receita.taxa_pedidos)}</dd></div>
+            <div><dt>Comissões de afiliado (${dbNum(k.receita.afiliados_n)})</dt><dd>${brl(k.receita.afiliados)}${usd}</dd></div>
+            <div><dt>Afiliados: disponível para saque</dt><dd>${brl(k.afiliados.disponivel)}</dd></div>
+            ${k.afiliados.a_liberar ? `<div><dt>Afiliados: a liberar</dt><dd>${brl(k.afiliados.a_liberar)}</dd></div>` : ''}
+            ${k.pedidos.n ? `<div><dt>Vendido pelas lojas (${dbNum(k.pedidos.n)})</dt><dd>${brl(k.pedidos.valor)}</dd></div>` : ''}
+          </dl>
+          ${k.afiliados.pode_sacar?.length ? `<p class="db-nota" style="margin:8px 0 0">Pode sacar agora: <b>${esc(k.afiliados.pode_sacar.join(', '))}</b></p>` : ''}
+        </section>
+        ${d.ultimos_cadastros.length ? `<section class="panel">
+          ${cab('Novos cadastros', 'users', 'Ver usuários')}
+          <ul class="db-lista">${d.ultimos_cadastros.slice(0, 4).map(u => `<li><span class="db-txt"><b>${esc(u.empresa_nome || u.nome || u.email)}</b><br><small>${esc(tipo[u.tipo] || 'Sem perfil')} · ${fmtDate(u.created_at)}</small></span><span class="badge b-${esc(u.status)}">${esc({ active: 'Ativo', pending: 'Pendente', onboarding: 'Escolhendo perfil', suspended: 'Suspenso', banned: 'Banido', rejected: 'Recusado' }[u.status] || u.status)}</span></li>`).join('')}</ul>
+        </section>` : ''}
+        ${d.ultimos_pedidos.length ? `<section class="panel">
+          ${cab('Últimos pedidos', 'atendimento', 'Ver pedidos')}
+          <ul class="db-lista">${d.ultimos_pedidos.slice(0, 4).map(x => `<li><span class="db-txt"><b>PD-${String(x.id).padStart(6, '0')}</b> · ${esc(x.produto)}<br><small>${esc(x.loja)} · ${fmtDate(x.pago_em)}</small></span><b class="num">${brl(x.total)}</b><span class="badge b-${x.status === 'cancelado' ? 'banned' : 'active'}">${esc(statusPedido[x.status] || x.status)}</span></li>`).join('')}</ul>
+        </section>` : ''}
+        ${d.ultimos_pagamentos.length ? `<section class="panel">
+          ${cab('Últimas assinaturas', 'planos', 'Ver planos')}
+          <ul class="db-lista">${d.ultimos_pagamentos.slice(0, 4).map(x => `<li><span class="db-txt"><b>${esc(x.nome || x.email)}</b><br><small>${esc(x.plano)} · ${fmtDate(x.created_at)}</small></span><b class="num">${brl(x.valor)}</b><span class="badge ${(PED_STATUS[x.status] || ['b-none'])[0]}">${esc(statusPag[x.status] || x.status)}</span></li>`).join('')}</ul>
+        </section>` : ''}
+      </div>
     </div>`;
 
-  el.querySelectorAll('[data-db-ir]').forEach(b => b.addEventListener('click', () => abrirAba(b.dataset.dbIr)));
+  el.querySelectorAll('[data-db-ir]').forEach(b => b.addEventListener('click', () => { abrirAba(b.dataset.dbIr); if (b.dataset.dbSecao) dobraAbrir(b.dataset.dbIr, b.dataset.dbSecao); }));
   el.querySelectorAll('[data-serie]').forEach(b => b.addEventListener('click', () => {
     el.querySelectorAll('[data-serie]').forEach(x => x.setAttribute('aria-selected', x === b));
     $('#db-graf').innerHTML = dbGrafico(DASH.serie, b.dataset.serie);

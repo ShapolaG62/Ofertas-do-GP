@@ -49,6 +49,15 @@
     return null;
   }
 
+  // Cupom esgotado: pelo estado ou por qualquer texto do próprio cupom (os nomes dos produtos ficam de fora da conferência)
+  const RE_ESGOTADO = /esgotad|sold[_ -]?out|out[_ -]?of[_ -]?stock|exhausted|depleted|sem estoque|cupons? (acabou|acabaram)/i;
+  const RE_ESTADO_FORA = /SOLD|EXHAUST|DEPLET|OUT_OF|FINISH|EXPIRED|UNAVAILABLE|CONSUMED/i;
+  function esgotado(c, cartao) {
+    if (RE_ESTADO_FORA.test(String(c.status?.id || ''))) return true;
+    const { items, ...semProdutos } = c;
+    return RE_ESGOTADO.test(JSON.stringify(semProdutos)) || RE_ESGOTADO.test(cartao?.innerText || '');
+  }
+
   function cupomDe(c) {
     const titulo = String(c.title?.text || '').replace(/\s+/g, ' ').trim();
     const pct = titulo.match(/(\d{1,2}(?:[.,]\d{1,2})?)\s*%/);
@@ -103,7 +112,7 @@
     const { cuponsJob: j } = await chrome.storage.local.get('cuponsJob');
     await chrome.storage.local.remove('cuponsJob');
     if (!j) return;
-    await chrome.storage.local.set({ cuponsResultado: { em: Date.now(), motivo, aplicados: j.aplicados || 0, cupons: Object.values(j.cupons || {}), produtos: j.produtos || {} } });
+    await chrome.storage.local.set({ cuponsResultado: { em: Date.now(), motivo, aplicados: j.aplicados || 0, cupons: Object.values(j.cupons || {}), esgotados: Object.keys(j.esgotados || {}), produtos: j.produtos || {} } });
     caixa('Pronto! Voltando para o Painel…');
     location.href = `${j.painel}/admin?ml-cupons=1#mining`;
   }
@@ -118,7 +127,7 @@
       // Aplicar sozinho (opção do Painel): toca em "Aplicar" nos cupons desta página e recarrega para ler os links
       // dos produtos (o cupom aplicado passa a ter o "Conferir" com a lista de produtos)
       if (j.aplicar && j.aplicouPagina !== j.pagina && j.aplicados < j.maxAplicar) {
-        const botoes = [...document.querySelectorAll('.coupon-card button')].filter(b => b.textContent.trim() === 'Aplicar');
+        const botoes = [...document.querySelectorAll('.coupon-card button')].filter(b => b.textContent.trim() === 'Aplicar' && !b.disabled && !RE_ESGOTADO.test(b.closest('.coupon-card')?.innerText || ''));
         for (const b of botoes) {
           if (j.aplicados >= j.maxAplicar) break;
           const { cuponsJob: ainda } = await chrome.storage.local.get('cuponsJob');
@@ -134,9 +143,15 @@
       }
       const dados = estado()?.appProps?.pageProps?.filteredCouponsData;
       if (!dados) { caixa('não consegui ler os cupons desta página (faça login no Mercado Livre e tente de novo).'); return terminar('sem-dados'); }
-      for (const c of dados.rawCoupons || []) { const k = cupomDe(c); if (k.id) j.cupons[k.id] = k; }
+      const brutos = dados.rawCoupons || [], cartoes = [...document.querySelectorAll('.coupon-card')];
+      j.esgotados ||= {};
+      brutos.forEach((c, i) => {
+        const k = cupomDe(c);
+        if (!k.id) return;
+        if (esgotado(c, cartoes.length === brutos.length ? cartoes[i] : null)) { j.esgotados[k.id] = k.titulo; delete j.cupons[k.id]; } else j.cupons[k.id] = k;
+      });
       const total = Math.min(Number(dados.pagination?.total) || 1, j.paginas);
-      caixa(`cupons: página ${j.pagina} de ${total} · ${Object.keys(j.cupons).length} cupons`);
+      caixa(`cupons: página ${j.pagina} de ${total} · ${Object.keys(j.cupons).length} cupons · ${Object.keys(j.esgotados).length} esgotados`);
       if (j.pagina < total) {
         j.pagina++;
         await chrome.storage.local.set({ cuponsJob: j });

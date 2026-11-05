@@ -92,6 +92,30 @@ test('cupom do Mercado Livre: rótulo colado no preço já inclui; à parte, ain
   assert.equal(preco(1000003), undefined, 'abaixo da compra mínima');
 });
 
+test('cupom esgotado do Mercado Livre sai da lista e as ofertas voltam ao preço sem cupom', () => {
+  const cml = require('../src/cupons-ml');
+  cml.salvarCupons([{ id: '555', titulo: 'R$ 50 OFF', tipo: 'valor', valor: 50, minimo: 100, limite: 50, ativo: true }, { id: '556', titulo: 'R$ 10 OFF', tipo: 'valor', valor: 10, ativo: true }]);
+  const item = (id, preco, ant) => ({ produto: `MLB${id}`, link: `https://www.mercadolivre.com.br/p/MLB${id}`, nome: `Produto esgotado ${id}`, preco, preco_anterior: ant, rotulo: 'R$ 50 OFF com Cupom' });
+  assert.equal(cml.importarProdutos('555', [item(2000001, 1000, 2000), item(2000002, 1000, 1010)]).gravados, 2);
+  const le = id => db.get(`SELECT preco_atual p, preco_sem_cupom s, cupom_codigo c, desconto_pct d, last_seen_at < datetime('now', '-2 days') velha FROM offers WHERE store_product_id = ?`, `MLB${id}`);
+  assert.equal(le(2000001).p, 950);
+  assert.deepEqual(cml.removerEsgotados(['555', 'abc', '']), { cupons: 1, ofertas: 2 });
+  assert.deepEqual({ ...le(2000001) }, { p: 1000, s: null, c: null, d: 50, velha: 0 }, 'volta ao preço sem cupom');
+  assert.equal(le(2000002).velha, 1, 'sem desconto suficiente, sai do ar');
+  assert.deepEqual(cml.listar().filter(c => ['555', '556'].includes(c.campanha)).map(c => c.campanha), ['556'], 'o outro cupom continua');
+});
+
+test('extensão: reconhece cupom esgotado sem confundir com o nome de um produto', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../extensao-comissao/cupons.js'), 'utf8');
+  const trecho = src.slice(src.indexOf('const RE_ESGOTADO'), src.indexOf('function cupomDe'));
+  const esgotado = new Function(`${trecho}; return esgotado;`)();
+  assert.equal(esgotado({ status: { id: 'SOLD_OUT' } }), true);
+  assert.equal(esgotado({ status: { id: 'INACTIVE' }, action: { label: 'Esgotado' } }), true);
+  assert.equal(esgotado({ status: { id: 'INACTIVE' } }, { innerText: 'R$ 10 OFF\nCupom esgotado' }), true);
+  assert.equal(esgotado({ status: { id: 'ACTIVE' }, title: { text: '5% OFF' } }), false);
+  assert.equal(esgotado({ status: { id: 'INACTIVE' }, items: [{ alt_text: 'Tênis esgotado edição limitada' }] }), false, 'ainda dá para aplicar');
+});
+
 test('oferta perde o cupom quando a leitura nova vem sem ele', () => {
   const deal = cupons.aplicar({ store_product_id: 'CUP1', produto: 'Monitor com cupom teste', preco_atual: 100, preco_anterior: 200, original_url: 'https://www.exemplo.test/c' }, { codigo: 'ESQUENTA', tipo: 'pct', valor: 10 });
   const s = { ...settings.getAll(), min_discount_pct: 5 };

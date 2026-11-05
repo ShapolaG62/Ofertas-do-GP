@@ -737,6 +737,8 @@ async function mlcImportar(d) {
       out.textContent = `Gravando cupons… ${Math.min(i + 200, lista.length)} de ${lista.length}`;
       await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { cupons: lista.slice(i, i + 200) } });
     }
+    const esgotados = Array.isArray(d.esgotados) ? d.esgotados : [];
+    const fora = esgotados.length ? await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { esgotados } }) : { ofertas: 0 };
     let gravados = 0, recebidos = 0;
     for (const [n, [campanha, itens]] of produtos.entries()) {
       out.textContent = `Gravando produtos… cupom ${n + 1} de ${produtos.length}`;
@@ -745,6 +747,7 @@ async function mlcImportar(d) {
     }
     const ativos = lista.filter(c => c.ativo).length;
     out.innerHTML = `<b>${lista.length}</b> cupons lidos (${ativos} ativos na sua conta${d.aplicados ? `, ${d.aplicados} aplicados agora pela extensão` : ''}) · <b>${gravados}</b> ofertas gravadas com cupom de ${recebidos} produtos "com Cupom" em ${produtos.length} cupons`
+      + (esgotados.length ? ` · ${esgotados.length} esgotados ignorados${fora.ofertas ? ` (${fora.ofertas} ofertas perderam o cupom)` : ''}` : '')
       + (d.motivo === 'parado' ? ' · mineração parada por você' : d.motivo === 'sem-dados' ? ' · a central de cupons não abriu (faça login no Mercado Livre)' : '');
   } catch (err) { out.textContent = `Erro ao gravar: ${err.message}`; }
   mlcCarregar();

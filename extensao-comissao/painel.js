@@ -41,7 +41,7 @@
     if (!r) return;
     await chrome.storage.local.remove('cuponsResultado');
     if (Date.now() - r.em > 30 * 60 * 1000) return;
-    avisar({ tipo: 'cupons', cupons: r.cupons, produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0 });
+    avisar({ tipo: 'cupons', cupons: r.cupons, esgotados: r.esgotados || [], produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0 });
   });
 
   // Página do Mercado Livre trazida pela extensão (vale 15 min): entrega ao Painel uma vez só

@@ -180,6 +180,7 @@ router.get('/api/admin/mineracao/ml-cupons', (req, res) => res.json(require('../
 router.post('/api/admin/mineracao/ml-cupons', (req, res) => {
   try {
     const cml = require('../cupons-ml');
+    if (Array.isArray(req.body?.esgotados)) return res.json(cml.removerEsgotados(req.body.esgotados));
     if (Array.isArray(req.body?.cupons)) return res.json({ cupons: cml.salvarCupons(req.body.cupons) });
     res.json(cml.importarProdutos(req.body?.campanha, req.body?.itens));
   } catch (err) { res.status(400).json({ error: err.message }); }

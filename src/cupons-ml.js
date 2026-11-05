@@ -50,6 +50,27 @@ function salvarCupons(lista) {
   return n;
 }
 
+// Cupons esgotados: saem da lista e as ofertas deles voltam ao preço sem cupom. Sem desconto suficiente nesse preço,
+// a oferta sai do ar (se o produto voltar com desconto na mineração, ela volta sozinha).
+function removerEsgotados(lista) {
+  const campanhas = [...new Set((Array.isArray(lista) ? lista : []).slice(0, 5000).map(c => String(c || '').replace(/\D/g, '').slice(0, 20)).filter(Boolean))];
+  const minimo = settings.getNumber('min_discount_pct', 5);
+  let cupomRemovido = 0, ofertas = 0;
+  db.transaction(() => {
+    for (const campanha of campanhas) {
+      cupomRemovido += db.run('DELETE FROM ml_cupons WHERE campanha = ?', campanha).changes;
+      for (const o of db.all('SELECT id, preco_anterior, preco_sem_cupom FROM offers WHERE cupom_codigo = ?', `ML${campanha}`)) {
+        const preco = Number(o.preco_sem_cupom) || null;
+        if (!preco) { db.run('UPDATE offers SET cupom_codigo = NULL, cupom_texto = NULL, preco_sem_cupom = NULL WHERE id = ?', o.id); ofertas++; continue; }
+        const desconto = o.preco_anterior > 0 ? Math.max(0, Math.round((1 - preco / o.preco_anterior) * 100)) : 0;
+        db.run(`UPDATE offers SET preco_atual = ?, desconto_pct = ?, cupom_codigo = NULL, cupom_texto = NULL, preco_sem_cupom = NULL${desconto < minimo ? ", last_seen_at = datetime('now', '-29 days')" : ''} WHERE id = ?`, preco, desconto, o.id);
+        ofertas++;
+      }
+    }
+  });
+  return { cupons: cupomRemovido, ofertas };
+}
+
 // Desconto do cupom no cartão do produto ("5% OFF com Cupom", "R$ 30 OFF com Cupom"); sem número, vale o do cupom
 function descontoDoRotulo(rotulo, c) {
   const pct = String(rotulo || '').match(/(\d{1,2}(?:[.,]\d{1,2})?)\s*%\s*OFF/i);
@@ -104,4 +125,4 @@ function listar() {
     .map(r => ({ ...r, previa: (() => { try { return JSON.parse(r.previa || '[]'); } catch { return []; } })() }));
 }
 
-module.exports = { salvarCupons, importarProdutos, listar };
+module.exports = { salvarCupons, removerEsgotados, importarProdutos, listar };

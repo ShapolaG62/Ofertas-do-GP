@@ -2894,7 +2894,7 @@ body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --fo
 .v2 .hero h1 { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* continua para o Google e leitores de tela */
 .faixa { display: flex; align-items: flex-end; gap: 22px; padding: 0 32px 0 22px; border-radius: 14px; color: #fff; overflow: hidden;
   background: linear-gradient(100deg, #14b85c 0%, #0c9463 34%, #0d7f98 70%, #0b6bb5 100%); }
-.faixa > img { width: 154px; height: 140px; flex: none; margin-top: 6px; }
+.faixa > img { width: 179px; height: 140px; flex: none; margin-top: 8px; }
 .faixa-txt { align-self: center; min-width: 0; padding-block: 12px; }
 .faixa-tit { margin: 0; font-size: 28px; line-height: 1.14; font-weight: 800; letter-spacing: -.02em; }
 .faixa-sub { margin: 4px 0 0; font-size: 17px; }
@@ -2983,7 +2983,7 @@ body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --fo
 @media (max-width: 720px) {
   .v2 .hero { padding-top: 10px; }
   .faixa { gap: 8px; padding: 0 12px 0 6px; border-radius: 12px; }
-  .faixa > img { width: 88px; height: 80px; margin-top: 8px; }
+  .faixa > img { width: 102px; height: 80px; margin-top: 8px; }
   .faixa-txt { padding-block: 8px; }
   .faixa-tit { font-size: 16px; line-height: 1.2; }
   .faixa-sub { display: none; }

@@ -97,6 +97,39 @@ router.get('/api/cliente/painel', (req, res) => {
   });
 });
 
+// ── Comissão ──
+router.get('/api/cliente/comissao', (req, res) => res.json(require('../cliente-ganhos').resumo(req.cliente.id, req.query.dias)));
+router.post('/api/cliente/comissao/sincronizar', async (req, res) => {
+  try { res.json(await require('../cliente-ganhos').sincronizar(req.cliente.id, { manual: true })); } catch (err) { sendError(res, err); }
+});
+router.post('/api/cliente/comissao/previa', (req, res) => {
+  try { res.json(require('../cliente-ganhos').previa(req.body?.texto)); } catch (err) { sendError(res, err); }
+});
+router.post('/api/cliente/comissao/importar', (req, res) => {
+  try { res.json(require('../cliente-ganhos').importar(req.cliente.id, req.body?.texto, req.body?.plataforma, req.body?.mapa)); } catch (err) { sendError(res, err); }
+});
+
+// ── Monitor de membros ──
+router.get('/api/cliente/membros', (req, res) => res.json(require('../membros-grupo').resumo(req.cliente.id, req.query.dias)));
+router.post('/api/cliente/membros/atualizar', async (req, res) => {
+  try { res.json(await require('../membros-grupo').atualizarAgora(req.cliente.id)); } catch (err) { sendError(res, err); }
+});
+
+// ── Site do grupo (/g/<endereço>) ──
+router.get('/api/cliente/site-grupo', (req, res) => {
+  const cid = req.cliente.id;
+  const gc = require('../grupos-convite');
+  let slug = clientes.config(cid).grupo_slug;
+  if (!slug) { // primeiro acesso: já deixa um endereço reservado, que a pessoa pode trocar
+    const base = String(req.cliente.nome || 'grupo').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'grupo';
+    slug = `${base.length >= 3 ? base : 'grupo'}-${cid}`;
+    clientes.salvarConfig(cid, { grupo_slug: slug });
+  }
+  const base = String(require('../settings').get('site_url') || '').trim().replace(/\/+$/, '') || `${req.protocol}://${req.get('host')}`;
+  res.json({ slug, endereco: `${base}/g/${slug}`, grupos: gc.resumo(cid) });
+});
+router.post('/api/cliente/site-grupo/zerar', (req, res) => { require('../grupos-convite').zerar(req.cliente.id); res.json({ ok: true }); });
+
 // Sugestões para postar hoje: o mesmo critério do agendamento, com a comissão e o cupom de cada produto
 router.get('/api/cliente/sugestoes', (req, res) => {
   const ids = agenda.melhoresOfertas(12, new Set(), req.cliente.id, clientes.config(req.cliente.id));

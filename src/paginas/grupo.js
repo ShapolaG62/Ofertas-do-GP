@@ -3,8 +3,8 @@
 // Com o Pixel da Meta configurado no painel, registra a visita (PageView) e o clique no botão (Lead).
 const h = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-function pagina(s, total) {
-  const titulo = s.grupo_titulo || 'Entre no grupo de ofertas do Ofertou!';
+function pagina(s, total, { entrar = '/grupo/entrar', tituloPadrao = 'Entre no grupo de ofertas do Ofertou!' } = {}) {
+  const titulo = s.grupo_titulo || tituloPadrao;
   const texto = s.grupo_texto || 'Promoções de verdade das maiores lojas do Brasil, conferidas várias vezes por dia. É grátis e você sai quando quiser.';
   const pixel = /^\d{6,20}$/.test(String(s.grupo_pixel_meta || '').trim()) ? String(s.grupo_pixel_meta).trim() : '';
   const pixelJs = pixel ? `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixel}');fbq('track','PageView');</script>` : '';
@@ -48,7 +48,7 @@ ${pixelJs}
     <li><span>🛒</span> Mercado Livre, Amazon, Shopee, Magalu e mais</li>
   </ul>
   ${total >= 50 ? `<p class="prova">${total.toLocaleString('pt-BR')} pessoas já entraram pelo nosso link</p>` : ''}
-  <a class="btn" href="/grupo/entrar" id="entrar" rel="nofollow"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 13.9c-.2.6-1.3 1.2-1.8 1.3-.5.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.8-4.5-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9.9-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 1.9 1.1 1 2 1.3 2.3 1.4.3.2.5.1.6 0l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.6-.1 1.2z"/></svg>Entrar no grupo</a>
+  <a class="btn" href="${h(entrar)}" id="entrar" rel="nofollow"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.4 13.9c-.2.6-1.3 1.2-1.8 1.3-.5.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.6-2.6-1.1-4.3-3.8-4.5-4-.1-.2-1.1-1.4-1.1-2.7s.7-1.9.9-2.2c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 1.9 1.1 1 2 1.3 2.3 1.4.3.2.5.1.6 0l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.2.1.6-.1 1.2z"/></svg>Entrar no grupo</a>
   <small>Você vai para o WhatsApp. Sem spam: só ofertas, e você sai quando quiser.</small>
 </main>
 ${pixel ? `<script>document.getElementById('entrar').addEventListener('click', function () { try { fbq('track', 'Lead'); } catch (e) {} });</script>` : ''}

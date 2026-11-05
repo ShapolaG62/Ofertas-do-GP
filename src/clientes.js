@@ -21,7 +21,8 @@ const REDES_KEYS = ['telegram_bot_token', 'telegram_chat_id', 'facebook_page_id'
 const AGENDA_KEYS = ['agenda_ativa', 'agenda_horarios', 'agenda_qtd', 'agenda_redes', 'agenda_completar', 'agenda_modo', 'agenda_inicio',
   'agenda_fim', 'agenda_intervalo_min', 'agenda_intervalo_max', 'agenda_por_vez', 'agenda_lojas', 'agenda_palavras_bloqueadas',
   'agenda_palavras_permitidas', 'post_modelo'];
-const CLIENT_KEYS = [...AFILIADO_KEYS, ...REDES_KEYS, ...AGENDA_KEYS];
+const GRUPO_KEYS = ['grupo_slug', 'grupo_titulo', 'grupo_texto', 'grupo_pixel_meta', 'grupos_convite']; // página /g/<endereço>
+const CLIENT_KEYS = [...AFILIADO_KEYS, ...REDES_KEYS, ...AGENDA_KEYS, ...GRUPO_KEYS];
 const SECRET_KEYS = ['aliexpress_app_secret', 'shopee_app_secret', 'telegram_bot_token', 'facebook_page_token', 'x_api_secret',
   'x_access_token', 'x_access_secret', 'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token'];
 // Padrões próprios do cliente
@@ -222,6 +223,11 @@ function salvarConfig(id, body) {
     let v = typeof raw === 'string' ? raw.trim() : raw;
     if (['whatsapp_groups', 'agenda_redes'].includes(k) && typeof v === 'object') v = JSON.stringify(v);
     if (SECRET_KEYS.includes(k) && !v) continue; // vazio = mantém
+    if (k === 'grupo_slug') {
+      v = String(v || '').toLowerCase();
+      if (!/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/.test(v)) throw fail('Endereço da página: use de 3 a 40 letras, números ou hífens.');
+      if (db.get(`SELECT 1 FROM cliente_config WHERE key = 'grupo_slug' AND value = ? AND cliente_id <> ?`, v, id)) throw fail('Esse endereço da página já está em uso. Escolha outro.');
+    }
     db.run(`INSERT INTO cliente_config (cliente_id, key, value) VALUES (?, ?, ?)
             ON CONFLICT(cliente_id, key) DO UPDATE SET value = excluded.value`, id, k, v == null ? '' : String(v));
     changed.push(k);

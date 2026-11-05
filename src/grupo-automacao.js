@@ -187,11 +187,12 @@ async function ativarWebhook(cid = null) {
     await axios.put(`${c.base}/update-webhook-received`, { value: url }, { headers: c.headers, timeout: 20000 });
     return url;
   }
-  const v2 = { webhook: { enabled: true, url, byEvents: false, base64: false, events: ['MESSAGES_UPSERT'] } };
+  const eventos = ['MESSAGES_UPSERT', 'GROUP_PARTICIPANTS_UPDATE']; // mensagens e entradas/saídas (src/membros-grupo.js)
+  const v2 = { webhook: { enabled: true, url, byEvents: false, base64: false, events: eventos } };
   try { await axios.post(`${c.base}/webhook/set/${c.instancia}`, v2, { headers: c.headers, timeout: 20000 }); }
   catch (err) {
     if (err.response?.status !== 400) throw err;
-    await axios.post(`${c.base}/webhook/set/${c.instancia}`, { url, enabled: true, events: ['MESSAGES_UPSERT'] }, { headers: c.headers, timeout: 20000 });
+    await axios.post(`${c.base}/webhook/set/${c.instancia}`, { url, enabled: true, events: eventos }, { headers: c.headers, timeout: 20000 });
   }
   return url;
 }

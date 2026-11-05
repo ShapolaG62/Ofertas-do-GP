@@ -27,7 +27,7 @@ async function shopeeGql(s, query) {
   if (r.status !== 200) throw new Error(`API Shopee: HTTP ${r.status}`);
   return r.data.data || {};
 }
-async function shopee(s, dias = 90) {
+async function shopee(s, dias = 90, gravar = ganhos.registrar) {
   if (!s.shopee_app_id || !s.shopee_app_secret) return { pulada: 'Informe o App ID e a Senha da API da Shopee (Painel → Lojas e afiliados).' };
   let novas = 0, atualizadas = 0;
   const agora = Math.floor(Date.now() / 1000);
@@ -45,7 +45,7 @@ async function shopee(s, dias = 90) {
           const itens = o.items || [];
           const comissao = itens.reduce((a, i) => a + (Number(i.itemTotalCommission) || 0), 0);
           const venda = itens.reduce((a, i) => a + (Number(i.itemPrice) || 0) * (Number(i.qty) || 1), 0);
-          const r = ganhos.registrar({
+          const r = gravar({
             plataforma: 'shopee', externo: `${n.conversionId}-${o.orderId}`, data_venda: sqlDe(Number(n.purchaseTime)),
             pedido: String(o.orderId), produto: itens.map(i => i.itemName).filter(Boolean).join(' + ').slice(0, 200),
             valor_venda: venda || null, comissao, status: o.orderStatus || 'pendente',

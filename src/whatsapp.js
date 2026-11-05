@@ -75,6 +75,28 @@ async function listarGrupos(s) {
   }
 }
 
+// Quantas pessoas há em cada grupo: Map(id → total). Grupo que não responder fica de fora.
+async function tamanhoGrupos(s, ids) {
+  const c = config(s);
+  if (c.erro) throw new Error(c.erro);
+  const out = new Map();
+  try {
+    if (c.tipo === 'zapi') {
+      for (const id of ids.slice(0, 60)) {
+        const r = await axios.get(`${c.base}/group-metadata/${encodeURIComponent(id)}`, { headers: c.headers, timeout: TIMEOUT }).catch(() => null);
+        if (Array.isArray(r?.data?.participants)) out.set(String(id), r.data.participants.length);
+      }
+      return out;
+    }
+    const r = await axios.get(`${c.base}/group/fetchAllGroups/${c.instancia}`, { params: { getParticipants: 'false' }, headers: c.headers, timeout: 60000 });
+    const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.groups) ? r.data.groups : [];
+    for (const g of list) if (Number.isInteger(g.size)) out.set(String(g.id || g.jid), g.size);
+    return out;
+  } catch (err) {
+    throw falha(err, PROVEDORES[c.tipo]);
+  }
+}
+
 // Envia foto com legenda (ou só texto, sem foto) para um grupo.
 // imagem: endereço https da foto ou o arquivo (Buffer JPEG).
 // Número de contingência: outra instância do mesmo serviço (Z-API: ID e token; Evolution: outra instância no mesmo
@@ -142,4 +164,4 @@ function gruposEscolhidos(s) {
   } catch { return []; }
 }
 
-module.exports = { PROVEDORES, config, configReserva, status, listarGrupos, enviar, gruposEscolhidos };
+module.exports = { PROVEDORES, config, configReserva, status, listarGrupos, tamanhoGrupos, enviar, gruposEscolhidos };

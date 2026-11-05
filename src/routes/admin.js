@@ -371,6 +371,10 @@ router.post('/api/admin/grupo-automacao/ativar', async (req, res) => {
   try { res.json({ ok: true, webhook: await require('../grupo-automacao').ativarWebhook(null) }); }
   catch (err) { res.status(400).json({ error: err.response?.data?.message || err.message }); }
 });
+router.get('/api/admin/membros', (req, res) => res.json(require('../membros-grupo').resumo(null, req.query.dias)));
+router.post('/api/admin/membros/atualizar', async (req, res) => {
+  try { res.json(await require('../membros-grupo').atualizarAgora(null)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
 router.post('/api/admin/grupo-automacao/novo-endereco', (req, res) => {
   const ga = require('../grupo-automacao'); ga.novoSegredo(null); res.json({ webhook: ga.enderecoWebhook(null) });
 });

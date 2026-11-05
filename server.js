@@ -76,10 +76,12 @@ app.post('/api/whatsapp/webhook/:segredo', express.json({ limit: '5mb' }), (req,
   const dono = ga.donoDoSegredo(req.params.segredo);
   if (!dono) return res.status(404).json({ error: 'Endereço inválido.' });
   res.json({ ok: true }); // responde na hora; o processamento segue em segundo plano
+  try { require('./src/membros-grupo').receber(dono.cid, req.body); } catch (err) { console.error('[MEMBROS]', err.message); }
   const m = ga.lerWebhook(req.body);
   if (m) ga.processar({ cid: dono.cid, s: ga.configDe(dono.cid) }, m).catch(err => console.error('[GRUPO AUTOMAÇÃO]', err.message));
 });
 
+app.use(['/api/cliente/comissao/previa', '/api/cliente/comissao/importar'], express.json({ limit: '12mb' })); // planilha de vendas
 app.use(express.json({ limit: '100kb' }));
 
 // Login obrigatório para ver as ofertas (configurável no painel).
@@ -203,6 +205,29 @@ app.get('/grupo/entrar', (req, res) => {
   res.redirect(302, g ? g.link : '/');
 });
 
+// Página do grupo de cada cliente da ferramenta
+app.get('/g/:slug', (req, res) => {
+  const gc = require('./src/grupos-convite');
+  const cid = gc.clienteDoEndereco(req.params.slug);
+  if (!cid || !gc.lista(cid).length) return res.redirect('/');
+  const total = gc.resumo(cid).reduce((a, g) => a + g.entradas, 0);
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(require('./src/paginas/grupo').pagina(require('./src/clientes').config(cid), total, {
+    entrar: `/g/${encodeURIComponent(req.params.slug)}/entrar`, tituloPadrao: 'Entre no nosso grupo de ofertas',
+  }));
+});
+app.get('/g/:slug/entrar', (req, res) => {
+  const gc = require('./src/grupos-convite');
+  const cid = gc.clienteDoEndereco(req.params.slug);
+  const g = cid ? gc.proximo(cid) : null;
+  res.set('Cache-Control', 'no-store');
+  res.redirect(302, g ? g.link : '/');
+});
+// Página de venda da ferramenta de afiliado
+app.get('/ferramenta', (req, res) => {
+  res.type('html').set('Cache-Control', 'no-cache').send(require('./src/paginas/ferramenta').pagina());
+});
+
 // Páginas de categoria, tipo de produto e marca (src/paginas/ofertas-seo.js)
 app.get(/^\/ofertas\/([a-z0-9-]+(?:\/[a-z0-9-]+)?)\/?$/, (req, res, next) => {
   if (!access.canSeeOffers(req)) return res.redirect('/conta');
@@ -231,7 +256,7 @@ app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send([
     'User-agent: *',
     'Allow: /',
-    ...['/admin', '/api/', '/o/', '/oferta/', '/grupo', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
+    ...['/admin', '/api/', '/o/', '/oferta/', '/grupo', '/g/', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
     '',
     `Sitemap: ${baseUrl(req)}/sitemap.xml`,
     '',
@@ -240,7 +265,7 @@ app.get('/robots.txt', (req, res) => {
 app.get('/sitemap.xml', (req, res) => {
   const base = String(require('./src/settings').get('site_url') || '').replace(/\/+$/, '') || baseUrl(req);
   const hoje = new Date().toISOString().slice(0, 10);
-  const urls = [['/', 'hourly', '1.0'], ['/conta', 'weekly', '0.8'], ['/ajuda', 'monthly', '0.6'], ['/anuncie', 'monthly', '0.5'], ['/assinar', 'monthly', '0.5'], ['/privacidade', 'yearly', '0.3']]
+  const urls = [['/', 'hourly', '1.0'], ['/conta', 'weekly', '0.8'], ['/ajuda', 'monthly', '0.6'], ['/anuncie', 'monthly', '0.5'], ['/ferramenta', 'weekly', '0.7'], ['/assinar', 'monthly', '0.5'], ['/privacidade', 'yearly', '0.3']]
     .map(([p, freq, pri]) => ({ loc: base + p, freq, pri }));
   try {
     const lojas = require('./src/db').all(`SELECT lj.slug FROM lojas lj JOIN users u ON u.id = lj.user_id
@@ -335,6 +360,7 @@ if (process.env.VERCEL) {
     require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); require('./src/vitrine').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)
     if (process.env.DISABLE_AGENDA !== '1') require('./src/backup').iniciar(); // uma cópia do banco por dia, de madrugada
     require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
+    if (process.env.DISABLE_AGENDA !== '1') { require('./src/cliente-ganhos').iniciar(); require('./src/membros-grupo').iniciar(); }
     if (process.env.DISABLE_AGENDA !== '1') require('./src/ganhos-sync').iniciar(); // busca as vendas na Shopee e na Awin a cada 6 h
     const acessos = require('./src/registro-acesso');
     acessos.limpar(); setInterval(acessos.limpar, 24 * 3600 * 1000); // registros de acesso com mais de 6 meses

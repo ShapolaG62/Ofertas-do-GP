@@ -97,6 +97,7 @@ const PAGINAS = {
   ganhos: ['Ganhos', 'Comissões das plataformas, vendas importadas, saques e avisos de saldo para sacar.'],
   aff: ['Links de afiliado', 'Suas tags e credenciais de afiliado de cada loja. Ao salvar, todos os links das ofertas são atualizados.'],
   ads: ['Publicidade', 'Google AdSense, campanhas de anunciantes e pedidos de empresas que querem anunciar.'],
+  membros: ['Membros dos grupos', 'Quantas pessoas entraram e saíram dos seus grupos de envio.'],
   site: ['Site', 'Links das redes sociais, Google Analytics e os dados do responsável pelo site (LGPD).'],
   account: ['Senha e backup', 'Senha do painel, login em duas etapas e backup do banco de dados.'],
 };
@@ -219,6 +220,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'avisos') loadAvisos().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'social') { loadSocialLog(); loadAwa(); }
   if (t.dataset.tab === 'clientes') loadClientes();
+  if (t.dataset.tab === 'membros') loadMembros().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'ganhos') loadGanhos();
   if (t.dataset.tab === 'atendimento') loadAtendimento().catch(e => globalMsg(e.message, false));
   if (t.dataset.tab === 'planos') { loadPlanos().then(loadPedidos).catch(e => globalMsg(e.message, false)); $('#rc-webhook-url').textContent = `${location.origin}/api/app/webhook/revenuecat`; }
@@ -507,6 +509,22 @@ const lojaLogo = (idOuNome, nome) => {
   const img = (arq, cl) => `<img class="store-marca marca-${id}${cl}" src="/images/lojas/${arq}.${ext}" alt="${esc(nome)}" title="${esc(nome)}">`;
   return ['mercadolivre', 'amazon', 'kabum'].includes(id) ? img(id, ' tema-claro') + img(`${id}-escuro`, ' tema-escuro') : img(id, '');
 };
+
+// ── Membros dos grupos ────
+async function loadMembros() {
+  const d = await api('/api/admin/membros?dias=30');
+  const n = v => Number(v || 0).toLocaleString('pt-BR');
+  const k = (r, v) => `<div class="db-kpi" style="cursor:default"><span>${r}</span><b>${v}</b></div>`;
+  $('#mb-kpis').innerHTML = k('Membros', d.grupos.some(g => g.total !== null) ? n(d.total) : '—') + k('Entradas em 30 dias', n(d.entradas)) + k('Saídas em 30 dias', n(d.saidas)) + k('Saldo', n(d.entradas - d.saidas));
+  $('#mb-grupos').innerHTML = d.grupos.map(g => `<tr><td>${esc(g.nome)}</td><td>${g.total === null ? '—' : n(g.total)}</td><td>${n(g.entradas)}</td><td>${n(g.saidas)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="hint">Sem dados ainda. Escolha os grupos em Redes sociais e toque em Atualizar o total agora.</td></tr>';
+}
+$('#mb-atualizar').addEventListener('click', async e => {
+  const b = e.currentTarget; b.disabled = true;
+  try { await api('/api/admin/membros/atualizar', { method: 'POST' }); await loadMembros(); }
+  catch (err) { globalMsg(err.message, false); }
+  b.disabled = false;
+});
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
 const STATUS_LABEL = {

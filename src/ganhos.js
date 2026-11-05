@@ -352,5 +352,5 @@ module.exports = {
   salvarGanhoEstimadoMl,
   notificar, painel, resumo, verificar, iniciar, notificacoes, marcarLida, marcarTodasLidas,
   registrar, atualizarStatus, excluir, listar, registrarSaque, saques, excluirSaque, editarPlataforma,
-  previa, importar, vendasConfirmadas, statusDe, numero, data, STATUS,
+  previa, importar, lerCsv, vendasConfirmadas, statusDe, numero, data, STATUS,
 };

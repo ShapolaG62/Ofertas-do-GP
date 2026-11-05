@@ -30,7 +30,7 @@ $falas = @(
   # 10 Loja Parceira
   @{ txt = 'A Loja Parceira é para quem tem loja. <break time="200ms"/> Por cinquenta e nove e noventa por mês, a sua loja ganha uma página própria no site, <break time="120ms"/> anúncios com fotos, cupom e frete, <break time="120ms"/> e o seu catálogo pode ser importado automaticamente.'; rate = $r; pitch = '+2%' },
   # 11 Afiliado Pro
-  @{ txt = 'E o Afiliado Pro é o mais completo, <break time="120ms"/> para quem divulga ofertas e ganha comissão. <break time="200ms"/> Por oitenta e nove e noventa por mês, você tem um painel com os seus links de afiliado, <break time="120ms"/> milhares de ofertas para postar, <break time="120ms"/> e postagem automática nos seus grupos de WhatsApp e Telegram, no Facebook, no Instagram e no X, <break time="120ms"/> com horários agendados.'; rate = $r; pitch = '+2%' },
+  @{ txt = 'E o Afiliado Pro é o mais completo, <break time="120ms"/> para quem divulga ofertas e ganha comissão. <break time="200ms"/> Por oitenta e nove e noventa por mês, você tem um painel com os seus links de afiliado, <break time="120ms"/> milhares de ofertas para postar, <break time="120ms"/> e postagem automática nos seus grupos de WhatsApp e Telegram, no Facebook, no Instagram e no X, <break time="120ms"/> com horários agendados. <break time="200ms"/> E ainda acompanha a comissão a receber, <break time="100ms"/> quem entrou e saiu dos grupos, <break time="100ms"/> e ganha uma página para divulgar o seu grupo.'; rate = $r; pitch = '+2%' },
   # 12 Resumo
   @{ txt = 'Resumindo: <break time="150ms"/> quer economizar? Caçador de Ofertas. <break time="200ms"/> Tem uma loja? Loja Parceira. <break time="200ms"/> Divulga ofertas e quer ganhar comissão? Afiliado Pro.'; rate = $r; pitch = '+3%' },
   # 13 Ajuda

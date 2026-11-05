@@ -9,7 +9,7 @@ const http = require('http');
 const { abrirNavegador } = require('./cdp');
 
 const RAIZ = path.join(__dirname, '..');
-const TIPOS = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.js': 'text/javascript' };
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.js': 'text/javascript', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.wav': 'audio/wav' };
 const FORMATOS = { horizontal: { largura: 1920, altura: 1080, nome: '16x9' }, vertical: { largura: 1080, altura: 1920, nome: '9x16' } };
 
 (async () => {

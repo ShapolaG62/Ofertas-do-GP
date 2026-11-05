@@ -228,7 +228,7 @@ const semAcentoP = s => String(s || '').toLowerCase().normalize('NFD').replace(/
 // ── Seções que abrem e fecham: o trabalho do dia fica aberto, as configurações recolhidas ────
 // Títulos abertos da primeira vez; a escolha de cada pessoa fica guardada neste navegador
 const DOBRA_ABERTAS = ['Ofertas cadastradas', 'Links de afiliado', 'Situação das lojas', 'Busca pontual', 'Usuários', 'Pedidos de assinatura', 'Planos à venda',
-  'Saldo por plataforma', 'Vendas registradas', 'Buscar ticket', 'Pedidos às lojas', 'Clientes da ferramenta', 'Postagem automática nas redes sociais', 'Postagens agendadas',
+  'Saldo por plataforma', 'Vendas registradas', 'Buscar ticket', 'Pedidos às lojas', 'Clientes da ferramenta', 'Postagens agendadas',
   'Histórico de postagens', 'Campanhas de anunciantes', 'Pedidos de empresas', 'Varredura de IP', 'Avisos', 'Backup do banco de dados', 'Trocar senha'];
 const DOBRA_CHAVE = 'ofertou-painel-dobras';
 const dobraLer = () => { try { return JSON.parse(localStorage.getItem(DOBRA_CHAVE)) || {}; } catch { return {}; } };

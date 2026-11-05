@@ -110,16 +110,18 @@
   }
 
   // ── Renderização ─────────────────────────────────────────────────────────
-  // Ícone da loja (public/images/lojas); loja sem ícone continua com o ponto colorido
-  const LOJAS_COM_ICONE = new Set(['mercadolivre', 'amazon', 'shopee', 'magalu', 'shein', 'aliexpress', 'kabum', 'temu']);
-  const lojaIcone = (id, cor) => (LOJAS_COM_ICONE.has(id)
-    ? `<img class="store-logo" src="/images/lojas/${id}.svg" alt="" width="18" height="18">`
-    : `<span class="store-dot" style="background:${cor || '#999'}"></span>`);
+  // Marca da loja (public/images/lojas): a logo já traz o nome; as outras têm ícone ou ponto colorido e o nome escrito
+  const LOJAS_COM_LOGO = new Set(['mercadolivre', 'amazon', 'shopee', 'magalu', 'aliexpress', 'kabum']);
+  const LOJAS_COM_ICONE = new Set(['shein', 'temu']);
+  const lojaMarca = (id, nome, cor) => {
+    if (LOJAS_COM_LOGO.has(id)) return `<img class="store-marca marca-${id}" src="/images/lojas/${id}.webp" alt="${esc(nome)}" title="${esc(nome)}" decoding="async">`;
+    return `${LOJAS_COM_ICONE.has(id) ? `<img class="store-logo" src="/images/lojas/${id}.svg" alt="" width="18" height="18">` : `<span class="store-dot" style="background:${cor || '#999'}"></span>`}${esc(nome)}`;
+  };
 
   function storeLabel(id, name, lojaSlug) {
     if (lojaSlug) return `<span class="store-dot" style="background:var(--brand)"></span>Loja parceira · ${esc(name)}`;
     const s = STORE_BY_ID[id];
-    return `${lojaIcone(id, s?.color)}${esc(s ? s.name : name)}`;
+    return lojaMarca(id, s ? s.name : name, s?.color);
   }
 
   let STORES_EXTRA = '';
@@ -137,7 +139,7 @@
       const n = counts[s.id] || 0;
       if (!n && state.loja !== s.id) continue; // só lojas com produtos minerados
       tabs.push(`<button class="store-tab" type="button" data-loja="${s.id}" aria-pressed="${state.loja === s.id}" ${n || state.loja === s.id ? '' : 'disabled'}>
-        ${lojaIcone(s.id, s.color)}${esc(s.name)} <span class="count">${n}</span></button>`);
+        ${lojaMarca(s.id, s.name, s.color)} <span class="count">${n}</span></button>`);
     }
     $('#store-tabs').innerHTML = tabs.join('') + STORES_EXTRA;
   }

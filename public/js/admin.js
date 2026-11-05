@@ -455,7 +455,7 @@ async function loadDashboard() {
         <section class="panel">
           ${cab('Mineração', 'mining', 'Detalhes')}
           <p class="db-nota">${m.rodando ? 'Mineração em andamento…' : m.ultima ? `Última rodada: ${new Date(m.ultima).toLocaleString('pt-BR')}` : 'Nenhuma rodada desde que o servidor iniciou'} · <b>${m.ok} de ${m.total}</b> lojas funcionando</p>
-          <div class="db-lojas">${m.lojas.map(l => `<div class="db-loja" title="${esc(STATUS_LABEL[l.status] || 'Ainda não rodou')}"><span class="db-loja-nome">${lojaLogo(l.id || l.nome)}${esc(l.nome)}</span><span class="row" style="gap:6px"><small class="hint" style="margin:0">${dbNum(l.saved)}</small><i class="db-ponto ${esc(l.status)}"></i></span></div>`).join('')}</div>
+          <div class="db-lojas">${m.lojas.map(l => `<div class="db-loja" title="${esc(STATUS_LABEL[l.status] || 'Ainda não rodou')}"><span class="db-loja-nome">${lojaLogo(l.id || l.nome, l.nome)}</span><span class="row" style="gap:6px"><small class="hint" style="margin:0">${dbNum(l.saved)}</small><i class="db-ponto ${esc(l.status)}"></i></span></div>`).join('')}</div>
           ${m.problemas.map(x => `<p class="db-falha" title="${esc(x.msg || STATUS_LABEL[x.status] || '')}"><b>${esc(x.nome)}:</b> ${esc(x.msg || STATUS_LABEL[x.status] || '')}</p>`).join('')}
         </section>
         <section class="panel">
@@ -499,10 +499,10 @@ async function loadDashboard() {
 }
 
 // Ícone da loja no painel
-const LOJAS_COM_ICONE = new Set(['mercadolivre', 'amazon', 'shopee', 'magalu', 'shein', 'aliexpress', 'kabum', 'temu']);
-const lojaLogo = idOuNome => {
+const LOJAS_COM_LOGO = new Set(['mercadolivre', 'amazon', 'shopee', 'magalu', 'aliexpress', 'kabum']);
+const lojaLogo = (idOuNome, nome) => {
   const id = STORE_LIST.find(x => x.id === idOuNome || x.name === idOuNome)?.id || idOuNome;
-  return LOJAS_COM_ICONE.has(id) ? `<img class="store-logo" src="/images/lojas/${id}.svg" alt="" width="18" height="18">` : '';
+  return LOJAS_COM_LOGO.has(id) ? `<img class="store-marca marca-${id}" src="/images/lojas/${id}.webp" alt="${esc(nome)}" title="${esc(nome)}">` : esc(nome);
 };
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────
@@ -522,7 +522,7 @@ async function loadStores() {
   $('#store-cards').innerHTML = st.stores.map(s => {
     const status = s.status || 'none';
     return `<div class="store-card">
-      <h4>${lojaLogo(s.id || s.name)} ${esc(s.name)} <span class="badge b-${status}">${esc(STATUS_LABEL[status] || 'Ainda não rodou')}</span></h4>
+      <h4>${lojaLogo(s.id || s.name, s.name)} <span class="badge b-${status}">${esc(STATUS_LABEL[status] || 'Ainda não rodou')}</span></h4>
       <div class="hint" style="margin:2px 0 6px">${esc(s.method)}</div>
       ${s.automatic ? `<div class="hint" style="margin:0">Última execução: ${fmtDate(s.last_run_at)} · ${s.saved || 0} gravadas de ${s.found || 0} encontradas<br>Último sucesso: ${fmtDate(s.last_success_at)}</div>` : ''}
       ${s.message ? `<div class="hint" style="margin:6px 0 0;color:${status === 'ok' ? 'var(--muted)' : 'var(--yellow)'}">${esc(s.message)}</div>` : ''}

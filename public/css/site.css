@@ -3061,3 +3061,16 @@ textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5;
   #filters-dialog .drawer::before { width: 48px; height: 5px; margin-top: 10px; }
   #filters-dialog .modal-head { touch-action: none; user-select: none; }
 }
+
+/* Logos das lojas: fundo branco para as de texto escuro aparecerem também no tema escuro */
+.store-marca { height: 22px; width: auto; padding: 2px 4px; box-sizing: border-box; flex: none; border-radius: 5px; background: #fff; display: inline-block; vertical-align: middle; }
+.marca-mercadolivre { height: 26px; padding-block: 1px; }
+.store-tab { align-items: center; }
+.v2 .card-store .store-marca { height: 20px; margin-left: -4px; }
+.v2 .card-store .marca-mercadolivre { height: 24px; }
+@media (max-width: 720px) {
+  .store-marca { height: 20px; }
+  .marca-mercadolivre { height: 24px; }
+  .v2 .card-store .store-marca { height: 18px; }
+  .v2 .card-store .marca-mercadolivre { height: 22px; }
+}

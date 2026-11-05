@@ -2870,3 +2870,134 @@ textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5;
 .populares-lista span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .populares-lista b { flex: none; }
 .badge-iguais { display: inline-flex; width: fit-content; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); font-size: 11.5px; font-weight: 700; }
+
+/* ── Visual novo da tela de ofertas (página inicial e /ofertas/...): body.v2 ── */
+body.v2 { --brand: #0d6985; --brand-strong: #0a5269; --brand-soft: #e2f1f5; --focus: #0d6985; --bg: #f4f7f9; --line: #e3e8ec; --acao: #0d6985; --acao-forte: #0a5269; --foto: #f0f2f4; }
+:root[data-theme="dark"] body.v2 { --brand: #3bb5d3; --brand-strong: #6dcbe3; --brand-soft: #12303a; --focus: #3bb5d3; --bg: #0e1210; --line: #262d28; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body.v2 { --brand: #3bb5d3; --brand-strong: #6dcbe3; --brand-soft: #12303a; --focus: #3bb5d3; --bg: #0e1210; --line: #262d28; }
+}
+
+/* Topo */
+.v2 .brand-name { color: #0d7a78; font-size: 26px; font-weight: 800; letter-spacing: -.03em; }
+.v2 .brand-name b { color: #12a150; }
+:root[data-theme="dark"] .v2 .brand-name { color: #4fd1c5; }
+.v2 .search input { border-radius: 999px; background: var(--surface); border: 1px solid var(--line-strong); }
+.v2 #account-link { background: var(--acao); border-color: var(--acao); color: #fff; }
+.v2 #account-link:hover { background: var(--acao-forte); }
+.v2 .store-tab[aria-pressed="true"] { background: var(--acao); color: #fff; }
+
+/* Faixa com a Capi */
+.v2 .hero { padding: 16px 0 0; }
+.v2 .hero-grid { display: block; }
+.v2 .hero-art, .v2 .hero p.lead, .v2 .hero-stats, .v2 .featured, .v2 .hero-meta { display: none; }
+.v2 .hero h1 { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* continua para o Google e leitores de tela */
+.faixa { display: flex; align-items: flex-end; gap: 22px; padding: 0 32px 0 22px; border-radius: 14px; color: #fff; overflow: hidden;
+  background: linear-gradient(100deg, #14b85c 0%, #0c9463 34%, #0d7f98 70%, #0b6bb5 100%); }
+.faixa > img { width: 154px; height: 140px; flex: none; margin-top: 6px; }
+.faixa-txt { align-self: center; min-width: 0; padding-block: 12px; }
+.faixa-tit { margin: 0; font-size: 28px; line-height: 1.14; font-weight: 800; letter-spacing: -.02em; }
+.faixa-sub { margin: 4px 0 0; font-size: 17px; }
+.faixa-btn { display: inline-flex; align-items: center; min-height: 40px; margin-top: 10px; padding: 0 18px; border-radius: 8px; background: #fff; color: #0a5269; font-weight: 700; font-size: 15px; text-decoration: none; }
+.faixa-btn:hover { background: #e8f4f7; }
+.faixa-btn[hidden] { display: none; }
+.pagina-seo .faixa { display: none; }
+.v2 .pagina-seo .hero h1 { position: static; width: auto; height: auto; margin: 6px 0 0; overflow: visible; clip: auto; white-space: normal; max-width: none; font-size: 24px; line-height: 1.2; letter-spacing: -.02em; }
+.v2 .pagina-seo .hero p.lead { display: block; font-size: 14px; margin: 4px 0 0; max-width: none; }
+.v2 .notice { margin-top: 10px; }
+.v2 .catalog { padding-block: 16px 56px; gap: 22px; }
+.v2 .ad-top:has(.ad-invite), .v2 .ad-side:has(.ad-invite) { display: none; }
+
+/* Barra lateral */
+.v2 #filters { padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.rl-bloco + .rl-bloco { padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--line); }
+.rl-tit { margin: 0 0 8px; font-size: 16px; font-weight: 800; letter-spacing: -.01em; color: var(--ink); }
+.rl-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.rl-linha { display: flex; align-items: stretch; border-radius: 8px; }
+.rl-linha:hover { background: var(--surface-3); }
+.rl-linha.is-ativa { background: var(--brand-soft); }
+.rl-nome { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; min-height: 38px; padding: 5px 2px 5px 6px; border: 0; background: none; color: var(--ink-2); font: inherit; font-size: 14px; font-weight: 500; line-height: 1.25; text-align: left; cursor: pointer; }
+.rl-linha.is-ativa .rl-nome { color: var(--brand-strong); font-weight: 700; }
+.rl-abrir { display: grid; place-items: center; width: 34px; flex: none; border: 0; background: none; color: var(--ink-3); cursor: pointer; border-radius: 8px; }
+.rl-abrir:hover { color: var(--ink); }
+.rl-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--ink-3); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.rl-seta { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+.rl-abrir[aria-expanded="true"] .rl-seta { transform: rotate(90deg); }
+.rl-mais { width: 100%; min-height: 36px; padding: 4px 6px; border: 0; background: none; color: var(--brand); font: inherit; font-size: 13.5px; font-weight: 700; text-align: left; cursor: pointer; }
+.rl-mais:hover { text-decoration: underline; }
+.rl-sub { list-style: none; margin: 2px 0 6px 34px; padding: 0; display: grid; gap: 1px; max-height: 230px; overflow-y: auto; scrollbar-width: thin; }
+.rl-subop { width: 100%; min-height: 32px; padding: 4px 8px; border: 0; border-radius: 6px; background: none; color: var(--ink-2); font: inherit; font-size: 13.5px; line-height: 1.25; text-align: left; cursor: pointer; }
+.rl-subop:hover { background: var(--surface-3); }
+.rl-subop[aria-pressed="true"] { background: var(--brand-soft); color: var(--brand-strong); font-weight: 700; }
+.rl-vazio { margin: 2px 0 8px 34px; font-size: 13px; color: var(--ink-3); }
+.rl-faixa { margin: 0 0 10px; font-size: 14px; color: var(--ink-2); }
+.rl-slider { position: relative; height: 24px; --bola: 18px; }
+.rl-slider i { position: absolute; top: 10px; left: 0; right: 0; height: 4px; border-radius: 9px; background: var(--line-strong); }
+.rl-slider i::after { content: ""; position: absolute; top: 0; bottom: 0; border-radius: 9px; background: var(--acao);
+  left: calc(var(--bola) / 2 + (100% - var(--bola)) * var(--pa)); right: calc(var(--bola) / 2 + (100% - var(--bola)) * (1 - var(--pb))); }
+.rl-slider input { position: absolute; inset: 0; width: 100%; height: 24px; margin: 0; background: none; appearance: none; -webkit-appearance: none; pointer-events: none; outline: none; }
+.rl-slider input::-webkit-slider-runnable-track { background: none; height: 24px; }
+.rl-slider input::-moz-range-track { background: none; height: 24px; }
+.rl-slider input::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: var(--bola); height: var(--bola); margin-top: calc((24px - var(--bola)) / 2); border-radius: 50%; background: #fff; border: 1px solid #93a3ae; box-shadow: 0 1px 3px rgba(20, 40, 50, .3); cursor: grab; }
+.rl-slider input::-moz-range-thumb { pointer-events: auto; width: var(--bola); height: var(--bola); box-sizing: border-box; border-radius: 50%; background: #fff; border: 1px solid #93a3ae; box-shadow: 0 1px 3px rgba(20, 40, 50, .3); cursor: grab; }
+.rl-slider input:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rl-slider input:focus-visible::-moz-range-thumb { outline: 2px solid var(--focus); outline-offset: 2px; }
+.rl-campos { display: none; align-items: center; gap: 8px; margin-top: 12px; }
+.rl-campos input { flex: 1; min-width: 0; height: 42px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: 16px; outline: none; }
+.rl-campos input:focus { border-color: var(--brand); }
+.rl-campos span { color: var(--ink-3); }
+.rl-radios { display: grid; gap: 2px; }
+.rl-radios label { display: flex; align-items: center; gap: 9px; min-height: 32px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+.rl-radios input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--acao); }
+/* Gaveta do celular: dedos maiores e campos para digitar o valor */
+.drawer .rl-nome { min-height: 44px; font-size: 15px; }
+.drawer .rl-abrir { width: 44px; }
+.drawer .rl-subop { min-height: 40px; }
+.drawer .rl-radios label { min-height: 42px; font-size: 15px; }
+.drawer .rl-slider { --bola: 26px; height: 32px; }
+.drawer .rl-slider i { top: 14px; }
+.drawer .rl-slider input, .drawer .rl-slider input::-webkit-slider-runnable-track, .drawer .rl-slider input::-moz-range-track { height: 32px; }
+.drawer .rl-slider input::-webkit-slider-thumb { margin-top: 3px; }
+.drawer .rl-campos { display: flex; }
+
+/* Cartões */
+.v2 .grid .card { padding: 0; box-shadow: none; }
+.v2 .card-media { margin: 10px 10px 0; border: 0; border-radius: 10px; background: var(--foto); }
+.v2 .card-media img { padding: 10px; mix-blend-mode: multiply; }
+.v2 .card-off { background: #ef4444; }
+.v2 .card-tags .badge-low { padding: 3px 8px; border-radius: 7px; background: #16a34a; color: #fff; font-size: 12px; }
+.v2 .card-body { gap: 7px; }
+.v2 .card-title { order: 0; font-weight: 600; }
+.v2 .card-store { order: 1; flex-wrap: wrap; column-gap: 6px; font-weight: 700; color: var(--ink); }
+.card-verif { display: inline-flex; align-items: center; gap: 3px; flex-basis: 100%; font-size: 11.5px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.card-verif svg { width: 13px; height: 13px; flex: none; }
+.v2 .badge-iguais { order: 1; }
+.v2 .card-prices { order: 2; display: flex; flex-direction: row-reverse; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 8px; margin-top: auto; }
+.v2 .card-price { font-size: 22px; }
+.v2 .card-price .card-com-cupom { color: var(--brand); }
+.v2 .card-cupom, .v2 .card-sem-cupom, .v2 .card-foot { order: 3; }
+.card-ver { order: 4; display: flex; align-items: center; justify-content: center; min-height: 42px; border-radius: 8px; background: var(--acao); color: #fff; font-weight: 700; font-size: 14.5px; }
+.card:hover .card-ver { background: var(--acao-forte); }
+.v2 .card-enviar { order: 5; }
+
+@media (max-width: 720px) {
+  .v2 .hero { padding-top: 10px; }
+  .faixa { gap: 8px; padding: 0 12px 0 6px; border-radius: 12px; }
+  .faixa > img { width: 88px; height: 80px; margin-top: 8px; }
+  .faixa-txt { padding-block: 8px; }
+  .faixa-tit { font-size: 16px; line-height: 1.2; }
+  .faixa-sub { display: none; }
+  .faixa-btn { min-height: 34px; margin-top: 6px; padding: 0 12px; font-size: 13px; }
+  .v2 .brand-name { font-size: 22px; display: inline; }
+  .v2 .catalog { padding-block: 12px 40px; }
+  .v2 .card-media { margin: 6px 6px 0; }
+  .v2 .card-media img { padding: 6px; }
+  .v2 .card-tags .badge-low { padding: 2px 6px; font-size: 10.5px; border-radius: 5px; }
+  .v2 .card-price { font-size: 18px; }
+  .v2 .card-prices { gap: 2px 6px; }
+  .card-verif { font-size: 11px; }
+  .card-ver { min-height: 38px; font-size: 13.5px; }
+}
+/* Topo do celular: com login há mais botões; o nome sai e fica o ícone da Capi, para nenhum botão ser cortado */
+@media (max-width: 720px) { .v2 .header-row:has(#conta-btn:not([hidden])) .brand-name { display: none; } }
+@media (max-width: 360px) { .v2 .brand-name { display: none; } }

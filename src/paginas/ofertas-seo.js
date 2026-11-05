@@ -61,6 +61,7 @@ function cartao(o) {
       <div class="card-body"><div class="card-store">${h(LOJAS[o.store_id] || o.plataforma)}</div>
         <h3 class="card-title">${h(o.produto)}</h3>
         <div class="card-prices"><div class="card-old num">R$ ${brl(o.preco_anterior)}</div><div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div></div>
+        <span class="card-ver">Ver oferta</span>
       </div></a>`;
 }
 

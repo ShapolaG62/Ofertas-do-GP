@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 400" role="img" aria-label="Capi, a capivara do Ofertou!, de fone verde e picareta na mão">
+  <g stroke="#4a2a14" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <!-- brilhos -->
+    <g stroke="none" fill="#b9f7d0">
+      <path d="M372 44l6 17 17 6-17 6-6 17-6-17-17-6 17-6z"/>
+      <path d="M30 96l4 11 11 4-11 4-4 11-4-11-11-4 11-4z"/>
+      <path d="M322 30l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/>
+    </g>
+    <!-- corpo -->
+    <path d="M62 404c-6-62 8-122 42-152h142c30 26 44 88 40 152z" fill="#b5713c"/>
+    <path d="M112 404c-4-44 8-86 34-104h60c26 18 36 60 32 104z" fill="#e5b98a" stroke="none"/>
+    <!-- braço de trás -->
+    <path d="M84 296c-22 12-34 34-34 56 0 12 22 14 28 2 4-12 12-22 24-30z" fill="#a9652f"/>
+    <!-- arco do fone -->
+    <path d="M74 150C60 62 150 14 236 76" fill="none" stroke="#4a2a14" stroke-width="24"/>
+    <path d="M74 150C60 62 150 14 236 76" fill="none" stroke="#2fc76d" stroke-width="12"/>
+    <!-- orelha de trás -->
+    <path d="M226 64c2-20 26-26 36-10 6 10 0 24-12 28z" fill="#8f5226"/>
+    <!-- cabo da picareta -->
+    <path d="M286 352 366 100" stroke-width="20" stroke="#4a2a14"/>
+    <path d="M286 352 366 100" stroke-width="9" stroke="#c98a45"/>
+    <!-- cabeça da picareta -->
+    <path d="M272 98c30-34 78-40 118-14 24 16 38 40 42 70-24-30-52-46-86-48-26-2-50 0-74-8z" fill="#aab8c2"/>
+    <path d="M298 90c28-18 64-18 92 2 12 8 20 20 26 32-22-20-46-30-72-32-18-2-32 0-46-2z" fill="#d7e0e6" stroke="none"/>
+    <rect x="344" y="78" width="38" height="36" rx="7" transform="rotate(18 363 96)" fill="#6b7a85"/>
+    <!-- cabeça -->
+    <path d="M84 168c-10-62 34-112 98-114 44-2 74 16 94 44 12 16 34 28 42 56 8 30-4 64-30 82-22 16-54 20-92 20-54 0-104-30-112-88z" fill="#bd7a42"/>
+    <!-- focinho -->
+    <path d="M186 186c6-34 42-52 78-46 30 6 50 26 48 56-2 34-34 56-72 56-34 0-60-28-54-66z" fill="#e5b98a" stroke="none"/>
+    <!-- bochecha -->
+    <ellipse cx="146" cy="188" rx="21" ry="14" fill="#ef9d8b" stroke="none" opacity=".8"/>
+    <!-- olhos fechados, sorrindo -->
+    <path d="M140 134c6-13 25-13 32 0" fill="none" stroke-width="7"/>
+    <path d="M226 118c6-12 23-12 29 0" fill="none" stroke-width="7"/>
+    <!-- narinas -->
+    <ellipse cx="255" cy="162" rx="8" ry="5.5" fill="#4a2a14" stroke="none" transform="rotate(-12 255 162)"/>
+    <ellipse cx="288" cy="160" rx="7" ry="5" fill="#4a2a14" stroke="none" transform="rotate(12 288 160)"/>
+    <!-- boca -->
+    <path d="M212 192c18 10 58 10 82-4-2 26-20 44-42 44s-36-16-40-40z" fill="#7c2f22"/>
+    <path d="M232 214c10-8 28-8 38-1-6 10-13 14-20 14s-13-4-18-13z" fill="#ef8a7c" stroke="none"/>
+    <path d="M236 197h14v11c0 3-2 4-4 4h-6c-2 0-4-1-4-4zM252 197h14v11c0 3-2 4-4 4h-6c-2 0-4-1-4-4z" fill="#fff" stroke="none"/>
+    <!-- concha do fone -->
+    <rect x="48" y="118" width="54" height="94" rx="24" transform="rotate(-6 75 165)" fill="#1f9d55"/>
+    <rect x="72" y="130" width="30" height="72" rx="14" transform="rotate(-6 87 166)" fill="#16733e" stroke-width="5"/>
+    <!-- orelha da frente -->
+    <path d="M104 86c-14-14-8-36 12-38 12 0 20 8 22 18z" fill="#8f5226"/>
+    <!-- braço e pata segurando o cabo -->
+    <path d="M232 288c22 2 44-8 60-26l24 16c-18 36-52 56-88 50-16-4-20-34 4-40z" fill="#bd7a42"/>
+    <path d="M292 240c10-12 30-10 38 2s6 32-8 40-32 2-38-12c-2-10 2-22 8-30z" fill="#bd7a42"/>
+    <path d="M300 256l28 8M296 270l26 8" fill="none" stroke-width="5"/>
+  </g>
+</svg>

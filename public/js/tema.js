@@ -11,7 +11,7 @@ window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', 
   const CHAVE = 'ofertou-tema';
   const raiz = document.documentElement;
   const sistemaEscuro = window.matchMedia('(prefers-color-scheme: dark)');
-  const ler = () => { try { const t = localStorage.getItem(CHAVE); return t === 'claro' || t === 'escuro' ? t : 'auto'; } catch { return 'auto'; } };
+  const ler = () => { try { const t = localStorage.getItem(CHAVE); return t === 'escuro' || t === 'auto' ? t : 'claro'; } catch { return 'claro'; } };
   const escuro = () => { const t = ler(); return t === 'escuro' || (t === 'auto' && sistemaEscuro.matches); };
 
   function aplicar() {
@@ -92,6 +92,6 @@ window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', 
   window.OfertouTema = {
     atual: ler,
     escuro,
-    definir(t) { try { if (t === 'auto') localStorage.removeItem(CHAVE); else localStorage.setItem(CHAVE, t); } catch { /* sem armazenamento */ } aplicar(); },
+    definir(t) { try { localStorage.setItem(CHAVE, t); } catch { /* sem armazenamento */ } aplicar(); },
   };
 })();

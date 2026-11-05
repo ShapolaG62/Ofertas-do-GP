@@ -22,7 +22,8 @@
     automotivo: 'Automotivo', pets: 'Pet shop', limpeza: 'Limpeza', alimentos: 'Alimentos e bebidas', outros: 'Outros',
   };
   const DISCOUNTS = [10, 20, 30, 50];
-  const PRICE_PRESETS = [[0, 100], [100, 500], [500, 2000], [2000, null]];
+  // Paradas do controle de preço: mais pontos nos valores baixos, onde está a maioria das ofertas
+  const FAIXA_PRECO = [0, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 1500, 2000, 3000, 4000, 5000];
   const PER_PAGE = 24;
 
   const $ = s => document.querySelector(s);
@@ -135,52 +136,109 @@
     $('#store-tabs').innerHTML = tabs.join('') + STORES_EXTRA;
   }
 
-  function filtersHtml() {
+  // ── Barra lateral: categorias com ícone e seta, faixa de preço e desconto ──
+  const RL_ICO = {
+    informatica: '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19h20"/>',
+    celulares: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/>',
+    games: '<path d="M7 8h10a4 4 0 0 1 4 4l-1 5a2 2 0 0 1-3.6.8L15 16H9l-1.4 1.8A2 2 0 0 1 4 17l-1-5a4 4 0 0 1 4-4Z"/><path d="M8 11v3M6.5 12.5h3"/>',
+    audio_tv: '<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M8 20h8"/>',
+    eletrodomesticos: '<rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 9h12M9 6v1M9 12v3"/>',
+    cozinha: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 12v9M16 3c-2 1-3 4-3 7h3v11"/>',
+    casa: '<path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/>',
+    ferramentas: '<path d="M14 6a4 4 0 0 0 5 5l-9 9a2.1 2.1 0 0 1-3-3l9-9a4 4 0 0 1-2-2Z"/>',
+    beleza: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18 16l.8 2.2L21 19l-2.2.8L18 22"/>',
+    saude: '<path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.4-7 10-7 10Z"/>',
+    esporte: '<circle cx="12" cy="12" r="9"/><path d="M3.5 9.5c5 .5 12 .5 17 0M3.5 14.5c5-.5 12-.5 17 0"/>',
+    moda: '<path d="M8 3l4 3 4-3 5 4-3 3-2-1v12H8V9l-2 1-3-3z"/>',
+    brinquedos: '<circle cx="12" cy="9" r="5"/><path d="M8 13l-3 7M16 13l3 7M9 18h6"/>',
+    automotivo: '<path d="M4 16v-4l2-5h12l2 5v4M3 16h18v3H3zM7 12h10"/>',
+    pets: '<circle cx="8" cy="9" r="1.6"/><circle cx="16" cy="9" r="1.6"/><circle cx="5" cy="14" r="1.4"/><circle cx="19" cy="14" r="1.4"/><path d="M12 13c-2.5 0-4 2-4 4s2 2 4 2 4 0 4-2-1.5-4-4-4Z"/>',
+    limpeza: '<path d="M9 3h6v5H9zM8 8h8l1 13H7zM12 12v5"/>',
+    alimentos: '<path d="M12 7c-4-3-8 0-7 5 .6 3.6 3 8 5 8 1 0 1.3-.6 2-.6s1 .6 2 .6c2 0 4.4-4.4 5-8 1-5-3-8-7-5ZM12 7c0-2 1-3.5 3-4"/>',
+    outros: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
+    cupom: '<path d="M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1zM14 5v2M14 11v2M14 17v2"/>',
+  };
+  const rlIco = k => `<svg class="rl-ico" viewBox="0 0 24 24" aria-hidden="true">${RL_ICO[k] || RL_ICO.outros}</svg>`;
+  const RL_SETA = '<svg class="rl-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  const RL_VISIVEIS = 7; // categorias à mostra antes de "Ver todas"
+  let catAberta = null, verTodasCats = false, cuponsAberto = false;
+  const tiposGuardados = {};
+
+  const tiposDe = c => (c === state.cat ? DATA.contagens.subcategorias : tiposGuardados[`${state.loja}|${c}`]);
+  // A seta abre os tipos da categoria ali mesmo, sem filtrar a página
+  async function abrirCategoria(c) {
+    catAberta = catAberta === c ? '' : c;
+    renderFilters();
+    const k = `${state.loja}|${c}`;
+    if (catAberta !== c || c === state.cat || tiposGuardados[k]) return;
+    const qs = new URLSearchParams({ cat: c, por: 1 });
+    if (state.loja) qs.set('loja', state.loja);
+    try { tiposGuardados[k] = (await fetch(`/api/offers/busca?${qs}`).then(r => r.json())).contagens.subcategorias || {}; }
+    catch { tiposGuardados[k] = {}; }
+    if (catAberta === c) renderFilters();
+  }
+
+  function tiposHtml(c) {
+    const subs = tiposDe(c);
+    if (!subs) return '<p class="rl-vazio">Carregando…</p>';
+    const nomes = Object.keys(subs).sort(subOrder);
+    if (!nomes.length) return '<p class="rl-vazio">Nenhum tipo nesta categoria</p>';
+    return `<ul class="rl-sub">${nomes.map(n => {
+      const on = state.cat === c && state.tipo === n;
+      return `<li><button class="rl-subop" type="button" data-sub-cat="${c}" data-sub-tipo="${esc(n)}" aria-pressed="${on}">${esc(n)}</button></li>`;
+    }).join('')}</ul>`;
+  }
+
+  function categoriasHtml() {
     const cats = DATA.contagens.categorias;
-    const catItems = Object.keys(CATEGORIES).filter(c => cats[c] || state.cat === c)
-      .sort((a, b) => (cats[b] || 0) - (cats[a] || 0))
-      .map(c => `<li><button class="filter-option" type="button" data-cat="${c}" aria-pressed="${state.cat === c}">
-          <span>${esc(CATEGORIES[c])}</span><span class="count">${cats[c] || 0}</span></button></li>`).join('');
+    if (catAberta === null) catAberta = state.cat;
+    const todas = Object.keys(CATEGORIES).filter(c => cats[c] || state.cat === c).sort((a, b) => (cats[b] || 0) - (cats[a] || 0));
+    const visiveis = verTodasCats ? todas : todas.filter((c, i) => i < RL_VISIVEIS || c === state.cat);
+    return visiveis.map(c => {
+      const aberta = catAberta === c;
+      return `<li class="rl-item">
+        <div class="rl-linha${state.cat === c ? ' is-ativa' : ''}">
+          <button class="rl-nome" type="button" data-cat="${c}" aria-pressed="${state.cat === c}">${rlIco(c)}<span>${esc(CATEGORIES[c])}</span></button>
+          <button class="rl-abrir" type="button" data-abrir-cat="${c}" aria-expanded="${aberta}" aria-label="Ver os tipos de ${esc(CATEGORIES[c])}">${RL_SETA}</button>
+        </div>${aberta ? tiposHtml(c) : ''}</li>`;
+    }).join('') + cuponsHtml() + (todas.length > RL_VISIVEIS
+      ? `<li><button class="rl-mais" type="button" data-ver-cats>${verTodasCats ? 'Ver menos categorias' : `Ver todas as ${todas.length} categorias`}</button></li>` : '');
+  }
 
-    let subGroup = '';
-    if (state.cat) {
-      const subs = DATA.contagens.subcategorias;
-      const names = Object.keys(subs).sort(subOrder);
-      if (names.length > 1 || state.tipo) {
-        subGroup = `<div class="filter-group"><h3 class="filter-title">Tipo de produto</h3><ul class="filter-list">
-          <li><button class="filter-option" type="button" data-tipo="" aria-pressed="${!state.tipo}"><span>Todos</span></button></li>
-          ${names.map(n => `<li><button class="filter-option" type="button" data-tipo="${esc(n)}" aria-pressed="${state.tipo === n}">
-            <span>${esc(n)}</span><span class="count">${subs[n]}</span></button></li>`).join('')}</ul></div>`;
-      }
-    }
+  const indicePreco = v => {
+    let m = 0;
+    FAIXA_PRECO.forEach((p, i) => { if (Math.abs(p - v) < Math.abs(FAIXA_PRECO[m] - v)) m = i; });
+    return m;
+  };
+  const reais = v => `R$ ${Number(v).toLocaleString('pt-BR')}`;
+  const textoPreco = (min, max) => `${reais(min || 0)} - ${max == null ? `${reais(FAIXA_PRECO[FAIXA_PRECO.length - 1])}+` : reais(max)}`;
+  const estiloPreco = (a, b) => `--pa:${a / (FAIXA_PRECO.length - 1)};--pb:${b / (FAIXA_PRECO.length - 1)}`;
 
-    const presets = PRICE_PRESETS.map(([a, b]) => {
-      const label = b == null ? `Acima de R$ ${a}` : a === 0 ? `Até R$ ${b}` : `R$ ${a} a ${b}`;
-      const on = state.min === (a || null) && state.max === b;
-      return `<button class="chip" type="button" data-min="${a}" data-max="${b ?? ''}" aria-pressed="${on}">${label}</button>`;
-    }).join('');
+  function precoHtml() {
+    const ultimo = FAIXA_PRECO.length - 1;
+    const a = state.min == null ? 0 : indicePreco(state.min), b = state.max == null ? ultimo : indicePreco(state.max);
+    return `<form class="rl-preco" data-price-form>
+      <p class="rl-faixa num" data-preco-txt>${textoPreco(state.min, state.max)}</p>
+      <div class="rl-slider" data-preco-slider style="${estiloPreco(a, b)}"><i></i>
+        <input type="range" name="ra" min="0" max="${ultimo}" step="1" value="${a}" aria-label="Preço mínimo">
+        <input type="range" name="rb" min="0" max="${ultimo}" step="1" value="${b}" aria-label="Preço máximo">
+      </div>
+      <div class="rl-campos">
+        <input type="number" inputmode="numeric" min="0" placeholder="Mín." name="min" aria-label="Preço mínimo em reais" value="${state.min ?? ''}">
+        <span>–</span>
+        <input type="number" inputmode="numeric" min="0" placeholder="Máx." name="max" aria-label="Preço máximo em reais" value="${state.max ?? ''}">
+        <button class="sr-only" type="submit">Aplicar</button>
+      </div></form>`;
+  }
 
-    const discounts = DISCOUNTS.map(d => `<li><button class="filter-option" type="button" data-desc="${d}" aria-pressed="${state.desc === d}">
-      <span>${d}% ou mais</span></button></li>`).join('');
-
+  function filtersHtml() {
+    const descontos = [0, ...DISCOUNTS].map(d => `<label><input type="radio" name="rl-desc" value="${d}"${state.desc === d ? ' checked' : ''}><span>${d ? `${d}% ou mais` : 'Qualquer desconto'}</span></label>`).join('');
     return `
-      <div class="filter-group"><h3 class="filter-title">Categorias</h3><ul class="filter-list">
-        <li><button class="filter-option" type="button" data-cat="" aria-pressed="${!state.cat}"><span>Todas</span><span class="count">${DATA.contagens.categorias_total}</span></button></li>
-        ${catItems}</ul></div>
-      ${subGroup}
-      <div class="filter-group"><h3 class="filter-title">Preço (R$)</h3>
-        <form class="price-inputs" data-price-form>
-          <label class="sr-only">Mínimo</label><input type="number" inputmode="numeric" min="0" placeholder="Mín." name="min" value="${state.min ?? ''}">
-          <span>–</span>
-          <label class="sr-only">Máximo</label><input type="number" inputmode="numeric" min="0" placeholder="Máx." name="max" value="${state.max ?? ''}">
-          <button class="sr-only" type="submit">Aplicar</button>
-        </form>
-        <div class="price-presets">${presets}</div></div>
-      <div class="filter-group"><h3 class="filter-title">Desconto</h3><ul class="filter-list">
-        <li><button class="filter-option" type="button" data-desc="0" aria-pressed="${!state.desc}"><span>Qualquer desconto</span></button></li>
-        ${discounts}</ul></div>
-      ${cuponsHtml()}
-      <div class="filter-group com-only"><h3 class="filter-title">Comissão de afiliado</h3><ul class="filter-list">
+      <div class="rl-bloco"><h3 class="rl-tit">Categorias</h3>
+        <ul class="rl-lista">${state.cat ? `<li><button class="rl-mais" type="button" data-cat="">Todas as categorias</button></li>` : ''}${categoriasHtml()}</ul></div>
+      <div class="rl-bloco"><h3 class="rl-tit">Faixa de Preço</h3>${precoHtml()}</div>
+      <div class="rl-bloco"><h3 class="rl-tit">Desconto</h3><form class="rl-radios">${descontos}</form></div>
+      <div class="rl-bloco com-only"><h3 class="rl-tit">Comissão de afiliado</h3><ul class="filter-list">
         <li><button class="filter-option" type="button" data-com="" aria-pressed="${!state.com}"><span>Todas as comissões</span></button></li>
         <li><button class="filter-option" type="button" data-com="extra" aria-pressed="${state.com === 'extra'}"><span><i class="com-ponto"></i>Só comissão extra</span><span class="count">${DATA.contagens.comissao_extra ?? ''}</span></button></li></ul></div>`;
   }
@@ -195,16 +253,34 @@
     if (!c || (!c.total && !state.cupom)) return '';
     const codigos = c.codigos.map(k => `<li><button class="filter-option" type="button" data-cupom="${esc(k.codigo)}" aria-pressed="${state.cupom === k.codigo}">
       <span>${cupomMl(k.codigo) ? `<b>${esc(k.texto || 'Cupom')}</b> <small>Mercado Livre</small>` : `<b class="cupom-cod">${esc(k.codigo)}</b>${k.texto ? ` <small>${esc(k.texto)}</small>` : ''}`}</span><span class="count">${k.n}</span></button></li>`).join('');
-    return `<div class="filter-group"><h3 class="filter-title">Cupons de desconto</h3><ul class="filter-list cupons-list">
+    const aberto = cuponsAberto || Boolean(state.cupom);
+    return `<li class="rl-item">
+        <div class="rl-linha${state.cupom ? ' is-ativa' : ''}">
+          <button class="rl-nome" type="button" data-abrir-cupons aria-expanded="${aberto}">${rlIco('cupom')}<span>Cupons</span></button>
+          <button class="rl-abrir" type="button" data-abrir-cupons aria-expanded="${aberto}" aria-label="Ver os cupons">${RL_SETA}</button>
+        </div>${aberto ? `<ul class="filter-list cupons-list rl-sub">
         <li><button class="filter-option" type="button" data-cupom="" aria-pressed="${!state.cupom}"><span>Com ou sem cupom</span></button></li>
         <li><button class="filter-option" type="button" data-cupom="1" aria-pressed="${state.cupom === '1'}"><span>🎟️ Só com cupom</span><span class="count">${c.total}</span></button></li>
-        ${codigos}</ul></div>`;
+        ${codigos}</ul>` : ''}</li>`;
   }
 
+  // Refazer a barra não tira o foco de quem usa o teclado
+  function seletorDoFoco() {
+    const el = document.activeElement;
+    if (!el || !el.closest?.('#filters, #filters-mobile')) return '';
+    if (el.name) return el.type === 'radio' ? `[name="${el.name}"]:checked` : `[name="${el.name}"]`;
+    for (const k of ['cat', 'abrirCat', 'com', 'cupom']) {
+      if (el.dataset[k] !== undefined) return `[data-${k.replace(/[A-Z]/g, l => `-${l.toLowerCase()}`)}="${CSS.escape(el.dataset[k])}"]`;
+    }
+    return '';
+  }
   function renderFilters() {
+    const foco = seletorDoFoco();
     const html = filtersHtml();
     $('#filters').innerHTML = html;
-    if ($('#filters-dialog').open) $('#filters-mobile').innerHTML = html;
+    const noDialogo = $('#filters-dialog').open;
+    if (noDialogo) $('#filters-mobile').innerHTML = html;
+    if (foco) (noDialogo ? $('#filters-mobile') : $('#filters')).querySelector(foco)?.focus({ preventScroll: true });
   }
 
   function renderSubChips() {
@@ -245,18 +321,18 @@
 
   function cardHtml(o) {
     const isSel = selected.has(o.id);
+    const minerada = !o.loja_slug && o.fonte !== 'manual' && o.fonte !== 'empresa'; // preço conferido pela mineração
     // Anúncios criados pelas empresas abrem a página do anúncio; o resto vai direto para a loja.
     const link = o.fonte === 'empresa' ? `href="/anuncio/${o.id}"` : `href="/oferta/${slug(o)}" target="_blank" rel="noopener sponsored"`;
     return `<a class="card${isSel ? ' is-selected' : ''}" ${link} data-id="${o.id}">
       <div class="card-media">
         <img src="/img/o/${o.id}.jpg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
-        <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span>${comissaoHtml(o)}</div>
+        <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span>${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low" title="Menor preço em 30 dias">Menor preço</span>' : ''}${comissaoHtml(o)}</div>
         <button class="card-select poster-only" type="button" data-select="${o.id}" aria-label="Escolher para postar"><svg><use href="#i-check"/></svg></button>
       </div>
       <div class="card-body">
-        <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}</div>
+        <div class="card-store">${storeLabel(o.store_id, o.plataforma, o.loja_slug)}${minerada ? `<span class="card-verif" title="Conferido ${timeAgo(o.last_seen_at)}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#16a34a"/><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Preço verificado</span>` : ''}</div>
         <h3 class="card-title" title="${esc(o.produto)}">${esc(o.produto)}</h3>
-        ${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low">Menor preço em 30 dias</span>' : ''}
         ${o.iguais > 1 ? `<span class="badge-iguais">Menor preço entre ${o.iguais} anúncios</span>` : ''}
         <div class="card-prices">
           <div class="card-old num">R$ ${brl(o.preco_anterior)}</div>
@@ -266,7 +342,8 @@
           ? `<button class="card-cupom" type="button" data-cupom-ml="${esc(o.cupom_texto || '')}" title="Abrir a central de cupons do Mercado Livre">🎟️ <b>${esc(o.cupom_texto || 'Cupom')}</b> <span>ative em Cupons no app</span></button>`
           : `<button class="card-cupom" type="button" data-copiar-cupom="${esc(o.cupom)}" title="Copiar o cupom">🎟️ Cupom <b>${esc(o.cupom)}</b>${o.cupom_texto ? ` <span>${esc(o.cupom_texto)}</span>` : ''}</button>`}
         <div class="card-sem-cupom num">ou R$ ${brl(o.preco_sem_cupom)} sem cupom</div>` : ''}
-        <div class="card-foot"><span>${o.loja_slug ? 'Publicado pela loja' : o.fonte === 'manual' ? 'Oferta selecionada' : `Conferido ${timeAgo(o.last_seen_at)}`}</span></div>
+        ${minerada ? '' : `<div class="card-foot"><span>${o.loja_slug ? 'Publicado pela loja' : 'Oferta selecionada'}</span></div>`}
+        <span class="card-ver">Ver oferta</span>
         <button class="card-enviar poster-only" type="button" data-enviar="${o.id}"><svg><use href="#i-enviar"/></svg>Enviar para os grupos</button>
       </div>
     </a>`;
@@ -287,7 +364,7 @@
 
     const title = state.tipo || (state.cat ? CATEGORIES[state.cat] : state.loja === 'parceiros' ? 'Lojas parceiras' : state.loja ? STORE_BY_ID[state.loja]?.name : 'Todas as ofertas');
     $('#results-title').textContent = !state.q ? title : DATA.aproximado ? `Nada exato para “${state.q}”: veja parecidos` : `Resultados para “${state.q}”`;
-    $('#results-count').textContent = `${DATA.total.toLocaleString('pt-BR')} oferta${DATA.total === 1 ? '' : 's'}`;
+    $('#results-count').textContent = `${DATA.total.toLocaleString('pt-BR')} oferta${DATA.total === 1 ? '' : 's'}${DATA.resumo?.ultima_conferencia ? ` · preços conferidos ${timeAgo(DATA.resumo.ultima_conferencia)}` : ''}`;
 
     if (!pageItems.length) {
       $('#grid').innerHTML = emptyHtml();
@@ -382,6 +459,7 @@
 
   async function loadVitrine() {
     const v = $('#vitrine');
+    if (getComputedStyle(v.parentElement).display === 'none') return; // tela sem a vitrine: nada a buscar
     try {
       const itens = await fetch('/api/vitrine', { cache: 'no-store' }).then(r => (r.ok ? r.json() : []));
       if (!Array.isArray(itens) || !itens.length) throw new Error('sem itens');
@@ -466,16 +544,22 @@
     const t = e.target.closest('button');
     if (!t) return;
     if (t.dataset.loja !== undefined) return setFilter({ loja: t.dataset.loja });
-    if (t.dataset.cat !== undefined) return setFilter({ cat: t.dataset.cat });
+    if (t.dataset.abrirCat !== undefined) return abrirCategoria(t.dataset.abrirCat);
+    if (t.dataset.abrirCupons !== undefined) { cuponsAberto = !(cuponsAberto || state.cupom); return renderFilters(); }
+    if (t.dataset.verCats !== undefined) { verTodasCats = !verTodasCats; return renderFilters(); }
+    if (t.dataset.subCat !== undefined) {
+      const mesmo = state.cat === t.dataset.subCat && state.tipo === t.dataset.subTipo;
+      return setFilter({ cat: t.dataset.subCat, tipo: mesmo ? '' : t.dataset.subTipo });
+    }
+    if (t.dataset.cat !== undefined) {
+      const cat = t.dataset.cat === state.cat ? '' : t.dataset.cat; // tocar de novo na categoria escolhida tira o filtro
+      catAberta = cat;
+      return setFilter({ cat });
+    }
     if (t.dataset.tipo !== undefined) return setFilter({ tipo: t.dataset.tipo });
     if (t.dataset.desc !== undefined) return setFilter({ desc: Number(t.dataset.desc) });
     if (t.dataset.com !== undefined) return setFilter({ com: t.dataset.com });
     if (t.dataset.cupom !== undefined) return setFilter({ cupom: t.dataset.cupom });
-    if (t.dataset.min !== undefined) {
-      const min = Number(t.dataset.min) || null, max = t.dataset.max ? Number(t.dataset.max) : null;
-      const on = state.min === min && state.max === max;
-      return setFilter(on ? { min: null, max: null } : { min, max });
-    }
     if (t.dataset.remove) {
       const k = t.dataset.remove;
       return setFilter(k === 'preco' ? { min: null, max: null } : { [k]: k === 'desc' ? 0 : '' });
@@ -489,8 +573,29 @@
     const form = e.target.closest('[data-price-form]');
     if (!form) return;
     e.preventDefault();
+    // Controle deslizante: vale a parada escolhida; a última significa "sem limite"
+    if (e.target.name === 'ra' || e.target.name === 'rb') {
+      const a = Number(form.ra.value), b = Number(form.rb.value);
+      return setFilter({ min: a ? FAIXA_PRECO[a] : null, max: b === FAIXA_PRECO.length - 1 ? null : FAIXA_PRECO[b] });
+    }
     const val = n => (form[n].value === '' ? null : Math.max(0, Number(form[n].value)));
     setFilter({ min: val('min'), max: val('max') });
+  }
+
+  // Enquanto arrasta: as bolinhas não se cruzam e o valor acompanha (a busca só roda ao soltar)
+  function arrastarPreco(e) {
+    if (e.target.name !== 'ra' && e.target.name !== 'rb') return;
+    const form = e.target.closest('[data-price-form]');
+    let a = Number(form.ra.value), b = Number(form.rb.value);
+    if (a >= b) {
+      if (e.target.name === 'ra') { a = b - 1; form.ra.value = a; } else { b = a + 1; form.rb.value = b; }
+    }
+    const ultimo = FAIXA_PRECO.length - 1;
+    const min = a ? FAIXA_PRECO[a] : null, max = b === ultimo ? null : FAIXA_PRECO[b];
+    form.querySelector('[data-preco-slider]').style.cssText = estiloPreco(a, b);
+    form.querySelector('[data-preco-txt]').textContent = textoPreco(min, max);
+    form.min.value = min ?? '';
+    form.max.value = max ?? '';
   }
 
   for (const sel of ['#store-tabs', '#filters', '#filters-mobile', '#sub-chips', '#active-filters', '#grid']) {
@@ -498,7 +603,11 @@
   }
   for (const sel of ['#filters', '#filters-mobile']) {
     $(sel).addEventListener('submit', handlePriceSubmit);
-    $(sel).addEventListener('change', e => { if (e.target.closest('[data-price-form]')) handlePriceSubmit(e); });
+    $(sel).addEventListener('input', arrastarPreco);
+    $(sel).addEventListener('change', e => {
+      if (e.target.closest('[data-price-form]')) return handlePriceSubmit(e);
+      if (e.target.name === 'rl-desc') setFilter({ desc: Number(e.target.value) });
+    });
   }
 
   $('#pagination').addEventListener('click', e => {
@@ -731,6 +840,7 @@
     const ig = (s.instagram_user || '').replace(/^@/, '').replace(/[^\w.]/g, '');
     if (wa) {
       $('#wa-header').href = wa; $('#wa-header').hidden = false;
+      $('#wa-faixa').href = wa; $('#wa-faixa').hidden = false;
       $('#wa-community').href = wa; $('#community').hidden = false;
     }
     const links = [];

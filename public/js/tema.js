@@ -38,6 +38,21 @@ window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', 
     }
   } catch { /* sem armazenamento */ }
 
+  // Página aberta dentro do painel do afiliado (?embed=1): sem o topo do site. Links para outras áreas do painel trocam a
+  // aba lá em cima, em vez de abrir o site dentro do quadro.
+  if (/[?&]embed=1\b/.test(location.search) && window.top !== window) {
+    raiz.classList.add('embutido');
+    document.addEventListener('click', e => {
+      const a = e.target.closest?.('a[href]');
+      if (!a || a.target === '_blank' || e.ctrlKey || e.metaKey) return;
+      const u = new URL(a.href, location.href);
+      if (u.origin !== location.origin) return;
+      const txt = a.textContent;
+      const aba = { '/postagens': 'postagens', '/': 'ofertas', '/cliente': /afiliado/i.test(txt) ? 'afiliados' : /redes/i.test(txt) ? 'redes' : 'inicio' }[u.pathname];
+      if (aba) { e.preventDefault(); window.parent.postMessage({ ofertouAba: aba, busca: u.search }, location.origin); }
+    }, true);
+  }
+
   const ICONES = {
     claro: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
     escuro: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',

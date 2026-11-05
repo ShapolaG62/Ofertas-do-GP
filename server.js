@@ -139,7 +139,9 @@ app.get('/trabalho/guia', (req, res) => {
 // O próprio perfil fica em Minha conta (aba "Meu perfil"); admin e clientes só da ferramenta continuam em /perfil.
 app.get(['/perfil', '/perfil.html'], (req, res, next) => {
   const dono = require('./src/perfis').donoDe(req);
-  if (dono && dono.startsWith('u:')) return res.redirect('/conta?aba=meuperfil');
+  const u = dono && dono.startsWith('u:') ? require('./src/users').currentUser(req) : null;
+  // Afiliado com a ferramenta não usa Minha conta (ela manda de volta ao painel): o perfil abre aqui mesmo
+  if (u && !(u.tipo === 'afiliado' && u.cliente_id)) return res.redirect('/conta?aba=meuperfil');
   next();
 });
 

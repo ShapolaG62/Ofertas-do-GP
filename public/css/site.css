@@ -3506,3 +3506,31 @@ button.ex-lembrete { cursor: pointer; }
 .fr-result > div { background: var(--azul-soft); }
 .fr-result b { color: var(--azul-texto); }
 .fr-calc { border-top-color: var(--azul); }
+
+/* Painel do afiliado: listas em alta */
+.ex-rank { list-style: none; margin: 8px 0 0; padding: 0 6px 0 0; max-height: 440px; overflow-y: auto; scrollbar-width: thin; }
+.ex-rank li + li { border-top: 1px solid var(--line); }
+.ex-rank a { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 4px; color: var(--ink); font-size: 13.5px; text-decoration: none; }
+.ex-rank a:hover { background: var(--surface-2); color: var(--azul-texto); }
+.ex-rank i { flex: none; width: 24px; font-style: normal; font-weight: 800; color: var(--azul-texto); text-align: right; font-variant-numeric: tabular-nums; }
+.ex-rank img { flex: none; width: 40px; height: 40px; padding: 2px; object-fit: contain; border-radius: 7px; background: #fff; }
+.ex-rank span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ex-rank small { flex: none; color: var(--ink-3); font-size: 12px; }
+.ex-rank b { flex: none; color: var(--brand-strong); font-variant-numeric: tabular-nums; }
+
+/* Ofertas, postagens e perfil dentro do painel */
+.cli-quadro { display: block; width: 100%; height: calc(100dvh - 96px); min-height: 480px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.embutido .site-header .brand, .embutido .site-header .header-actions, .embutido .site-header:not(:has(.search)), .embutido .site-footer, .embutido .rodape-legal,
+.embutido .faixa, .embutido .community, .embutido .explore-links, .embutido .instalar-app, .embutido [aria-label="Aviso de cookies"], .embutido .chat-flut,
+.embutido [class*="chatf-botao"], .embutido .avs-fundo, .embutido .awa-faixa { display: none !important; }
+.embutido .site-header { position: static; }
+.embutido .v2 .hero { padding-top: 0; }
+@media (max-width: 720px) { .cli-quadro { height: calc(100dvh - 80px); border-radius: 10px; } }
+
+/* Links de afiliado: 3 cartões por linha, do mesmo tamanho */
+.cli-grid .panel-card + .panel-card { margin-top: 0; }
+@media (min-width: 1100px) { .cli-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Botão de escolher a planilha, centralizado no campo */
+#com-arquivo { height: 46px; padding: 6px 8px; line-height: 32px; }
+#com-arquivo::file-selector-button { height: 32px; margin: 0 10px 0 0; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; vertical-align: middle; cursor: pointer; }

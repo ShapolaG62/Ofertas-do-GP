@@ -130,7 +130,11 @@ router.delete('/api/cliente/comissao/saque/:id', (req, res) => {
 });
 
 // ── O que está em alta ──
-router.get('/api/cliente/populares', (req, res) => res.json(require('../populares').populares()));
+router.get('/api/cliente/populares', (req, res) => {
+  const { buscados, clicados } = require('../populares').populares();
+  // O link leva a comissão de quem está no painel
+  res.json({ buscados, clicados: clicados.map(o => ({ ...o, link: `/ir/${req.cliente.id}-${o.id}` })) });
+});
 
 // ── Monitor de membros ──
 router.get('/api/cliente/membros', (req, res) => res.json(require('../membros-grupo').resumo(req.cliente.id, req.query.dias)));

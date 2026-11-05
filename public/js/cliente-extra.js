@@ -177,8 +177,8 @@
   // O que está em alta (dashboard): carrega quando o painel aparece, depois do login
   async function carregarAlta() {
     const d = await api('/api/cliente/populares');
-    $('#alta-buscados').innerHTML = d.buscados.map(b => `<a class="chip" href="/?q=${encodeURIComponent(b.termo)}">${esc(b.termo)}</a>`).join('') || '<p class="cli-hint">Ainda sem dados.</p>';
-    $('#alta-clicados').innerHTML = d.clicados.map(o => `<div class="ex-lin"><span title="${esc(o.produto)}">${esc(o.produto)}</span><b>${brl(o.preco_atual)}</b></div>`).join('') || '<p class="cli-hint">Ainda sem dados.</p>';
+    $('#alta-buscados').innerHTML = d.buscados.map((b, i) => `<li><a href="/?q=${encodeURIComponent(b.termo)}"><i>${i + 1}</i><span>${esc(b.termo)}</span><small>${num(b.vezes)} buscas</small></a></li>`).join('') || '<li class="cli-hint">Ainda sem dados.</li>';
+    $('#alta-clicados').innerHTML = d.clicados.map((o, i) => `<li><a href="${esc(o.link)}" target="_blank" rel="noopener sponsored" title="${esc(o.produto)}"><i>${i + 1}</i><img src="/img/o/${Number(o.id)}.jpg" alt="" width="40" height="40" loading="lazy" onerror="this.style.visibility='hidden'"><span>${esc(o.produto)}</span><b>${brl(o.preco_atual)}</b></a></li>`).join('') || '<li class="cli-hint">Ainda sem dados.</li>';
     $('#cli-alta').hidden = !d.buscados.length && !d.clicados.length;
   }
   const app = $('#view-app');
@@ -187,8 +187,50 @@
   if (app) new MutationObserver(talvezAlta).observe(app, { attributes: true, attributeFilter: ['hidden'] });
   talvezAlta();
 
+  // Ofertas, postagens e perfil abrem aqui mesmo, num quadro
+  const irAba = a => document.querySelector(`.tabs-line [data-tab="${a}"]`)?.click();
+  const selecao = () => { try { return localStorage.getItem('gp_postagens') || ''; } catch { return ''; } };
+  function abrirQuadro(id, url) {
+    const f = $(`#quadro-${id}`);
+    if (!f.getAttribute('src') || url) f.src = url;
+  }
+  function abrirOfertas(busca = '') {
+    const qs = new URLSearchParams(busca);
+    qs.set('embed', '1');
+    const f = $('#quadro-ofertas');
+    if (!f.getAttribute('src') || busca) f.src = `/?${qs}`;
+  }
+  function abrirPostagens() {
+    const f = $('#quadro-postagens'), sel = selecao();
+    if (!f.getAttribute('src') || f.dataset.sel !== sel) { f.dataset.sel = sel; f.src = '/postagens?embed=1'; } // escolheu outros produtos: mostra os novos
+  }
+  let buscaPedida = '';
+  // Pedido vindo de dentro do quadro ("Ir para postagens", por exemplo)
+  window.addEventListener('message', e => {
+    if (e.origin !== location.origin || !e.data?.ofertouAba) return;
+    buscaPedida = e.data.busca || '';
+    irAba(e.data.ofertouAba);
+  });
+  // Links do painel para essas áreas ficam no painel (o logo continua indo para o site)
+  document.addEventListener('click', e => {
+    const a = e.target.closest?.('a[href]');
+    if (!a || a.target === '_blank' || e.ctrlKey || e.metaKey || a.closest('.brand, .cli-side-logo')) return;
+    const u = new URL(a.href, location.href);
+    if (u.origin !== location.origin) return;
+    const aba = { '/': 'ofertas', '/postagens': 'postagens', '/perfil': 'perfil' }[u.pathname];
+    if (!aba) return;
+    e.preventDefault();
+    buscaPedida = u.search;
+    irAba(aba);
+  }, true);
+
   // Carrega cada aba ao abrir
-  const CARGA = { comissao: carregarComissao, membros: carregarMembros, sitegrupo: carregarSite };
+  const CARGA = {
+    comissao: carregarComissao, membros: carregarMembros, sitegrupo: carregarSite,
+    ofertas: async () => { const b = buscaPedida; buscaPedida = ''; abrirOfertas(b); },
+    postagens: async () => { buscaPedida = ''; abrirPostagens(); },
+    perfil: async () => abrirQuadro('perfil', $('#quadro-perfil').getAttribute('src') ? '' : '/perfil?embed=1'),
+  };
   document.querySelector('.tabs-line')?.addEventListener('click', e => {
     const f = CARGA[e.target.closest('[data-tab]')?.dataset.tab];
     if (f) f().catch(err => aviso(err.message));

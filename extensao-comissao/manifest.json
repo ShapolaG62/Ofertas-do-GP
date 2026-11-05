@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Ofertou! Mercado Livre",
   "short_name": "Ofertou ML",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Leva para o Painel do Ofertou! os produtos com comissão extra, o ganho estimado do seu painel de afiliado e os cupons do Mercado Livre (com os produtos em que valem), sem copiar e colar.",
   "icons": {
     "16": "icone.png",
@@ -30,6 +30,18 @@
       ],
       "js": [
         "cupons.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://tanoofertou.com.br/cliente*",
+        "https://www.tanoofertou.com.br/cliente*",
+        "http://localhost/cliente*",
+        "http://127.0.0.1/cliente*"
+      ],
+      "js": [
+        "painel-cliente.js"
       ],
       "run_at": "document_idle"
     },

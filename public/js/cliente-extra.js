@@ -43,6 +43,7 @@
     $('#com-top').innerHTML = d.top.map(p => `<div class="ex-lin"><span title="${esc(p.produto)}">${esc(p.produto)}</span><b>${brl(p.comissao)}</b></div>`).join('') || '<p class="cli-hint">Nenhuma venda neste período.</p>';
     $('#com-vendas').innerHTML = d.recentes.map(v => `<tr><td>${esc(String(v.data_venda).slice(8, 10))}/${esc(String(v.data_venda).slice(5, 7))}</td><td>${esc(d.lojas[v.plataforma] || v.plataforma)}</td><td>${esc(String(v.produto || '').slice(0, 70))}</td><td>${brl(v.comissao)}</td><td>${esc(SITUACAO[v.status] || v.status)}</td></tr>`).join('')
       || '<tr><td colspan="5" class="cli-hint">Nenhuma venda ainda. Sincronize a Shopee ou importe uma planilha.</td></tr>';
+    mostrarSaldos(d);
     const s = d.sync;
     $('#com-sync-txt').textContent = !d.shopee_ligada ? 'A Shopee atualiza sozinha quando você preenche o App ID e a Senha da API em Links de afiliado.'
       : s ? (s.ok ? `Shopee sincronizada em ${new Date(s.em).toLocaleString('pt-BR')}: ${num(s.novas)} nova(s), ${num(s.atualizadas)} atualizada(s). Atualiza sozinha a cada 6 horas.` : `A última sincronização falhou: ${s.mensagem}`)
@@ -50,6 +51,51 @@
     $('#com-sync').disabled = !d.shopee_ligada;
     if (!LOJAS_OK) { $('#com-loja').innerHTML = Object.entries(d.lojas).filter(([k]) => k !== 'shopee').concat([['shopee', d.lojas.shopee]]).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join(''); LOJAS_OK = true; }
   }
+  const emMoeda = (v, m) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: m || 'BRL' });
+  const dataBr = s => (s ? new Date(`${String(s).slice(0, 10)}T12:00:00Z`).toLocaleDateString('pt-BR') : '—');
+  function textoLembrete(lista) {
+    const nomes = lista.map(l => l.nome);
+    const juntos = nomes.length > 1 ? `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}` : nomes[0];
+    return `Hora de enviar a planilha de vendas: ${juntos}.`;
+  }
+  function mostrarSaldos(d) {
+    const { brl: reais, usd, lojas } = d.saldos;
+    const extra = k => (usd[k] ? `+ ${emMoeda(usd[k], 'USD')}` : '');
+    $('#com-saldos').innerHTML = kpi('Disponível para saque', brl(reais.disponivel), extra('disponivel')) + kpi('A liberar', brl(reais.a_liberar), extra('a_liberar')) + kpi('Já recebido', brl(reais.recebido), extra('recebido'));
+    $('#com-saldo-lojas').innerHTML = lojas.map(l => `<tr><td>${esc(l.nome)}${l.estimado ? `<br><small class="cli-hint">estimado em ${new Date(l.estimado.em).toLocaleDateString('pt-BR')}</small>` : ''}</td>
+      <td>${emMoeda(l.disponivel, l.moeda)}</td><td>${emMoeda(l.a_liberar, l.moeda)}</td><td>${dataBr(l.proxima_liberacao)}</td>
+      <td class="${l.pode_sacar ? 'ex-pos' : ''}">${l.pode_sacar ? 'Pode sacar' : l.falta > 0 ? `Faltam ${emMoeda(l.falta, l.moeda)}` : '—'}</td></tr>`).join('')
+      || '<tr><td colspan="5" class="cli-hint">Nenhuma venda ainda.</td></tr>';
+    $('#com-lembrete').hidden = !d.lembrete.length;
+    if (d.lembrete.length) $('#com-lembrete').textContent = textoLembrete(d.lembrete);
+    const sel = $('#com-saque-loja');
+    if (!sel.options.length) sel.innerHTML = Object.entries(d.lojas).map(([k, n]) => `<option value="${k}">${esc(n)}</option>`).join('');
+    $('#com-saques').innerHTML = d.saques.map(s => `<div class="ex-lin"><span>${esc(d.lojas[s.plataforma] || s.plataforma)} · ${new Date(`${String(s.criado_em).replace(' ', 'T')}Z`).toLocaleDateString('pt-BR')}</span><b>${brl(s.valor)}</b><button class="btn btn-sm" type="button" data-saque-apagar="${s.id}">Apagar</button></div>`).join('');
+  }
+  $('#com-saque-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = e.currentTarget;
+    try {
+      await api('/api/cliente/comissao/saque', { method: 'POST', body: { plataforma: f.elements.plataforma.value, valor: f.elements.valor.value } });
+      f.elements.valor.value = ''; aviso('Saque registrado.');
+      await carregarComissao();
+    } catch (err) { aviso(err.message); }
+  });
+  $('#com-saques').addEventListener('click', async e => {
+    const b = e.target.closest('[data-saque-apagar]');
+    if (!b) return;
+    try { await api(`/api/cliente/comissao/saque/${b.dataset.saqueApagar}`, { method: 'DELETE' }); await carregarComissao(); } catch (err) { aviso(err.message); }
+  });
+  // Extensão do Chrome: entrega aqui o "Ganho estimado" lido no painel do Mercado Livre
+  window.addEventListener('message', e => {
+    if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
+    if (e.data.tipo === 'instalada') $('#com-ext-status').textContent = 'Extensão instalada neste navegador.';
+    if (e.data.tipo === 'ganho-estimado') {
+      api('/api/cliente/comissao/ml-estimado', { method: 'POST', body: { valor: e.data.valor } })
+        .then(() => { aviso('Ganho estimado do Mercado Livre atualizado.'); if (!$('[data-body="comissao"]').hidden) carregarComissao().catch(() => {}); })
+        .catch(() => {});
+    }
+  });
   periodo('#com-periodo', x => { comDias = x; carregarComissao().catch(e => aviso(e.message)); });
   $('#com-sync').addEventListener('click', async e => {
     const b = e.currentTarget; b.disabled = true; b.textContent = 'Sincronizando…';

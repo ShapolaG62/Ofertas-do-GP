@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const ORIGEM = location.origin;
-  chrome.storage.local.set({ painel: ORIGEM }); // endereço do Painel, para voltar depois de buscar
+  chrome.storage.local.set({ painel: ORIGEM, soGanhoCliente: false }); // endereço do Painel, para voltar depois de buscar
 
   const avisar = msg => window.postMessage({ ofertouExt: true, ...msg }, ORIGEM);
   avisar({ tipo: 'instalada' });

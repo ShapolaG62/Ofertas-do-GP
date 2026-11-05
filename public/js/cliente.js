@@ -96,6 +96,9 @@
   async function carregarPainel() {
     const d = await api(`/api/cliente/painel?dias=${DIAS}`);
     const prontas = d.redes.filter(r => r.pronta);
+    const lembrete = d.lembrete_planilha || [];
+    $('#cli-lembrete').hidden = !lembrete.length;
+    if (lembrete.length) $('#cli-lembrete').textContent = `Hora de enviar a planilha de vendas: ${lembrete.join(', ')}. Toque para abrir.`;
     mostrarPassos(d);
     const periodo = DIAS === 1 ? 'hoje' : `nos últimos ${DIAS} dias`;
     $('#cli-kpis').innerHTML = [
@@ -150,6 +153,7 @@
       <div><b>${esc(p.tit)}</b><small>${esc(p.det)}</small></div>
       ${p.ok ? '' : p.link ? `<a class="btn btn-sm" href="${p.link}">Fazer</a>` : `<button class="btn btn-sm" type="button" data-ir="${p.tab}">Fazer</button>`}</li>`).join('');
   }
+  $('#cli-lembrete').addEventListener('click', () => document.querySelector('.tabs-line [data-tab="comissao"]')?.click());
   $('#cli-passos').addEventListener('click', e => {
     const b = e.target.closest('[data-ir]');
     if (b) document.querySelector(`.tabs-line [data-tab="${b.dataset.ir}"]`)?.click();

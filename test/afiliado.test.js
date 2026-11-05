@@ -92,8 +92,58 @@ test('site do grupo: endereço único, rotação por limite e contagem separada'
   db.run(`UPDATE clientes SET status = 'ativo' WHERE id = ?`, A);
 });
 
+test('a receber: respeita o prazo, o mínimo, os saques e fica separado por cliente', () => {
+  const C = novoCliente('c@exemplo.test');
+  const antes = dias => new Date(Date.now() - dias * 86400000).toISOString().slice(0, 10);
+  // Shopee: prazo de 30 dias e mínimo de R$ 30 (regras iniciais)
+  cg.registrar(C, { plataforma: 'shopee', externo: 'velha', data_venda: antes(40), produto: 'A', comissao: 50, status: 'confirmada' });
+  cg.registrar(C, { plataforma: 'shopee', externo: 'nova', data_venda: antes(5), produto: 'B', comissao: 20, status: 'confirmada' });
+  cg.registrar(C, { plataforma: 'shopee', externo: 'pend', data_venda: antes(40), produto: 'C', comissao: 7, status: 'pendente' });
+  cg.registrar(C, { plataforma: 'shopee', externo: 'canc', data_venda: antes(40), produto: 'D', comissao: 99, status: 'cancelada' });
+  cg.registrar(C, { plataforma: 'shopee', externo: 'paga', data_venda: antes(90), produto: 'E', comissao: 11, status: 'paga' });
+  let l = cg.saldos(C).lojas.find(x => x.plataforma === 'shopee');
+  assert.deepEqual([l.disponivel, l.a_liberar, l.recebido, l.pode_sacar], [50, 27, 11, true]);
+  assert.ok(l.proxima_liberacao > antes(0), 'a próxima liberação é no futuro');
+  cg.registrarSaque(C, { plataforma: 'shopee', valor: '30,00' });
+  l = cg.saldos(C).lojas.find(x => x.plataforma === 'shopee');
+  assert.deepEqual([l.disponivel, l.recebido, l.pode_sacar, l.falta], [20, 41, false, 10]);
+  const id = cg.resumo(C, 30).saques[0].id;
+  assert.throws(() => cg.excluirSaque(A, id), /não encontrado/, 'não apaga saque de outro cliente');
+  cg.excluirSaque(C, id);
+  assert.equal(cg.saldos(C).lojas.find(x => x.plataforma === 'shopee').disponivel, 50);
+  assert.equal(cg.saldos(A).lojas.find(x => x.plataforma === 'shopee').disponivel, 0, 'não mistura clientes');
+  // AliExpress fica em dólar, fora do total em reais
+  cg.registrar(C, { plataforma: 'aliexpress', externo: 'u1', data_venda: antes(90), produto: 'F', comissao: 20, status: 'confirmada' });
+  const s = cg.saldos(C);
+  assert.deepEqual([s.brl.disponivel, s.usd.disponivel], [50, 20]);
+});
+
+test('Mercado Livre: o valor da extensão substitui o anterior e é validado', () => {
+  const C = novoCliente('d@exemplo.test');
+  cg.salvarEstimadoMl(C, 10);
+  cg.salvarEstimadoMl(C, 25.5);
+  const l = cg.saldos(C).lojas.find(x => x.plataforma === 'mercadolivre');
+  assert.equal(l.disponivel, 25.5);
+  assert.throws(() => cg.salvarEstimadoMl(C, -1), /inválido/);
+  assert.throws(() => cg.salvarEstimadoMl(C, 'abc'), /inválido/);
+  assert.equal(cg.saldos(A).lojas.find(x => x.plataforma === 'mercadolivre'), undefined, 'não aparece para outro cliente');
+});
+
+test('lembrete da planilha: só para lojas com link de afiliado e sem envio recente', () => {
+  const C = novoCliente('e@exemplo.test');
+  assert.deepEqual(cg.lembretePlanilha(C), [], 'sem link de afiliado, não cobra');
+  clientes.salvarConfig(C, { amazon_tag: 'teste-20', shopee_app_id: '1', shopee_app_secret: 'x' });
+  assert.deepEqual(cg.lembretePlanilha(C).map(l => l.plataforma), ['amazon'], 'a Shopee com chaves atualiza sozinha');
+  const hojeBr = hoje.split('-').reverse().join('/');
+  cg.importar(C, `Data;Comissão\n${hojeBr};5,00\n`, 'amazon', { data_venda: 0, comissao: 1 });
+  assert.deepEqual(cg.lembretePlanilha(C), [], 'enviou agora, não lembra');
+  db.run(`UPDATE cliente_vendas SET atualizado_em = datetime('now', '-8 days') WHERE cliente_id = ?`, C);
+  assert.equal(cg.lembretePlanilha(C)[0].dias, 8);
+});
+
 test('configuração do cliente: a contagem interna não pode ser editada', () => {
-  clientes.salvarConfig(A, { grupos_convite_entradas: '{"x":999}', ganhos_sync_estado: 'x' });
+  clientes.salvarConfig(A, { grupos_convite_entradas: '{"x":999}', ganhos_sync_estado: 'x', ml_ganho_estimado: '{"valor":999999}' });
+  assert.equal(db.get(`SELECT value FROM cliente_config WHERE cliente_id = ? AND key = 'ml_ganho_estimado'`, A), undefined);
   const v = db.get(`SELECT value FROM cliente_config WHERE cliente_id = ? AND key = 'ganhos_sync_estado'`, A);
   assert.equal(v, undefined);
 });

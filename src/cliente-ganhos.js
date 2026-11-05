@@ -23,6 +23,13 @@ db.db.exec(`
     UNIQUE (cliente_id, plataforma, externo)
   );
   CREATE INDEX IF NOT EXISTS idx_cliente_vendas_data ON cliente_vendas (cliente_id, data_venda);
+  CREATE TABLE IF NOT EXISTS cliente_saques (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id INTEGER NOT NULL,
+    plataforma TEXT NOT NULL,
+    valor REAL NOT NULL,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
@@ -47,6 +54,78 @@ function registrar(cid, b, origem = 'csv') {
             atualizado_em = datetime('now')`,
   cid, b.plataforma, externo, quando, pedido, String(b.produto || '').slice(0, 200), venda, comissao, ganhos.statusDe(b.status), origem);
   return { novo: !existia };
+}
+
+// ── Saldos: a receber e disponível para saque, com o prazo e o mínimo de cada programa (Painel → Ganhos) ──
+const r2 = v => Math.round(Number(v || 0) * 100) / 100;
+function estimadoMl(cid) {
+  try {
+    const e = JSON.parse(db.get(`SELECT value FROM cliente_config WHERE cliente_id = ? AND key = 'ml_ganho_estimado'`, cid)?.value || 'null');
+    return e && Number.isFinite(e.valor) ? e : null;
+  } catch { return null; }
+}
+function salvarEstimadoMl(cid, valor) {
+  const v = Number(valor);
+  if (!Number.isFinite(v) || v < 0 || v > 1e7) throw fail('Valor inválido.');
+  db.run(`INSERT INTO cliente_config (cliente_id, key, value) VALUES (?, 'ml_ganho_estimado', ?)
+          ON CONFLICT (cliente_id, key) DO UPDATE SET value = excluded.value`, cid, JSON.stringify({ valor: r2(v), em: new Date().toISOString() }));
+  return estimadoMl(cid);
+}
+function saldos(cid) {
+  const regras = Object.fromEntries(db.all('SELECT id, moeda, minimo, dias_liberacao FROM ganhos_plataformas').map(p => [p.id, p]));
+  const lojas = [];
+  for (const id of Object.keys(LOJAS)) {
+    const p = regras[id] || { moeda: 'BRL', minimo: 0, dias_liberacao: 30 };
+    const prazo = `+${Math.max(0, Number(p.dias_liberacao) || 0)} days`;
+    const v = db.get(`SELECT
+        COALESCE(SUM(CASE WHEN status = 'confirmada' AND datetime(data_venda, ?) <= datetime('now') THEN comissao END), 0) AS liberado,
+        COALESCE(SUM(CASE WHEN status = 'pendente' OR (status = 'confirmada' AND datetime(data_venda, ?) > datetime('now')) THEN comissao END), 0) AS a_liberar,
+        COALESCE(SUM(CASE WHEN status = 'paga' THEN comissao END), 0) AS pago,
+        MIN(CASE WHEN status = 'confirmada' AND datetime(data_venda, ?) > datetime('now') THEN date(data_venda, ?) END) AS proxima,
+        COUNT(*) AS n
+      FROM cliente_vendas WHERE cliente_id = ? AND plataforma = ?`, prazo, prazo, prazo, prazo, cid, id);
+    const sacado = db.get('SELECT COALESCE(SUM(valor), 0) AS s FROM cliente_saques WHERE cliente_id = ? AND plataforma = ?', cid, id).s;
+    const estimado = id === 'mercadolivre' ? estimadoMl(cid) : null;
+    if (!v.n && !sacado && !estimado) continue;
+    const disponivel = estimado ? estimado.valor : r2(Math.max(0, v.liberado - sacado));
+    lojas.push({
+      plataforma: id, nome: LOJAS[id], moeda: p.moeda, minimo: p.minimo, prazo_dias: p.dias_liberacao, estimado,
+      disponivel, a_liberar: r2(v.a_liberar), recebido: r2(v.pago + sacado), proxima_liberacao: v.proxima,
+      pode_sacar: disponivel > 0 && disponivel >= p.minimo, falta: r2(Math.max(0, p.minimo - disponivel)),
+    });
+  }
+  const soma = (k, moeda) => r2(lojas.filter(l => l.moeda === moeda).reduce((a, l) => a + l[k], 0));
+  const totais = m => ({ disponivel: soma('disponivel', m), a_liberar: soma('a_liberar', m), recebido: soma('recebido', m) });
+  return { lojas, brl: totais('BRL'), usd: totais('USD') };
+}
+function registrarSaque(cid, b) {
+  if (!LOJAS[b?.plataforma]) throw fail('Escolha a loja.');
+  const v = ganhos.numero(b.valor);
+  if (!(v > 0) || v > 1e7) throw fail('Informe o valor sacado.');
+  db.run('INSERT INTO cliente_saques (cliente_id, plataforma, valor) VALUES (?, ?, ?)', cid, b.plataforma, r2(v));
+  return { ok: true };
+}
+const listarSaques = cid => db.all('SELECT id, plataforma, valor, criado_em FROM cliente_saques WHERE cliente_id = ? ORDER BY id DESC LIMIT 20', cid);
+function excluirSaque(cid, id) {
+  const r = db.run('DELETE FROM cliente_saques WHERE id = ? AND cliente_id = ?', Number(id), cid);
+  if (!r.changes) throw fail('Saque não encontrado.', 404);
+  return { ok: true };
+}
+
+// Lojas em que a pessoa tem link de afiliado e cujas vendas só chegam por planilha: avisa se faz tempo que não envia
+const LEMBRETE_DIAS = 7;
+function lembretePlanilha(cid) {
+  const s = clientes.config(cid);
+  const faltam = clientes.lojasSemAfiliado(s);
+  const out = [];
+  for (const [id, nome] of Object.entries(LOJAS)) {
+    if (faltam.includes(nome)) continue;
+    if (id === 'shopee' && s.shopee_app_id && s.shopee_app_secret) continue; // atualiza sozinha
+    const ult = db.get(`SELECT MAX(atualizado_em) AS em FROM cliente_vendas WHERE cliente_id = ? AND plataforma = ? AND origem = 'csv'`, cid, id).em;
+    const dias = ult ? Math.floor((Date.now() - new Date(`${String(ult).replace(' ', 'T')}Z`).getTime()) / 86400000) : null;
+    if (dias === null || dias >= LEMBRETE_DIAS) out.push({ plataforma: id, nome, dias });
+  }
+  return out;
 }
 
 function resumo(cid, dias = 30) {
@@ -80,6 +159,7 @@ function resumo(cid, dias = 30) {
   return {
     dias: d, ...t, ticket: t.pedidos ? t.vendido / t.pedidos : 0, por_loja: porLoja, top, serie, recentes,
     shopee_ligada: Boolean(s.shopee_app_id && s.shopee_app_secret), sync: estado(cid), lojas: LOJAS,
+    saldos: saldos(cid), saques: listarSaques(cid), lembrete: lembretePlanilha(cid),
   };
 }
 
@@ -146,4 +226,4 @@ function iniciar() {
   timer.unref?.();
 }
 
-module.exports = { registrar, resumo, previa, importar, sincronizar, sincronizarTodos, iniciar, LOJAS };
+module.exports = { saldos, salvarEstimadoMl, registrarSaque, excluirSaque, lembretePlanilha, registrar, resumo, previa, importar, sincronizar, sincronizarTodos, iniciar, LOJAS };

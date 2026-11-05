@@ -3209,3 +3209,20 @@ html:has(body.is-landing), html:has(.cli-login:not([hidden])) { background: #071
 .cli-barra-pilha i.erro, .cli-legenda i.erro { background: #64748b; }
 .cli-dash-grid { align-items: start; }
 .cli-dash-grid > .panel-card { margin-top: 0; }
+
+/* A receber, saques e lembrete da planilha */
+.ex-saldos { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 8px 0 14px; }
+.ex-saldos .cli-kpi { background: var(--brand-soft); border-color: transparent; }
+.ex-saldos .cli-kpi b { color: var(--brand-strong); }
+.ex-det { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.ex-det summary { font-weight: 700; cursor: pointer; }
+.ex-saque { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; margin: 10px 0; }
+.ex-passos { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 8px; font-size: 13.5px; }
+.ex-lembrete { display: block; width: 100%; padding: 11px 14px; border: 1px solid var(--gold); border-radius: 10px; background: var(--gold-soft); color: var(--ink); font: inherit; font-size: 13.5px; font-weight: 600; text-align: left; }
+button.ex-lembrete { cursor: pointer; }
+.ex-lembrete[hidden] { display: none; }
+#com-saques .ex-lin b { margin-left: auto; }
+@media (max-width: 720px) {
+  .ex-saldos { grid-template-columns: minmax(0, 1fr); }
+  .ex-saque { grid-template-columns: minmax(0, 1fr); }
+}

@@ -11,19 +11,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261266">
-<script src="/js/tema.js?v=20261266"></script>
-<script src="/js/app-nativo.js?v=20261266"></script>
-<script src="/js/dialogo.js?v=20261266"></script>
-<script src="/js/modelo-post.js?v=20261266"></script>
-<script src="/js/aceite-parceiro.js?v=20261266"></script>
-<script src="/js/capi-minerando.js?v=20261266" defer></script>
-<script src="/js/cadastro-auto.js?v=20261266" defer></script>
-<script src="/js/voltar.js?v=20261266" data-padrao="/" defer></script>
-<script src="/js/rodape-legal.js?v=20261266" defer></script>
-<script src="/js/instalar-app.js?v=20261266" defer></script>
-<script src="/js/cookies.js?v=20261266"></script>
-<script src="/js/seletor.js?v=20261266" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261267">
+<script src="/js/tema.js?v=20261267"></script>
+<script src="/js/app-nativo.js?v=20261267"></script>
+<script src="/js/dialogo.js?v=20261267"></script>
+<script src="/js/modelo-post.js?v=20261267"></script>
+<script src="/js/aceite-parceiro.js?v=20261267"></script>
+<script src="/js/capi-minerando.js?v=20261267" defer></script>
+<script src="/js/cadastro-auto.js?v=20261267" defer></script>
+<script src="/js/voltar.js?v=20261267" data-padrao="/" defer></script>
+<script src="/js/rodape-legal.js?v=20261267" defer></script>
+<script src="/js/instalar-app.js?v=20261267" defer></script>
+<script src="/js/cookies.js?v=20261267"></script>
+<script src="/js/seletor.js?v=20261267" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -92,6 +92,7 @@
 
     <!-- INÍCIO (dashboard) -->
     <div class="cli-tab" data-body="inicio">
+    <button class="ex-lembrete" type="button" id="cli-lembrete" hidden></button>
       <div class="cli-dash-head">
         <h2>Dashboard</h2>
         <div class="cli-periodo" id="cli-periodo" role="group" aria-label="Período">
@@ -323,6 +324,32 @@
           <button type="button" data-dias="90">90 dias</button>
         </div>
       </div>
+      <div class="ex-lembrete" id="com-lembrete" hidden></div>
+      <div class="panel-card">
+        <h3 class="cli-card-tit">A receber</h3>
+        <div class="cli-kpis ex-saldos" id="com-saldos"></div>
+        <div class="cli-table"><table><thead><tr><th>Loja</th><th>Disponível</th><th>A liberar</th><th>Próxima liberação</th><th>Saque</th></tr></thead><tbody id="com-saldo-lojas"></tbody></table></div>
+        <p class="cli-hint">É uma estimativa com os prazos e mínimos de cada programa. O valor que vale é o do portal da loja. Prazos e regras podem mudar.</p>
+        <details class="ex-det">
+          <summary>Já sacou? Registre aqui</summary>
+          <form id="com-saque-form" class="ex-saque">
+            <label class="field">Loja <select name="plataforma" id="com-saque-loja"></select></label>
+            <label class="field">Valor sacado <input name="valor" inputmode="decimal" placeholder="150,00" required></label>
+            <button class="btn btn-primary" type="submit">Registrar</button>
+          </form>
+          <div id="com-saques"></div>
+        </details>
+        <details class="ex-det">
+          <summary>Trazer o valor do Mercado Livre sozinho</summary>
+          <p class="cli-hint">A extensão do Ofertou! para o Chrome lê o "Ganho estimado" no seu painel de afiliado do Mercado Livre e traz para cá quando você abrir este painel. Ela não pede a sua senha.</p>
+          <p class="cli-hint" id="com-ext-status"></p>
+          <ol class="ex-passos">
+            <li><a class="btn btn-sm" href="/extensao/ofertou-comissao-ml.zip" download>Baixar a extensão (.zip)</a> e descompactar numa pasta.</li>
+            <li>No Chrome, abra <b>chrome://extensions</b>, ligue o <b>Modo do desenvolvedor</b> e use <b>Carregar sem compactação</b> nessa pasta.</li>
+            <li>Abra o seu painel de afiliado do Mercado Livre e depois volte aqui.</li>
+          </ol>
+        </details>
+      </div>
       <div class="cli-kpis" id="com-kpis"></div>
       <div class="panel-card"><h3 class="cli-card-tit">Comissão por dia</h3><div class="ex-barras" id="com-serie"></div></div>
       <div class="cli-grid2 ex-alto">
@@ -418,7 +445,7 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/cliente-extra.js?v=20261266" defer></script>
-<script src="/js/cliente.js?v=20261266" defer></script>
+<script src="/js/cliente-extra.js?v=20261267" defer></script>
+<script src="/js/cliente.js?v=20261267" defer></script>
 </body>
 </html>

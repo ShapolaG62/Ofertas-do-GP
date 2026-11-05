@@ -90,7 +90,7 @@ router.get('/api/cliente/painel', (req, res) => {
     const d = new Date(Date.now() - 3 * 3600000 - i * 86400000).toISOString().slice(0, 10);
     serie.push({ dia: d, ok: mapa[d]?.ok || 0, erro: mapa[d]?.erro || 0, lojas: porLoja[d] || {} });
   }
-  require('../cliente-ganhos'); // garante a tabela de vendas
+  const cg = require('../cliente-ganhos'); // garante a tabela de vendas
   const comissao = db.get(`SELECT COALESCE(SUM(comissao), 0) AS v FROM cliente_vendas
     WHERE cliente_id = ? AND status <> 'cancelada' AND date(data_venda) >= date('now', '-3 hours', ?)`, cid, desde).v;
   const s = clientes.config(cid);
@@ -102,7 +102,7 @@ router.get('/api/cliente/painel', (req, res) => {
     enviados: serie.reduce((a, d) => a + d.ok, 0), falhas: serie.reduce((a, d) => a + d.erro, 0),
     redes: require('../social').listarRedes(s), contingencia: Boolean(whatsapp.configReserva(s) && !whatsapp.configReserva(s).erro),
     grupos_whatsapp: whatsapp.gruposEscolhidos(s).length, fila: agenda.pendentes(cid), agenda: agenda.estado(cid),
-    cliques, comissao, ultimo_envio: ultimo, sem_afiliado: clientes.lojasSemAfiliado(s),
+    cliques, comissao, saldo: cg.saldos(cid).brl, lembrete_planilha: cg.lembretePlanilha(cid).map(l => l.nome), ultimo_envio: ultimo, sem_afiliado: clientes.lojasSemAfiliado(s),
   });
 });
 
@@ -116,6 +116,16 @@ router.post('/api/cliente/comissao/previa', (req, res) => {
 });
 router.post('/api/cliente/comissao/importar', (req, res) => {
   try { res.json(require('../cliente-ganhos').importar(req.cliente.id, req.body?.texto, req.body?.plataforma, req.body?.mapa)); } catch (err) { sendError(res, err); }
+});
+
+router.post('/api/cliente/comissao/ml-estimado', (req, res) => {
+  try { res.json(require('../cliente-ganhos').salvarEstimadoMl(req.cliente.id, req.body?.valor)); } catch (err) { sendError(res, err); }
+});
+router.post('/api/cliente/comissao/saque', (req, res) => {
+  try { res.json(require('../cliente-ganhos').registrarSaque(req.cliente.id, req.body)); } catch (err) { sendError(res, err); }
+});
+router.delete('/api/cliente/comissao/saque/:id', (req, res) => {
+  try { res.json(require('../cliente-ganhos').excluirSaque(req.cliente.id, req.params.id)); } catch (err) { sendError(res, err); }
 });
 
 // ── Monitor de membros ──

@@ -34,6 +34,7 @@
   const $ = s => raiz.querySelector(s);
   const texto = t => { $('.t').innerHTML = '<b>Ofertou!</b> '; $('.t').append(t); };
   $('.x').addEventListener('click', () => caixa.remove());
+  chrome.storage.local.get('soGanhoCliente').then(({ soGanhoCliente }) => { if (soGanhoCliente) caixa.remove(); }); // afiliado: só o ganho estimado
   $('.n').addEventListener('change', () => { $('.n').value = limitar($('.n').value); chrome.storage.local.set({ rolagens: Number($('.n').value) }); });
 
   // ── "Ganho estimado" do painel (vai para o cartão do Mercado Livre em Painel → Ganhos de afiliados) ──

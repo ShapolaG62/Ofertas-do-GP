@@ -111,10 +111,16 @@
 
   // ── Renderização ─────────────────────────────────────────────────────────
   // Marca da loja (public/images/lojas): a logo já traz o nome; as outras têm ícone ou ponto colorido e o nome escrito
-  const LOJAS_COM_LOGO = new Set(['mercadolivre', 'amazon', 'shopee', 'magalu', 'aliexpress', 'kabum']);
+  // Sem fundo: acompanham o tema; as de texto escuro têm uma segunda versão clara para o tema escuro
+  const LOJAS_COM_LOGO = { mercadolivre: 'webp', amazon: 'webp', shopee: 'svg', magalu: 'svg', aliexpress: 'webp', kabum: 'svg' };
+  const LOGO_COM_VERSAO_CLARA = new Set(['mercadolivre', 'amazon', 'kabum']);
   const LOJAS_COM_ICONE = new Set(['shein', 'temu']);
   const lojaMarca = (id, nome, cor) => {
-    if (LOJAS_COM_LOGO.has(id)) return `<img class="store-marca marca-${id}" src="/images/lojas/${id}.webp" alt="${esc(nome)}" title="${esc(nome)}" decoding="async">`;
+    const ext = LOJAS_COM_LOGO[id];
+    if (ext) {
+      const img = (arq, cl) => `<img class="store-marca marca-${id}${cl}" src="/images/lojas/${arq}.${ext}" alt="${esc(nome)}" title="${esc(nome)}" decoding="async">`;
+      return LOGO_COM_VERSAO_CLARA.has(id) ? img(id, ' tema-claro') + img(`${id}-escuro`, ' tema-escuro') : img(id, '');
+    }
     return `${LOJAS_COM_ICONE.has(id) ? `<img class="store-logo" src="/images/lojas/${id}.svg" alt="" width="18" height="18">` : `<span class="store-dot" style="background:${cor || '#999'}"></span>`}${esc(nome)}`;
   };
 

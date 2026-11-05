@@ -3062,15 +3062,25 @@ textarea.modelo-texto { font-family: inherit; font-size: 14px; line-height: 1.5;
   #filters-dialog .modal-head { touch-action: none; user-select: none; }
 }
 
-/* Logos das lojas: fundo branco para as de texto escuro aparecerem também no tema escuro */
-.store-marca { height: 22px; width: auto; padding: 2px 4px; box-sizing: border-box; flex: none; border-radius: 5px; background: #fff; display: inline-block; vertical-align: middle; }
-.marca-mercadolivre { height: 26px; padding-block: 1px; }
+/* Logos das lojas: sem fundo, acompanham o tema (a versão certa aparece conforme o tema) */
+.store-marca { height: 18px; width: auto; flex: none; display: inline-block; vertical-align: middle; }
+.marca-mercadolivre { height: 24px; }
+.marca-amazon { height: 20px; }
+.marca-shopee { height: 22px; }
+.marca-aliexpress { height: 16px; }
 .store-tab { align-items: center; }
-.v2 .card-store .store-marca { height: 20px; margin-left: -4px; }
-.v2 .card-store .marca-mercadolivre { height: 24px; }
-@media (max-width: 720px) {
-  .store-marca { height: 20px; }
-  .marca-mercadolivre { height: 24px; }
-  .v2 .card-store .store-marca { height: 18px; }
-  .v2 .card-store .marca-mercadolivre { height: 22px; }
+.tema-escuro { display: none; }
+:root[data-theme="dark"] .tema-claro { display: none; }
+:root[data-theme="dark"] .tema-escuro { display: inline-block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tema-claro { display: none; }
+  :root:not([data-theme="light"]) .tema-escuro { display: inline-block; }
 }
+/* Aba escolhida é verde: a logo fica branca para continuar visível */
+.store-tab[aria-pressed="true"] .store-marca { filter: brightness(0) invert(1); }
+/* Mesma altura de linha em todos os cartões, seja qual for a logo */
+.v2 .card-store .store-marca { margin-block: 3px; }
+.v2 .card-store .marca-mercadolivre { margin-block: 0; }
+.v2 .card-store .marca-amazon { margin-block: 2px; }
+.v2 .card-store .marca-shopee { margin-block: 1px; }
+.v2 .card-store .marca-aliexpress { margin-block: 4px; }

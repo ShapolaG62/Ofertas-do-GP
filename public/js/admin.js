@@ -499,10 +499,13 @@ async function loadDashboard() {
 }
 
 // Ícone da loja no painel
-const LOJAS_COM_LOGO = new Set(['mercadolivre', 'amazon', 'shopee', 'magalu', 'aliexpress', 'kabum']);
+const LOJAS_COM_LOGO = { mercadolivre: 'webp', amazon: 'webp', shopee: 'svg', magalu: 'svg', aliexpress: 'webp', kabum: 'svg' };
 const lojaLogo = (idOuNome, nome) => {
   const id = STORE_LIST.find(x => x.id === idOuNome || x.name === idOuNome)?.id || idOuNome;
-  return LOJAS_COM_LOGO.has(id) ? `<img class="store-marca marca-${id}" src="/images/lojas/${id}.webp" alt="${esc(nome)}" title="${esc(nome)}">` : esc(nome);
+  const ext = LOJAS_COM_LOGO[id];
+  if (!ext) return esc(nome);
+  const img = (arq, cl) => `<img class="store-marca marca-${id}${cl}" src="/images/lojas/${arq}.${ext}" alt="${esc(nome)}" title="${esc(nome)}">`;
+  return ['mercadolivre', 'amazon', 'kabum'].includes(id) ? img(id, ' tema-claro') + img(`${id}-escuro`, ' tema-escuro') : img(id, '');
 };
 
 // ── Painel / lojas ────────────────────────────────────────────────────────────

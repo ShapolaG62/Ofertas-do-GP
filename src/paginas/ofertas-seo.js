@@ -54,11 +54,20 @@ function resolver(partes) {
   return tipo ? { filtro: { cat, tipo }, nome: `${tipo} em ${NOMES[cat]}`, curto: tipo, caminho: `${base}/${b}`, cat, tipo } : null;
 }
 
+// Logo da loja, sem fundo; as de texto escuro têm também a versão para o tema escuro
+const LOGOS = { mercadolivre: 'webp', amazon: 'webp', shopee: 'svg', magalu: 'svg', aliexpress: 'webp', kabum: 'svg' };
+function marcaLoja(o) {
+  const ext = LOGOS[o.store_id], nome = h(LOJAS[o.store_id] || o.plataforma);
+  if (!ext) return nome;
+  const img = (arq, cl) => `<img class="store-marca marca-${o.store_id}${cl}" src="/images/lojas/${arq}.${ext}" alt="${nome}">`;
+  return ['mercadolivre', 'amazon', 'kabum'].includes(o.store_id) ? img(o.store_id, ' tema-claro') + img(`${o.store_id}-escuro`, ' tema-escuro') : img(o.store_id, '');
+}
+
 function cartao(o) {
   return `<a class="card" href="/oferta/${h(slugOferta(o))}" target="_blank" rel="noopener sponsored nofollow" data-id="${o.id}">
       <div class="card-media"><img src="/img/o/${o.id}.jpg" alt="" loading="lazy" decoding="async" width="300" height="300">
         <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span></div></div>
-      <div class="card-body"><div class="card-store">${['mercadolivre', 'amazon', 'shopee', 'magalu', 'aliexpress', 'kabum'].includes(o.store_id) ? `<img class="store-marca marca-${h(o.store_id)}" src="/images/lojas/${h(o.store_id)}.webp" alt="${h(LOJAS[o.store_id])}">` : h(LOJAS[o.store_id] || o.plataforma)}</div>
+      <div class="card-body"><div class="card-store">${marcaLoja(o)}</div>
         <h3 class="card-title">${h(o.produto)}</h3>
         <div class="card-prices"><div class="card-old num">R$ ${brl(o.preco_anterior)}</div><div class="card-price num"><small>R$</small>${brl(o.preco_atual)}</div></div>
         <span class="card-ver">Ver oferta</span>

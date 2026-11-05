@@ -448,17 +448,27 @@
     .side { top: 0; }
     .side .tab.active .count-badge { background: #fff; color: var(--green); }
   }
-  .store-marca { height: 22px; width: auto; padding: 2px 4px; box-sizing: border-box; border-radius: 5px; background: #fff; vertical-align: middle; flex: none; }
-  .marca-mercadolivre { height: 26px; padding-block: 1px; }
+  .store-marca { height: 18px; width: auto; vertical-align: middle; flex: none; }
+  .marca-mercadolivre { height: 24px; }
+  .marca-amazon { height: 21px; }
+  .marca-shopee { height: 22px; }
+  .marca-aliexpress { height: 16px; }
+  .tema-escuro { display: none; }
+  :root[data-theme="dark"] .tema-claro { display: none; }
+  :root[data-theme="dark"] .tema-escuro { display: inline-block; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .tema-claro { display: none; }
+    :root:not([data-theme="light"]) .tema-escuro { display: inline-block; }
+  }
   .db-loja-nome { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 </style>
-<script src="/js/tema.js?v=20261261"></script>
-<script src="/js/dialogo.js?v=20261261"></script>
-<script src="/js/modelo-post.js?v=20261261"></script>
-<script src="/js/avisos-entrada.js?v=20261261"></script>
-<script src="/js/capi-minerando.js?v=20261261" defer></script>
-<script src="/js/cadastro-auto.js?v=20261261" defer></script>
-<script src="/js/seletor.js?v=20261261" defer></script>
+<script src="/js/tema.js?v=20261262"></script>
+<script src="/js/dialogo.js?v=20261262"></script>
+<script src="/js/modelo-post.js?v=20261262"></script>
+<script src="/js/avisos-entrada.js?v=20261262"></script>
+<script src="/js/capi-minerando.js?v=20261262" defer></script>
+<script src="/js/cadastro-auto.js?v=20261262" defer></script>
+<script src="/js/seletor.js?v=20261262" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1789,6 +1799,6 @@
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261261"></script>
+<script src="/js/admin.js?v=20261262"></script>
 </body>
 </html>

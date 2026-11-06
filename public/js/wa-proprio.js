@@ -1,8 +1,8 @@
-// Painel → WhatsApp → API própria: QR code, mensagens recebidas, envio e chave da API.
+// Painéis do admin e do cliente → WhatsApp: QR code, conversas com foto e nome, envio, chave da API e aviso para outros programas.
 (function () {
   const el = id => document.getElementById(id);
   if (!el('wap-status')) return;
-  const BASE = '/api/admin/wa';
+  const BASE = el('wap-status').dataset.base;
   const FASES = {
     desligado: 'Desconectado',
     conectando: 'Abrindo a conexão…',
@@ -12,6 +12,8 @@
   };
   let chatAberto = null;
   let ultimoId = 0;
+  let todas = [];
+  let filtro = '';
 
   async function pedir(caminho, opcoes = {}) {
     const r = await fetch(BASE + caminho, {
@@ -24,7 +26,7 @@
     return dados;
   }
   const visivel = () => el('wap-status').offsetParent !== null && !document.hidden;
-  const nomeDe = c => c.nome || c.chat_nome || String(c.chat).split('@')[0];
+  const fotoDe = chat => `${BASE}/foto/${encodeURIComponent(chat)}`;
   const DESCRICAO = { imagem: '📷 Foto', video: '🎥 Vídeo', audio: '🎤 Áudio', documento: '📄 Documento', figurinha: 'Figurinha', contato: '👤 Contato', localizacao: '📍 Localização', enquete: '📊 Enquete' };
   const resumo = m => m.texto || DESCRICAO[m.tipo] || '';
   const hora = sql => new Date(`${String(sql).replace(' ', 'T')}Z`).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -37,7 +39,7 @@
 
   // ── Conexão ──
   function mostrarStatus(s) {
-    const partes = [FASES[s.fase] || s.fase];
+    const partes = [FASES[s.fase] || s.fase || 'Desconectado'];
     if (s.conectado && s.numero) partes[0] += `: +${s.numero}${s.nome ? ` (${s.nome})` : ''}`;
     if (s.erro) partes.push(s.erro);
     el('wap-status').textContent = partes.join('. ');
@@ -58,7 +60,7 @@
     try { mostrarStatus(await pedir('/conectar', { method: 'POST' })); } catch (err) { el('wap-status').textContent = err.message; el('wap-conectar').disabled = false; }
   });
   el('wap-desconectar').addEventListener('click', async () => {
-    const certo = await OfertouUI.confirmar('Desconectar este WhatsApp do servidor? A sessão e as mensagens guardadas aqui serão apagadas, e o envio automático para até você conectar de novo.');
+    const certo = await OfertouUI.confirmar('Desconectar este WhatsApp do servidor? A sessão, as fotos e as mensagens guardadas aqui serão apagadas, e o envio automático para até você conectar de novo.');
     if (!certo) return;
     try {
       mostrarStatus(await pedir('/desconectar', { method: 'POST' }));
@@ -72,25 +74,42 @@
   });
 
   // ── Conversas e mensagens ──
-  async function carregarConversas() {
-    if (!visivel()) return;
-    const { conversas } = await pedir('/conversas');
+  function desenharConversas() {
     const lista = el('wap-conversas');
-    if (!conversas.length) { lista.innerHTML = '<span class="hint">Nenhuma mensagem ainda.</span>'; return; }
-    lista.replaceChildren(...conversas.map(c => {
+    const busca = el('wap-busca').value.trim().toLowerCase();
+    const itens = todas.filter(c => (!filtro || (filtro === 'grupos') === c.grupo) && (!busca || String(c.nome).toLowerCase().includes(busca)));
+    if (!itens.length) { lista.innerHTML = `<span class="hint">${todas.length ? 'Nenhuma conversa encontrada.' : 'Nenhuma conversa ainda.'}</span>`; return; }
+    lista.replaceChildren(...itens.map(c => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'wap-conversa';
       b.setAttribute('aria-current', String(c.chat === chatAberto?.chat));
+      b.innerHTML = OfertouTemas.avatar(c.nome, fotoDe(c.chat));
+      const texto = document.createElement('span');
+      texto.className = 'wap-conversa-texto';
       const nome = document.createElement('b');
-      nome.textContent = nomeDe(c);
+      nome.textContent = c.nome;
       const ultima = document.createElement('small');
-      ultima.textContent = `${c.de_mim ? 'Você: ' : ''}${resumo(c)}`;
-      b.append(nome, ultima);
+      ultima.textContent = c.id ? `${c.de_mim ? 'Você: ' : ''}${resumo(c)}` : (c.grupo ? 'Grupo' : 'Sem mensagens novas');
+      texto.append(nome, ultima);
+      b.append(texto);
       b.addEventListener('click', () => abrirChat(c));
       return b;
     }));
   }
+  async function carregarConversas() {
+    if (!visivel()) return;
+    const { conversas } = await pedir('/conversas');
+    if (JSON.stringify(conversas) === JSON.stringify(todas)) return; // não refaz a lista (nem as fotos) à toa
+    todas = conversas;
+    desenharConversas();
+  }
+  el('wap-busca').addEventListener('input', desenharConversas);
+  document.querySelectorAll('[data-wap-filtro]').forEach(b => b.addEventListener('click', () => {
+    filtro = b.dataset.wapFiltro;
+    document.querySelectorAll('[data-wap-filtro]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    desenharConversas();
+  }));
   function bolha(m) {
     const d = document.createElement('div');
     d.className = `wap-bolha${m.de_mim ? ' eu' : ''}`;
@@ -111,14 +130,14 @@
   async function abrirChat(c) {
     chatAberto = c;
     ultimoId = 0;
-    el('wap-chat-nome').textContent = nomeDe(c);
+    el('wap-chat-nome').textContent = c.nome;
     el('wap-mensagens').replaceChildren();
     el('wap-form').hidden = false;
     aviso('');
+    desenharConversas();
     try {
       const { mensagens } = await pedir(`/mensagens?chat=${encodeURIComponent(c.chat)}&limite=100`);
       if (chatAberto === c) acrescentar(mensagens);
-      await carregarConversas();
     } catch (err) { aviso(err.message); }
   }
   async function buscarNovas() {
@@ -152,6 +171,8 @@
     el('wap-chave-estado').textContent = c.existe ? `Há uma chave ativa, criada em ${hora(c.criada_em)}.` : 'Nenhuma chave criada.';
     el('wap-chave-gerar').textContent = c.existe ? 'Trocar chave' : 'Gerar chave';
     el('wap-chave-apagar').hidden = !c.existe;
+    const w = await pedir('/webhook');
+    if (document.activeElement !== el('wap-webhook-url')) el('wap-webhook-url').value = w.url || '';
   }
   el('wap-chave-gerar').addEventListener('click', async () => {
     const trocar = el('wap-chave-gerar').textContent === 'Trocar chave';
@@ -171,17 +192,20 @@
       await atualizarChave();
     } catch (err) { el('wap-chave-estado').textContent = err.message; }
   });
+  el('wap-webhook-salvar').addEventListener('click', async () => {
+    const saida = el('wap-webhook-msg');
+    try {
+      const r = await pedir('/webhook', { method: 'PUT', body: { url: el('wap-webhook-url').value.trim() } });
+      saida.textContent = r.segredo ? `Salvo. Use este segredo para conferir a assinatura (ele não aparece de novo): ${r.segredo}` : 'Aviso desligado.';
+    } catch (err) { saida.textContent = err.message; }
+  });
 
   // ── Atualização: QR code e mensagens enquanto a parte estiver na tela ──
-  function ciclo() {
-    atualizarStatus();
-    buscarNovas();
-  }
-  el('wa-provider').addEventListener('change', () => setTimeout(() => { ciclo(); atualizarChave().catch(() => {}); }, 0));
   let chaveLida = false;
   setInterval(() => {
     if (!visivel()) return;
-    ciclo();
+    atualizarStatus();
+    buscarNovas();
     if (!chaveLida) { chaveLida = true; atualizarChave().catch(() => { chaveLida = false; }); }
   }, 3000);
 })();

@@ -69,19 +69,7 @@ app.use((req, res, next) => {
 // Compressão (brotli/gzip) de páginas, CSS, JS e JSON. A lista de ofertas já sai comprimida pela própria rota.
 app.use(require('compression')({ threshold: 1024 }));
 
-// Grupo de automação: o WhatsApp (Z-API ou Evolution API) avisa cada mensagem recebida (src/grupo-automacao.js).
-// Antes do leitor de JSON geral porque a mensagem pode trazer miniaturas de imagem (passa de 100 KB).
-app.post('/api/whatsapp/webhook/:segredo', express.json({ limit: '5mb' }), (req, res) => {
-  const ga = require('./src/grupo-automacao');
-  const dono = ga.donoDoSegredo(req.params.segredo);
-  if (!dono) return res.status(404).json({ error: 'Endereço inválido.' });
-  res.json({ ok: true }); // responde na hora; o processamento segue em segundo plano
-  try { require('./src/membros-grupo').receber(dono.cid, req.body); } catch (err) { console.error('[MEMBROS]', err.message); }
-  const m = ga.lerWebhook(req.body);
-  if (m) ga.processar({ cid: dono.cid, s: ga.configDe(dono.cid) }, m).catch(err => console.error('[GRUPO AUTOMAÇÃO]', err.message));
-});
-
-app.use(require('./src/routes/whatsapp-api')); // API própria de WhatsApp (conexão pelo QR code)
+app.use(require('./src/routes/whatsapp-api')); // WhatsApp: API própria (conexão pelo QR code)
 
 app.use(['/api/cliente/comissao/previa', '/api/cliente/comissao/importar'], express.json({ limit: '12mb' })); // planilha de vendas
 app.use(express.json({ limit: '100kb' }));

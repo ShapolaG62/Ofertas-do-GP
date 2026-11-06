@@ -129,12 +129,13 @@ test('login em duas etapas nas duas portas de entrada', async () => {
 });
 
 test('API própria de WhatsApp: sem login ou sem a chave, nada abre', async () => {
-  for (const p of ['/api/admin/wa/status', '/api/admin/wa/conversas', '/api/admin/wa/chave', '/api/wa/status', '/api/wa/mensagens', '/api/wa/grupos']) {
+  for (const p of ['/api/admin/wa/status', '/api/admin/wa/conversas', '/api/admin/wa/chave', '/api/admin/wa/grupos', '/api/admin/wa/foto/1@g.us', '/api/cliente/wa/status', '/api/cliente/wa/conversas', '/api/wa/status', '/api/wa/mensagens', '/api/wa/grupos', '/api/wa/ofertas', '/api/wa/fila', '/api/wa/resultados']) {
     assert.equal((await pede(p)).status, 401, p);
   }
-  for (const p of ['/api/admin/wa/conectar', '/api/admin/wa/desconectar', '/api/admin/wa/enviar', '/api/wa/enviar', '/api/admin/wa/chave']) {
+  for (const p of ['/api/admin/wa/conectar', '/api/admin/wa/desconectar', '/api/admin/wa/enviar', '/api/cliente/wa/conectar', '/api/wa/enviar', '/api/wa/postar', '/api/wa/fila', '/api/admin/wa/chave']) {
     assert.equal((await json(p, { para: '120363000000000001@g.us', texto: 'x' })).status, 401, p);
   }
   assert.equal((await pede('/api/wa/status', { headers: { Authorization: 'Bearer chave-errada' } })).status, 401);
   assert.equal((await json('/api/wa/conectar', {})).status, 401, 'a chave não conecta o número');
+  assert.equal((await json('/api/whatsapp/webhook/qualquer', {})).status, 404, 'o endereço de aviso da Z-API e da Evolution saiu');
 });

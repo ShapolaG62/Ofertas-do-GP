@@ -12,6 +12,8 @@
   const SEL_KEY = 'gp_postagens';
   const TXT_KEY = 'gp_postagens_textos';
   const NET_KEY = 'gp_postagens_redes';
+  const GRUPOS_KEY = 'gp_postagens_grupos';
+  const MODO_KEY = 'gp_postagens_modo';
   const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem armazenamento */ } };
 
@@ -82,7 +84,81 @@
   }
   $('#net-list').addEventListener('change', () => {
     save(NET_KEY, [...document.querySelectorAll('#net-list input:checked')].map(i => i.value));
+    $('#wa-destinos').hidden = !usaWhatsapp();
+    atualizarDestinosDosCards();
   });
+
+  // ── Grupos do WhatsApp: você escolhe os produtos e depois os grupos ──
+  let GRUPOS = [];
+  let TEMAS = [];
+  let marcados = new Set(load(GRUPOS_KEY, []));
+  let porTipo = load(MODO_KEY, 'tipo') !== 'todos';
+  const usaWhatsapp = () => Boolean(document.querySelector('#net-list input[value="whatsapp"]:checked'));
+  // Categorias que o grupo recebe: as salvas no painel ou o tipo que o nome sugere. Vazio = todas.
+  const categoriasDoGrupo = g => (g.categorias?.length ? g.categorias : (g.sugestao || []).flatMap(id => TEMAS.find(t => t.id === id)?.categorias || []));
+  const destinosDe = o => GRUPOS.filter(g => marcados.has(g.id)).filter(g => {
+    if (!porTipo) return true;
+    const c = categoriasDoGrupo(g);
+    return !c.length || c.includes(o.categoria);
+  });
+  const nomesTemas = g => {
+    const c = categoriasDoGrupo(g);
+    return c.length ? TEMAS.filter(t => t.categorias.some(x => c.includes(x))).map(t => `${t.icone} ${t.nome}`).join(', ') : 'Recebe todas as ofertas';
+  };
+  function desenharGrupos(d) {
+    const caixa = $('#wa-destinos');
+    caixa.hidden = !usaWhatsapp();
+    $('#wa-destinos-info').innerHTML = d?.erro ? esc(d.erro)
+      : `${GRUPOS.length ? 'Só os grupos que este número criou e administra.' : 'Nenhum grupo criado e administrado por este número.'} ${d?.ocultos ? esc(window.OfertouTemas.avisoOcultos(d.ocultos)) : ''}`;
+    $('#wa-destinos-lista').innerHTML = GRUPOS.map(g => `<label class="wa-destino">
+      <input type="checkbox" data-destino="${esc(g.id)}" ${marcados.has(g.id) ? 'checked' : ''}>
+      ${window.OfertouTemas.avatar(g.nome, g.foto)}
+      <span class="wa-grupo-nome"><b>${esc(g.nome)}</b><small>${esc(nomesTemas(g))}${g.membros ? ` · ${Number(g.membros).toLocaleString('pt-BR')} pessoas` : ''}</small></span>
+    </label>`).join('');
+    document.querySelectorAll('[data-wa-modo]').forEach(b => {
+      const ativo = (b.dataset.waModo === 'tipo') === porTipo;
+      b.setAttribute('aria-checked', String(ativo)); b.setAttribute('aria-pressed', String(ativo));
+    });
+  }
+  // Em cada produto: de que tipo ele é e para quais grupos vai
+  function atualizarDestinosDosCards() {
+    for (const o of OFFERS) {
+      const el = document.querySelector(`[data-vai="${o.id}"]`);
+      if (!el) continue;
+      if (!usaWhatsapp()) { el.hidden = true; continue; }
+      const d = destinosDe(o);
+      el.hidden = false;
+      el.classList.toggle('sem-grupo', !d.length);
+      el.textContent = d.length ? `Vai para: ${d.map(g => g.nome).join(', ')}` : 'Nenhum grupo marcado recebe este tipo de produto.';
+    }
+  }
+  function salvarMarcados() { save(GRUPOS_KEY, [...marcados]); atualizarDestinosDosCards(); }
+  $('#wa-destinos-lista').addEventListener('change', e => {
+    const c = e.target.closest('[data-destino]');
+    if (!c) return;
+    c.checked ? marcados.add(c.dataset.destino) : marcados.delete(c.dataset.destino);
+    salvarMarcados();
+  });
+  $('#wa-marcar').addEventListener('click', () => { marcados = new Set(GRUPOS.map(g => g.id)); desenharGrupos(); salvarMarcados(); });
+  $('#wa-desmarcar').addEventListener('click', () => { marcados = new Set(); desenharGrupos(); salvarMarcados(); });
+  $('#wa-modo').addEventListener('click', e => {
+    const b = e.target.closest('[data-wa-modo]');
+    if (!b) return;
+    porTipo = b.dataset.waModo === 'tipo';
+    save(MODO_KEY, b.dataset.waModo);
+    desenharGrupos();
+    atualizarDestinosDosCards();
+  });
+  async function carregarGrupos() {
+    const d = await fetch('/api/postagens/meus-grupos').then(r => r.json()).catch(() => ({ erro: 'Sem conexão.', grupos: [], temas: [] }));
+    GRUPOS = d.grupos || [];
+    TEMAS = d.temas || [];
+    const ids = new Set(GRUPOS.map(g => g.id));
+    const guardados = [...marcados].filter(id => ids.has(id));
+    marcados = new Set(guardados.length ? guardados : GRUPOS.filter(g => g.salvo).map(g => g.id)); // começa pelos grupos salvos no painel
+    desenharGrupos(d);
+    atualizarDestinosDosCards();
+  }
 
   // ── Lista de produtos ──────────────────────────────────────────────────────
   // Foto de cada produto já baixada como arquivo, para o botão WhatsApp compartilhar foto + legenda na hora do clique
@@ -123,6 +199,8 @@
           <div class="post-card-info">
             <strong>${esc(o.produto)}</strong>
             <span><s>R$ ${brl(o.preco_anterior)}</s> <b>R$ ${brl(o.preco_atual)}</b> · -${Math.round(o.desconto_pct)}% · ${esc(STORES[o.store_id] || o.plataforma)}</span>
+            <span class="post-tipo">${esc(o.tema?.icone || '')} ${esc(o.tema?.nome || '')}</span>
+            <span class="post-vai" data-vai="${o.id}" hidden></span>
             ${posted.length ? `<span class="post-done">Já postado: ${posted.join(' · ')}</span>` : ''}
           </div>
           <label class="post-include" title="Incluir na postagem automática">
@@ -141,6 +219,7 @@
         <div class="post-status" data-status="${o.id}"></div>
       </article>`;
     }).join('');
+    atualizarDestinosDosCards();
   }
 
   // Foto do produto em PNG (único formato de imagem que a área de transferência aceita)
@@ -258,12 +337,15 @@
     const list = OFFERS.filter(o => !excluded.has(o.id));
     if (!redes.length) return toast('Marque pelo menos uma rede configurada.');
     if (!list.length) return toast('Nenhum produto incluído.');
+    const comGrupos = redes.includes('whatsapp');
+    if (comGrupos && !marcados.size) return toast('Marque pelo menos um grupo do WhatsApp.');
+    const gruposEnvio = comGrupos ? [...marcados] : [];
 
     // Primeiro clique pede confirmação; o segundo publica.
     const btn = $('#auto-post');
     if (!btn.dataset.confirm) {
       btn.dataset.confirm = '1';
-      btn.textContent = `Confirmar: ${list.length} produto${list.length === 1 ? '' : 's'} em ${redes.map(r => REDES.find(x => x.id === r).nome).join(', ')}`;
+      btn.textContent = `Confirmar: ${list.length} produto${list.length === 1 ? '' : 's'} em ${redes.map(r => REDES.find(x => x.id === r).nome).join(', ')}${comGrupos ? ` (${gruposEnvio.length} grupo${gruposEnvio.length === 1 ? '' : 's'})` : ''}`;
       clearTimeout(confirmTimer);
       confirmTimer = setTimeout(() => { delete btn.dataset.confirm; btn.textContent = 'Postar automaticamente'; }, 6000);
       return;
@@ -283,11 +365,16 @@
       const o = list[i];
       prog.textContent = `Publicando ${i + 1} de ${list.length}: ${o.produto.slice(0, 60)}…`;
       const st = document.querySelector(`[data-status="${o.id}"]`);
+      // Sem grupo do tipo dele e sem outra rede: nada a publicar neste produto
+      if (comGrupos && redes.length === 1 && !destinosDe(o).length) {
+        if (st) st.innerHTML = '<span class="post-fail">Pulado: nenhum grupo marcado recebe este tipo de produto.</span>';
+        continue;
+      }
       if (st) st.innerHTML = '<span class="post-pending">Publicando…</span>';
       try {
         const res = await fetch('/api/postagens/publicar', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ offer_id: o.id, redes, texto: textOf(o) }),
+          body: JSON.stringify({ offer_id: o.id, redes, texto: textOf(o), ...(comGrupos ? { grupos: gruposEnvio, por_tipo: porTipo } : {}) }),
         });
         const d = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(d.error || `Erro ${res.status}`);
@@ -325,7 +412,7 @@
     try {
       const res = await fetch('/api/postagens/fila', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ itens: list.map(o => ({ offer_id: o.id, texto: textOf(o) })) }),
+        body: JSON.stringify({ itens: list.map(o => ({ offer_id: o.id, texto: textOf(o) })), ...(usaWhatsapp() && marcados.size ? { grupos: [...marcados], por_tipo: porTipo } : {}) }),
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || `Erro ${res.status}`);
@@ -363,6 +450,7 @@
       $('#painel-cliente').hidden = !info.cliente;
       WA_INTERVALO = Math.max(20, Number(info.whatsapp_intervalo_s) || 90);
       renderNets(info);
+      carregarGrupos();
       const ids = selection();
       const rows = ids.length ? await fetch(`/api/postagens/ofertas?ids=${ids.join(',')}`).then(r => r.json()) : [];
       const byId = new Map(rows.map(o => [o.id, o]));

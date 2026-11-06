@@ -2,10 +2,9 @@
 // das postagens. Quem está no grupo manda um link (ou encaminha a oferta de outro grupo) e a Capi posta nos grupos de
 // envio, com o seu link de afiliado e o seu modelo de mensagem. Comandos: ajuda, preview, converter, fila, cupom,
 // envio (comunicado), status, pausar e ligar.
-// O WhatsApp avisa o site de cada mensagem pelo webhook da Z-API ou da Evolution API (POST /api/whatsapp/webhook/<segredo>).
+// As mensagens chegam direto pela API própria (src/whatsapp-proprio.js).
 // Vale para o site (admin) e para cada cliente da ferramenta, cada um com o próprio grupo, segredo e configuração.
 const crypto = require('crypto');
-const axios = require('axios');
 const db = require('./db');
 const settings = require('./settings');
 const whatsapp = require('./whatsapp');
@@ -14,52 +13,7 @@ const semAcento = s => String(s || '').toLowerCase().normalize('NFD').replace(/[
 const soDigitos = v => String(v || '').replace(/@.*$/, '').replace(/-group$/, '').replace(/\D/g, '');
 const log = m => console.log(`[GRUPO AUTOMAÇÃO] ${m}`);
 
-// ── Dono do webhook (site ou cliente) pelo segredo do endereço ──────────────
-function segredoDe(cid = null) {
-  const atual = cid
-    ? db.get(`SELECT value FROM cliente_config WHERE cliente_id = ? AND key = 'wa_webhook_segredo'`, cid)?.value
-    : settings.get('wa_webhook_segredo');
-  return atual || novoSegredo(cid);
-}
-function novoSegredo(cid = null) {
-  const s = crypto.randomBytes(18).toString('hex');
-  if (cid) db.run(`INSERT INTO cliente_config (cliente_id, key, value) VALUES (?, 'wa_webhook_segredo', ?)
-                   ON CONFLICT(cliente_id, key) DO UPDATE SET value = excluded.value`, cid, s);
-  else settings.set('wa_webhook_segredo', s);
-  return s;
-}
-function donoDoSegredo(segredo) {
-  const s = String(segredo || '');
-  if (s.length < 20) return null;
-  const site = settings.get('wa_webhook_segredo');
-  if (site && site.length === s.length && crypto.timingSafeEqual(Buffer.from(site), Buffer.from(s))) return { cid: null };
-  const c = db.get(`SELECT cliente_id FROM cliente_config WHERE key = 'wa_webhook_segredo' AND value = ?`, s);
-  if (!c) return null;
-  const ok = db.get(`SELECT 1 FROM clientes WHERE id = ? AND status = 'ativo' AND validade >= datetime('now')`, c.cliente_id);
-  return ok ? { cid: c.cliente_id } : null;
-}
 const configDe = cid => (cid ? require('./clientes').config(cid) : settings.getAll());
-const baseSite = () => String(settings.get('site_url') || '').trim().replace(/\/+$/, '');
-const enderecoWebhook = (cid = null) => `${baseSite() || 'https://SEU-SITE'}/api/whatsapp/webhook/${segredoDe(cid)}`;
-
-// ── Mensagem recebida (Z-API ou Evolution) → { grupo, texto, deMim, autor } ──
-function lerWebhook(b) {
-  if (!b || typeof b !== 'object') return null;
-  // Evolution API (v1 e v2): evento messages.upsert
-  if (b.data && (b.event || '').toLowerCase().replace('_', '.').includes('messages.upsert')) {
-    const d = Array.isArray(b.data) ? b.data[0] : b.data;
-    const m = d?.message || {};
-    const texto = m.conversation || m.extendedTextMessage?.text || m.imageMessage?.caption || m.videoMessage?.caption || '';
-    return { grupo: d?.key?.remoteJid || '', texto, deMim: Boolean(d?.key?.fromMe), autor: d?.pushName || '' };
-  }
-  // Z-API: "ao receber"
-  if ('phone' in b && ('text' in b || 'image' in b || 'isGroup' in b)) {
-    const texto = b.text?.message || b.image?.caption || b.video?.caption || '';
-    return { grupo: b.isGroup ? String(b.phone) : '', texto, deMim: Boolean(b.fromMe), autor: b.senderName || b.chatName || '' };
-  }
-  return null;
-}
-
 // ── Comandos ────────────────────────────────────────────────────────────────
 const AJUDA = `🦫 *Capi · grupo de automação*
 Mande aqui e eu cuido do resto:
@@ -176,26 +130,4 @@ async function processar({ cid, s }, m) {
   }
 }
 
-// ── Liga o webhook no serviço do WhatsApp (Z-API ou Evolution) ──────────────
-async function ativarWebhook(cid = null) {
-  const s = configDe(cid);
-  const c = whatsapp.config(s);
-  if (c.erro) throw new Error(c.erro);
-  if (c.tipo === 'proprio') throw new Error('Com a API própria não precisa ativar: as mensagens já chegam direto ao site.');
-  if (!/^https:\/\//i.test(baseSite())) throw new Error('Preencha o "Endereço público do site" (https://…) em Painel → Site antes de ativar.');
-  const url = enderecoWebhook(cid);
-  if (c.tipo === 'zapi') {
-    await axios.put(`${c.base}/update-webhook-received`, { value: url }, { headers: c.headers, timeout: 20000 });
-    return url;
-  }
-  const eventos = ['MESSAGES_UPSERT', 'GROUP_PARTICIPANTS_UPDATE']; // mensagens e entradas/saídas (src/membros-grupo.js)
-  const v2 = { webhook: { enabled: true, url, byEvents: false, base64: false, events: eventos } };
-  try { await axios.post(`${c.base}/webhook/set/${c.instancia}`, v2, { headers: c.headers, timeout: 20000 }); }
-  catch (err) {
-    if (err.response?.status !== 400) throw err;
-    await axios.post(`${c.base}/webhook/set/${c.instancia}`, { url, enabled: true, events: eventos }, { headers: c.headers, timeout: 20000 });
-  }
-  return url;
-}
-
-module.exports = { lerWebhook, processar, donoDoSegredo, configDe, enderecoWebhook, novoSegredo, segredoDe, ativarWebhook, lerOfertaDoTexto, AJUDA };
+module.exports = { processar, configDe, lerOfertaDoTexto, AJUDA };

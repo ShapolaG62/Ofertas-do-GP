@@ -1,8 +1,53 @@
 /* Temas dos grupos de WhatsApp e resultado das postagens (painéis do admin e do cliente) */
-/* Grupos de WhatsApp por tema */
-.wa-grupo-linha { display: grid; gap: 4px; padding: 6px 0; border-bottom: 1px solid var(--line, var(--border)); min-width: 0; }
-.wa-temas summary { cursor: pointer; font-size: 13px; color: var(--ink-2, var(--muted)); min-height: 28px; overflow-wrap: anywhere; }
-.wa-temas-lista { display: grid; gap: 4px; padding: 6px 0 4px 8px; }
+/* Grupos de WhatsApp e tipos de produto */
+.wa-grupo-linha { display: grid; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line, var(--border)); min-width: 0; }
+.wa-grupo-topo, .wa-destino { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 44px; cursor: pointer; }
+.wa-grupo-topo input, .wa-destino input { flex: none; width: 20px; height: 20px; margin: 0; }
+.wa-grupo-nome { min-width: 0; display: grid; }
+.wa-grupo-nome b { overflow-wrap: anywhere; font-weight: 600; }
+.wa-grupo-nome small { color: var(--ink-2, var(--muted)); font-size: 12.5px; }
+.wa-avatar { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--ink-2, var(--muted)); background: var(--line, var(--border)); }
+.wa-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.wa-chips, .wap-filtros { display: flex; flex-wrap: wrap; gap: 6px; }
+.wa-chip { min-height: 38px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line, var(--border)); background: transparent; color: var(--ink, var(--text)); font: inherit; font-size: 13.5px; cursor: pointer; }
+.wa-chip[aria-pressed="true"] { border-color: var(--brand, var(--green)); background: var(--brand-soft, var(--green-soft)); font-weight: 600; }
+.wa-destinos { margin: 14px 0; padding-top: 12px; border-top: 1px solid var(--line, var(--border)); }
+.wa-destinos h3 { margin: 0 0 6px; font-size: 16px; }
+.wa-destinos[hidden] { display: none; }
+.wa-destinos-lista { display: grid; gap: 4px; margin: 10px 0; max-height: 340px; overflow: auto; }
+.post-tipo { font-size: 13px; font-weight: 600; }
+.post-vai { font-size: 13px; color: var(--ink-2, var(--muted)); overflow-wrap: anywhere; }
+.post-vai.sem-grupo { color: var(--danger, var(--red, #c2341f)); }
+/* Conexão e conversas do WhatsApp */
+.wa-proprio [hidden] { display: none !important; }
+.wap-status { font-weight: 600; margin: 8px 0; overflow-wrap: anywhere; }
+.wap-qr { display: block; background: #fff; border-radius: 12px; padding: 8px; max-width: 100%; height: auto; }
+.wap-busca { width: 100%; min-height: 44px; box-sizing: border-box; flex: 1; min-width: 0; }
+.wap-filtros { margin: 8px 0; }
+.wap-caixa { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.wap-conversas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; align-content: start; max-height: 280px; overflow: auto; }
+.wap-conversa { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; text-align: left; padding: 6px 10px; border: 1px solid var(--line, var(--border)); border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.wap-conversa[aria-current="true"] { border-color: var(--brand, var(--green)); border-width: 2px; }
+.wap-conversa-texto { min-width: 0; flex: 1; }
+.wap-conversa b, .wap-conversa small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wap-chat { min-width: 0; }
+.wap-chat h3 { margin-top: 0; overflow-wrap: anywhere; }
+.wap-mensagens { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow: auto; margin-bottom: 10px; }
+.wap-bolha { align-self: flex-start; max-width: 85%; padding: 7px 10px; border: 1px solid var(--line, var(--border)); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.wap-bolha.eu { align-self: flex-end; background: rgba(37, 211, 102, .14); }
+.wap-bolha small { display: block; opacity: .7; font-size: 12px; }
+.wap-form { display: flex; gap: 8px; align-items: flex-end; }
+.wap-form textarea { flex: 1; min-width: 0; min-height: 64px; height: 64px; }
+.wap-form button { min-height: 44px; }
+.wap-chave { font-family: monospace; overflow-wrap: anywhere; padding: 8px 10px; border: 1px solid var(--line, var(--border)); border-radius: 10px; }
+.wap-chave-msg { overflow-wrap: anywhere; }
+.wap-detalhes { margin-top: 12px; }
+.wap-detalhes summary { cursor: pointer; min-height: 32px; }
+.wap-doc { font-size: 13px; overflow-x: auto; padding: 10px; margin: 8px 0 0; border: 1px solid var(--line, var(--border)); border-radius: 10px; }
+@media (min-width: 760px) {
+  .wap-caixa { grid-template-columns: 300px minmax(0, 1fr); }
+  .wap-conversas { max-height: 440px; }
+}
 /* Resultado das postagens */
 .er-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .er-cab h2 { margin: 0; }

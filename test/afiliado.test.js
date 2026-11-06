@@ -59,14 +59,13 @@ test('avisos do WhatsApp: só contagens, só dos grupos de envio', () => {
   clientes.salvarConfig(A, { whatsapp_groups: [{ id: '120363@g.us', nome: 'Grupo 1' }] });
   assert.deepEqual(membros.lerEvento({ event: 'group-participants.update', data: { id: '120363@g.us', action: 'add', participants: ['551199@s', '551188@s'] } }), { grupo: '120363', entradas: 2, saidas: 0 });
   assert.deepEqual(membros.lerEvento({ event: 'GROUP_PARTICIPANTS_UPDATE', data: { id: '120363@g.us', action: 'remove', participants: ['551199@s'] } }), { grupo: '120363', entradas: 0, saidas: 1 });
-  assert.deepEqual(membros.lerEvento({ notification: 'GROUP_PARTICIPANT_LEAVE', phone: '120363-group', notificationParameters: ['5511'] }), { grupo: '120363', entradas: 0, saidas: 1 });
   assert.equal(membros.lerEvento({ event: 'group-participants.update', data: { id: '1@g.us', action: 'promote', participants: ['x'] } }), null);
   assert.equal(membros.lerEvento({ text: { message: 'oi' } }), null);
 
   assert.equal(membros.receber(A, { event: 'group-participants.update', data: { id: '120363@g.us', action: 'add', participants: ['551199@s', '551188@s'] } }), true);
-  assert.equal(membros.receber(A, { notification: 'GROUP_PARTICIPANT_REMOVE', phone: '120363-group', notificationParameters: ['5511'] }), true);
+  assert.equal(membros.receber(A, { event: 'group-participants.update', data: { id: '120363@g.us', action: 'remove', participants: ['5511'] } }), true);
   assert.equal(membros.receber(A, { event: 'group-participants.update', data: { id: '999@g.us', action: 'add', participants: ['x'] } }), false, 'grupo que não é de envio não conta');
-  assert.equal(membros.receber(B, { notification: 'GROUP_PARTICIPANT_ADD', phone: '120363-group' }), false, 'o grupo é de outro cliente');
+  assert.equal(membros.receber(B, { event: 'group-participants.update', data: { id: '120363@g.us', action: 'add', participants: ['5511'] } }), false, 'o grupo é de outro cliente');
   const r = membros.resumo(A, 7);
   assert.deepEqual([r.entradas, r.saidas], [2, 1]);
   assert.equal(r.grupos[0].nome, 'Grupo 1');

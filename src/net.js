@@ -71,6 +71,12 @@ async function safeGet(raw, opts = {}) {
   throw new Error('Redirecionamentos demais.');
 }
 
+// POST para um endereço informado pela pessoa (aviso a outros programas), sem seguir redirecionamentos
+async function safePost(raw, corpo, opts = {}) {
+  assertPublicUrl(raw);
+  return client.post(raw, corpo, { ...opts, httpAgent, httpsAgent, maxRedirects: 0, validateStatus: () => true });
+}
+
 // Endereço final de um link encurtado (meli.la, amzn.to, s.shopee.com.br…), seguindo os redirecionamentos com as
 // mesmas proteções do safeGet. Usado pelo conversor de links das Postagens.
 async function resolverLink(raw) {
@@ -88,4 +94,4 @@ async function resolverLink(raw) {
   return current;
 }
 
-module.exports = { safeGet, assertPublicUrl, isPrivateIp, resolverLink };
+module.exports = { safePost, safeGet, assertPublicUrl, isPrivateIp, resolverLink };

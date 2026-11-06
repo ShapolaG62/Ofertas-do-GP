@@ -368,18 +368,11 @@ router.post('/api/admin/alertas-whatsapp', (req, res) => {
 // ── Grupo de automação (WhatsApp) e Capi ──
 router.get('/api/admin/grupo-automacao', (req, res) => {
   const ga = require('../grupo-automacao');
-  res.json({ webhook: ga.enderecoWebhook(null), controle: settings.get('wa_grupo_controle') || '', ajuda: ga.AJUDA });
-});
-router.post('/api/admin/grupo-automacao/ativar', async (req, res) => {
-  try { res.json({ ok: true, webhook: await require('../grupo-automacao').ativarWebhook(null) }); }
-  catch (err) { res.status(400).json({ error: err.response?.data?.message || err.message }); }
+  res.json({ controle: settings.get('wa_grupo_controle') || '', ajuda: ga.AJUDA });
 });
 router.get('/api/admin/membros', (req, res) => res.json(require('../membros-grupo').resumo(null, req.query.dias)));
 router.post('/api/admin/membros/atualizar', async (req, res) => {
   try { res.json(await require('../membros-grupo').atualizarAgora(null)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
-});
-router.post('/api/admin/grupo-automacao/novo-endereco', (req, res) => {
-  const ga = require('../grupo-automacao'); ga.novoSegredo(null); res.json({ webhook: ga.enderecoWebhook(null) });
 });
 router.post('/api/admin/capi/perguntar', (req, res) => res.json(require('../sac').perguntarIa(String(req.body?.texto || '').slice(0, 500))));
 
@@ -525,7 +518,7 @@ router.get('/api/admin/whatsapp/status', async (req, res) => {
 
 router.get('/api/admin/whatsapp/grupos', async (req, res) => {
   try {
-    res.json({ grupos: await whatsapp.listarGrupos(settings.getAll()), escolhidos: whatsapp.gruposEscolhidos(settings.getAll()), categorias: Object.entries(require('../busca-ofertas').CATEGORIAS).map(([id, nome]) => ({ id, nome })), });
+    const { grupos, ocultos } = await whatsapp.resumoGrupos(settings.getAll()); const temas = require('../temas-grupos'); res.json({ grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(settings.getAll()), '/api/admin/wa/foto/'), ocultos, temas: temas.listar() });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

@@ -27,9 +27,9 @@ const RECURSOS = [
 ];
 const DUVIDAS = [
   ['Preciso ter conta nos programas de afiliados?', 'Sim. A comissão é sua, então os links precisam ser das suas contas em cada loja. O painel mostra quais ainda faltam.'],
-  ['Preciso de um número só para isso?', 'Para o WhatsApp, sim: o envio automático usa um número separado, conectado pela Z-API ou pela Evolution API, que são serviços à parte e têm custo próprio.'],
+  ['Preciso de um número só para isso?', 'Para o WhatsApp, é o mais seguro: o envio automático usa um número conectado pelo QR code direto no seu painel, sem serviço à parte. Um número só para isso protege o seu número pessoal.'],
   ['Os ganhos são garantidos?', 'Não. O resultado depende do tamanho do seu público, das ofertas e das regras de cada programa. A ferramenta cuida do trabalho repetitivo.'],
-  ['O WhatsApp pode bloquear meu número?', 'Pode. O envio automático não é oficial para grupos e sempre tem esse risco. O intervalo sorteado e o número reserva ajudam, mas não eliminam.'],
+  ['O WhatsApp pode bloquear meu número?', 'Pode. O envio automático não é oficial para grupos e sempre tem esse risco. O intervalo sorteado ajuda, mas não elimina.'],
 ];
 
 function pagina() {

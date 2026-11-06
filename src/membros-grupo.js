@@ -1,6 +1,6 @@
 // Monitor de membros dos grupos de WhatsApp (site e clientes da ferramenta): quantos entraram e saíram por dia e o total
 // de cada grupo. Guarda só contagens, nunca o número ou o nome de quem entrou ou saiu.
-//  • Entradas e saídas: avisos do WhatsApp pelo mesmo endereço do grupo de automação (Z-API ou Evolution API);
+//  • Entradas e saídas: avisos que chegam pela API própria (src/whatsapp-proprio.js);
 //  • Total: uma vez por dia o site pergunta o tamanho de cada grupo de envio (funciona mesmo sem o aviso ligado).
 const db = require('./db');
 const settings = require('./settings');
@@ -29,7 +29,7 @@ const configDe = cid => (cid ? require('./clientes').config(cid) : settings.getA
 function lerEvento(b) {
   if (!b || typeof b !== 'object') return null;
   const evento = String(b.event || '').toLowerCase().replace(/_/g, '-').replace(/\./g, '-');
-  if (evento.includes('group-participants')) { // Evolution API
+  if (evento.includes('group-participants')) {
     const d = Array.isArray(b.data) ? b.data[0] : b.data;
     const acao = String(d?.action || '').toLowerCase();
     const n = Array.isArray(d?.participants) ? d.participants.length : 0;
@@ -38,11 +38,6 @@ function lerEvento(b) {
     if (acao === 'remove') return { grupo: chave(d.id), entradas: 0, saidas: n };
     return null;
   }
-  const aviso = String(b.notification || ''); // Z-API
-  if (!/^GROUP_PARTICIPANT_/.test(aviso) || !b.phone) return null;
-  const n = Array.isArray(b.notificationParameters) && b.notificationParameters.length ? b.notificationParameters.length : 1;
-  if (/_(ADD|INVITE)$/.test(aviso)) return { grupo: chave(b.phone), entradas: n, saidas: 0 };
-  if (/_(LEAVE|REMOVE)$/.test(aviso)) return { grupo: chave(b.phone), entradas: 0, saidas: n };
   return null;
 }
 

@@ -220,7 +220,6 @@
   .top-busca-res code { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   .top-busca-res .row { gap: 8px; flex-wrap: wrap; }
   .top-busca-res[hidden] { display: none; }
-  #ga-webhook { word-break: break-all; }
   /* Duas colunas que viram uma no celular (modelo da mensagem e prévia) */
   .grid-2col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
   @media (max-width: 900px) {
@@ -656,14 +655,14 @@
   /* Abas das telas da equipe */
   .tabs-line [aria-selected="true"] { background: var(--azul-soft); color: var(--azul-texto); border-color: transparent; }
 </style>
-<script src="/js/tema.js?v=20261290"></script>
-<script src="/js/dialogo.js?v=20261290"></script>
-<script src="/js/modelo-post.js?v=20261290"></script>
-<script src="/js/avisos-entrada.js?v=20261290"></script>
-<script src="/js/capi-minerando.js?v=20261290" defer></script>
-<script src="/js/cadastro-auto.js?v=20261290" defer></script>
-<script src="/js/seletor.js?v=20261290" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261290">
+<script src="/js/tema.js?v=20261291"></script>
+<script src="/js/dialogo.js?v=20261291"></script>
+<script src="/js/modelo-post.js?v=20261291"></script>
+<script src="/js/avisos-entrada.js?v=20261291"></script>
+<script src="/js/capi-minerando.js?v=20261291" defer></script>
+<script src="/js/cadastro-auto.js?v=20261291" defer></script>
+<script src="/js/seletor.js?v=20261291" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261291">
 </head>
 <body>
 <div class="wrap">
@@ -1410,7 +1409,7 @@
       <div class="panel">
         <h2>Postagem automática nas redes sociais</h2>
         <p class="hint">Na página de ofertas, toque no ✓ de um produto para levá-lo à tela <a href="/postagens" target="_blank">Postagens</a>. Lá você edita os textos, publica manualmente ou clica em <b>Postar automaticamente</b> nas redes marcadas. Usuários do site só usam essa tela se você liberar em <b>Usuários → Gerenciar → Permitir postagens nas redes</b>; eles publicam nas contas configuradas aqui.</p>
-        <p class="hint">O <b>WhatsApp</b> não tem API oficial para grupos: a postagem automática usa um número separado conectado pela Z-API ou pela Evolution API (configure abaixo). O botão manual de WhatsApp continua disponível em cada produto.</p>
+        <p class="hint">O <b>WhatsApp</b> não tem API oficial para grupos: a postagem automática usa um número conectado pelo QR code (configure abaixo). O botão manual de WhatsApp continua disponível em cada produto.</p>
       </div>
 
       <form class="settings-form">
@@ -1422,11 +1421,8 @@
               <select name="wa_grupo_controle" id="ga-grupo"><option value="">— carregue os grupos —</option></select></label>
             <div class="field">Grupos do número <button class="btn" type="button" id="ga-carregar">Carregar grupos</button></div>
           </div>
-          <p class="hint">Endereço de aviso (webhook) que o WhatsApp chama a cada mensagem: <code id="ga-webhook">…</code></p>
           <div class="actions" style="justify-content:flex-start">
             <button class="btn primary" type="submit">Salvar grupo</button>
-            <button class="btn" type="button" id="ga-ativar">Ativar no WhatsApp</button>
-            <button class="btn" type="button" id="ga-novo">Gerar novo endereço</button>
           </div>
           <p class="hint" id="ga-msg"></p>
           <details><summary class="hint" style="cursor:pointer">Comandos que a Capi entende no grupo</summary><pre class="modelo-previa" id="ga-ajuda" style="min-height:0"></pre></details>
@@ -1486,33 +1482,10 @@
 
       <form class="settings-form">
         <div class="panel">
-          <h2>WhatsApp (número separado para as postagens)</h2>
-          <p class="hint">O WhatsApp não tem API oficial para grupos. A postagem automática usa um serviço que conecta um número ao WhatsApp Web: <b>Z-API</b> (pago, na nuvem, funciona sem servidor) ou <b>Evolution API</b> (grátis, roda no seu computador ou VPS com Docker). <b>Use um número só para isso</b>: o WhatsApp pode banir números automatizados. Para reduzir o risco, use um chip com algumas semanas de uso, mantenha o intervalo entre mensagens e poste só em grupos onde as pessoas entraram por vontade própria.</p>
-          <div class="grid">
-            <label class="field">Serviço
-              <select name="whatsapp_provider" id="wa-provider">
-                <option value="">— escolha —</option>
-                <option value="zapi">Z-API (z-api.io)</option>
-                <option value="evolution">Evolution API</option>
-                <option value="proprio">API própria (conectar pelo QR code)</option>
-              </select></label>
-            <label class="field">Intervalo entre ofertas (segundos) <input type="number" name="whatsapp_intervalo_s" min="20" max="900"></label>
-          </div>
-          <div class="grid wa-zapi" style="margin-top:14px">
-            <label class="field">ID da instância <input type="text" name="zapi_instance" placeholder="3C2A..."></label>
-            <label class="field">Token da instância <input type="password" name="zapi_token" autocomplete="off" data-secret></label>
-            <label class="field">Token de segurança da conta (Client-Token) <input type="password" name="zapi_client_token" autocomplete="off" data-secret></label>
-          </div>
-          <p class="hint wa-zapi">Na Z-API: crie uma instância, leia o QR code com o WhatsApp do número separado e copie o ID e o token da instância. O "token de segurança da conta" fica em Segurança (obrigatório se estiver ativado).</p>
-          <div class="grid wa-evolution" style="margin-top:14px">
-            <label class="field">Endereço do servidor <input type="url" name="evolution_url" placeholder="http://localhost:8080"></label>
-            <label class="field">Chave (apikey) <input type="password" name="evolution_api_key" autocomplete="off" data-secret></label>
-            <label class="field">Nome da instância <input type="text" name="evolution_instance" placeholder="ofertou"></label>
-          </div>
-          <p class="hint wa-evolution">Na Evolution API (v2): crie uma instância, leia o QR code com o WhatsApp do número separado e informe aqui o endereço, a chave global (AUTHENTICATION_API_KEY) e o nome da instância.</p>
-          <div class="wa-proprio hidden" style="margin-top:14px">
-            <p class="hint"><b>Atenção:</b> esta conexão também não é a API oficial do WhatsApp, e o número pode ser banido. Prefira um número só para as postagens, porque um número pessoal também pode ser perdido. Enquanto estiver conectado, o servidor recebe as mensagens novas da conta e guarda o texto por 30 dias.</p>
-            <p id="wap-status" class="wap-status" role="status">Carregando…</p>
+          <h2>WhatsApp (conexão pelo QR code)</h2>
+          <p class="hint"><b>Atenção:</b> esta conexão não é a API oficial do WhatsApp, e o número pode ser banido. Prefira um número só para as postagens, porque um número pessoal também pode ser perdido. Enquanto estiver conectado, o servidor recebe as mensagens novas das conversas e dos seus grupos e guarda o texto por 30 dias.</p>
+          <div class="wa-proprio">
+            <p id="wap-status" class="wap-status" role="status" data-base="/api/admin/wa">Carregando…</p>
             <img id="wap-qr" class="wap-qr" alt="QR code para conectar o WhatsApp" width="280" height="280" hidden>
             <p id="wap-instrucao" class="hint" hidden>No celular, abra o WhatsApp, toque em <b>Dispositivos conectados</b> e depois em <b>Conectar um dispositivo</b>. Aponte a câmera para o QR code.</p>
             <div class="actions" style="justify-content:flex-start">
@@ -1520,14 +1493,8 @@
               <button class="btn" type="button" id="wap-desconectar" hidden>Desconectar</button>
             </div>
           </div>
-          <h3 class="wa-reserva">Número de contingência (opcional)</h3>
-          <p class="hint wa-reserva">Um segundo número nos mesmos grupos. Os dois <b>se revezam</b> a cada mensagem (cada oferta sai uma vez só, por um deles), o que deixa o envio menos previsível e diminui o risco de bloqueio. Se um cair (desconectado, banido ou fora do ar), o outro segue enviando sozinho. Deixe os dois números como <b>administradores</b> dos grupos de destino.</p>
-          <div class="grid wa-zapi">
-            <label class="field">ID da instância reserva <input type="text" name="zapi2_instance"></label>
-            <label class="field">Token da instância reserva <input type="password" name="zapi2_token" autocomplete="off" data-secret></label>
-          </div>
-          <div class="grid wa-evolution">
-            <label class="field">Nome da instância reserva (no mesmo servidor) <input type="text" name="evolution2_instance" placeholder="ofertou-reserva"></label>
+          <div class="grid" style="margin-top:14px">
+            <label class="field">Intervalo entre ofertas (segundos) <input type="number" name="whatsapp_intervalo_s" min="20" max="900"></label>
           </div>
           <div class="actions" style="justify-content:flex-start">
             <button class="btn primary" type="submit">Salvar WhatsApp</button>
@@ -1537,7 +1504,8 @@
           <div id="wa-msg"></div>
           <div id="wa-groups-box" class="hidden">
             <h3>Grupos de destino</h3>
-            <p class="hint">Marque os grupos que vão receber as postagens. O número precisa ser membro (de preferência administrador) de cada grupo. Em "Temas", escolha o que cada grupo recebe; sem tema marcado, ele recebe todas as ofertas.</p>
+            <p class="hint">Aparecem só os grupos que este número criou e administra. Marque os que recebem as postagens agendadas e toque no tipo de produto de cada um; sem tipo marcado, o grupo recebe todas as ofertas.</p>
+            <p class="hint" id="wa-ocultos"></p>
             <div id="wa-groups" style="display:grid;gap:6px;max-height:280px;overflow:auto"></div>
             <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" id="wa-save-groups">Salvar grupos</button></div>
           </div>
@@ -1545,11 +1513,19 @@
         </div>
       </form>
 
-      <div class="panel wa-proprio hidden">
-        <h2>Mensagens do WhatsApp</h2>
-        <p class="hint">Aparecem as mensagens que chegarem depois de conectar. Fotos, áudios e vídeos ficam só indicados, sem o arquivo.</p>
+      <div class="panel wa-proprio">
+        <h2>Conversas do WhatsApp</h2>
+        <p class="hint">Fotos e nomes vêm do seu WhatsApp, e dos grupos aparecem só os seus. O texto aparece nas mensagens que chegarem depois de conectar; fotos, áudios e vídeos ficam só indicados.</p>
         <div class="wap-caixa">
-          <div id="wap-conversas" class="wap-conversas"><span class="hint">Nenhuma mensagem ainda.</span></div>
+          <div>
+            <input type="search" id="wap-busca" class="wap-busca" placeholder="Buscar pelo nome" aria-label="Buscar conversa pelo nome">
+            <div class="wap-filtros" role="group" aria-label="Filtrar conversas">
+              <button type="button" class="wa-chip" data-wap-filtro="" aria-pressed="true">Todas</button>
+              <button type="button" class="wa-chip" data-wap-filtro="grupos" aria-pressed="false">Grupos</button>
+              <button type="button" class="wa-chip" data-wap-filtro="contatos" aria-pressed="false">Contatos</button>
+            </div>
+            <div id="wap-conversas" class="wap-conversas"><span class="hint">Nenhuma conversa ainda.</span></div>
+          </div>
           <div class="wap-chat">
             <h3 id="wap-chat-nome">Escolha uma conversa</h3>
             <div id="wap-mensagens" class="wap-mensagens" aria-live="polite"></div>
@@ -1562,23 +1538,43 @@
         </div>
       </div>
 
-      <div class="panel wa-proprio hidden">
-        <h2>Chave da API</h2>
-        <p class="hint">Para outro programa usar este WhatsApp. A chave lê as mensagens e envia em nome do número, então guarde como uma senha. Ela não conecta nem desconecta o número.</p>
+      <div class="panel wa-proprio">
+        <h2>API para outros programas</h2>
+        <p class="hint">A chave lê as mensagens, envia e automatiza as postagens em nome do número, então guarde como uma senha. Ela não conecta nem desconecta o número.</p>
         <p id="wap-chave-estado" class="hint"></p>
         <p id="wap-chave-nova" class="wap-chave" hidden></p>
         <div class="actions" style="justify-content:flex-start">
           <button class="btn" type="button" id="wap-chave-gerar">Gerar chave</button>
           <button class="btn" type="button" id="wap-chave-apagar" hidden>Apagar chave</button>
         </div>
+        <details class="wap-detalhes"><summary>Endereços da API</summary>
         <pre class="wap-doc">Authorization: Bearer SUA_CHAVE
 
-GET  /api/wa/status
-GET  /api/wa/grupos
-GET  /api/wa/conversas
-GET  /api/wa/mensagens?chat=ID&amp;limite=50&amp;depois=ULTIMO_ID
-POST /api/wa/enviar
-     { "para": "ID_DO_GRUPO", "texto": "Olá", "imagem": "https://..." }</pre>
+GET    /api/wa/status
+GET    /api/wa/temas
+GET    /api/wa/grupos            (?todos=1 inclui os de outras pessoas)
+GET    /api/wa/grupos/ID/convite
+GET    /api/wa/foto/ID
+GET    /api/wa/conversas         (?tipo=grupos ou contatos)
+GET    /api/wa/mensagens?chat=ID&amp;limite=50&amp;depois=ULTIMO_ID
+POST   /api/wa/enviar
+       { "para": "ID", "texto": "Olá", "imagem": "https://..." }
+GET    /api/wa/ofertas?tema=tecnologia&amp;limite=10
+POST   /api/wa/postar
+       { "offer_id": 123, "grupos": ["ID"], "por_tipo": true }
+GET    /api/wa/fila
+POST   /api/wa/fila
+       { "itens": [{ "offer_id": 123 }], "grupos": ["ID"] }
+DELETE /api/wa/fila/ID
+POST   /api/wa/fila/executar
+GET    /api/wa/resultados?dias=30</pre></details>
+        <h3>Avisar outro programa</h3>
+        <p class="hint">A cada mensagem nova e mudança na conexão, o site envia um POST para este endereço, com a assinatura no cabeçalho X-Ofertou-Assinatura. Deixe vazio para desligar.</p>
+        <div class="wap-form">
+          <input type="url" id="wap-webhook-url" class="wap-busca" placeholder="https://..." aria-label="Endereço que recebe os avisos">
+          <button class="btn" type="button" id="wap-webhook-salvar">Salvar</button>
+        </div>
+        <p id="wap-webhook-msg" class="wap-chave-msg hint"></p>
       </div>
 
       <div class="panel">
@@ -2054,34 +2050,9 @@ POST /api/wa/enviar
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261290"></script>
-<script src="/js/wa-temas.js?v=20261290"></script>
-<script src="/js/envio-resultados.js?v=20261290"></script>
-<script src="/js/wa-proprio.js?v=20261290"></script>
-<style>
-  .wa-proprio [hidden] { display: none !important; }
-  .wap-status { font-weight: 600; margin: 8px 0; overflow-wrap: anywhere; }
-  .wap-qr { display: block; background: #fff; border-radius: 12px; padding: 8px; max-width: 100%; height: auto; }
-  .wap-caixa { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
-  .wap-conversas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; align-content: start; max-height: 240px; overflow: auto; }
-  .wap-conversa { display: block; width: 100%; min-height: 44px; text-align: left; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
-  .wap-conversa[aria-current="true"] { border-color: var(--green); border-width: 2px; }
-  .wap-conversa b, .wap-conversa small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .wap-chat { min-width: 0; }
-  .wap-chat h3 { margin-top: 0; overflow-wrap: anywhere; }
-  .wap-mensagens { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow: auto; margin-bottom: 10px; }
-  .wap-bolha { align-self: flex-start; max-width: 85%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .wap-bolha.eu { align-self: flex-end; background: rgba(37, 211, 102, .14); }
-  .wap-bolha small { display: block; opacity: .7; font-size: 12px; }
-  .wap-form { display: flex; gap: 8px; align-items: flex-end; }
-  .wap-form textarea { flex: 1; min-width: 0; min-height: 64px; height: 64px; }
-  .wap-form button { min-height: 44px; }
-  .wap-chave { font-family: monospace; overflow-wrap: anywhere; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
-  .wap-doc { font-size: 13px; overflow-x: auto; padding: 10px; margin: 12px 0 0; border: 1px solid var(--border); border-radius: 10px; }
-  @media (min-width: 760px) {
-    .wap-caixa { grid-template-columns: 260px minmax(0, 1fr); }
-    .wap-conversas { max-height: 440px; }
-  }
-</style>
+<script src="/js/admin.js?v=20261291"></script>
+<script src="/js/wa-temas.js?v=20261291"></script>
+<script src="/js/envio-resultados.js?v=20261291"></script>
+<script src="/js/wa-proprio.js?v=20261291"></script>
 </body>
 </html>

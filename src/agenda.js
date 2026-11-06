@@ -11,6 +11,10 @@ const whatsapp = require('./whatsapp');
 const precoNaHora = require('./preco-na-hora');
 const avisos = require('./envio-avisos');
 
+// Grupos escolhidos para cada oferta da fila: { grupos, por_tipo } (vazio = os grupos salvos no painel)
+if (!db.all('PRAGMA table_info(post_queue)').some(c => c.name === 'destino')) db.db.exec('ALTER TABLE post_queue ADD COLUMN destino TEXT');
+const lerDestino = v => { try { return v ? JSON.parse(v) : null; } catch { return null; } };
+
 let timer = null;
 let pausaEntreOfertas = true; // os testes desligam a pausa
 const rodando = new Set();          // donos com rodada em andamento ('site' ou id do cliente)
@@ -61,8 +65,9 @@ function enfileirar(itens, autor, cid = null) {
     // Não duplica uma oferta que já está esperando: atualiza o texto.
     const ja = db.get(`SELECT id FROM post_queue WHERE offer_id = ? AND status = 'pendente' AND cliente_id IS ?`, id, cid);
     const texto = String(it.texto || '').trim().slice(0, 4000) || null;
-    if (ja) db.run('UPDATE post_queue SET texto = ?, autor = ? WHERE id = ?', texto, autor, ja.id);
-    else db.run('INSERT INTO post_queue (offer_id, texto, autor, cliente_id) VALUES (?, ?, ?, ?)', id, texto, autor, cid);
+    const destino = it.destino ? JSON.stringify(it.destino) : null;
+    if (ja) db.run('UPDATE post_queue SET texto = ?, autor = ?, destino = ? WHERE id = ?', texto, autor, destino, ja.id);
+    else db.run('INSERT INTO post_queue (offer_id, texto, autor, cliente_id, destino) VALUES (?, ?, ?, ?, ?)', id, texto, autor, cid, destino);
     n++;
   }
   return n;
@@ -216,7 +221,7 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
           db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Preço não conferido na loja nas últimas 24 h (pode ter mudado).' WHERE id = ?`, q.id);
           continue;
         }
-        return { fila: q.id, offer_id: q.offer_id, texto: q.texto };
+        return { fila: q.id, offer_id: q.offer_id, texto: q.texto, destino: lerDestino(q.destino) };
       }
       if (s.agenda_completar === '0') return null;
       // Pega algumas a mais: as que tiverem mudado de preço na loja dão lugar à seguinte
@@ -236,7 +241,8 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
     let it;
     while (feitos.length < qtd && (it = proxima())) {
       const categoria = db.get('SELECT categoria FROM offers WHERE id = ?', it.offer_id)?.categoria;
-      const redes = prontas.filter(id => id !== 'whatsapp' || whatsapp.gruposDaOferta(s, categoria).length);
+      const sItem = it.destino?.grupos?.length ? whatsapp.comDestinos(s, it.destino.grupos, it.destino.por_tipo !== false) : s;
+      const redes = prontas.filter(id => id !== 'whatsapp' || whatsapp.gruposDaOferta(sItem, categoria).length);
       if (!redes.length) { descartar(it, 'Nenhum grupo de destino recebe ofertas deste tema.'); continue; }
       const conferencia = await precoNaHora.conferir(it.offer_id);
       if (conferencia.acao === 'pular') { descartar(it, conferencia.motivo); continue; }
@@ -249,7 +255,7 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
       if (!it.texto) o.__link = await require('./encurtador').curto(social.postLink(o, s)); // link curto no post
       const texto = it.texto || social.textoPadrao(o, s);
       let resultados;
-      try { resultados = await social.publicar(it.offer_id, redes, texto, `agenda (${motivo})`, cid ? { s, clienteId: cid, link } : {}); }
+      try { resultados = await social.publicar(it.offer_id, redes, texto, `agenda (${motivo})`, cid ? { s: sItem, clienteId: cid, link } : { s: sItem }); }
       catch (err) { resultados = [{ rede: '-', ok: false, mensagem: err.message }]; }
       const ok = resultados.some(r => r.ok);
       const resumo = resultados.map(r => `${social.REDES[r.rede]?.nome || r.rede}: ${r.ok ? 'ok' : r.mensagem}`).join(' | ');

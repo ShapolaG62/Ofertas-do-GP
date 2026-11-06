@@ -130,7 +130,7 @@
     // Conexões
     const linha = (ok, nome, det) => `<li class="${ok ? 'on' : 'off'}"><span class="cli-ponto"></span><div><b>${esc(nome)}</b><small>${esc(det)}</small></div></li>`;
     $('#cli-conexoes').innerHTML = d.redes.map(r => r.id === 'whatsapp'
-      ? linha(r.pronta, 'WhatsApp', r.pronta ? `${d.grupos_whatsapp} grupo(s)${d.contingencia ? ' · com número de contingência' : ' · sem contingência'}` : r.motivo || 'não configurado')
+      ? linha(r.pronta, 'WhatsApp', r.pronta ? `${d.grupos_whatsapp} grupo(s)` : r.motivo || 'não configurado')
       : linha(r.pronta, r.nome, r.pronta ? 'Conectado' : r.motivo || 'não configurado')).join('')
       + (d.sem_afiliado.length ? linha(false, 'Links de afiliado', `faltam: ${d.sem_afiliado.join(', ')}`) : linha(true, 'Links de afiliado', 'todas as lojas configuradas'));
   }
@@ -266,7 +266,6 @@
   async function carregarGrupoAutomacao() {
     try {
       const d = await api('/api/cliente/grupo-automacao');
-      $('#ga-webhook').textContent = d.webhook;
       const sel = $('#ga-grupo');
       if (d.controle && ![...sel.options].some(o => o.value === d.controle)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(d.controle)}">${esc(d.controle)} (escolhido)</option>`);
       sel.value = d.controle;
@@ -280,12 +279,6 @@
       $('#ga-msg').textContent = `${d.grupos.length} grupo(s). Escolha um e clique em Salvar grupo.`;
     } catch (err) { $('#ga-msg').textContent = err.message; }
   });
-  $('#ga-ativar').addEventListener('click', async () => {
-    $('#ga-msg').textContent = 'Ativando…';
-    try { const d = await api('/api/cliente/grupo-automacao/ativar', { method: 'POST' }); $('#ga-msg').textContent = `Pronto! Mande "ajuda" no grupo para testar.`; }
-    catch (err) { $('#ga-msg').textContent = err.message; }
-  });
-
   // Modelo da mensagem: prévia com uma oferta de exemplo
   const EXEMPLO_MODELO = { produto: 'Air Fryer Mondial 4L Family Inox', preco_de: '499,90', preco: '289,90', desconto: '42', economia: '210,00',
     loja: 'Mercado Livre', link: 'https://tanoofertou.com.br/o/123456', cupom: 'OFERTOU10', conferido: '26/10, 09:30' };
@@ -345,17 +338,13 @@
 
   // ── WhatsApp ───────────────────────────────────────────────────────────────
   function atualizarWa() {
-    const p = $('#wa-provider').value;
-    $$('.wa-zapi').forEach(el => { el.hidden = p !== 'zapi'; });
-    $$('.wa-evolution').forEach(el => { el.hidden = p !== 'evolution'; });
     let g = [];
     try { g = JSON.parse(CFG.whatsapp_groups || '[]'); } catch { /* vazio */ }
     $('#wa-chosen').innerHTML = g.length ? `Grupos de destino: <b>${g.map(x => esc(x.nome)).join(', ')}</b>` : 'Nenhum grupo de destino escolhido ainda.';
   }
-  $('#wa-provider').addEventListener('change', atualizarWa);
 
   async function salvarWa() {
-    const form = $('#wa-provider').form;
+    const form = $('#wa-load').form;
     const body = {};
     for (const el of form.elements) if (el.name) body[el.name] = el.value;
     await api('/api/cliente/config', { method: 'PUT', body });
@@ -373,11 +362,11 @@
     try {
       await salvarWa();
       const r = await api('/api/cliente/whatsapp/grupos');
-      const chosen = new Map(r.escolhidos.map(g => [g.id, g]));
-      if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups'), r.categorias); }
+      if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups')); }
       $('#wa-groups').innerHTML = r.grupos.length
-        ? r.grupos.map(g => OfertouTemas.linha(g, chosen.get(g.id), r.categorias)).join('')
-        : '<span class="cli-hint">O número não participa de nenhum grupo.</span>';
+        ? r.grupos.map(g => OfertouTemas.linha(g, r.temas)).join('')
+        : '<span class="cli-hint">Nenhum grupo criado e administrado por este número.</span>';
+      $('#wa-ocultos').textContent = OfertouTemas.avisoOcultos(r.ocultos);
       $('#wa-groups-box').hidden = false;
     } catch (err) { msg($('#wa-msg'), err.message, false); }
     b.disabled = false; b.textContent = 'Carregar meus grupos';

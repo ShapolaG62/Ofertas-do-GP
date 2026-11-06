@@ -35,7 +35,7 @@
     });
     return { dias, serie, enviados: serie.reduce((s, d) => s + d.ok, 0), falhas: serie.reduce((s, d) => s + d.erro, 0),
       redes: [{ id: 'whatsapp', nome: 'WhatsApp', pronta: true }, { id: 'telegram', nome: 'Telegram', pronta: true }, { id: 'facebook', nome: 'Facebook', pronta: false, motivo: 'não configurado' }, { id: 'x', nome: 'X', pronta: false, motivo: 'não configurado' }],
-      contingencia: true, grupos_whatsapp: 4, fila: 3, agenda: { ativa: true, proximo: '18:00' }, cliques: 186 * Math.max(1, Math.round(dias / 7)), comissao: 42.5 * dias,
+      grupos_whatsapp: 4, fila: 3, agenda: { ativa: true, proximo: '18:00' }, cliques: 186 * Math.max(1, Math.round(dias / 7)), comissao: 42.5 * dias,
       saldo: { disponivel: 312.4, a_liberar: 148.9, recebido: 1250 }, lembrete_planilha: [], ultimo_envio: quando(0), sem_afiliado: ['KaBuM!'] };
   };
   const comissao = dias => {
@@ -57,7 +57,7 @@
     return { total: 1840, entradas, saidas, serie, grupos: [{ nome: 'Ofertas do Dia 1', total: 980, entradas: Math.ceil(entradas / 2), saidas: Math.ceil(saidas / 2) }, { nome: 'Ofertas do Dia 2', total: 860, entradas: Math.floor(entradas / 2), saidas: Math.floor(saidas / 2) }] };
   };
   const configAfiliado = { config: { amazon_tag: 'exemplo-20', ml_matt_word: 'exemplo', ml_matt_tool: '123456', magalu_store: 'exemplo', shopee_app_id: '123456', shopee_app_secret_set: true, aliexpress_app_key: '123456', aliexpress_app_secret_set: true, aliexpress_tracking_id: 'exemplo',
-    telegram_bot_token_set: true, telegram_chat_id: '@canaldeexemplo', whatsapp_provider: 'zapi', zapi_instance: 'exemplo', zapi_token_set: true,
+    telegram_bot_token_set: true, telegram_chat_id: '@canaldeexemplo', 
     whatsapp_groups: JSON.stringify([{ id: '1', nome: 'Ofertas do Dia 1' }, { id: '2', nome: 'Ofertas do Dia 2' }]), whatsapp_intervalo_s: '30',
     agenda_ativa: '1', agenda_horarios: '09:00,12:00,18:00', agenda_qtd: '5', agenda_redes: JSON.stringify(['whatsapp', 'telegram']), agenda_completar: '1', post_modelo: '', grupo_slug: 'exemplo' }, sem_afiliado: ['KaBuM!'] };
   const agenda = { estado: { ativa: true, horarios: ['09:00', '12:00', '18:00'], proximo: '18:00', pendentes: 3, rodando: false, ultimaExecucao: { em: quando(0), feitos: [{ ok: true }, { ok: true }, { ok: true }, { ok: false }] } },
@@ -73,7 +73,12 @@
       '/api/cliente/config': configAfiliado,
       '/api/cliente/grupo-automacao': { webhook: 'https://exemplo.com/webhook/exemplo', controle: '', ajuda: '' },
       '/api/cliente/whatsapp/status': { conectado: true, mensagem: 'Exemplo: WhatsApp conectado.' },
-      '/api/cliente/whatsapp/grupos': { grupos: [{ id: '1', nome: 'Ofertas do Dia 1' }, { id: '2', nome: 'Ofertas do Dia 2' }], escolhidos: [{ id: '1', nome: 'Ofertas do Dia 1' }, { id: '2', nome: 'Ofertas do Dia 2' }], categorias: [{ id: 'celulares', nome: 'Celulares, tablets e relógios' }, { id: 'casa', nome: 'Casa, móveis e decoração' }] },
+      '/api/cliente/whatsapp/grupos': { ocultos: 3, temas: [{ id: 'tecnologia', nome: 'Tecnologia', icone: '💻', categorias: ['informatica', 'celulares'] }, { id: 'casa', nome: 'Casa', icone: '🏠', categorias: ['casa', 'cozinha'] }], grupos: [{ id: '1', nome: 'Ofertas do Dia 1', membros: 420, salvo: true, categorias: ['informatica', 'celulares'], sugestao: [] }, { id: '2', nome: 'Ofertas Casa', membros: 980, salvo: true, categorias: [], sugestao: ['casa'] }] },
+      '/api/cliente/wa/status': { fase: 'conectado', conectado: true, numero: '5500000000000', nome: 'Exemplo', sessao_salva: true },
+      '/api/cliente/wa/conversas': { conversas: [{ chat: '1@g.us', nome: 'Ofertas do Dia 1', grupo: true, id: 1, texto: 'Mensagem de exemplo', tipo: 'texto', de_mim: 1, criado_em: quando(0) }] },
+      '/api/cliente/wa/mensagens': { mensagens: [{ id: 1, chat: '1@g.us', de_mim: 1, tipo: 'texto', texto: 'Mensagem de exemplo', criado_em: quando(0) }] },
+      '/api/cliente/wa/chave': { existe: false, criada_em: null },
+      '/api/cliente/wa/webhook': { url: null },
       '/api/cliente/agenda': agenda,
       '/api/cliente/comissao': () => comissao(dias > 0 ? dias : 30),
       '/api/cliente/membros': () => membros(dias),

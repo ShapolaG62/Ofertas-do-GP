@@ -69,7 +69,7 @@ router.get('/api/cliente/whatsapp/status', async (req, res) => {
 
 router.get('/api/cliente/whatsapp/grupos', async (req, res) => {
   const s = clientes.config(req.cliente.id);
-  try { res.json({ grupos: await whatsapp.listarGrupos(s), escolhidos: whatsapp.gruposEscolhidos(s), categorias: Object.entries(require('../busca-ofertas').CATEGORIAS).map(([id, nome]) => ({ id, nome })), }); } catch (err) { sendError(res, err); }
+  try { const { grupos, ocultos } = await whatsapp.resumoGrupos(s); const temas = require('../temas-grupos'); res.json({ grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(s), '/api/cliente/wa/foto/'), ocultos, temas: temas.listar() }); } catch (err) { sendError(res, err); }
 });
 
 // Dashboard do painel: envios no período (por dia, ok e falha), conexões, fila e cliques nos links do cliente
@@ -101,7 +101,7 @@ router.get('/api/cliente/painel', (req, res) => {
   res.json({
     dias, serie,
     enviados: serie.reduce((a, d) => a + d.ok, 0), falhas: serie.reduce((a, d) => a + d.erro, 0),
-    redes: require('../social').listarRedes(s), contingencia: Boolean(whatsapp.configReserva(s) && !whatsapp.configReserva(s).erro),
+    redes: require('../social').listarRedes(s),
     grupos_whatsapp: whatsapp.gruposEscolhidos(s).length, fila: agenda.pendentes(cid), agenda: agenda.estado(cid),
     cliques, comissao, saldo: cg.saldos(cid).brl, lembrete_planilha: cg.lembretePlanilha(cid).map(l => l.nome), ultimo_envio: ultimo, sem_afiliado: clientes.lojasSemAfiliado(s),
   });
@@ -169,16 +169,8 @@ router.get('/api/cliente/sugestoes', (req, res, next) => require('../busca-ofert
 
 router.get('/api/cliente/grupo-automacao', (req, res) => {
   const ga = require('../grupo-automacao');
-  res.json({ webhook: ga.enderecoWebhook(req.cliente.id), controle: clientes.config(req.cliente.id).wa_grupo_controle || '', ajuda: ga.AJUDA });
+  res.json({ controle: clientes.config(req.cliente.id).wa_grupo_controle || '', ajuda: ga.AJUDA });
 });
-router.post('/api/cliente/grupo-automacao/ativar', async (req, res) => {
-  try { res.json({ ok: true, webhook: await require('../grupo-automacao').ativarWebhook(req.cliente.id) }); }
-  catch (err) { res.status(400).json({ error: err.response?.data?.message || err.message }); }
-});
-router.post('/api/cliente/grupo-automacao/novo-endereco', (req, res) => {
-  const ga = require('../grupo-automacao'); ga.novoSegredo(req.cliente.id); res.json({ webhook: ga.enderecoWebhook(req.cliente.id) });
-});
-
 router.get('/api/cliente/agenda', (req, res) => {
   res.json({ estado: agenda.estado(req.cliente.id), fila: agenda.listarFila(req.cliente.id) });
 });

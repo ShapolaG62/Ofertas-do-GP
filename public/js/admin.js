@@ -1032,10 +1032,9 @@ async function loadSettings() {
 
 // Grupo de automação
 async function carregarGrupoAutomacao() {
-  if (!$('#ga-webhook')) return;
+  if (!$('#ga-grupo')) return;
   try {
     const d = await api('/api/admin/grupo-automacao');
-    $('#ga-webhook').textContent = d.webhook;
     $('#ga-ajuda').textContent = d.ajuda.replace(/\*/g, '');
     const sel = $('#ga-grupo');
     if (d.controle && ![...sel.options].some(o => o.value === d.controle)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(d.controle)}">${esc(d.controle)} (escolhido)</option>`);
@@ -1050,15 +1049,6 @@ $('#ga-carregar')?.addEventListener('click', async () => {
     $('#ga-grupo').innerHTML = '<option value="">— escolha o grupo de automação —</option>' + d.grupos.map(g => `<option value="${esc(g.id)}" ${g.id === atual ? 'selected' : ''}>${esc(g.nome)}</option>`).join('');
     $('#ga-msg').textContent = `${d.grupos.length} grupo(s). Escolha um e clique em Salvar grupo.`;
   } catch (err) { $('#ga-msg').textContent = err.message; }
-});
-$('#ga-ativar')?.addEventListener('click', async () => {
-  $('#ga-msg').textContent = 'Ativando…';
-  try { const d = await api('/api/admin/grupo-automacao/ativar', { method: 'POST' }); $('#ga-msg').textContent = `Pronto! O WhatsApp vai avisar o site em ${d.webhook}. Mande "ajuda" no grupo para testar.`; }
-  catch (err) { $('#ga-msg').textContent = err.message; }
-});
-$('#ga-novo')?.addEventListener('click', async () => {
-  if (!await OfertouUI.confirmar('Gerar um novo endereço de aviso? O antigo para de funcionar: depois clique em "Ativar no WhatsApp".', { ok: 'Gerar' })) return;
-  try { const d = await api('/api/admin/grupo-automacao/novo-endereco', { method: 'POST' }); $('#ga-webhook').textContent = d.webhook; } catch (err) { globalMsg(err.message, false); }
 });
 // Teste da Capi
 $('#capi-perguntar')?.addEventListener('click', async () => {
@@ -2105,22 +2095,16 @@ $('#cli-body').addEventListener('click', async e => {
 // ── Redes sociais ─────────────────────────────────────────────────────────────
 const REDE_NOME = { telegram: 'Telegram', facebook: 'Facebook', instagram: 'Instagram', x: 'X (Twitter)', whatsapp: 'WhatsApp' };
 
-// WhatsApp: mostra só os campos do serviço escolhido.
+// WhatsApp: grupos de destino salvos.
 function updateWaProvider() {
-  const p = $('#wa-provider').value;
-  $$('.wa-zapi').forEach(el => el.classList.toggle('hidden', p !== 'zapi'));
-  $$('.wa-evolution').forEach(el => el.classList.toggle('hidden', p !== 'evolution'));
-  $$('.wa-proprio').forEach(el => el.classList.toggle('hidden', p !== 'proprio'));
-  $$('.wa-reserva').forEach(el => el.classList.toggle('hidden', p === 'proprio'));
   let g = [];
   try { g = JSON.parse(SETTINGS.whatsapp_groups || '[]'); } catch { /* vazio */ }
-  $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>${g.some(x => x.categorias?.length) ? ' (alguns só recebem os temas escolhidos)' : ''}` : 'Nenhum grupo de destino escolhido ainda.';
+  $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>${g.some(x => x.categorias?.length) ? ' (alguns só recebem os tipos escolhidos)' : ''}` : 'Nenhum grupo de destino escolhido ainda.';
 }
-$('#wa-provider').addEventListener('change', updateWaProvider);
 
 // Salva o formulário do WhatsApp antes de testar (para usar o que está digitado).
 async function saveWaForm() {
-  const form = $('#wa-provider').form;
+  const form = $('#wa-load').form;
   const body = {};
   for (const el of form.elements) if (el.name) body[el.name] = el.value;
   await api('/api/admin/settings', { method: 'PUT', body });
@@ -2141,10 +2125,10 @@ $('#wa-load').addEventListener('click', async () => {
   try {
     await saveWaForm();
     const r = await api('/api/admin/whatsapp/grupos');
-    const chosen = new Map(r.escolhidos.map(g => [g.id, g]));
-    if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups'), r.categorias); }
-    $('#wa-groups').innerHTML = r.grupos.length ? r.grupos.map(g => OfertouTemas.linha(g, chosen.get(g.id), r.categorias)).join('')
-      : '<span class="hint">O número não participa de nenhum grupo.</span>';
+    if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups')); }
+    $('#wa-groups').innerHTML = r.grupos.length ? r.grupos.map(g => OfertouTemas.linha(g, r.temas)).join('')
+      : '<span class="hint">Nenhum grupo criado e administrado por este número.</span>';
+    $('#wa-ocultos').textContent = OfertouTemas.avisoOcultos(r.ocultos);
     $('#wa-groups-box').classList.remove('hidden');
     $('#wa-msg').innerHTML = '';
   } catch (err) { flash($('#wa-msg'), err.message, false); }

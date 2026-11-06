@@ -59,11 +59,13 @@ router.get('/api/postagens/redes', (req, res) => {
 });
 
 // Coloca ofertas (com o texto editado) na fila das postagens agendadas de quem está usando.
-router.post('/api/postagens/fila', (req, res) => {
+router.post('/api/postagens/fila', async (req, res) => {
   const itens = Array.isArray(req.body?.itens) ? req.body.itens : [];
   if (!itens.length) return res.status(400).json({ error: 'Nenhum produto enviado.' });
   const cid = req.poster.clienteId;
-  const n = agenda.enfileirar(itens, req.poster.autor, cid);
+  let destino = null;
+  try { destino = await require('../postar').destino(cid, req.body?.grupos, req.body?.por_tipo !== false); } catch (err) { return res.status(err.status || 400).json({ error: err.message }); }
+  const n = agenda.enfileirar(itens.map(i => ({ ...i, destino })), req.poster.autor, cid);
   res.json({ ok: true, adicionados: n, pendentes: agenda.pendentes(cid) });
 });
 
@@ -114,7 +116,7 @@ router.get('/api/postagens/ofertas', async (req, res) => {
     out.push({
       id: o.id, store_id: o.store_id, plataforma: o.plataforma, produto: o.produto, preco_atual: o.preco_atual,
       preco_anterior: o.preco_anterior, desconto_pct: o.desconto_pct, categoria: o.categoria, last_seen_at: o.last_seen_at, cupom: require('../cupons').paraPost(o.cupom_codigo, o.cupom_texto) || null,
-      link, imagem_publica: Boolean(social.postImage(o, req.cfg)), postado_em: hist[o.id] || {},
+      link, imagem_publica: Boolean(social.postImage(o, req.cfg)), postado_em: hist[o.id] || {}, tema: require('../temas-grupos').temaDaCategoria(o.categoria),
       imagem_url: `/api/img/${o.id}`,
     });
   }
@@ -138,10 +140,36 @@ router.post('/api/postagens/publicar', async (req, res) => {
       if (!o) return res.status(404).json({ error: 'Oferta não encontrada.' });
       ctx = { s: req.cfg, clienteId: cid, link: await clientes.linkParaPostar(cid, o, req.cfg) };
     }
+    // Grupos escolhidos nesta postagem
+    if (Array.isArray(b.grupos) && b.grupos.length && redes.includes('whatsapp')) {
+      const lista = await require('../postar').conferirGrupos(req.cfg, b.grupos);
+      ctx.s = require('../whatsapp').comDestinos(ctx.s || req.cfg, lista, b.por_tipo !== false);
+    }
     res.json({ resultados: await social.publicar(Number(b.offer_id), redes, b.texto, req.poster.autor, ctx) });
   } catch (err) {
     res.status(err.status || 400).json({ error: err.message });
   }
+});
+
+// Grupos para escolher na tela de postagens: só os que este número criou e administra, com foto, nome e tipo
+router.get('/api/postagens/meus-grupos', async (req, res) => {
+  const whatsapp = require('../whatsapp');
+  const temas = require('../temas-grupos');
+  try {
+    const { grupos, ocultos } = await whatsapp.resumoGrupos(req.cfg);
+    res.json({ conectado: true, ocultos, temas: temas.listar(), grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(req.cfg), '/api/postagens/wa-foto/') });
+  } catch (err) {
+    res.json({ conectado: false, erro: err.message, grupos: [], temas: temas.listar(), ocultos: 0 });
+  }
+});
+router.get('/api/postagens/wa-foto/:jid', async (req, res) => {
+  try {
+    const dono = require('../whatsapp-proprio').donoDe(req.poster.clienteId);
+    const arquivo = await require('../whatsapp-proprio').foto(dono, req.params.jid);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    if (!arquivo) return res.status(404).end();
+    res.type('image/jpeg').sendFile(arquivo);
+  } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
 });
 
 // Botão "Enviar" do cartão da oferta (página de ofertas): manda a oferta, com o modelo da mensagem de quem está

@@ -80,15 +80,8 @@ const DEFAULTS = {
   x_access_token: '',
   x_access_secret: '',
 
-  // WhatsApp (número separado, conectado por Z-API, Evolution API ou pela API própria)
-  whatsapp_provider: '',        // 'zapi' | 'evolution' | 'proprio'
-  zapi_instance: '',
-  zapi_token: '',
-  zapi_client_token: '',        // "token de segurança da conta" (opcional)
-  evolution_url: '',
-  evolution_api_key: '',
-  evolution_instance: '',
-  whatsapp_groups: '[]',        // grupos de destino: [{ id, nome }]
+  // WhatsApp: API própria (src/whatsapp-proprio.js)
+  whatsapp_groups: '[]',        // grupos de destino: [{ id, nome, categorias }]
   whatsapp_intervalo_s: '90',   // espera entre uma oferta e outra no WhatsApp
   alertas_wa_ativo: '1',        // alertas de ofertas no WhatsApp particular de quem pedir (src/alertas-whatsapp.js)
   alertas_wa_ultimo: '',        // até quando as ofertas novas já foram conferidas (UTC)
@@ -171,9 +164,6 @@ const DEFAULTS = {
   agenda_palavras_bloqueadas: 'capinha, capa para celular, pelicula, cabo usb, suporte para celular', // nunca postar ofertas com estas palavras
   agenda_palavras_permitidas: '', // se preenchido: só ofertas com pelo menos uma destas palavras
   post_modelo: '',              // modelo do texto das postagens (public/js/modelo-post.js); vazio = padrão
-  zapi2_instance: '',           // WhatsApp de contingência (assume se o principal falhar)
-  zapi2_token: '',
-  evolution2_instance: '',
   ia_sac_ativa: '1',
   wa_grupo_controle: '',
   ganhos_awin_publisher: '',    // KaBuM! pela Awin: ID de publisher (sincronização dos ganhos, src/ganhos-sync.js)
@@ -188,7 +178,8 @@ const DEFAULTS = {
 const PUBLIC_KEYS = ['whatsapp_link', 'telegram_link', 'instagram_user', 'adsense_client', 'ga_id',
   'legal_nome', 'legal_documento', 'legal_endereco', 'legal_email', 'legal_encarregado'];
 
-// Chaves que nunca saem do servidor em texto puro (nem para o painel).
+// Chaves que nunca saem do servidor em texto puro (nem para o painel). As de serviços antigos continuam aqui porque
+// os valores podem seguir salvos no banco.
 const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_secret', 'google_client_secret',
   'telegram_bot_token', 'facebook_page_token', 'x_api_secret', 'x_access_token', 'x_access_secret',
   'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token', 'ganhos_awin_token', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];

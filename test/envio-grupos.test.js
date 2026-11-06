@@ -26,13 +26,13 @@ let enviados = [];
 let falhar = null;
 let conectado = true;
 whatsapp.enviar = async (s, grupo, msg) => { const e = falhar && falhar(grupo); if (e) throw e; enviados.push({ grupo, ...msg }); return 'id'; };
+whatsapp.config = () => ({ tipo: 'proprio', dono: 'site' });
 whatsapp.status = async () => ({ conectado, mensagem: conectado ? 'ok' : 'Número desconectado.' });
 
 function limpar() {
   for (const t of ['social_posts', 'envio_grupo', 'post_queue', 'admin_notificacoes', 'offers']) db.run(`DELETE FROM ${t}`);
   enviados = []; falhar = null; conectado = true;
   settings.set('site_url', 'https://exemplo.test');
-  settings.set('whatsapp_provider', 'proprio');
   settings.set('whatsapp_groups', JSON.stringify(GRUPOS));
   settings.set('agenda_redes', JSON.stringify(['whatsapp']));
   settings.set('agenda_ativa', '1');
@@ -373,4 +373,69 @@ test('limpa os registros antigos', () => {
   db.run(`INSERT INTO envio_grupo (token, offer_id, grupo_id, situacao, created_at) VALUES ('velhoo', ?, 'x', 'enviado', datetime('now', '-181 days')), ('novooo', ?, 'x', 'enviado', datetime('now', '-179 days'))`, id, id);
   envio.limpar();
   assert.deepEqual(envios().map(e => e.token), ['novooo']);
+});
+
+test('escolher os grupos da postagem: por tipo ou todos, e o tipo que o nome sugere', () => {
+  limpar();
+  const s = settings.getAll();
+  const escolhidos = [{ id: GRUPOS[1].id, nome: 'Tecnologia' }, { id: 'novo@g.us', nome: 'Ofertas Casa' }, { id: 'geral@g.us', nome: 'Promoções do dia' }];
+  const porTipo = whatsapp.comDestinos(s, escolhidos, true);
+  assert.deepEqual(whatsapp.gruposDaOferta(porTipo, 'informatica').map(g => g.id), [GRUPOS[1].id, 'geral@g.us']);
+  assert.deepEqual(whatsapp.gruposDaOferta(porTipo, 'cozinha').map(g => g.id), ['novo@g.us', 'geral@g.us']);
+  const todos = whatsapp.comDestinos(s, escolhidos, false);
+  assert.equal(whatsapp.gruposDaOferta(todos, 'cozinha').length, 3);
+});
+
+test('tipos de produto: pelo nome do grupo e pela categoria da oferta', () => {
+  const temas = require('../src/temas-grupos');
+  assert.deepEqual(temas.temasDoNome('Ofertas Tech 2'), ['tecnologia']);
+  assert.deepEqual(temas.temasDoNome('Promoções de Automóveis'), ['automoveis']);
+  assert.deepEqual(temas.temasDoNome('CASA & Cozinha'), ['casa']);
+  assert.deepEqual(temas.temasDoNome('Grupo Popular'), [], 'lar dentro de popular não conta');
+  assert.equal(temas.temaDaCategoria('celulares').nome, 'Tecnologia');
+  assert.equal(temas.temaDaCategoria('automotivo').id, 'automoveis');
+  assert.equal(temas.temaDaCategoria('x').id, 'outros');
+  const { CATEGORIAS } = busca;
+  const cobertas = new Set(temas.listar().flatMap(t => t.categorias));
+  assert.deepEqual(Object.keys(CATEGORIAS).filter(c => !cobertas.has(c)), ['outros'], 'toda categoria tem um tipo');
+});
+
+test('fila guarda os grupos escolhidos e a rodada usa só eles', async () => {
+  limpar();
+  settings.set('agenda_completar', '0');
+  const id = oferta({ categoria: 'casa' });
+  agenda.enfileirar([{ offer_id: id, texto: 'x', destino: { grupos: [{ id: 'esse@g.us', nome: 'Só este' }], por_tipo: false } }], 'teste');
+  const r = await agenda.executar('manual');
+  assert.equal(r.feitos[0].ok, true);
+  assert.deepEqual(enviados.map(e => e.grupo), ['esse@g.us']);
+});
+
+test('postar pela API: confere os grupos, o tipo e sai só para quem deve', async () => {
+  limpar();
+  const proprio = require('../src/whatsapp-proprio');
+  const postar = require('../src/postar');
+  const orig = proprio.carregarGrupos;
+  proprio.carregarGrupos = async () => [{ id: 'tec@g.us', nome: 'Grupo Tech' }, { id: 'casa@g.us', nome: 'Grupo Casa' }];
+  try {
+    const id = oferta({ categoria: 'informatica' });
+    await assert.rejects(postar.postar(null, { offerId: id, grupos: ['alheio@g.us'], autor: 'API' }), /não é deste número/);
+    await assert.rejects(postar.postar(null, { offerId: 999999, autor: 'API' }), /não encontrada/);
+    await assert.rejects(postar.postar(null, { offerId: id, grupos: ['casa@g.us'], autor: 'API' }), /tipo de produto/);
+    const r = await postar.postar(null, { offerId: id, grupos: ['tec@g.us', 'casa@g.us'], texto: 'Texto próprio', autor: 'API' });
+    assert.deepEqual(r.grupos.map(g => g.id), ['tec@g.us']);
+    await new Promise(res => setTimeout(res, 50));
+    assert.deepEqual(enviados.map(e => e.grupo), ['tec@g.us']);
+    assert.equal(enviados[0].texto, 'Texto próprio');
+    assert.equal(db.get('SELECT autor FROM social_posts').autor, 'API');
+  } finally { proprio.carregarGrupos = orig; }
+});
+
+test('brinquedo em forma de carro não vai para o grupo de automóveis', () => {
+  const { classifyCategory } = require('../src/categorize');
+  for (const nome of ['Carrinho de criança três em um de alta visão', 'Carrinho Controle Remoto Rally Jipe Max Carro Grande', 'Carro de Controle Remoto Sem Fio Lamborgini', 'Carro Vira Robo Carrinho BMW Brinquedo Menino']) {
+    assert.equal(classifyCategory(nome), 'brinquedos', nome);
+  }
+  for (const nome of ['Pneu Aro 15 Para Carro', 'Som Automotivo Bluetooth', 'Capacete Para Moto Fechado']) {
+    assert.equal(classifyCategory(nome), 'automotivo', nome);
+  }
 });

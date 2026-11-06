@@ -157,8 +157,8 @@ O site tem espaços reservados para propaganda de empresas que entrarem em conta
 
 **WhatsApp:** não tem API oficial para grupos. A postagem automática usa um **número separado** conectado por um destes serviços (Painel → Redes sociais → WhatsApp):
 
-- **Z-API** (z-api.io): pago, na nuvem, não precisa de servidor. Informe o ID e o token da instância e, se estiver ativado, o token de segurança da conta.
-- **Evolution API** (v2): grátis, roda no seu computador ou na VPS com Docker. Informe o endereço, a chave (apikey) e o nome da instância.
+- Em **Painel → Redes sociais → WhatsApp**, clique em **Conectar** e leia o QR code no celular (Dispositivos conectados → Conectar um dispositivo). A sessão fica salva no servidor e volta sozinha quando o site reinicia.
+- Em **Carregar grupos do número** aparecem só os grupos que o número criou e administra, com foto e nome. Marque os grupos e o tipo de produto de cada um (Tecnologia, Casa, Automóveis…).
 
 Depois clique em **Testar conexão**, **Carregar grupos do número**, marque os grupos de destino e **Salvar grupos**. Cada oferta vai com foto e texto para todos os grupos marcados, com pausa de alguns segundos entre os grupos e o intervalo configurado (padrão 90 s) entre uma oferta e outra.
 
@@ -193,7 +193,7 @@ Você pode vender o acesso à ferramenta. Cada cliente usa as ofertas mineradas 
 **O que o cliente faz (em /cliente):**
 
 1. **Links de afiliado:** Amazon (tag), Mercado Livre (matt_word e matt_tool), KaBuM! (link de qualquer produto), AliExpress e Shopee (chaves da API de afiliados dele) e Magalu.
-2. **Redes sociais:** WhatsApp (Z-API ou Evolution, número dele), Telegram, Facebook/Instagram e X.
+2. **Redes sociais:** WhatsApp (conexão pelo QR code, número dele), Telegram, Facebook/Instagram e X.
 3. **Ofertas:** navega pelas ofertas do site, marca com ✓ e vai para **Postagens** — os textos já saem com os links dele e publicam nos canais dele. Também pode pôr ofertas na fila.
 4. **Agendamento** próprio (horários, quantidade, redes) e **histórico** só das postagens dele.
 
@@ -684,7 +684,7 @@ Para levar à VPS: `atualizar-vps.bat`.
 - só das **8h às 22h** (Brasília), no máximo 40 pessoas por rodada e 4 s entre um envio e outro, para o número não ser banido;
 - se o envio falhar 3 vezes seguidas (número sem WhatsApp), pausa os alertas da pessoa e avisa no sino.
 
-**Para você (Painel → Redes sociais):** o quadro **Alertas de ofertas no WhatsApp particular** liga/desliga o recurso e mostra quantas pessoas estão recebendo e quantas mensagens saíram hoje. Usa o **mesmo WhatsApp das postagens** (Z-API ou Evolution); sem ele configurado, a opção não aparece para os usuários. Preencha o **endereço do site** em Painel → Site para os links das mensagens passarem pelo site (`/o/123`, contando os cliques).
+**Para você (Painel → Redes sociais):** o quadro **Alertas de ofertas no WhatsApp particular** liga/desliga o recurso e mostra quantas pessoas estão recebendo e quantas mensagens saíram hoje. Usa o **mesmo WhatsApp das postagens** (API própria); sem ele configurado, a opção não aparece para os usuários. Preencha o **endereço do site** em Painel → Site para os links das mensagens passarem pelo site (`/o/123`, contando os cliques).
 
 **Tela "Como você quer usar o Ofertou!?"** (primeiro acesso): os planos ficaram compactos e saíram o título "Assine um plano" e o aviso de acesso imediato.
 

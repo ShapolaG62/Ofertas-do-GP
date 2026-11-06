@@ -12,10 +12,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/js/app-nativo.js?v=20261298"></script>
 <style>
-/* Guia do usuário: índice fixo à esquerda no computador, coluna única no celular; cores da marca Ofertou! */
+/* Guia do usuário: índice fixo à esquerda no computador, coluna única no celular; as mesmas cores do site */
 :root {
   --bg: #f2f7f3; --surface: #ffffff; --surface-2: #e7f0e9;
-  --ink: #161b18; --ink-2: #48514c; --ink-3: #6f7873;
+  --ink: #161b18; --ink-2: #3f4843; --ink-3: #646d68;
+  --azul: #0d6985; --azul-soft: #e2f1f5; --azul-texto: #0d6985;
+  --degrade: linear-gradient(90deg, #0a7a43, #0d6985);
   --line: #dbe6dd; --line-strong: #c1d0c4;
   --brand: #0a7a43; --brand-strong: #075f34; --brand-soft: #dff2e6;
   --gold: #9a6800; --gold-soft: #fff4d6;
@@ -25,20 +27,22 @@
 }
 :root[data-theme="dark"] {
   --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d;
-  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #8b958f;
+  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #87918b;
+  --azul-soft: #12303a; --azul-texto: #5cc4dd;
   --line: #262d28; --line-strong: #343c36;
   --brand: #2bb673; --brand-strong: #49c98a; --brand-soft: #16301f;
   --gold: #e6b143; --gold-soft: #33290f;
-  --deal: #ff7b6b; --deal-soft: #3a1c18; color-scheme: dark;
+  --deal: #ff6b5a; --deal-soft: #3a1c18; color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
   --bg: #0e1210; --surface: #161b18; --surface-2: #1b211d;
-  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #8b958f;
+  --ink: #edf1ee; --ink-2: #b7c0ba; --ink-3: #87918b;
+  --azul-soft: #12303a; --azul-texto: #5cc4dd;
   --line: #262d28; --line-strong: #343c36;
   --brand: #2bb673; --brand-strong: #49c98a; --brand-soft: #16301f;
   --gold: #e6b143; --gold-soft: #33290f;
-  --deal: #ff7b6b; --deal-soft: #3a1c18; color-scheme: dark;
+  --deal: #ff6b5a; --deal-soft: #3a1c18; color-scheme: dark;
 }
 }
 * { box-sizing: border-box; }
@@ -46,12 +50,13 @@ html { scroll-padding-top: 80px; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6;
   padding-bottom: env(safe-area-inset-bottom, 0px); }
-a { color: var(--brand-strong); }
+a { color: var(--azul-texto); }
 img, video { max-width: 100%; }
 
 /* Topo */
 .topo { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); }
+.topo::before { content: ""; display: block; height: 3px; background: linear-gradient(90deg, #0a7a43, #0d6985 60%, #0b6bb5); }
 .topo-in { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .marca { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 800; font-size: 19px; }
@@ -60,7 +65,7 @@ img, video { max-width: 100%; }
 .marca span small { display: block; font-size: 12px; font-weight: 600; color: var(--ink-3); margin-top: -3px; }
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface);
   color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; text-decoration: none; cursor: pointer; }
-.btn:hover, .btn:focus-visible { border-color: var(--brand); outline: none; }
+.btn:hover, .btn:focus-visible { border-color: var(--azul-texto); outline: none; }
 .btn.prim { background: var(--brand); border-color: var(--brand); color: #fff; }
 
 .wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 80px;
@@ -73,18 +78,21 @@ nav.toc::-webkit-scrollbar { display: none; }
 nav.toc p { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
 nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
 nav.toc a { display: block; padding: 6px 10px; border-radius: 8px; color: var(--ink-2); text-decoration: none; }
-nav.toc a:hover, nav.toc a:focus-visible, nav.toc a.atual { background: var(--surface-2); color: var(--ink); outline: none; }
-nav.toc a.atual { color: var(--brand-strong); font-weight: 700; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--azul-soft); color: var(--ink); outline: none; }
+nav.toc a.atual { background: var(--degrade); color: #fff; font-weight: 700; }
 @media (max-width: 900px) {
   nav.toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
   nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
+  nav.toc a { min-height: 44px; display: flex; align-items: center; }
+  .btn { min-height: 44px; }
+  details summary { min-height: 44px; align-items: center; }
 }
 
 main { min-width: 0; }
 .capa { padding-bottom: 26px; border-bottom: 1px solid var(--line); }
-.eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+.eyebrow { font-size: 12.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--azul-texto); }
 h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.08; margin: 8px 0 12px; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
-h1 em { font-style: normal; color: var(--brand); }
+h1 em { font-style: normal; color: var(--brand); background: linear-gradient(90deg, var(--brand), var(--azul-texto)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .lead { font-size: 18px; color: var(--ink-2); max-width: 64ch; margin: 0 0 18px; }
 .video { margin: 18px 0 4px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #0e1210; aspect-ratio: 16 / 9; max-width: 860px; }
 .video video { display: block; width: 100%; height: 100%; }
@@ -92,14 +100,14 @@ h1 em { font-style: normal; color: var(--brand); }
 .atalhos { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 
 section { padding-top: 38px; }
-h2 { font-size: 25px; line-height: 1.2; margin: 0 0 6px; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; }
+h2 { font-size: 25px; line-height: 1.2; margin: 0 0 6px; font-weight: 800; letter-spacing: -.01em; text-wrap: balance; color: var(--brand); }
 h2 + .sub { color: var(--ink-3); margin: 0 0 16px; max-width: 64ch; }
 h3 { font-size: 18px; margin: 24px 0 8px; font-weight: 700; }
 p, li { max-width: 70ch; }
 p { margin: 0 0 12px; }
 ul { margin: 0 0 14px; padding-left: 22px; }
 li { margin-bottom: 5px; }
-li::marker { color: var(--brand); }
+li::marker { color: var(--azul-texto); }
 b { font-weight: 700; }
 .caminho { font-weight: 700; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; white-space: nowrap; }
 @media (max-width: 600px) { .caminho { white-space: normal; } }
@@ -107,10 +115,10 @@ b { font-weight: 700; }
 .passos { list-style: none; padding: 0; margin: 10px 0 18px; counter-reset: p; }
 .passos li { counter-increment: p; position: relative; padding: 0 0 16px 46px; max-width: none; margin: 0; }
 .passos li::before { content: counter(p); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
-  background: var(--brand-soft); color: var(--brand-strong); font-weight: 800; font-size: 14px; display: grid; place-items: center; }
+  background: var(--azul-soft); color: var(--azul-texto); font-weight: 800; font-size: 14px; display: grid; place-items: center; }
 .passos li::after { content: ""; position: absolute; left: 14.5px; top: 32px; bottom: 2px; width: 1px; background: var(--line-strong); }
 .passos li:last-child::after { display: none; }
-.passos b { display: block; }
+.passos li > b { display: block; }
 .passos span { color: var(--ink-2); font-size: 15px; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 12px; margin: 8px 0 18px; }
@@ -118,7 +126,7 @@ b { font-weight: 700; }
 .card h4 { margin: 0 0 6px; font-size: 16px; }
 .card p { margin: 0; font-size: 14.5px; color: var(--ink-2); }
 
-.nota { border-radius: 12px; padding: 14px 16px; margin: 8px 0 18px; font-size: 15px; background: var(--brand-soft); }
+.nota { border-radius: 12px; padding: 14px 16px; margin: 8px 0 18px; font-size: 15px; background: var(--azul-soft); }
 .nota.ouro { background: var(--gold-soft); }
 .nota b:first-child { display: block; margin-bottom: 2px; }
 .nota p:last-child, .nota ul:last-child { margin-bottom: 0; }
@@ -126,7 +134,7 @@ b { font-weight: 700; }
 details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 0 16px; margin-bottom: 8px; }
 details summary { cursor: pointer; padding: 13px 0; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
 details summary::-webkit-details-marker { display: none; }
-details summary::after { content: "+"; color: var(--brand); font-weight: 800; }
+details summary::after { content: "+"; color: var(--azul-texto); font-weight: 800; }
 details[open] summary::after { content: "–"; }
 details p { color: var(--ink-2); }
 
@@ -152,8 +160,10 @@ details p { color: var(--ink-2); }
     <ol>
       <li><a href="#inicio">O que é o Ofertou!</a></li>
       <li><a href="#conta">Criar conta e entrar</a></li>
+      <li><a href="#navegar">Navegar pelo site</a></li>
       <li><a href="#planos">Planos</a></li>
       <li><a href="#ofertas">Encontrar ofertas</a></li>
+      <li><a href="#alertas">Alertas no WhatsApp</a></li>
       <li><a href="#comprar">Comprar de lojas parceiras</a></li>
       <li><a href="#cartoes">Meus cartões</a></li>
       <li><a href="#mensagens">Mensagens</a></li>
@@ -161,6 +171,7 @@ details p { color: var(--ink-2); }
       <li><a href="#perfil">Perfil e comunidade</a></li>
       <li><a href="#loja">Para lojas parceiras</a></li>
       <li><a href="#afiliado">Para afiliados (Afiliado Pro)</a></li>
+      <li><a href="#celular">Usar no celular</a></li>
       <li><a href="#seguranca">Sua conta e seus dados</a></li>
       <li><a href="#duvidas">Perguntas frequentes</a></li>
     </ol>
@@ -189,19 +200,19 @@ details p { color: var(--ink-2); }
       <h2>O que é o Ofertou!</h2>
       <p class="sub">Um lugar para achar desconto de verdade, sem precisar abrir dezenas de sites.</p>
       <div class="cards">
-        <div class="card"><h4>Ofertas conferidas</h4><p>Buscamos promoções nas grandes lojas on-line várias vezes por dia. Cada oferta mostra o preço de agora, o preço anterior, o desconto e quando o preço foi conferido.</p></div>
+        <div class="card"><h4>Ofertas conferidas</h4><p>Buscamos promoções no Mercado Livre, Amazon, Shopee, Magalu, AliExpress e KaBuM! várias vezes por dia. Cada oferta mostra o preço de agora, o preço anterior, o desconto e quando o preço foi conferido.</p></div>
         <div class="card"><h4>Lojas parceiras</h4><p>Empresas e vendedores que têm loja dentro do site. Você vê os produtos, conversa com a loja e compra com Pix ou cartão.</p></div>
         <div class="card"><h4>Comunidade</h4><p>Cada pessoa tem um perfil com conquistas. Siga lojas e pessoas para acompanhar as novidades.</p></div>
-        <div class="card"><h4>Suporte humano</h4><p>Ficou com dúvida? Abra um chamado e a nossa equipe responde pelo próprio site.</p></div>
+        <div class="card"><h4>Suporte</h4><p>A Capi, nossa assistente virtual, responde na hora. Se preferir, a nossa equipe atende pelo próprio site.</p></div>
       </div>
       <div class="nota"><b>Importante saber</b>O Ofertou! divulga ofertas e aproxima você das lojas. Ele não fabrica, não estoca e não entrega produtos: venda, entrega, troca e garantia são da loja que vende, sem prejuízo dos seus direitos de consumidor. Alguns links das lojas são de afiliado, e isso não muda o preço para você.</div>
     </section>
 
     <section id="conta">
       <h2>Criar conta e entrar</h2>
-      <p class="sub">Para ver as ofertas, é preciso ter uma conta. O cadastro leva poucos minutos.</p>
+      <p class="sub">O cadastro leva poucos minutos. Com ele, você salva o perfil, conversa com as lojas e recebe alertas de ofertas.</p>
       <ol class="passos">
-        <li><b>Abra a página inicial e toque em "Criar conta"</b><span>Use seu e-mail e uma senha, ou o botão <b>Entrar com Google</b>.</span></li>
+        <li><b>Abra a tela de entrar e toque em "Criar conta"</b><span>Use seu e-mail e uma senha, ou o botão <b>Entrar com Google</b>. Com pressa? A aba <b>Cadastro rápido</b> pede só nome, celular e senha; os outros dados você completa depois em <span class="caminho">Minha conta → Meus dados</span>.</span></li>
         <li><b>Crie uma senha forte</b><span>Ela precisa ter pelo menos 8 caracteres, uma letra maiúscula, uma minúscula, um número e um símbolo (ex.: ! @ # $). Enquanto você digita, a lista embaixo do campo marca com ✓ o que já está certo. Senhas muito óbvias ou com o seu nome ou e-mail não são aceitas.</span></li>
         <li><b>Escolha o tipo de conta</b><span><b>Consumidor</b> (para comprar e acompanhar ofertas), <b>Empresarial</b> (para ter uma loja no site) ou <b>Usuário da ferramenta</b> (para divulgar ofertas com os seus próprios links).</span></li>
         <li><b>Preencha seus dados</b><span>Nome, CPF, data de nascimento (é preciso ter 18 anos ou mais), celular e endereço. Ao digitar o CEP, rua, bairro, cidade e estado aparecem sozinhos: confira e complete o número.</span></li>
@@ -210,8 +221,19 @@ details p { color: var(--ink-2); }
       </ol>
       <h3>Para entrar depois</h3>
       <ul>
-        <li>Use o mesmo e-mail e senha, ou o Google. Você continua conectado no aparelho enquanto usar o site.</li>
-        <li>Esqueceu a senha ou não consegue entrar? Fale com o suporte pelo e-mail informado no fim deste guia.</li>
+        <li>Use o e-mail ou o celular e a senha, ou o Google. Você continua conectado no aparelho enquanto usar o site.</li>
+        <li><b>Esqueceu a senha?</b> Toque em <b>Esqueci minha senha</b>. Enviamos ao seu e-mail um link que vale por 1 hora e funciona uma vez. Se a conta não tem e-mail ou você não consegue entrar, escreva para o endereço informado no fim deste guia.</li>
+      </ul>
+    </section>
+
+    <section id="navegar">
+      <h2>Navegar pelo site</h2>
+      <p class="sub">Tudo o que a sua conta usa fica numa guia só, sem abrir janelas novas.</p>
+      <ul>
+        <li><b>Menu de áreas:</b> fica na lateral no computador e no topo no celular. Mostra só o que a sua conta usa: <b>Ofertas</b>, <b>Afiliado</b>, <b>Minha loja</b>, <b>Minha conta</b> e, para quem trabalha no site, <b>Equipe</b>.</li>
+        <li><b>Menu de cada área:</b> os painéis de afiliado, de loja e da conta têm um menu lateral dividido em grupos, como Essencial e Minha conta.</li>
+        <li><b>No celular:</b> toque no botão com o nome da tela em que você está para abrir a lista completa do menu. Ao escolher um item, a lista fecha sozinha.</li>
+        <li><b>Tema:</b> escolha <b>Claro</b>, <b>Escuro</b> ou <b>Automático</b> (segue o aparelho) no rodapé ou no menu da sua foto. A escolha vale para todas as páginas neste aparelho.</li>
       </ul>
     </section>
 
@@ -233,15 +255,31 @@ details p { color: var(--ink-2); }
 
     <section id="ofertas">
       <h2>Encontrar ofertas</h2>
-      <p class="sub">A tela de ofertas é a primeira coisa que você vê ao entrar.</p>
+      <p class="sub">A tela de ofertas reúne as promoções das lojas, com filtros para achar o que você quer.</p>
       <ul>
         <li><b>Busca:</b> digite o produto no campo do topo (ex.: "air fryer", "fone bluetooth").</li>
-        <li><b>Filtros:</b> por loja, categoria, faixa de preço e desconto. No celular, toque no botão <b>Filtros</b>.</li>
-        <li><b>Abas das lojas:</b> veja só as ofertas de uma loja.</li>
-        <li><b>Cada oferta mostra</b> o preço de agora, o preço anterior riscado, a porcentagem de desconto e quando o preço foi conferido.</li>
-        <li><b>Ir à loja:</b> toque na oferta para abrir a página do produto na loja e finalizar a compra por lá.</li>
+        <li><b>Filtros:</b> por loja, categoria, faixa de preço e desconto, além da opção <b>Só com cupom</b>. No celular, toque no botão <b>Filtros</b>.</li>
+        <li><b>Ordenar:</b> use a caixa ao lado dos filtros para ver primeiro o que interessa, como <b>Mais atrativas</b>.</li>
+        <li><b>Abas das lojas:</b> toque no logo de uma loja para ver só as ofertas dela.</li>
+        <li><b>Cada oferta mostra</b> o preço de agora, o preço anterior riscado, a porcentagem de desconto e o selo <b>Preço verificado</b>. O selo <b>Menor preço</b> marca o menor valor recente do produto ou o anúncio mais barato entre anúncios iguais.</li>
+        <li><b>Cupom:</b> quando a oferta tem cupom, o código aparece no cartão. Toque nele para copiar e use no pagamento da loja. Alguns cupons do Mercado Livre precisam ser ativados no app dele. O preço mostrado já considera o cupom e o cartão informa o valor sem ele.</li>
+        <li><b>Ver oferta:</b> toque no botão para abrir o produto na loja e finalizar a compra por lá.</li>
       </ul>
       <div class="nota ouro"><b>Preço mudou?</b>As lojas mudam os preços a qualquer momento. Antes de pagar, confira sempre o valor final na página da loja. Ofertas que acabam saem do Ofertou! sozinhas.</div>
+    </section>
+
+    <section id="alertas">
+      <h2>Alertas no WhatsApp</h2>
+      <p class="sub">Receba no seu WhatsApp as ofertas dos produtos que você procura.</p>
+      <ol class="passos">
+        <li><b>Abra os alertas</b><span>Na tela de ofertas, responda <b>Sim, quero</b> à pergunta sobre receber ofertas no WhatsApp, ou abra <b>Alertas no WhatsApp</b> no menu da sua foto.</span></li>
+        <li><b>Confira o número</b><span>As mensagens vão para o celular cadastrado em Meus dados.</span></li>
+        <li><b>Escolha o que quer receber</b><span>Até 10 termos (ex.: iphone 15, air fryer), o desconto mínimo e o máximo de mensagens por dia, de 1 a 10.</span></li>
+        <li><b>Aceite e ative</b><span>As mensagens saem das 8h às 22h, com até 3 ofertas cada uma.</span></li>
+      </ol>
+      <ul>
+        <li><b>Parar de receber:</b> use a mesma janela ou o link que vai em cada mensagem.</li>
+      </ul>
     </section>
 
     <section id="comprar">
@@ -304,18 +342,19 @@ details p { color: var(--ink-2); }
         <li><b>Editar perfil:</b> foto, capa, nome, título, cidade, resumo, cor, moldura da foto e links (ex.: Instagram). O que dá para personalizar depende do seu plano.</li>
         <li><b>Conquistas:</b> você ganha conquistas e XP usando o site (tempo de conta, idas às lojas, compras e mais). O XP define o seu nível. Escolha quais conquistas aparecem na vitrine.</li>
         <li><b>Comunidade:</b> na tela de ofertas, o quadro <b>Comunidade</b> mostra os perfis e as lojas. Pesquise com <b>#nome</b> e toque em <b>Seguir</b>. Veja quem você segue e seus seguidores em "Ver todos".</li>
+        <li><b>Moedas e cosméticos:</b> ganhe moedas com conquistas, missões e vídeos patrocinados e troque por molduras animadas e efeitos de perfil e de nome, na loja de cosméticos em <b>Editar perfil</b>. As moedas não são dinheiro de verdade.</li>
         <li>Quem visita seu perfil vê só o que você configurou e as conquistas que você já tem.</li>
       </ul>
     </section>
 
     <section id="loja">
       <h2>Para lojas parceiras</h2>
-      <p class="sub">Tudo o que a sua loja precisa fica em <b>Minha conta</b>.</p>
+      <p class="sub">Tudo o que a sua loja precisa fica no menu lateral do seu painel: <b>Painel da loja</b>, <b>Anúncios</b>, <b>Minha loja</b>, <b>Vendas e pagamentos</b> e <b>Importação automática</b>.</p>
       <h3>Criar a loja</h3>
       <ol class="passos">
         <li><b>Cadastro como empresa</b><span>Escolha <b>Pessoa jurídica</b> (ao digitar o CNPJ, os dados da empresa são preenchidos sozinhos com os dados públicos da Receita Federal) ou <b>Pessoa física</b> (vende com o seu CPF, sem precisar de CNPJ).</span></li>
         <li><b>Minha loja</b><span>Preencha nome, frase de destaque, apresentação, logo, banner, cor, contatos, horário, endereço e as políticas de entrega e troca. Toque em <b>Salvar loja</b>.</span></li>
-        <li><b>Painel da loja liberado</b><span>Depois de salvar, aparece o <b>Painel da loja</b> com vendas, recebimento, acessos, avaliação, pendências e um checklist do que falta configurar.</span></li>
+        <li><b>Painel da loja liberado</b><span>Depois de salvar, aparece o <b>Painel da loja</b> com vendas, recebimento, ticket médio, acessos, avaliação, pendências, gráfico de vendas, funil, mais vendidos, últimos pedidos e um checklist do que falta configurar.</span></li>
       </ol>
       <h3>Anunciar produtos</h3>
       <ul>
@@ -337,15 +376,43 @@ details p { color: var(--ink-2); }
 
     <section id="afiliado">
       <h2>Para afiliados (Afiliado Pro)</h2>
-      <p class="sub">Use as ofertas do Ofertou! para vender com os seus próprios links.</p>
+      <p class="sub">Use as ofertas do Ofertou! para vender com os seus próprios links, nos seus grupos e redes.</p>
+      <ol class="passos">
+        <li><b>Abra o painel</b><span>Na área <b>Afiliado</b>, com a sua conta. O <b>Dashboard</b> mostra os primeiros passos, as mensagens enviadas, as redes conectadas, a fila, a comissão e sugestões do que postar hoje.</span></li>
+        <li><b>Cadastre os seus links</b><span>Em <span class="caminho">Links de afiliado</span>, coloque os seus códigos de cada loja. Sem o link de uma loja, as ofertas dela saem sem comissão, e o painel avisa.</span></li>
+        <li><b>Conecte o WhatsApp</b><span>Em <span class="caminho">WhatsApp</span>, toque em <b>Conectar</b>. No celular, abra o WhatsApp, entre em <b>Dispositivos conectados → Conectar um dispositivo</b> e leia o QR code. Não é preciso contratar outro serviço.</span></li>
+        <li><b>Escolha os grupos</b><span>Toque em <b>Carregar meus grupos</b>. Aparecem só os grupos que o seu número criou e administra, com foto e nome. Marque os grupos e escolha os <b>tipos de produto</b> (Tecnologia, Casa, Automóveis…) e as <b>lojas</b> de cada um. Sem nada marcado, o grupo recebe todos os tipos e todas as lojas.</span></li>
+        <li><b>Poste</b><span>Marque as ofertas com ✓ e abra <span class="caminho">Postagens</span>. Escolha as redes e os grupos, confira para onde cada produto vai e publique na hora ou coloque na fila.</span></li>
+        <li><b>Automatize</b><span>Em <span class="caminho">Agendamento</span>, escolha horários fixos ou o modo contínuo, com intervalo sorteado. Primeiro saem as ofertas da fila; se faltar, as melhores do momento. Ofertas do Mercado Livre e da Shopee têm o preço conferido na loja antes de sair.</span></li>
+      </ol>
+      <h3>Outras funções do WhatsApp</h3>
       <ul>
-        <li><b>Painel do afiliado:</b> fica no link "Painel do afiliado", no rodapé da página inicial, e abre com o mesmo e-mail e senha da sua conta.</li>
-        <li><b>Seus links:</b> cadastre os seus códigos de afiliado de cada loja. As ofertas que você posta saem com os seus links.</li>
-        <li><b>Seus canais:</b> conecte WhatsApp, Telegram, Facebook/Instagram e X.</li>
-        <li><b>Postar:</b> escolha as ofertas, revise o texto pronto e publique na hora ou agende para os horários que preferir.</li>
+        <li><b>Criar grupos em série:</b> crie de 5 a 10 grupos com o mesmo nome e numeração automática (Nome #1, Nome #2…), um por vez.</li>
+        <li><b>Conversas:</b> veja as conversas com foto e nome, leia as mensagens novas e responda pelo painel. O texto das mensagens novas fica guardado por 30 dias.</li>
+        <li><b>Grupo de automação:</b> escolha um grupo de controle e mande nele um link de produto para postar nos seus grupos. Mande <b>ajuda</b> nesse grupo para ver os comandos.</li>
+        <li><b>API para outros programas:</b> gere uma chave para outro programa enviar mensagens e automatizar as postagens. Guarde essa chave como uma senha: quem a tiver age em nome do seu número.</li>
+        <li><b>Comportamento do número:</b> rejeite chamadas com uma mensagem automática e marque mensagens como lidas sozinhas.</li>
       </ul>
-      <div class="nota ouro"><b>Boas práticas</b>Poste só em grupos onde as pessoas entraram por vontade própria e mantenha um intervalo entre as postagens. O WhatsApp pode bloquear números que enviam mensagens automáticas demais.</div>
+      <h3>Acompanhar os resultados</h3>
+      <ul>
+        <li><b>Envios:</b> mostra o que foi entregue e o que falhou, e os cliques por grupo, horário, tipo de produto, loja e oferta. Se um grupo falhar, o site tenta de novo depois de 5 e de 15 minutos.</li>
+        <li><b>Comissão:</b> a Shopee sincroniza sozinha; nas outras lojas, envie a planilha de vendas. O painel mostra o que está a receber e o disponível para saque em cada programa.</li>
+        <li><b>Membros:</b> quantas pessoas entraram e saíram de cada grupo. Só guardamos as contagens, nunca o número das pessoas.</li>
+        <li><b>Site do grupo:</b> um link só para divulgar, que leva a pessoa ao próximo grupo que ainda não lotou.</li>
+        <li><b>Avisos de falha:</b> se o WhatsApp sair do ar ou uma rodada falhar, você recebe um aviso no sino e por e-mail.</li>
+      </ul>
+      <div class="nota ouro"><b>Risco de bloqueio do número</b>Esta conexão não é a API oficial do WhatsApp, e o número pode ser bloqueado. Prefira um número só para as postagens, poste só em grupos onde as pessoas entraram por vontade própria e mantenha um intervalo entre as postagens. Evite criar muitos grupos seguidos e adicione só quem concordou em entrar.</div>
       <div class="nota"><b>Termos do Afiliado</b>O acesso é <b>pessoal e intransferível</b>: não é permitido revender, alugar, emprestar ou compartilhar a sua conta, o painel ou a ferramenta com outras pessoas, sob pena de encerramento do acesso sem reembolso. Você é o único responsável pelo que divulga, e o Ofertou! tem <b>direito de regresso</b> se tiver de pagar algo por isso. Leia o <a href="/privacidade#parceiros">item 6-A dos Termos</a>.</div>
+    </section>
+
+    <section id="celular">
+      <h2>Usar no celular</h2>
+      <p class="sub">O site funciona no navegador do celular e também pode ser instalado como aplicativo.</p>
+      <ul>
+        <li><b>Instalar no Android:</b> toque em <b>Baixar app</b>, no topo, ou em <b>Instalar</b>, no aviso que aparece na tela.</li>
+        <li><b>Instalar no iPhone:</b> pelo Safari, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</li>
+        <li><b>Dispensar o aviso:</b> toque no <b>×</b>. Ele só volta depois de 3 dias.</li>
+      </ul>
     </section>
 
     <section id="seguranca">
@@ -370,6 +437,9 @@ details p { color: var(--ink-2); }
       <details><summary>Por que preciso digitar o código de segurança se o cartão está salvo?</summary><p>É uma regra de segurança do Mercado Pago e das bandeiras: o código de segurança nunca fica guardado e é pedido a cada compra.</p></details>
       <details><summary>Uma oferta mostrava um preço e na loja estava outro.</summary><p>As lojas mudam preços a qualquer momento. Cada oferta mostra quando o preço foi conferido. Se a diferença for grande, avise o suporte para revisarmos.</p></details>
       <details><summary>Meu cadastro está aguardando aprovação. Quanto tempo leva?</summary><p>A equipe analisa os cadastros sem plano o mais rápido possível. Se quiser acesso na hora, escolha um plano na página inicial.</p></details>
+      <details><summary>Como conecto o meu WhatsApp para postar nos grupos?</summary><p>No painel do afiliado, abra WhatsApp, toque em Conectar e leia o QR code em Dispositivos conectados, no celular. Depois toque em Carregar meus grupos. O recurso faz parte do Afiliado Pro.</p></details>
+      <details><summary>Por que um grupo meu não aparece na lista?</summary><p>Aparecem só os grupos que o número conectado criou e em que ele é administrador. A tela informa quantos grupos ficaram de fora.</p></details>
+      <details><summary>Um produto não foi para o grupo que eu queria. Por quê?</summary><p>Cada grupo recebe só os tipos de produto e as lojas marcados nele. Confira a marcação em WhatsApp, ou use a opção Todos nos grupos marcados na tela de Postagens.</p></details>
       <details><summary>Como faço para ter uma loja no Ofertou!?</summary><p>Escolha o plano Loja Parceira na página inicial ou crie a conta como Empresarial. Depois, configure a loja em Minha conta → Minha loja.</p></details>
     </section>
 

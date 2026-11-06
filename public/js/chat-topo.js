@@ -28,7 +28,7 @@
       <header class="chatf-topo">
         <button class="chatf-icone" type="button" data-chatf="voltar" hidden aria-label="Voltar">‹</button>
         <div class="chatf-titulo" id="chatf-titulo"><b>Mensagens</b></div>
-        <button class="chatf-icone" type="button" data-chatf="menu" hidden title="Bloquear ou desbloquear" aria-label="Bloquear ou desbloquear">⋯</button>
+        <button class="chatf-icone" type="button" data-chatf="menu" hidden title="Mais opções" aria-label="Mais opções">⋯</button>
         <button class="chatf-icone" type="button" data-chatf="fechar" aria-label="Fechar">✕</button>
       </header>
       <div class="chatf-corpo" id="chatf-corpo"></div>
@@ -358,7 +358,17 @@
     }
     if (e.target.closest('[data-chatf="menu"]') && ATUAL) {
       const desbloquear = ATUAL.status === 'bloqueada' && ATUAL.bloqueada_por_mim;
-      if (ATUAL.status === 'bloqueada' && !desbloquear) return OfertouUI.avisar('Esta conversa foi bloqueada pela outra pessoa.');
+      const conversa = ATUAL;
+      const escolha = await OfertouUI.menu(e.target.closest('[data-chatf="menu"]'), [
+        ...(conversa.status === 'bloqueada' && !desbloquear ? [] : [{ valor: 'bloqueio', nome: desbloquear ? 'Desbloquear' : 'Bloquear' }]),
+        { valor: 'apagar', nome: 'Apagar conversa', perigo: true },
+      ]);
+      if (!escolha || ATUAL?.id !== conversa.id) return;
+      if (escolha === 'apagar') {
+        if (!await OfertouUI.confirmar('Ela some da sua lista. A outra pessoa continua vendo, e o histórico fica guardado para a administração do site.', { titulo: 'Apagar esta conversa?', ok: 'Apagar', perigo: true })) return;
+        try { await api(`/api/chat/conversas/${conversa.id}/apagar`, {}); await mostrarLista(); } catch (err) { OfertouUI.avisar(err.message); }
+        return;
+      }
       if (!await OfertouUI.confirmar(desbloquear ? 'Desbloquear esta conversa?' : `Bloquear ${ATUAL.outro.nome}? Ninguém poderá mandar mensagens nesta conversa.`)) return;
       try { ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: desbloquear ? 'desbloquear' : 'bloquear' }); cabecalho(); await novas(true); } catch (err) { OfertouUI.avisar(err.message); }
       return;

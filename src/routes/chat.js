@@ -46,6 +46,11 @@ router.post('/api/chat/conversas/:id/responder', exigirDono, (req, res) => {
   try { res.json(chat.responder(req.dono, req.params.id, String(req.body?.acao || ''))); } catch (err) { sendError(res, err); }
 });
 
+// Apagar a conversa só para quem pediu: o histórico continua guardado para a administração
+router.post('/api/chat/conversas/:id/apagar', exigirDono, (req, res) => {
+  try { res.json(chat.apagarParaMim(req.dono, req.params.id)); } catch (err) { sendError(res, err); }
+});
+
 // Começar: { perfil: slug, texto } (conversa pessoal) ou { loja_id, oferta_id, texto } (atendimento da loja)
 router.post('/api/chat/iniciar', exigirDono, (req, res) => {
   const wait = iniciarLimiter.hit(req.dono);

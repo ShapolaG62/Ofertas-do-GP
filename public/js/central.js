@@ -6,6 +6,7 @@
 
   const ICONES = {
     ofertas: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="8" cy="8" r="1.4"/>',
+    postagens: '<path d="M21 3 10.5 13.5"/><path d="M21 3l-6.5 18-4-7.500L3 9.500z"/>',
     afiliado: '<path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.2 1.2"/><path d="M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.2-1.2"/>',
     loja: '<path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 12.5V20h13v-7.5"/>',
     conta: '<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
@@ -30,6 +31,7 @@
 
   function secaoDe(u) {
     const p = u.pathname;
+    if (/^\/postagens\/?$/.test(p) && !u.searchParams.has('embed') && tem('postagens')) return 'postagens';
     if (/^\/admin\/?$/.test(p)) return tem('admin') ? 'admin' : null;
     if (/^\/cliente\/?$/.test(p)) return tem('afiliado') ? 'afiliado' : null;
     if (/^\/(trabalho|moderacao|equipe)\/?$/.test(p)) return tem('equipe') ? 'equipe' : tem('admin') ? 'admin' : null;
@@ -68,14 +70,20 @@
     return f;
   }
 
+  // Produtos marcados na tela de ofertas: se mudaram enquanto Postagens estava fechada, ela abre de novo com a escolha nova
+  const selecao = () => { try { return localStorage.getItem('gp_postagens') || ''; } catch { return ''; } };
+  let selecaoVista = null;
+
   function ativar(id, caminho) {
     const area = areas.find(a => a.id === id);
     if (!area) return;
+    if (atual === 'postagens' && id !== 'postagens') selecaoVista = selecao();
     atual = id;
     const f = quadros[id] || criarQuadro(id);
     let agora = null;
     try { const l = f.contentWindow.location; if (l.href !== 'about:blank') agora = caminhoDe(l); } catch { /* ainda sem página */ }
-    if (caminho ? caminho !== agora : !agora) f.src = caminho || area.inicio;
+    const escolhaNova = id === 'postagens' && agora && selecaoVista !== null && selecaoVista !== selecao();
+    if (caminho ? caminho !== agora || escolhaNova : !agora || escolhaNova) f.src = caminho || area.inicio;
     Object.entries(quadros).forEach(([k, q]) => { q.hidden = k !== id; });
     menu.querySelectorAll('button').forEach(b => {
       if (b.dataset.area === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');

@@ -128,10 +128,20 @@
       carregarLista();
     } catch (err) { toast(err.message); }
   });
-  $('#msg-menu').addEventListener('click', async () => {
+  $('#msg-menu').addEventListener('click', async e => {
     if (!ATUAL) return;
     const desbloquear = ATUAL.status === 'bloqueada' && ATUAL.bloqueada_por_mim;
-    if (ATUAL.status === 'bloqueada' && !desbloquear) return toast('Esta conversa foi bloqueada pela outra pessoa.');
+    const conversa = ATUAL;
+    const escolha = await OfertouUI.menu(e.currentTarget, [
+      ...(conversa.status === 'bloqueada' && !desbloquear ? [] : [{ valor: 'bloqueio', nome: desbloquear ? 'Desbloquear' : 'Bloquear' }]),
+      { valor: 'apagar', nome: 'Apagar conversa', perigo: true },
+    ]);
+    if (!escolha || ATUAL?.id !== conversa.id) return;
+    if (escolha === 'apagar') {
+      if (!await OfertouUI.confirmar('Ela some da sua lista. A outra pessoa continua vendo, e o histórico fica guardado para a administração do site.', { titulo: 'Apagar esta conversa?', ok: 'Apagar', perigo: true })) return;
+      try { await api(`/api/chat/conversas/${conversa.id}/apagar`, {}); voltarLista(); carregarLista(); toast('Conversa apagada.'); } catch (err) { toast(err.message); }
+      return;
+    }
     if (!await OfertouUI.confirmar(desbloquear ? 'Desbloquear esta conversa?' : `Bloquear ${ATUAL.outro.nome}? Ninguém poderá mandar mensagens nesta conversa.`)) return;
     try {
       ATUAL = await api(`/api/chat/conversas/${ATUAL.id}/responder`, { acao: desbloquear ? 'desbloquear' : 'bloquear' });

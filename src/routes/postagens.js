@@ -46,6 +46,14 @@ router.get('/api/postagens/permissao', (req, res) => {
 
 router.use('/api/postagens', requirePoster);
 
+// Lista de cupons ativos: a próxima mensagem e o envio para os grupos salvos de quem está usando
+router.get('/api/postagens/cupons', (req, res) => res.json(require('../lista-cupons').previa(req.poster.clienteId)));
+router.post('/api/postagens/cupons/postar', async (req, res) => {
+  const wait = postLimiter.hit(req.poster.key);
+  if (wait) return res.status(429).json({ error: `Muitas publicações. Tente de novo em ${wait} min.` });
+  try { res.json(await require('../lista-cupons').postar(req.poster.clienteId)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
+
 router.get('/api/postagens/redes', (req, res) => {
   const cid = req.poster.clienteId;
   res.json({

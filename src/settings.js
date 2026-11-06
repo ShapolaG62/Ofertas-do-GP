@@ -163,6 +163,10 @@ const DEFAULTS = {
   agenda_lojas: '',             // lojas das ofertas automáticas (vazio = todas), ex.: mercadolivre,amazon
   agenda_palavras_bloqueadas: 'capinha, capa para celular, pelicula, cabo usb, suporte para celular', // nunca postar ofertas com estas palavras
   agenda_palavras_permitidas: '', // se preenchido: só ofertas com pelo menos uma destas palavras
+  agenda_cupons_ativa: '0',       // postar a lista de cupons sozinho nos horários abaixo
+  agenda_cupons_horarios: '12:00',
+  agenda_cupons_pos: '0',         // de onde a próxima lista de cupons continua
+  agenda_cupons_ultima: '',       // resultado do último envio da lista de cupons
   post_modelo: '',              // modelo do texto das postagens (public/js/modelo-post.js); vazio = padrão
   ia_sac_ativa: '1',
   wa_grupo_controle: '',
@@ -185,7 +189,7 @@ const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_se
   'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token', 'ganhos_awin_token', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
-const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas', 'ganhos_ml_estimado', 'ml_varredura'];
+const INTERNAL_KEYS = ['admin_password_hash', 'mining_cursor', 'agenda_ultimas', 'agenda_cupons_pos', 'agenda_cupons_ultima', 'ganhos_ml_estimado', 'ml_varredura'];
 
 for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);

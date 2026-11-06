@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="/js/app-nativo.js?v=20261298"></script>
+<script src="/js/app-nativo.js?v=20261299"></script>
 <style>
 /* Guia do usuário: índice fixo à esquerda no computador, coluna única no celular; as mesmas cores do site */
 :root {
@@ -140,11 +140,11 @@ details p { color: var(--ink-2); }
 
 .rodape { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 14px; display: grid; gap: 6px; }
 </style>
-<script src="/js/tema.js?v=20261298"></script>
-<script src="/js/rodape-legal.js?v=20261298" defer></script>
-<script src="/js/instalar-app.js?v=20261298" defer></script>
-<script src="/js/cookies.js?v=20261298"></script>
-<script src="/js/seletor.js?v=20261298" defer></script>
+<script src="/js/tema.js?v=20261299"></script>
+<script src="/js/rodape-legal.js?v=20261299" defer></script>
+<script src="/js/instalar-app.js?v=20261299" defer></script>
+<script src="/js/cookies.js?v=20261299"></script>
+<script src="/js/seletor.js?v=20261299" defer></script>
 </head>
 <body>
 <header class="topo">
@@ -230,7 +230,7 @@ details p { color: var(--ink-2); }
       <h2>Navegar pelo site</h2>
       <p class="sub">Tudo o que a sua conta usa fica numa guia só, sem abrir janelas novas.</p>
       <ul>
-        <li><b>Menu de áreas:</b> fica na lateral no computador e no topo no celular. Mostra só o que a sua conta usa: <b>Ofertas</b>, <b>Afiliado</b>, <b>Minha loja</b>, <b>Minha conta</b> e, para quem trabalha no site, <b>Equipe</b>.</li>
+        <li><b>Menu de áreas:</b> fica na lateral no computador e no topo no celular. Mostra só o que a sua conta usa: <b>Ofertas</b>, <b>Postagens</b>, <b>Afiliado</b>, <b>Minha loja</b>, <b>Minha conta</b> e, para quem trabalha no site, <b>Equipe</b>.</li>
         <li><b>Menu de cada área:</b> os painéis de afiliado, de loja e da conta têm um menu lateral dividido em grupos, como Essencial e Minha conta.</li>
         <li><b>No celular:</b> toque no botão com o nome da tela em que você está para abrir a lista completa do menu. Ao escolher um item, a lista fecha sozinha.</li>
         <li><b>Tema:</b> escolha <b>Claro</b>, <b>Escuro</b> ou <b>Automático</b> (segue o aparelho) no rodapé ou no menu da sua foto. A escolha vale para todas as páginas neste aparelho.</li>
@@ -263,6 +263,7 @@ details p { color: var(--ink-2); }
         <li><b>Abas das lojas:</b> toque no logo de uma loja para ver só as ofertas dela.</li>
         <li><b>Cada oferta mostra</b> o preço de agora, o preço anterior riscado, a porcentagem de desconto e o selo <b>Preço verificado</b>. O selo <b>Menor preço</b> marca o menor valor recente do produto ou o anúncio mais barato entre anúncios iguais.</li>
         <li><b>Cupom:</b> quando a oferta tem cupom, o código aparece no cartão. Toque nele para copiar e use no pagamento da loja. Alguns cupons do Mercado Livre precisam ser ativados no app dele. O preço mostrado já considera o cupom e o cartão informa o valor sem ele.</li>
+        <li><b>Página de cupons:</b> em <a href="/cupons">/cupons</a> ficam todos os cupons ativos, separados por loja, com onde usar cada um.</li>
         <li><b>Ver oferta:</b> toque no botão para abrir o produto na loja e finalizar a compra por lá.</li>
       </ul>
       <div class="nota ouro"><b>Preço mudou?</b>As lojas mudam os preços a qualquer momento. Antes de pagar, confira sempre o valor final na página da loja. Ofertas que acabam saem do Ofertou! sozinhas.</div>
@@ -318,6 +319,7 @@ details p { color: var(--ink-2); }
         <li><b>Falar com uma pessoa:</b> no perfil dela, toque em <b>Mensagem</b>. A primeira mensagem chega como um pedido: a pessoa aceita, recusa ou bloqueia.</li>
         <li><b>Recebeu um pedido de mensagem?</b> Use o menu ⋯ da conversa para aceitar, recusar ou bloquear. Responder também aceita.</li>
         <li>Cada conversa tem um número (ex.: CV-000123), útil para falar com o suporte.</li>
+        <li><b>Apagar conversa:</b> abra a conversa, toque no menu ⋯ e escolha <b>Apagar conversa</b>. Ela some da sua lista, mas a outra pessoa continua vendo, e o histórico fica guardado para a administração do site. Se chegar mensagem nova, a conversa volta só com as mensagens novas.</li>
         <li><b>Respeito no chat:</b> palavrões e ofensas viram asteriscos automaticamente. A mensagem original fica guardada só para a moderação, que pode dar advertência, bloquear o chat por alguns dias, suspender ou banir quem insiste. Você é avisado no sino e pode contestar pelo Suporte.</li>
       </ul>
     </section>
@@ -389,6 +391,8 @@ details p { color: var(--ink-2); }
       <ul>
         <li><b>Criar grupos em série:</b> crie de 5 a 10 grupos com o mesmo nome e numeração automática (Nome #1, Nome #2…), um por vez.</li>
         <li><b>Conversas:</b> veja as conversas com foto e nome, leia as mensagens novas e responda pelo painel. O texto das mensagens novas fica guardado por 30 dias.</li>
+        <li><b>Lista de cupons:</b> em <span class="caminho">Agendamento</span>, poste os cupons ativos nos seus grupos, na hora ou em horários fixos. Cada envio leva 20 cupons, um abaixo do outro, com onde usar e o link <b>Ver mais</b>.</li>
+        <li><b>Sugestões de palavras:</b> em <span class="caminho">Agendamento</span>, toque nas sugestões para marcar as palavras obrigatórias e as proibidas das ofertas automáticas.</li>
         <li><b>Grupo de automação:</b> escolha um grupo de controle e mande nele um link de produto para postar nos seus grupos. Mande <b>ajuda</b> nesse grupo para ver os comandos.</li>
         <li><b>API para outros programas:</b> gere uma chave para outro programa enviar mensagens e automatizar as postagens. Guarde essa chave como uma senha: quem a tiver age em nome do seu número.</li>
         <li><b>Comportamento do número:</b> rejeite chamadas com uma mensagem automática e marque mensagens como lidas sozinhas.</li>

@@ -12,6 +12,7 @@ function areas(req) {
   const u = users.currentUser(req);
   const ativo = u && u.status === 'active' ? u : null;
   if (access.canSeeOffers(req)) lista.push({ id: 'ofertas', nome: 'Ofertas', inicio: '/' });
+  if (admin || clientes.atual(req)) lista.push({ id: 'postagens', nome: 'Postagens', inicio: '/postagens' });
   // O administrador sempre vê estas duas áreas. Sem a própria conta, elas abrem em modo de visualização (public/js/visualizacao.js).
   if (admin || clientes.atual(req)) lista.push({ id: 'afiliado', nome: 'Afiliado', inicio: '/cliente' });
   if (admin || ativo?.tipo === 'empresa') lista.push({ id: 'loja', nome: admin ? 'Loja parceira' : 'Minha loja', inicio: '/conta?aba=painel' });

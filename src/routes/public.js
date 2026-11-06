@@ -12,6 +12,12 @@ const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 
 const router = express.Router();
 
+// Todos os cupons ativos: o destino do "Ver mais" da lista postada nos grupos
+router.get('/cupons', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.type('html').send(require('../paginas/cupons').pagina(require('../lista-cupons').ativos()));
+});
+
 // Página de ofertas: o servidor filtra e devolve só a página pedida (24 ofertas) + os números dos filtros
 const listaPronta = (req, res, next) => require('../busca-ofertas').aguardar(req, res, next); // servidor acabou de ligar: espera sem travar
 router.get('/api/offers/busca', listaPronta, (req, res) => {

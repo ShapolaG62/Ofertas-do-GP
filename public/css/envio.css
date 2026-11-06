@@ -79,3 +79,20 @@
 .wap-serie-campos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 10px; }
 .wap-serie-lista { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; overflow-wrap: anywhere; }
 @media (min-width: 760px) { .wap-serie-campos { grid-template-columns: minmax(0, 1fr) 180px; } }
+
+/* Agendamento: sugestões de palavras e lista de cupons */
+.pal-campo { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.pal-sug { border: 1px solid var(--line, var(--border)); border-radius: 10px; background: var(--surface-2, transparent); min-width: 0; }
+.pal-sug summary { cursor: pointer; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--azul-texto, var(--ink)); }
+.pal-grupo { padding: 2px 12px 10px; }
+.pal-nome { display: block; font-size: 12px; font-weight: 700; color: var(--ink-3, var(--muted)); margin-bottom: 6px; }
+.pal-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pal-chip { min-height: 32px; padding: 4px 11px; border: 1px solid var(--line-strong, var(--border-strong)); border-radius: 999px; background: var(--surface, transparent); color: var(--ink, var(--text)); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.pal-chip:hover { background: var(--azul-soft); }
+.pal-chip[aria-pressed="true"] { background: var(--azul); border-color: var(--azul); color: #fff; }
+.cup-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.cup-estado { margin: 8px 0; font-size: 13px; color: var(--ink-2, var(--muted)); overflow-wrap: anywhere; }
+.cup-previa { border: 1px solid var(--line, var(--border)); border-radius: 10px; margin-bottom: 12px; }
+.cup-previa summary { cursor: pointer; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--azul-texto, var(--ink)); }
+.cup-previa pre { margin: 0; padding: 0 12px 12px; max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 13.5px/1.5 Figtree, system-ui, sans-serif; color: var(--ink, var(--text)); }
+@media (max-width: 900px) { .pal-chip { min-height: 44px; padding-inline: 14px; } .pal-sug summary, .cup-previa summary { padding-block: 13px; } }

@@ -45,6 +45,14 @@ db.db.exec(`
   CREATE INDEX IF NOT EXISTS idx_mensagens_conversa ON mensagens(conversa_id, id);
 `);
 
+// Conversa apagada por um dos lados: até esta mensagem, ela não aparece mais para essa pessoa (0 = nunca apagou)
+for (const col of ['apagada_a', 'apagada_b']) {
+  if (!db.all('PRAGMA table_info(conversas)').some(c => c.name === col)) db.db.exec(`ALTER TABLE conversas ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0`);
+}
+const marcaApagada = (c, dono) => (c.a === dono ? c.apagada_a : c.apagada_b) || 0;
+const ultimaMsgId = id => db.get('SELECT MAX(id) n FROM mensagens WHERE conversa_id = ?', id).n || 0;
+const visivelPara = (c, dono) => { const m = marcaApagada(c, dono); return !m || ultimaMsgId(c.id) > m; };
+
 const ticket = id => `CV-${String(id).padStart(6, '0')}`;
 const texto = v => String(v ?? '').replace(/\r\n/g, '\n').trim().slice(0, MAX_TEXTO);
 
@@ -225,7 +233,7 @@ function naoLidas(c, dono) {
 }
 
 function resumoConversa(dono, c) {
-  const ult = db.get('SELECT texto, autor, created_at FROM mensagens WHERE conversa_id = ? ORDER BY id DESC LIMIT 1', c.id);
+  const ult = db.get('SELECT texto, autor, created_at FROM mensagens WHERE conversa_id = ? AND id > ? ORDER BY id DESC LIMIT 1', c.id, marcaApagada(c, dono));
   const oferta = c.oferta_id ? db.get('SELECT id, produto FROM offers WHERE id = ?', c.oferta_id) : null;
   return {
     id: c.id, ticket: ticket(c.id), tipo: c.tipo, status: c.status, outro: pessoa(outro(c, dono), c),
@@ -240,16 +248,28 @@ function resumoConversa(dono, c) {
 function lista(dono) {
   if (!dono) throw fail('Entre na sua conta.', 401);
   return db.all(`SELECT * FROM conversas WHERE (a = ? OR (b = ? AND status <> 'recusada'))
-                 ORDER BY COALESCE(ultima_msg_at, created_at) DESC LIMIT 300`, dono, dono).map(c => resumoConversa(dono, c));
+                   AND (CASE WHEN a = ? THEN apagada_a ELSE apagada_b END = 0
+                        OR COALESCE((SELECT MAX(m.id) FROM mensagens m WHERE m.conversa_id = conversas.id), 0) > CASE WHEN a = ? THEN apagada_a ELSE apagada_b END)
+                 ORDER BY COALESCE(ultima_msg_at, created_at) DESC LIMIT 300`, dono, dono, dono, dono).map(c => resumoConversa(dono, c));
 }
 
 // Mensagens de uma conversa (a partir de um id, para atualizar) e marca como lidas
 function mensagens(dono, convId, depois = 0) {
   const c = daConversa(dono, convId);
   const lista = db.all('SELECT id, autor, texto, pedido_id, created_at FROM mensagens WHERE conversa_id = ? AND id > ? ORDER BY id LIMIT 500',
-    c.id, Number(depois) || 0).map(m => ({ id: m.id, minha: m.autor === dono, sistema: !m.autor, texto: m.texto, pedido_id: m.pedido_id, em: m.created_at }));
+    c.id, Math.max(Number(depois) || 0, marcaApagada(c, dono))).map(m => ({ id: m.id, minha: m.autor === dono, sistema: !m.autor, texto: m.texto, pedido_id: m.pedido_id, em: m.created_at }));
   if (lista.length) db.run(`UPDATE conversas SET ${c.a === dono ? 'lido_a' : 'lido_b'} = MAX(${c.a === dono ? 'lido_a' : 'lido_b'}, ?) WHERE id = ?`, lista[lista.length - 1].id, c.id);
   return { conversa: resumoConversa(dono, db.get('SELECT * FROM conversas WHERE id = ?', c.id)), mensagens: lista };
+}
+
+// Apaga a conversa só para esta pessoa. A outra continua vendo, o administrador vê tudo e, se chegar mensagem nova,
+// a conversa volta para quem apagou só com as mensagens novas. Bloqueio e pedidos continuam valendo.
+function apagarParaMim(dono, convId) {
+  const c = daConversa(dono, convId);
+  const lado = c.a === dono ? 'a' : 'b';
+  const ultima = Math.max(ultimaMsgId(c.id), 1);
+  db.run(`UPDATE conversas SET apagada_${lado} = ?, lido_${lado} = MAX(lido_${lado}, ?) WHERE id = ?`, ultima, ultima, c.id);
+  return { ok: true };
 }
 
 // Para o ícone do topo: mensagens não lidas e pedidos de mensagem esperando resposta
@@ -258,6 +278,7 @@ function resumo(dono) {
   const convs = db.all(`SELECT * FROM conversas WHERE (a = ? OR b = ?) AND status IN ('pendente', 'aceita')`, dono, dono);
   let nao = 0, pedidos = 0;
   for (const c of convs) {
+    if (!visivelPara(c, dono)) continue;
     if (c.status === 'pendente' && c.b === dono) pedidos++;
     else nao += naoLidas(c, dono);
   }
@@ -272,7 +293,7 @@ function listarAdmin({ q = '', dono = null, limite = 200 } = {}) {
   if (dono) { sql += ' AND (a = ? OR b = ?)'; p.push(dono, dono); }
   sql += ' ORDER BY COALESCE(ultima_msg_at, created_at) DESC LIMIT ?';
   p.push(termo ? 2000 : limite);
-  let rows = db.all(sql, ...p).map(c => ({
+  let rows = db.all(sql, ...p).filter(c => !(c.apagada_a && c.apagada_b && !ultimaMsgId(c.id))).map(c => ({
     id: c.id, ticket: ticket(c.id), tipo: c.tipo, status: c.status, a: pessoa(c.a), b: pessoa(c.b, c), loja_id: c.loja_id,
     mensagens: db.get('SELECT COUNT(*) n FROM mensagens WHERE conversa_id = ?', c.id).n,
     created_at: c.created_at, ultima_msg_at: c.ultima_msg_at,
@@ -288,12 +309,26 @@ function transcricao(convId) {
   return {
     id: c.id, ticket: ticket(c.id), tipo: c.tipo, status: c.status, a, b, created_at: c.created_at, respondida_em: c.respondida_em,
     bloqueada_por: c.bloqueada_por ? pessoa(c.bloqueada_por).nome : null,
+    apagada_por: [c.apagada_a ? a.nome : null, c.apagada_b ? b.nome : null].filter(Boolean),
     mensagens: db.all('SELECT id, autor, texto, pedido_id, created_at FROM mensagens WHERE conversa_id = ? ORDER BY id', c.id)
       .map(m => ({ ...m, autor_nome: m.autor ? (m.autor === c.a ? a.nome : b.nome) : 'Sistema' })),
   };
 }
 
+// Painel do administrador: apaga de vez as mensagens da conversa e as ocorrências de moderação dela, para todos.
+// A conversa continua existindo por baixo, para não desfazer um bloqueio nem soltar os pedidos ligados a ela.
+function apagarHistorico(convId) {
+  const c = db.get('SELECT * FROM conversas WHERE id = ?', Number(convId));
+  if (!c) throw fail('Conversa não encontrada.', 404);
+  const ultima = Math.max(ultimaMsgId(c.id), 1);
+  const removidas = db.run('DELETE FROM mensagens WHERE conversa_id = ?', c.id).changes;
+  db.run(`DELETE FROM chat_infracoes WHERE origem = 'chat' AND ref_id = ?`, c.id);
+  db.run('UPDATE conversas SET apagada_a = ?, apagada_b = ?, lido_a = MAX(lido_a, ?), lido_b = MAX(lido_b, ?) WHERE id = ?', ultima, ultima, ultima, ultima, c.id);
+  return { ok: true, removidas };
+}
+
 module.exports = {
+  apagarParaMim, apagarHistorico,
   ticket, pessoa, iniciarPessoal, iniciarLoja, conversaLoja, enviar, responder, lista, mensagens, resumo, sistema,
   listarAdmin, transcricao, avisarPorEmail, emailDe,
 };

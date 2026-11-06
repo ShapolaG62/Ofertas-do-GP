@@ -678,14 +678,14 @@
     .side.menu-cel-aberto .tab { width: 100%; white-space: normal; font-size: 15px; }
   }
 </style>
-<script src="/js/tema.js?v=20261298"></script>
-<script src="/js/dialogo.js?v=20261298"></script>
-<script src="/js/modelo-post.js?v=20261298"></script>
-<script src="/js/avisos-entrada.js?v=20261298"></script>
-<script src="/js/capi-minerando.js?v=20261298" defer></script>
-<script src="/js/cadastro-auto.js?v=20261298" defer></script>
-<script src="/js/seletor.js?v=20261298" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261298">
+<script src="/js/tema.js?v=20261299"></script>
+<script src="/js/dialogo.js?v=20261299"></script>
+<script src="/js/modelo-post.js?v=20261299"></script>
+<script src="/js/avisos-entrada.js?v=20261299"></script>
+<script src="/js/capi-minerando.js?v=20261299" defer></script>
+<script src="/js/cadastro-auto.js?v=20261299" defer></script>
+<script src="/js/seletor.js?v=20261299" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261299">
 </head>
 <body>
 <div class="wrap">
@@ -1725,6 +1725,14 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
             <label class="field">Palavras obrigatórias (vazio = qualquer produto) <input type="text" name="agenda_palavras_permitidas" placeholder="air fryer, iphone, smart tv"></label>
           </div>
           <p class="hint">Separe por vírgula. Valem para as ofertas que o site escolhe sozinho; o que você coloca na fila é postado como está.</p>
+          <h3>Lista de cupons</h3>
+          <div class="grid">
+            <label class="field">Postar a lista sozinho
+              <select name="agenda_cupons_ativa"><option value="0">Desligado</option><option value="1">Ligado</option></select></label>
+            <label class="field">Horários da lista (separe por vírgula) <input type="text" name="agenda_cupons_horarios" placeholder="12:00,19:00"></label>
+          </div>
+          <p class="hint">Vai para os grupos salvos do WhatsApp: 20 cupons em cada envio, um abaixo do outro, com onde usar e o link "Ver mais" para a página de cupons. Cada envio continua de onde o anterior parou. Grupo com lojas marcadas recebe só os cupons delas.</p>
+          <div data-lista-cupons></div>
           <h3>Redes do agendamento</h3>
           <div class="row" style="gap:18px">
             <label class="check"><input type="checkbox" data-agenda-rede="whatsapp"> WhatsApp</label>
@@ -2159,10 +2167,11 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
   </form>
 </dialog>
 
-<script src="/js/menu-celular.js?v=20261298"></script>
-<script src="/js/admin.js?v=20261298"></script>
-<script src="/js/wa-temas.js?v=20261298"></script>
-<script src="/js/envio-resultados.js?v=20261298"></script>
-<script src="/js/wa-proprio.js?v=20261298"></script>
+<script src="/js/menu-celular.js?v=20261299"></script>
+<script src="/js/admin.js?v=20261299"></script>
+<script src="/js/wa-temas.js?v=20261299"></script>
+<script src="/js/envio-resultados.js?v=20261299"></script>
+<script src="/js/wa-proprio.js?v=20261299"></script>
+<script src="/js/agenda-extras.js?v=20261299"></script>
 </body>
 </html>

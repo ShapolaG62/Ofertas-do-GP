@@ -1624,7 +1624,9 @@ async function abrirTicket(tipo, id) {
     $('#tk-title').textContent = `${c.ticket} — ${c.tipo === 'loja' ? 'Atendimento de loja' : 'Conversa pessoal'}`;
     body.innerHTML = `<dl class="kv"><dt>Iniciada por</dt><dd>${esc(c.a.nome)}${c.a.slug ? ` (<a href="/perfil/${esc(c.a.slug)}" target="_blank">perfil</a>)` : ''}</dd>
       <dt>Para</dt><dd>${esc(c.b.nome)}</dd><dt>Situação</dt><dd>${esc((ST_CONV[c.status] || [])[1] || c.status)}${c.bloqueada_por ? ` por ${esc(c.bloqueada_por)}` : ''}</dd>
-      <dt>Criada em</dt><dd>${fmtDate(c.created_at)}</dd>${c.respondida_em ? `<dt>Respondida em</dt><dd>${fmtDate(c.respondida_em)}</dd>` : ''}</dl>
+      <dt>Criada em</dt><dd>${fmtDate(c.created_at)}</dd>${c.respondida_em ? `<dt>Respondida em</dt><dd>${fmtDate(c.respondida_em)}</dd>` : ''}
+      ${c.apagada_por.length ? `<dt>Apagada por</dt><dd>${esc(c.apagada_por.join(' e '))} (só para quem apagou; o histórico abaixo continua guardado)</dd>` : ''}</dl>
+      <div class="actions" style="justify-content:flex-start;margin:0 0 10px"><button class="btn small danger" type="button" data-tk-apagar="${c.id}">Apagar histórico</button></div>
       <div class="tk-msgs">${c.mensagens.length ? c.mensagens.map(m => `<div class="tk-msg${m.autor ? '' : ' sis'}"><b>${esc(m.autor_nome)}</b>${esc(m.texto)}<small>${fmtDate(m.created_at)}${m.pedido_id ? ` · <a href="#" data-tk-pedido="${m.pedido_id}">pedido</a>` : ''}</small></div>`).join('') : '<span class="hint">Sem mensagens.</span>'}</div>`;
   } else {
     const p = await api(`/api/admin/pedidos-loja/${id}`);
@@ -1645,6 +1647,17 @@ document.addEventListener('click', e => {
   if (tr) return abrirTicket(tr.dataset.tk, tr.dataset.id).catch(err => globalMsg(err.message, false));
   const lp = e.target.closest('[data-tk-pedido]');
   if (lp) { e.preventDefault(); return abrirTicket('pedido', lp.dataset.tkPedido).catch(err => globalMsg(err.message, false)); }
+  const ap = e.target.closest('[data-tk-apagar]');
+  if (ap) {
+    (async () => {
+      if (!await OfertouUI.confirmar('As mensagens e as ocorrências de moderação desta conversa serão apagadas de vez, também para as pessoas da conversa. Não dá para desfazer. Bloqueios e pedidos continuam valendo.', { titulo: 'Apagar o histórico desta conversa?', ok: 'Apagar histórico', perigo: true })) return;
+      await api(`/api/admin/conversas/${ap.dataset.tkApagar}/historico`, { method: 'DELETE' });
+      $('#tk-dlg').close();
+      globalMsg('Histórico da conversa apagado.', true);
+      loadAtendimento().catch(() => {});
+    })().catch(err => globalMsg(err.message, false));
+    return;
+  }
   const lc = e.target.closest('[data-tk-conversa]');
   if (lc) return abrirTicket('conversa', lc.dataset.tkConversa).catch(err => globalMsg(err.message, false));
 });

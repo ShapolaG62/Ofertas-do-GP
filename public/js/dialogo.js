@@ -2,7 +2,8 @@
    OfertouUI.confirmar(texto, { titulo, ok, cancelar, perigo })  → Promise<boolean>
    OfertouUI.perguntar(texto, padrao, { titulo, tipo, ok })        → Promise<string | null>  (null = cancelou)
    OfertouUI.avisar(texto, { titulo })                             → Promise<void>
-   OfertouUI.escolher(texto, [{ valor, nome }], { titulo, ok })    → Promise<string | null>  (null = cancelou) */
+   OfertouUI.escolher(texto, [{ valor, nome }], { titulo, ok })    → Promise<string | null>  (null = cancelou)
+   OfertouUI.menu(botao, [{ valor, nome, perigo }])                → Promise<string | null>  (menu pequeno junto ao botão) */
 (() => {
   'use strict';
   if (window.OfertouUI) return;
@@ -29,6 +30,11 @@
   .oui-btn.ok { background: var(--brand, var(--green, #2bd47d)); border-color: transparent; color: #fff; }
   .oui-btn.ok.perigo { background: #e5484d; }
   .oui-btn.ok:hover { filter: brightness(1.07); }
+  .oui-menu { position: fixed; z-index: 2147483000; min-width: 190px; padding: 6px; display: grid; gap: 2px; background: var(--surface, #161b18); color: var(--ink, var(--text, #eef3f0));
+    border: 1px solid var(--line-strong, var(--border-strong, #343c36)); border-radius: 12px; box-shadow: 0 14px 40px rgba(0,0,0,.35); font-family: Figtree, system-ui, sans-serif; }
+  .oui-menu button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; font-size: 14.5px; font-weight: 600; text-align: left; cursor: pointer; }
+  .oui-menu button:hover, .oui-menu button:focus-visible { background: var(--surface-2, rgba(255,255,255,.06)); outline: none; }
+  .oui-menu button.perigo { color: var(--deal, #e5484d); }
   @keyframes oui-in { from { opacity: 0 } }
   @keyframes oui-sobe { from { opacity: 0; transform: translateY(12px) scale(.97) } }
   @media (max-width: 480px) { .oui-botoes { flex-direction: column-reverse; } .oui-btn { width: 100%; } }`;
@@ -91,7 +97,32 @@
     return [(m[1] + (m[2] === '?' ? '?' : '')).trim(), m[3].trim().replace(/:$/, '')];
   }
 
-  window.OfertouUI = {
+  function menu(botao, itens) {
+    return new Promise(resolve => {
+      const el = document.createElement('div');
+      el.className = 'oui-menu';
+      el.setAttribute('role', 'menu');
+      el.innerHTML = itens.map(i => `<button type="button" role="menuitem" data-v="${esc(i.valor)}"${i.perigo ? ' class="perigo"' : ''}>${esc(i.nome)}</button>`).join('');
+      (botao.closest('dialog[open]') || document.body).appendChild(el);
+      const r = botao.getBoundingClientRect(), m = el.getBoundingClientRect();
+      el.style.top = `${Math.max(8, Math.min(r.bottom + 6, innerHeight - m.height - 8))}px`;
+      el.style.left = `${Math.max(8, Math.min(r.right - m.width, innerWidth - m.width - 8))}px`;
+      const fechar = v => {
+        document.removeEventListener('pointerdown', fora, true);
+        document.removeEventListener('keydown', tecla, true);
+        el.remove();
+        resolve(v);
+      };
+      const fora = e => { if (!el.contains(e.target)) fechar(null); };
+      const tecla = e => { if (e.key === 'Escape') { e.stopPropagation(); fechar(null); } };
+      el.addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) fechar(b.dataset.v); });
+      document.addEventListener('pointerdown', fora, true);
+      document.addEventListener('keydown', tecla, true);
+      el.querySelector('button')?.focus();
+    });
+  }
+
+  window.OfertouUI = { menu,
     confirmar(texto, o = {}) {
       const perigo = o.perigo ?? ehPerigo(texto);
       const [tit, ...resto] = String(texto).split(/(?<=\?)\s+/);

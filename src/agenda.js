@@ -301,8 +301,31 @@ function verificarContinuo(cid, s) {
   executar('modo contínuo', cid, porVez).catch(err => log(`erro: ${err.message}`));
 }
 
+// Lista de cupons: cada horário roda uma vez por dia, ligada ou não ao agendamento das ofertas
+function verificarCupons(cid, s) {
+  if (s.agenda_cupons_ativa !== '1') return;
+  const { dia, minutos } = agoraBrasilia();
+  const feitas = lerFeitas(cid);
+  for (const h of horarios({ agenda_horarios: s.agenda_cupons_horarios })) {
+    const [hh, mm] = h.split(':').map(Number);
+    const alvo = hh * 60 + mm, chave = `cupons ${h}`;
+    if (minutos < alvo || minutos > alvo + 120 || feitas[chave] === dia) continue;
+    feitas[chave] = dia;
+    gravarFeitas(cid, feitas);
+    require('./lista-cupons').postar(cid, `horário ${h}`).then(r => {
+      log(`cupons (${cid ? `cliente ${cid}` : 'site'}): ${r.enviados} grupo(s), ${r.falhas.length} com falha`);
+      if (r.falhas.length) avisos.avisar(cid, { tipo: 'cupons', titulo: 'A lista de cupons falhou em alguns grupos', texto: r.falhas.map(f => `${f.grupo}: ${f.erro}`).join('; ').slice(0, 500) });
+    }).catch(err => {
+      log(`cupons: ${err.message}`);
+      avisos.avisar(cid, { tipo: 'cupons', titulo: 'A lista de cupons não saiu', texto: err.message });
+    });
+    break;
+  }
+}
+
 function verificarDono(cid) {
   const s = configDe(cid);
+  verificarCupons(cid, s);
   if (s.agenda_ativa !== '1' || rodando.has(dono(cid))) return;
   if (s.agenda_modo === 'continuo') return verificarContinuo(cid, s);
   const { dia, minutos } = agoraBrasilia();

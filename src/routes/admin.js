@@ -433,6 +433,10 @@ router.delete('/api/admin/videos-patrocinados/:id', (req, res) => {
 router.get('/api/admin/conversas/:id', (req, res) => {
   try { res.json(require('../chat').transcricao(req.params.id)); } catch (err) { sendError(res, err); }
 });
+// Apaga de vez as mensagens da conversa, para todos (o bloqueio e os pedidos continuam valendo)
+router.delete('/api/admin/conversas/:id/historico', (req, res) => {
+  try { res.json(require('../chat').apagarHistorico(req.params.id)); } catch (err) { sendError(res, err); }
+});
 router.get('/api/admin/pedidos-loja/:id', (req, res) => {
   try { res.json(require('../pedidos-loja').detalheAdmin(req.params.id)); } catch (err) { sendError(res, err); }
 });

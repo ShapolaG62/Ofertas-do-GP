@@ -132,6 +132,7 @@
     return partes.length ? partes.join(', ') : 'Recebe todas as ofertas';
   };
   function desenharGrupos(d) {
+    for (const l of d.lojas || []) STORES[l.id] = l.nome; // inclui as lojas parceiras
     const caixa = $('#wa-destinos');
     caixa.hidden = !usaWhatsapp();
     $('#wa-destinos-info').innerHTML = d?.erro ? esc(d.erro)

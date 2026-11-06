@@ -96,3 +96,8 @@
 .cup-previa summary { cursor: pointer; padding: 10px 12px; font-size: 13px; font-weight: 700; color: var(--azul-texto, var(--ink)); }
 .cup-previa pre { margin: 0; padding: 0 12px 12px; max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 13.5px/1.5 Figtree, system-ui, sans-serif; color: var(--ink, var(--text)); }
 @media (max-width: 900px) { .pal-chip { min-height: 44px; padding-inline: 14px; } .pal-sug summary, .cup-previa summary { padding-block: 13px; } }
+.cup-redes { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 10px; }
+.cup-rede { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--ink, var(--text)); cursor: pointer; }
+.cup-rede.fora { color: var(--ink-3, var(--muted)); cursor: default; font-weight: 500; }
+.cup-rede small { font-size: 12px; font-weight: 500; }
+@media (max-width: 900px) { .cup-rede { min-height: 44px; } }

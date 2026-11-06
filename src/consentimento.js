@@ -6,7 +6,7 @@
 const db = require('./db');
 
 // Mude a versão sempre que os Termos ou a Política mudarem de forma relevante (aparece na página /privacidade).
-const VERSAO = '2026-10-20';
+const VERSAO = '2026-11-06';
 
 db.db.exec(`
   CREATE TABLE IF NOT EXISTS consentimentos (

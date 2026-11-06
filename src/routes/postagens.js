@@ -51,7 +51,7 @@ router.get('/api/postagens/cupons', (req, res) => res.json(require('../lista-cup
 router.post('/api/postagens/cupons/postar', async (req, res) => {
   const wait = postLimiter.hit(req.poster.key);
   if (wait) return res.status(429).json({ error: `Muitas publicações. Tente de novo em ${wait} min.` });
-  try { res.json(await require('../lista-cupons').postar(req.poster.clienteId)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+  try { res.json(await require('../lista-cupons').postar(req.poster.clienteId, 'manual', Array.isArray(req.body?.redes) ? req.body.redes.map(String) : null)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
 });
 
 router.get('/api/postagens/redes', (req, res) => {

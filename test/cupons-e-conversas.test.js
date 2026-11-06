@@ -70,6 +70,64 @@ test('lista de cupons: cada grupo recebe só as lojas marcadas e falha em um nã
   }
 });
 
+test('lista de cupons: outras redes, sem parar nas que falham, e X em até 280 caracteres', async () => {
+  const antes = { telegram: social.postarTexto.telegram, facebook: social.postarTexto.facebook, x: social.postarTexto.x, instagram: social.postarTexto.instagram, prontas: {} };
+  for (const id of ['telegram', 'facebook', 'x', 'instagram']) { antes.prontas[id] = social.REDES[id].pronta; social.REDES[id].pronta = () => null; }
+  const cupons = require('../src/cupons'), original = cupons.resumo;
+  cupons.resumo = () => Array.from({ length: 30 }, (_, i) => ({ store_id: 'kabum', codigo: `CUPOM${i}`, texto: '10% OFF', ofertas: 30 - i }));
+  const vistos = {};
+  social.postarTexto.telegram = async c => { vistos.telegram = c; };
+  social.postarTexto.facebook = async c => { vistos.facebook = c; };
+  social.postarTexto.x = async c => { vistos.x = c; };
+  social.postarTexto.instagram = async () => { throw new Error('foto recusada'); };
+  settings.set('agenda_cupons_pos', '0');
+  try {
+    const r = await lista.postar(null, 'manual', ['telegram', 'facebook', 'x', 'instagram', 'rede-que-nao-existe']);
+    assert.equal(r.enviados, 3);
+    assert.deepEqual(r.redes, ['Telegram', 'Facebook', 'X (Twitter)']);
+    assert.deepEqual(r.falhas, [{ grupo: 'Instagram', erro: 'foto recusada' }]);
+    assert.ok(!vistos.telegram.texto.includes('Ver mais'), 'no Telegram o Ver mais é o botão');
+    assert.match(vistos.telegram.link, /\/cupons$/);
+    assert.equal(vistos.facebook.texto.split('\n').filter(l => l.includes('use na KaBuM!')).length, 20);
+    assert.ok(vistos.facebook.texto.includes('Ver mais'));
+    const semLink = vistos.x.curto.replace(/https:\S+/, '').length + 23;
+    assert.ok(semLink <= 280, `X com ${semLink}`);
+    assert.match(vistos.x.curto, /Ver mais: https:\S+\/cupons$/);
+    assert.equal(settings.get('agenda_cupons_pos'), '20', 'o próximo envio continua de onde parou');
+    await assert.rejects(lista.postar(null, 'manual', []), /Marque pelo menos uma rede/);
+  } finally {
+    Object.assign(social.postarTexto, { telegram: antes.telegram, facebook: antes.facebook, x: antes.x, instagram: antes.instagram });
+    for (const id of Object.keys(antes.prontas)) social.REDES[id].pronta = antes.prontas[id];
+    cupons.resumo = original;
+  }
+});
+
+test('lista de cupons: Ver mais do afiliado leva à página com os links dele', () => {
+  settings.set('site_url', 'https://exemplo.test');
+  assert.match(lista.mensagem([cupom(1)], null, 42), /\/cupons\?de=42$/);
+  assert.match(lista.textoCurto([cupom(1)], null, 42), /\/cupons\?de=42$/);
+  const paginas = require('../src/paginas/cupons');
+  const a = paginas.pagina([{ ...cupom(1), ofertas: 2 }], { cid: 42 });
+  assert.ok(a.includes('/cupons?de=42&cupom=CUPOM1'));
+  assert.ok(!a.includes('href="/?cupom='), 'não leva às ofertas com os links do site');
+  assert.ok(!a.includes('href="/"'), 'nem à página inicial do site');
+  assert.ok(paginas.pagina([{ ...cupom(1), ofertas: 2 }]).includes('href="/?cupom=CUPOM1"'), 'a página do site continua como era');
+  assert.ok(paginas.paginaOfertas(cupom(1), [{ id: 7, produto: 'P', preco_atual: 9, preco_anterior: 10 }], 42).includes('/ir/42-7'));
+});
+
+test('lojas dos grupos: todas as do site e as parceiras novas, sem as ocultas', () => {
+  const temas = require('../src/temas-grupos');
+  const ids = () => temas.listarLojas().map(l => l.id);
+  for (const id of ['mercadolivre', 'shopee', 'amazon', 'magalu', 'kabum', 'aliexpress', 'shein', 'temu']) assert.ok(ids().includes(id), id);
+  const uid = Number(db.run(`INSERT INTO users (email, nome, tipo, status, senha_hash) VALUES ('loja-nova@exemplo.test', 'Dona', 'empresa', 'active', 'x')`).lastInsertRowid);
+  const lid = Number(db.run(`INSERT INTO lojas (user_id, nome, slug) VALUES (?, 'Loja Nova', 'loja-nova')`, uid).lastInsertRowid);
+  assert.ok(ids().includes(`loja:${lid}`), 'loja nova aparece sozinha');
+  assert.equal(temas.listarLojas().find(l => l.id === `loja:${lid}`).nome, 'Loja Nova');
+  assert.ok(whatsapp.grupoRecebe({ lojas: [`loja:${lid}`] }, 'casa', `loja:${lid}`), 'o grupo recebe as ofertas dela');
+  db.run('UPDATE lojas SET oculta = 1 WHERE id = ?', lid);
+  assert.ok(!ids().includes(`loja:${lid}`));
+});
+
 function conversa(a, b) {
   const id = Number(db.run(`INSERT INTO conversas (tipo, a, b, status) VALUES ('pessoal', ?, ?, 'aceita')`, a, b).lastInsertRowid);
   return id;

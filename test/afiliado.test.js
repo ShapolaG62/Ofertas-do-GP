@@ -152,7 +152,8 @@ test('Termos do Afiliado: pede uma vez e fica registrado na ficha do cliente', (
   cons.aceitarParceiro({ ...quem, b: { aceite_afiliado: true }, req: { ip: '203.0.113.9', get: () => 'Teste' } });
   assert.deepEqual(cons.pendentesParceiro(quem), [], 'não pede de novo');
   assert.equal(ficha().ip, '203.0.113.9');
-  assert.equal(ficha().versao, cons.VERSAO_PARCEIRO);
+  assert.equal(ficha().versao, cons.VERSAO);
+  assert.ok(cons.VERSAO >= cons.VERSAO_PARCEIRO, "aceite atual vale para os Termos do Parceiro");
   cons.aceitarParceiro({ ...quem, b: {} });
   assert.equal(db.get(`SELECT COUNT(*) n FROM consentimentos WHERE dono = ?`, `c:${id}`).n, 1, 'não duplica o registro');
   assert.equal(clientes.listar().find(c => c.id === A).aceite_termos, null, 'não vale para outro cliente');

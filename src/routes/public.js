@@ -13,9 +13,28 @@ const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 const router = express.Router();
 
 // Todos os cupons ativos: o destino do "Ver mais" da lista postada nos grupos
+// Com ?de=<afiliado> as ofertas abrem com os links de afiliado dele.
 router.get('/cupons', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=300');
-  res.type('html').send(require('../paginas/cupons').pagina(require('../lista-cupons').ativos()));
+  const lista = require('../lista-cupons').ativos();
+  const paginas = require('../paginas/cupons');
+  const de = /^\d{1,12}$/.test(String(req.query.de || '')) ? Number(req.query.de) : null;
+  const cid = de && db.get(`SELECT id FROM clientes WHERE id = ? AND status = 'ativo' AND validade >= datetime('now')`, de)?.id;
+  if (!cid) return res.type('html').send(paginas.pagina(lista));
+  const cupom = lista.find(c => c.codigo === String(req.query.cupom || ''));
+  if (!cupom) return res.type('html').send(paginas.pagina(lista, { cid }));
+  const ativo = offers.activeClause();
+  const itens = db.all(`SELECT o.id, o.produto, o.preco_atual, o.preco_anterior FROM offers o
+    WHERE o.cupom_codigo = ? AND o.store_id = ? AND ${ativo.sql} ORDER BY o.desconto_pct DESC LIMIT 60`, cupom.codigo, cupom.store_id, ...ativo.params);
+  res.type('html').send(paginas.paginaOfertas(cupom, itens, cid));
+});
+// Imagem da lista para o Instagram, que só publica com foto
+router.get('/cupons/imagem.jpg', async (req, res) => {
+  try {
+    const foto = await require('../lista-cupons').imagem(Number(req.query.pos) || 0);
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.type('jpeg').send(foto);
+  } catch { res.status(500).end(); }
 });
 
 // Página de ofertas: o servidor filtra e devolve só a página pedida (24 ofertas) + os números dos filtros

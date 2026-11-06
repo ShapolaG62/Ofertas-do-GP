@@ -155,6 +155,10 @@ async function postInstagram(o, texto, s) {
   // O Instagram só baixa a foto de um endereço público (a da loja, ou a enviada pela empresa com o site publicado).
   const img = postImage(o, s);
   if (!img) throw new Error('A oferta não tem imagem pública (o Instagram só publica com foto).');
+  return publicarNoInstagram(img, texto, s);
+}
+
+async function publicarNoInstagram(img, texto, s) {
   try {
     const media = await axios.post(`${GRAPH}/${s.instagram_business_id}/media`, null,
       { params: { image_url: img, caption: plain(texto).slice(0, 2200), access_token: s.facebook_page_token }, timeout: TIMEOUT });
@@ -200,6 +204,38 @@ async function postX(o, _texto, s) {
     return `post ${r.data.data.id}`;
   } catch (err) { throw apiError(err, 'X'); }
 }
+
+// Publicações sem oferta (a lista de cupons): cada rede recebe o que aceita
+const postarTexto = {
+  // Telegram aceita botão de verdade na mensagem
+  async telegram({ texto, link }, s) {
+    try {
+      const r = await axios.post(`https://api.telegram.org/bot${s.telegram_bot_token}/sendMessage`, {
+        chat_id: s.telegram_chat_id, text: toTelegramHtml(texto), parse_mode: 'HTML', disable_web_page_preview: true,
+        ...(/^https:\/\//i.test(link) ? { reply_markup: { inline_keyboard: [[{ text: 'Ver mais', url: link }]] } } : {}),
+      }, { timeout: TIMEOUT });
+      return `mensagem ${r.data.result.message_id}`;
+    } catch (err) { throw apiError(err, 'Telegram'); }
+  },
+  async facebook({ texto, link }, s) {
+    try {
+      const r = await axios.post(`${GRAPH}/${s.facebook_page_id}/feed`, null,
+        { params: { message: plain(texto), ...(/^https:\/\//i.test(link) ? { link } : {}), access_token: s.facebook_page_token }, timeout: TIMEOUT });
+      return `post ${r.data.id}`;
+    } catch (err) { throw apiError(err, 'Facebook'); }
+  },
+  async instagram({ texto, imagem }, s) {
+    if (!/^https:\/\//i.test(imagem)) throw new Error('O Instagram precisa do site publicado em https para baixar a imagem.');
+    return publicarNoInstagram(imagem, texto, s);
+  },
+  async x({ curto }, s) {
+    const url = 'https://api.x.com/2/tweets';
+    try {
+      const r = await axios.post(url, { text: curto }, { headers: { Authorization: oauthHeader('POST', url, s), 'Content-Type': 'application/json' }, timeout: TIMEOUT });
+      return `post ${r.data.data.id}`;
+    } catch (err) { throw apiError(err, 'X'); }
+  },
+};
 
 // WhatsApp: foto + texto em cada grupo do tipo e da loja da oferta, com uma pausa aleatória entre grupos (parece menos robô).
 // Cada grupo recebe um link próprio para contar os cliques; o que falhar é tentado de novo (src/envio-grupos.js).
@@ -291,4 +327,4 @@ function historico(offerIds, clienteId = null) {
   return out;
 }
 
-module.exports = { ajustes, REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, textoPadrao, tituloCurto, oauthHeader, toTelegramHtml, plain, textoCurto };
+module.exports = { postarTexto, ajustes, REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, textoPadrao, tituloCurto, oauthHeader, toTelegramHtml, plain, textoCurto };

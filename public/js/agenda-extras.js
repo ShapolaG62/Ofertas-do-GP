@@ -78,29 +78,42 @@
   const quando = iso => { try { return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }); } catch { return ''; } };
 
   function montarCupons(el) {
-    el.innerHTML = `<div class="cup-acoes"><button type="button" class="btn" data-cup-postar>Postar cupons agora</button></div>
+    el.innerHTML = `<div class="cup-redes" data-cup-redes role="group" aria-label="Redes da lista de cupons"></div><div class="cup-acoes"><button type="button" class="btn" data-cup-postar>Postar cupons agora</button></div>
       <p class="cup-estado" data-cup-estado role="status"></p>
       <details class="cup-previa"><summary>Ver a próxima mensagem</summary><pre data-cup-texto></pre></details>`;
     const estado = el.querySelector('[data-cup-estado]');
     const botao = el.querySelector('[data-cup-postar]');
     let dados = null;
-    const resumo = r => (r ? `Último envio: ${quando(r.em)}, ${r.enviados} grupo(s)${r.falhas?.length ? `, ${r.falhas.length} com falha` : ''}.` : '');
+    const oculto = el.closest('form')?.querySelector('[name="agenda_cupons_redes"]');
+    const marcadas = () => [...el.querySelectorAll('[data-cup-rede]:checked')].map(c => c.dataset.cupRede);
+    const guardar = () => { if (oculto) oculto.value = JSON.stringify(marcadas()); };
+    function desenharRedes() {
+      el.querySelector('[data-cup-redes]').innerHTML = dados.redes.map(r => `<label class="cup-rede${r.pronta ? '' : ' fora'}"><input type="checkbox" data-cup-rede="${esc(r.id)}"${r.marcada && r.pronta ? ' checked' : ''}${r.pronta ? '' : ' disabled'}> ${esc(r.nome)}${r.pronta ? '' : ' <small>não configurada</small>'}</label>`).join('');
+      guardar();
+    }
+    el.addEventListener('change', e => { if (e.target.matches('[data-cup-rede]')) guardar(); });
+    const resumo = r => (r ? `Último envio: ${quando(r.em)}, ${r.enviados} destino(s)${r.falhas?.length ? `, ${r.falhas.length} com falha` : ''}.` : '');
     async function carregar() {
       try {
+        const lembrar = dados ? marcadas() : null;
         dados = await chamar('/api/postagens/cupons');
+        if (lembrar) dados.redes.forEach(r => { r.marcada = lembrar.includes(r.id); });
+        desenharRedes();
         el.querySelector('[data-cup-texto]').textContent = dados.texto || 'Nenhum cupom ativo no momento.';
-        estado.textContent = `${dados.total} cupom(ns) ativo(s), ${dados.por_envio} em cada envio, para ${dados.grupos} grupo(s) salvo(s). ${resumo(dados.ultimo)}`;
+        estado.textContent = `${dados.total} cupom(ns) ativo(s), ${dados.por_envio} em cada envio, ${dados.grupos} grupo(s) salvo(s) no WhatsApp. ${resumo(dados.ultimo)}`;
       } catch (err) { estado.textContent = err.message; }
     }
     botao.addEventListener('click', async () => {
       if (!dados) await carregar();
-      if (dados && !await OfertouUI.confirmar(`Postar a lista de cupons em ${dados.grupos} grupo(s) agora?`, { titulo: 'Postar cupons', ok: 'Postar' })) return;
+      const escolhidas = dados ? dados.redes.filter(r => marcadas().includes(r.id)) : [];
+      if (dados && !escolhidas.length) { estado.textContent = 'Marque pelo menos uma rede.'; return; }
+      if (dados && !await OfertouUI.confirmar(`Postar a lista de cupons agora em: ${escolhidas.map(r => (r.id === 'whatsapp' ? `WhatsApp (${dados.grupos} grupo(s))` : r.nome)).join(', ')}?`, { titulo: 'Postar cupons', ok: 'Postar' })) return;
       botao.disabled = true;
       estado.textContent = 'Enviando…';
       try {
-        const r = await chamar('/api/postagens/cupons/postar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const r = await chamar('/api/postagens/cupons/postar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ redes: marcadas() }) });
         await carregar();
-        estado.textContent = `Enviado para ${r.enviados} grupo(s)${r.falhas.length ? `. Falhou em: ${r.falhas.map(f => `${f.grupo} (${f.erro})`).join('; ')}` : '.'}${r.sem_cupom ? ` ${r.sem_cupom} grupo(s) sem cupom das lojas marcadas.` : ''}`;
+        estado.textContent = `Enviado para ${r.enviados} destino(s)${r.redes?.length ? ` (${r.redes.join(', ')})` : ''}${r.falhas.length ? `. Falhou em: ${r.falhas.map(f => `${f.grupo} (${f.erro})`).join('; ')}` : '.'}${r.sem_cupom ? ` ${r.sem_cupom} grupo(s) sem cupom das lojas marcadas.` : ''}`;
       } catch (err) { estado.textContent = err.message; }
       botao.disabled = false;
     });

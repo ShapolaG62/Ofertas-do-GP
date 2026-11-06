@@ -23,12 +23,16 @@ const TEMAS = [
     palavras: ['alimento', 'alimentos', 'mercado', 'supermercado', 'bebida', 'bebidas', 'comida', 'cafe', 'vinho'] },
 ];
 
-// Lojas que cada grupo pode escolher
-const LOJAS = [
-  { id: 'mercadolivre', nome: 'Mercado Livre' }, { id: 'shopee', nome: 'Shopee' }, { id: 'amazon', nome: 'Amazon' },
-  { id: 'magalu', nome: 'Magalu' }, { id: 'kabum', nome: 'KaBuM!' },
-];
-const listarLojas = () => LOJAS.map(l => ({ ...l }));
+// Lojas que cada grupo pode escolher: todas as do site e as lojas parceiras no ar. A lista é lida a cada vez,
+// então uma loja nova aparece sozinha. O id é o mesmo das ofertas (store_id; loja parceira: "loja:<id>").
+function listarLojas() {
+  const lista = require('./stores').STORES.map(l => ({ id: l.id, nome: l.name }));
+  try {
+    const parceiras = require('./db').all('SELECT id, nome FROM lojas WHERE oculta = 0 AND nome IS NOT NULL ORDER BY nome LIMIT 300');
+    for (const l of parceiras) lista.push({ id: `loja:${l.id}`, nome: l.nome });
+  } catch { /* sem a tabela de lojas: ficam as do site */ }
+  return lista;
+}
 
 const semAcento = v => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const paraTela = t => ({ id: t.id, nome: t.nome, icone: t.icone, categorias: t.categorias });

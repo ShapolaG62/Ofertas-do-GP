@@ -165,6 +165,7 @@ const DEFAULTS = {
   agenda_palavras_permitidas: '', // se preenchido: só ofertas com pelo menos uma destas palavras
   agenda_cupons_ativa: '0',       // postar a lista de cupons sozinho nos horários abaixo
   agenda_cupons_horarios: '12:00',
+  agenda_cupons_redes: '["whatsapp"]', // redes que recebem a lista de cupons
   agenda_cupons_pos: '0',         // de onde a próxima lista de cupons continua
   agenda_cupons_ultima: '',       // resultado do último envio da lista de cupons
   post_modelo: '',              // modelo do texto das postagens (public/js/modelo-post.js); vazio = padrão

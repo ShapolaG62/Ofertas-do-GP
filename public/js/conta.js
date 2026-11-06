@@ -660,7 +660,7 @@
       if (con) {
         con.disabled = true;
         const r = await api('/api/conta/loja/mp/conectar', { method: 'POST', body: {} });
-        location.href = r.url;
+        window.top.location.href = r.url;
         return;
       }
       if (!await OfertouUI.confirmar('Desconectar o Mercado Pago? O botão "Fazer pedido" some dos seus produtos até você conectar de novo.')) return;

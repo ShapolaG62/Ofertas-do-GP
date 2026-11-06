@@ -846,8 +846,8 @@ const ML_HUB = 'https://www.mercadolivre.com.br/afiliados/hub?is_affiliate=true'
 window.addEventListener('message', e => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
   if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; $('#mlc-auto').hidden = false; $('#mlc-sem-ext').hidden = true; }
-  if (e.data.tipo === 'pode-ir') location.href = ML_HUB;
-  if (e.data.tipo === 'pode-ir-cupons') location.href = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
+  if (e.data.tipo === 'pode-ir') window.top.location.href = ML_HUB;
+  if (e.data.tipo === 'pode-ir-cupons') window.top.location.href = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
   if (e.data.tipo === 'cupons') mlcImportar(e.data);
   if (e.data.tipo === 'ganho-estimado') {
     // "Ganho estimado" lido no painel do Mercado Livre: grava (substitui o anterior) e atualiza o cartão se estiver aberto

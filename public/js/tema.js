@@ -53,6 +53,23 @@ window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', 
     }, true);
   }
 
+  // Dentro da central (tudo numa guia só): os links do próprio site trocam de área em vez de abrir outra guia
+  let central = null;
+  try { central = window.top !== window ? window.top.OfertouCentral : null; } catch { /* outro site */ }
+  if (central) {
+    window.addEventListener('click', e => {
+      if (e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const a = e.target.closest?.('a[href]');
+      if (!a || a.hasAttribute('download') || a.getAttribute('href').startsWith('#')) return;
+      if (central.abrir(a.href, a.target, window)) e.preventDefault();
+    });
+    const abrirOriginal = window.open;
+    window.open = (url, alvo, ...resto) => {
+      try { if (central.abrir(new URL(url, location.href).href, alvo || '_blank', window)) return null; } catch { /* abre normalmente */ }
+      return abrirOriginal.call(window, url, alvo, ...resto);
+    };
+  }
+
   const ICONES = {
     claro: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
     escuro: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',

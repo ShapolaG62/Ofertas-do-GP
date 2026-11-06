@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>Ofertou!</title>
+<link rel="manifest" href="/site.webmanifest" crossorigin="use-credentials">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+<script src="/js/tema.js?v=20261283"></script>
+<link rel="stylesheet" href="/css/site.css?v=20261283">
+<style>
+  html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); }
+  .central { display: flex; height: 100vh; height: 100dvh; }
+  .central-menu { flex: none; width: 88px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 12px 8px; background: var(--surface); border-right: 1px solid var(--line); overflow-y: auto; }
+  .central-logo { display: block; width: 40px; height: 40px; margin: 0 auto 10px; object-fit: contain; }
+  .central-menu button { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 2px; border: 0; border-radius: 12px; background: none; color: var(--ink-2); font: inherit; font-size: 11.5px; font-weight: 700; line-height: 1.2; text-align: center; cursor: pointer; }
+  .central-menu button:hover { background: var(--surface-2); color: var(--ink); }
+  .central-menu button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .central-menu button[aria-current="page"] { background: linear-gradient(120deg, var(--brand), var(--azul)); color: #fff; }
+  .central-menu svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .central-quadros { flex: 1; min-width: 0; position: relative; }
+  .central-quadros iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
+  .central-quadros iframe[hidden] { display: none; }
+  @media (max-width: 760px) {
+    .central { flex-direction: column; }
+    .central-menu { width: auto; flex-direction: row; gap: 2px; padding: 4px 6px; padding-top: calc(4px + env(safe-area-inset-top)); border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+    .central-menu::-webkit-scrollbar { display: none; }
+    .central-logo { display: none; }
+    .central-menu button { flex: 1 0 68px; padding: 6px 4px; gap: 2px; font-size: 11px; }
+    .central-menu svg { width: 19px; height: 19px; }
+  }
+</style>
+</head>
+<body>
+<div class="central">
+  <nav class="central-menu" id="central-menu" aria-label="Áreas do Ofertou!"></nav>
+  <main class="central-quadros" id="central-quadros"></main>
+</div>
+<script src="/js/central.js?v=20261283"></script>
+<script src="/js/cookies.js?v=20261283" defer></script>
+<script src="/js/instalar-app.js?v=20261283" defer></script>
+<script src="/js/capi-minerando.js?v=20261283" defer></script>
+</body>
+</html>

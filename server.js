@@ -111,6 +111,22 @@ app.use((req, res, next) => {
   next();
 });
 
+// Central: quem tem área de trabalho (afiliado, loja, equipe, administrador) usa tudo numa guia só
+const central = require('./src/central');
+app.use(central.redirecionar);
+app.get('/api/central', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const areas = central.areas(req);
+  res.json({ areas, trabalho: central.temTrabalho(areas) });
+});
+app.get('/central', (req, res) => {
+  const areas = central.areas(req);
+  if (!areas.length) return res.redirect('/conta?voltar=/central');
+  if (!central.temTrabalho(areas)) return res.redirect('/');
+  res.setHeader('Cache-Control', 'no-store');
+  res.sendFile(path.join(PUBLIC_DIR, 'central.html'));
+});
+
 // Mensagens ficam no painel flutuante do canto inferior direito: /mensagens?c=ID&pedido=ID abre a página de ofertas
 // com a conversa aberta no painel. A tela completa só é usada dentro de Minha conta (aba Mensagens): /mensagens/tela.
 app.get(['/mensagens', '/mensagens.html'], (req, res) => {
@@ -258,7 +274,7 @@ app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send([
     'User-agent: *',
     'Allow: /',
-    ...['/admin', '/api/', '/o/', '/oferta/', '/grupo', '/g/', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
+    ...['/admin', '/central', '/api/', '/o/', '/oferta/', '/grupo', '/g/', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
     '',
     `Sitemap: ${baseUrl(req)}/sitemap.xml`,
     '',

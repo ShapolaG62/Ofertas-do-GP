@@ -74,3 +74,8 @@
 .wap-ajustes { display: grid; gap: 8px; }
 .wap-ajuste { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
 .wap-ajuste input { flex: none; width: 20px; height: 20px; margin: 0; }
+.wap-serie { margin: 16px 0; padding-top: 12px; border-top: 1px solid var(--line, var(--border)); }
+.wap-serie h3 { margin: 0 0 6px; }
+.wap-serie-campos { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 10px; }
+.wap-serie-lista { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; overflow-wrap: anywhere; }
+@media (min-width: 760px) { .wap-serie-campos { grid-template-columns: minmax(0, 1fr) 180px; } }

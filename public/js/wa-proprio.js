@@ -203,6 +203,69 @@
     } catch (err) { saida.textContent = err.message; }
   });
 
+  // ── Grupos em série ──
+  const serieNome = () => el('wap-serie-nome').value.trim().replace(/\s*#\d+\s*$/, '');
+  let timerPrevia, consultaPrevia = 0, proximoSerie = null, acompanhando = null;
+  function mostrarPrevia() {
+    const qtd = Number(el('wap-serie-qtd').value);
+    const nome = serieNome();
+    if (!nome) { el('wap-serie-previa').textContent = ''; return; }
+    if (!proximoSerie) { el('wap-serie-previa').textContent = 'Conecte o WhatsApp para ver a numeração.'; return; }
+    el('wap-serie-previa').textContent = `Vai criar: ${nome} #${proximoSerie} até ${nome} #${proximoSerie + qtd - 1}.`;
+  }
+  async function buscarPrevia() {
+    const nome = serieNome();
+    const minha = ++consultaPrevia;
+    if (!nome) { proximoSerie = null; mostrarPrevia(); return; }
+    try {
+      const d = await pedir(`/grupos/em-serie?nome=${encodeURIComponent(nome)}`);
+      if (minha !== consultaPrevia) return;
+      proximoSerie = d.proximo || null;
+    } catch { if (minha === consultaPrevia) proximoSerie = null; }
+    mostrarPrevia();
+  }
+  el('wap-serie-nome').addEventListener('input', () => { clearTimeout(timerPrevia); timerPrevia = setTimeout(buscarPrevia, 500); });
+  el('wap-serie-qtd').addEventListener('change', mostrarPrevia);
+  function mostrarSerie(d) {
+    const caixa = el('wap-serie-estado');
+    const ativo = Boolean(d.rodando);
+    el('wap-serie-criar').disabled = ativo;
+    el('wap-serie-cancelar').hidden = !ativo;
+    if (!d.total) { caixa.hidden = true; el('wap-serie-lista').replaceChildren(); return; }
+    caixa.hidden = false;
+    caixa.textContent = ativo ? `Criando: ${d.criados} de ${d.total}…`
+      : d.motivo || `${d.cancelado ? 'Parado' : 'Pronto'}: ${d.criados} de ${d.total} grupos criados.`;
+    el('wap-serie-lista').replaceChildren(...d.itens.map(i => {
+      const li = document.createElement('li');
+      li.textContent = `${i.ok ? '✓' : '✕'} ${i.nome}`;
+      return li;
+    }));
+  }
+  async function acompanharSerie() {
+    clearTimeout(acompanhando);
+    let d;
+    try { d = await pedir('/grupos/em-serie'); } catch { return; }
+    mostrarSerie(d);
+    if (d.rodando) { acompanhando = setTimeout(acompanharSerie, 3000); return; }
+    await buscarPrevia();
+    if (d.criados && document.getElementById('wa-load')) document.getElementById('wa-load').click(); // a lista já vem com os grupos novos
+  }
+  el('wap-serie-criar').addEventListener('click', async () => {
+    const nome = serieNome();
+    const qtd = Number(el('wap-serie-qtd').value);
+    const saida = el('wap-serie-estado');
+    if (!nome) { saida.hidden = false; saida.textContent = 'Digite o nome dos grupos.'; return; }
+    const numeros = el('wap-serie-numeros').value.split(/[,;\s]+/).filter(Boolean);
+    if (!await OfertouUI.confirmar(`Criar ${qtd} grupos com o nome "${nome}" neste WhatsApp? Depois de criados, só dá para apagar pelo celular.`, { ok: 'Criar grupos' })) return;
+    try {
+      await pedir('/grupos/em-serie', { method: 'POST', body: { nome, quantidade: qtd, participantes: numeros } });
+      await acompanharSerie();
+    } catch (err) { saida.hidden = false; saida.textContent = err.message; }
+  });
+  el('wap-serie-cancelar').addEventListener('click', async () => {
+    try { await pedir('/grupos/em-serie/cancelar', { method: 'POST' }); await acompanharSerie(); } catch (err) { el('wap-serie-estado').textContent = err.message; }
+  });
+
   // ── Comportamento do número ──
   async function salvarAjuste(corpo) {
     const saida = el('wap-ajustes-msg');
@@ -218,6 +281,6 @@
     if (!visivel()) return;
     atualizarStatus();
     buscarNovas();
-    if (!chaveLida) { chaveLida = true; atualizarChave().catch(() => { chaveLida = false; }); }
+    if (!chaveLida) { chaveLida = true; atualizarChave().catch(() => { chaveLida = false; }); acompanharSerie(); }
   }, 3000);
 })();

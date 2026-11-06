@@ -78,6 +78,7 @@
       '/api/cliente/wa/conversas': { conversas: [{ chat: '1@g.us', nome: 'Ofertas do Dia 1', grupo: true, id: 1, texto: 'Mensagem de exemplo', tipo: 'texto', de_mim: 1, criado_em: quando(0) }] },
       '/api/cliente/wa/mensagens': { mensagens: [{ id: 1, chat: '1@g.us', de_mim: 1, tipo: 'texto', texto: 'Mensagem de exemplo', criado_em: quando(0) }] },
       '/api/cliente/wa/chave': { existe: false, criada_em: null },
+      '/api/cliente/wa/grupos/em-serie': { rodando: false, itens: [], proximo: 1 },
       '/api/cliente/wa/ajustes': { rejeitar_chamadas: true, mensagem_chamada: '', sempre_online: false, ler_mensagens: false, ler_status: false },
       '/api/cliente/wa/webhook': { url: null },
       '/api/cliente/agenda': agenda,

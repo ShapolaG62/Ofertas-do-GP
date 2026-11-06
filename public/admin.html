@@ -655,14 +655,14 @@
   /* Abas das telas da equipe */
   .tabs-line [aria-selected="true"] { background: var(--azul-soft); color: var(--azul-texto); border-color: transparent; }
 </style>
-<script src="/js/tema.js?v=20261293"></script>
-<script src="/js/dialogo.js?v=20261293"></script>
-<script src="/js/modelo-post.js?v=20261293"></script>
-<script src="/js/avisos-entrada.js?v=20261293"></script>
-<script src="/js/capi-minerando.js?v=20261293" defer></script>
-<script src="/js/cadastro-auto.js?v=20261293" defer></script>
-<script src="/js/seletor.js?v=20261293" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261293">
+<script src="/js/tema.js?v=20261294"></script>
+<script src="/js/dialogo.js?v=20261294"></script>
+<script src="/js/modelo-post.js?v=20261294"></script>
+<script src="/js/avisos-entrada.js?v=20261294"></script>
+<script src="/js/capi-minerando.js?v=20261294" defer></script>
+<script src="/js/cadastro-auto.js?v=20261294" defer></script>
+<script src="/js/seletor.js?v=20261294" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261294">
 </head>
 <body>
 <div class="wrap">
@@ -1502,6 +1502,22 @@
             <button class="btn" type="button" id="wa-load">Carregar grupos do número</button>
           </div>
           <div id="wa-msg"></div>
+          <div class="wa-proprio wap-serie">
+            <h3>Criar grupos em série</h3>
+            <p class="hint">Todos com o mesmo nome e um número no final. Se já existir grupo com esse nome, a numeração continua de onde parou. Os grupos são criados um por vez, com 20 segundos de pausa, e este número fica como administrador.</p>
+            <div class="wap-serie-campos">
+              <label class="field">Nome dos grupos <input type="text" id="wap-serie-nome" maxlength="90" placeholder="Ofertou!" autocomplete="off"></label>
+              <label class="field">Quantos grupos <select id="wap-serie-qtd"><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select></label>
+            </div>
+            <label class="field">Números para adicionar (opcional, separados por vírgula) <input type="text" id="wap-serie-numeros" inputmode="tel" placeholder="5511999999999" autocomplete="off"></label>
+            <p id="wap-serie-previa" class="hint"></p>
+            <div class="actions" style="justify-content:flex-start">
+              <button class="btn primary" type="button" id="wap-serie-criar">Criar grupos</button>
+              <button class="btn" type="button" id="wap-serie-cancelar" hidden>Parar</button>
+            </div>
+            <p id="wap-serie-estado" class="wap-status" role="status" hidden></p>
+            <ul id="wap-serie-lista" class="wap-serie-lista"></ul>
+          </div>
           <div id="wa-groups-box" class="hidden">
             <h3>Grupos de destino</h3>
             <p class="hint">Aparecem só os grupos que este número criou e administra. Marque os que recebem as postagens agendadas e toque nos tipos de produto e nas lojas de cada um. Sem tipo marcado, o grupo recebe todos os tipos; sem loja marcada, todas as lojas.</p>
@@ -1597,6 +1613,9 @@ PUT    /api/wa/privacidade           { "visto_por_ultimo", "online", "foto", "st
 GRUPOS
 GET    /api/wa/grupos                (?todos=1 inclui os de outras pessoas)
 POST   /api/wa/grupos                { "nome", "participantes": [] }
+GET    /api/wa/grupos/em-serie       (?nome= mostra o próximo número)
+POST   /api/wa/grupos/em-serie       { "nome", "quantidade": 5 a 10, "participantes": [] }
+POST   /api/wa/grupos/em-serie/cancelar
 GET    /api/wa/grupos/ID
 PUT    /api/wa/grupos/ID             { "nome", "descricao" }
 PUT    /api/wa/grupos/ID/foto        { "url" }
@@ -2117,9 +2136,9 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261293"></script>
-<script src="/js/wa-temas.js?v=20261293"></script>
-<script src="/js/envio-resultados.js?v=20261293"></script>
-<script src="/js/wa-proprio.js?v=20261293"></script>
+<script src="/js/admin.js?v=20261294"></script>
+<script src="/js/wa-temas.js?v=20261294"></script>
+<script src="/js/envio-resultados.js?v=20261294"></script>
+<script src="/js/wa-proprio.js?v=20261294"></script>
 </body>
 </html>

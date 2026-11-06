@@ -158,6 +158,13 @@ function rotasComuns(r) {
   acao('put', '/privacidade', req => f.salvarPrivacidade(req.dono, req.body || {}));
 
   // ── Administração de grupos ──
+  // Grupos em série: antes de /grupos/:id. ?nome= devolve também o próximo número.
+  r.get('/grupos/em-serie', async_(async (req, res) => {
+    const andamento = f.andamentoSerie(req.dono);
+    res.json({ ...andamento, ...(req.query.nome ? { proximo: await f.proximoNumero(req.dono, req.query.nome) } : {}) });
+  }));
+  acao('post', '/grupos/em-serie', req => f.criarEmSerie(req.dono, req.body || {}));
+  acao('post', '/grupos/em-serie/cancelar', req => f.cancelarSerie(req.dono));
   acao('post', '/grupos', req => f.criarGrupo(req.dono, req.body || {}));
   r.get('/grupos/:id', async_(async (req, res) => res.json(await f.detalhesDoGrupo(req.dono, req.params.id))));
   acao('put', '/grupos/:id', req => f.editarGrupo(req.dono, req.params.id, req.body || {}));

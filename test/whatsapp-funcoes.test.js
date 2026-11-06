@@ -300,3 +300,60 @@ test('ajustes: rejeitar chamada, ler mensagens, ler status e sempre online', asy
   await certo('PUT', '/ajustes', { sempre_online: false, ler_mensagens: false, ler_status: false, rejeitar_chamadas: false });
   assert.equal(fez('presenca')[1], 'unavailable');
 });
+
+test('grupos em série: nome com número, continua de onde parou e respeita o limite', async () => {
+  require('../src/whatsapp-funcoes')._paraTestes({ pausaSerie: 0 });
+  const criados = [];
+  s.groupFetchAllParticipating = async () => ({
+    [G]: { id: G, subject: 'Ofertou! #3', owner: EU, participants: [{ id: EU, admin: 'superadmin' }] },
+    a: { id: 'a@g.us', subject: 'ofertou!  #7', owner: EU, participants: [{ id: EU, admin: 'superadmin' }] },
+    b: { id: 'b@g.us', subject: 'Ofertou! Casa #40', owner: EU, participants: [{ id: EU, admin: 'superadmin' }] },
+  });
+  s.groupCreate = async (nome, gente) => { criados.push([nome, gente]); return { id: `${criados.length}@g.us`, subject: nome }; };
+  const terminar = async () => { for (let i = 0; i < 200; i++) { const d = await certo('GET', '/grupos/em-serie'); if (!d.rodando) return d; await new Promise(r => setTimeout(r, 5)); } assert.fail('não terminou'); };
+
+  for (const quantidade of [4, 11, 5.5, 'x']) assert.equal((await pede('POST', '/grupos/em-serie', { nome: 'Ofertou!', quantidade })).status, 400, String(quantidade));
+  assert.equal((await pede('POST', '/grupos/em-serie', { quantidade: 5 })).status, 400, 'sem nome');
+  assert.equal((await certo('GET', '/grupos/em-serie?nome=Ofertou!')).proximo, 8);
+  assert.equal((await certo('GET', '/grupos/em-serie?nome=Grupo Novo')).proximo, 1);
+
+  const r = await certo('POST', '/grupos/em-serie', { nome: 'Ofertou! #99', quantidade: 5, participantes: ['5511977776666'] });
+  assert.deepEqual([r.nome, r.de, r.ate], ['Ofertou!', 8, 12], 'o número digitado no nome não conta');
+  const fim = await terminar();
+  assert.deepEqual(criados.map(c => c[0]), ['Ofertou! #8', 'Ofertou! #9', 'Ofertou! #10', 'Ofertou! #11', 'Ofertou! #12']);
+  assert.deepEqual(criados[0][1], [C]);
+  assert.equal(fim.criados, 5);
+  assert.equal(fim.itens[0].id, '1@g.us');
+
+  // Sem números para adicionar também funciona
+  criados.length = 0;
+  await certo('POST', '/grupos/em-serie', { nome: 'Nova Serie', quantidade: 10 });
+  const dez = await terminar();
+  assert.equal(dez.criados, 10);
+  assert.equal(criados.at(-1)[0], 'Nova Serie #10');
+  assert.deepEqual(criados[0][1], []);
+
+  // Recusa do WhatsApp: para na hora e diz onde parou
+  criados.length = 0;
+  const normal = s.groupCreate;
+  s.groupCreate = async nome => { if (criados.length === 2) throw new Error('rate-overlimit'); criados.push([nome]); return { id: 'x@g.us' }; };
+  await certo('POST', '/grupos/em-serie', { nome: 'Com Erro', quantidade: 6 });
+  const parou = await terminar();
+  assert.equal(parou.criados, 2);
+  assert.equal(criados.length, 2, 'não insiste depois da recusa');
+  assert.match(parou.motivo, /Com Erro #3.*rate-overlimit/);
+  s.groupCreate = normal;
+
+  // Um pedido de cada vez, e dá para parar
+  require('../src/whatsapp-funcoes')._paraTestes({ pausaSerie: 40 });
+  criados.length = 0;
+  await certo('POST', '/grupos/em-serie', { nome: 'Parada', quantidade: 5 });
+  assert.equal((await pede('POST', '/grupos/em-serie', { nome: 'Outra', quantidade: 5 })).status, 409);
+  await certo('POST', '/grupos/em-serie/cancelar');
+  const parada = await terminar();
+  assert.equal(parada.cancelado, true);
+  assert.ok(parada.criados < 5);
+  assert.equal((await pede('POST', '/grupos/em-serie/cancelar')).status, 409);
+  require('../src/whatsapp-funcoes')._paraTestes({ pausaSerie: 0 });
+  assert.equal((await fetch(`${base}/api/wa/grupos/em-serie`)).status, 401, 'precisa da chave');
+});

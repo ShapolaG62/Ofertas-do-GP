@@ -252,6 +252,65 @@ async function criarGrupo(dono, b) {
   proprio.gruposMudaram(dono);
   return { id: g.id, nome: g.subject };
 }
+// ── Grupos em série: "Nome #1", "Nome #2"… Um por vez, com pausa, em segundo plano. Para no primeiro erro: insistir depois
+// de uma recusa do WhatsApp aumenta o risco de bloqueio. A numeração continua de onde parou, então é só pedir de novo.
+const SERIE_MIN = 5, SERIE_MAX = 10;
+let pausaSerieMs = 20000;
+const series = new Map(); // dono → andamento (só na memória)
+const nomeBase = nome => texto(nome, 'o nome do grupo', 90).replace(/\s*#\d+\s*$/, '').trim();
+async function proximoNumero(dono, nome) {
+  proprio.gruposMudaram(dono);
+  const base = nomeBase(nome).toLowerCase();
+  let maior = 0;
+  for (const g of await proprio.carregarGrupos(dono, { todos: true })) {
+    const m = /^(.*?)\s*#(\d+)\s*$/.exec(String(g.nome));
+    if (m && m[1].trim().toLowerCase() === base) maior = Math.max(maior, Number(m[2]));
+  }
+  return maior + 1;
+}
+function andamentoSerie(dono) {
+  const a = series.get(dono);
+  return a ? { rodando: a.rodando, nome: a.nome, total: a.total, criados: a.itens.filter(i => i.ok).length, itens: a.itens, motivo: a.motivo, cancelado: a.cancelado } : { rodando: false, itens: [] };
+}
+async function criarEmSerie(dono, b) {
+  const nome = nomeBase(b.nome);
+  const total = Number(b.quantidade);
+  if (!Number.isInteger(total) || total < SERIE_MIN || total > SERIE_MAX) throw falha(`Escolha de ${SERIE_MIN} a ${SERIE_MAX} grupos por vez.`);
+  const convidados = Array.isArray(b.participantes) ? b.participantes.filter(Boolean).slice(0, 20).map(pessoa) : [];
+  if (series.get(dono)?.rodando) throw falha('Já existe uma criação de grupos em andamento.', 409);
+  const a = { rodando: true, nome, total, itens: [], motivo: null, cancelado: false };
+  series.set(dono, a); // reservado antes de consultar o WhatsApp, para dois pedidos juntos não criarem em dobro
+  let inicio;
+  try { inicio = await proximoNumero(dono, nome); } catch (err) { a.rodando = false; throw err; }
+  a.inicio = inicio;
+  rodarSerie(dono, a, convidados).catch(err => { a.rodando = false; a.motivo = err.message; });
+  return { ok: true, nome, de: inicio, ate: inicio + total - 1, pausa_segundos: pausaSerieMs / 1000 };
+}
+async function rodarSerie(dono, a, convidados) {
+  for (let i = 0; i < a.total; i++) {
+    if (a.cancelado) break;
+    const assunto = `${a.nome} #${a.inicio + i}`;
+    try {
+      const g = await sock(dono).groupCreate(assunto, convidados);
+      a.itens.push({ nome: assunto, id: g?.id || null, ok: true });
+      proprio.gruposMudaram(dono);
+    } catch (err) {
+      a.itens.push({ nome: assunto, ok: false, erro: err.message });
+      a.motivo = `Parei no grupo ${assunto}: ${err.message}`;
+      break;
+    }
+    if (i < a.total - 1) await new Promise(r => setTimeout(r, pausaSerieMs));
+  }
+  a.rodando = false;
+}
+function cancelarSerie(dono) {
+  const a = series.get(dono);
+  if (!a?.rodando) throw falha('Nenhuma criação de grupos em andamento.', 409);
+  a.cancelado = true;
+  return { ok: true };
+}
+const _paraTestes = ({ pausaSerie } = {}) => { if (pausaSerie !== undefined) pausaSerieMs = pausaSerie; };
+
 async function detalhesDoGrupo(dono, id) {
   const g = await sock(dono).groupMetadata(grupo(id));
   return {
@@ -367,5 +426,5 @@ module.exports = {
   marcarLidas, apagarParaTodos, editarMensagem, baixarMidia, arquivarConversa, marcarNaoLida, presenca, conferirNumeros, bloquear, bloqueados,
   perfilDe, atualizarPerfil, trocarFotoPerfil, removerFotoPerfil, lerPrivacidade, salvarPrivacidade,
   criarGrupo, detalhesDoGrupo, editarGrupo, trocarFotoGrupo, novoConvite, enviarConvite, infoConvite, aceitarConvite, participantes, ajustarGrupo, sairDoGrupo,
-  etiquetar, catalogo, colecoes,
+  etiquetar, catalogo, colecoes, criarEmSerie, andamentoSerie, cancelarSerie, proximoNumero, _paraTestes,
 };

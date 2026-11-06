@@ -14,6 +14,31 @@ fs.mkdirSync(PASTA, { recursive: true });
 
 const baixando = new Map(); // id → Promise
 
+// Foto pequena dos cartões: em WebP, com 400 px no maior lado. Nos cartões, a foto aparece com 150 a 250 px.
+const LADO_MINIATURA = 400;
+const reduzindo = new Map();
+const arquivoMiniatura = id => path.join(PASTA, `${id}-p.webp`);
+async function miniatura(id, obterOriginal) {
+  const arq = arquivoMiniatura(id);
+  try {
+    const st = fs.statSync(arq);
+    if (Date.now() - st.mtimeMs < VALIDADE_MS) return await fs.promises.readFile(arq);
+  } catch { /* ainda não tem */ }
+  if (reduzindo.has(id)) return reduzindo.get(id);
+  const p = (async () => {
+    const { dados } = await obterOriginal();
+    const pequena = await require('sharp')(dados).rotate()
+      .resize({ width: LADO_MINIATURA, height: LADO_MINIATURA, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 74 }).toBuffer();
+    fs.promises.writeFile(arq, pequena).catch(() => {});
+    return pequena;
+  })().finally(() => reduzindo.delete(id));
+  reduzindo.set(id, p);
+  return p;
+}
+// A Magalu entrega a foto no tamanho que o endereço pedir
+const magaluPequena = url => String(url).replace(/(mlcdn\.com\.br\/)\d+x\d+\//i, `$1${LADO_MINIATURA}x${LADO_MINIATURA}/`);
+
 function guardada(id) {
   for (const ext of Object.values(TIPOS)) {
     const arq = path.join(PASTA, `${id}.${ext}`);
@@ -60,4 +85,4 @@ async function limpar() {
   }
 }
 
-module.exports = { obter, limpar, PASTA };
+module.exports = { obter, miniatura, magaluPequena, limpar, PASTA, LADO_MINIATURA };

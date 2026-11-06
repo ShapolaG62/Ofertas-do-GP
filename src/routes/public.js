@@ -59,6 +59,17 @@ router.get('/api/mineracao/status', (req, res) => {
 // Proxy das imagens das lojas (evita bloqueio de hotlink). Só serve imagens de ofertas do banco.
 // /img/o/:id.jpg é o endereço usado nas páginas: termina em .jpg para a Cloudflare guardar a foto perto do visitante.
 // No servidor, a foto fica guardada em disco (src/img-cache.js) e não é baixada da loja a cada visita.
+const fotoOriginal = (id, row) => require('../img-cache').obter(id, async () => {
+  const img = await safeGet(row.imagem, {
+    responseType: 'arraybuffer',
+    timeout: 8000,
+    maxContentLength: 5 * 1024 * 1024,
+    headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' },
+  });
+  const tipo = String(img.headers['content-type'] || '');
+  if (img.status !== 200 || !IMAGE_TYPES.test(tipo)) throw new Error('não é imagem');
+  return { tipo, dados: Buffer.from(img.data) };
+});
 async function fotoDaOferta(req, res) {
   const id = Number(req.params.id) || 0;
   const row = db.get('SELECT imagem FROM offers WHERE id = ?', id);
@@ -72,17 +83,7 @@ async function fotoDaOferta(req, res) {
     return res.redirect(302, row.imagem);
   }
   try {
-    const foto = await require('../img-cache').obter(id, async () => {
-      const img = await safeGet(row.imagem, {
-        responseType: 'arraybuffer',
-        timeout: 8000,
-        maxContentLength: 5 * 1024 * 1024,
-        headers: { Accept: 'image/avif,image/webp,image/*,*/*;q=0.8' },
-      });
-      const tipo = String(img.headers['content-type'] || '');
-      if (img.status !== 200 || !IMAGE_TYPES.test(tipo)) throw new Error('não é imagem');
-      return { tipo, dados: Buffer.from(img.data) };
-    });
+    const foto = await fotoOriginal(id, row);
     res.setHeader('Content-Type', foto.tipo);
     res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
     res.send(foto.dados);
@@ -91,6 +92,27 @@ async function fotoDaOferta(req, res) {
     res.redirect('/images/pet-capi-head.png');
   }
 }
+// Foto pequena e leve para os cartões (a original continua em /img/o/, para a página do produto e as postagens)
+router.get('/img/p/:id.webp', async (req, res) => {
+  const id = Number(req.params.id) || 0;
+  const row = db.get('SELECT imagem FROM offers WHERE id = ?', id);
+  const cache = require('../img-cache');
+  if (row && /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(row.imagem || '')) return res.redirect(row.imagem);
+  if (!row || !/^https:\/\//i.test(row.imagem || '')) return res.redirect('/images/pet-capi-head.png');
+  if (/^https:\/\/[a-z0-9-]+\.mlcdn\.com\.br\//i.test(row.imagem)) { // Magalu: vai direto do navegador para ela (ver acima)
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.redirect(302, cache.magaluPequena(row.imagem));
+  }
+  try {
+    const pequena = await cache.miniatura(id, () => fotoOriginal(id, row));
+    res.setHeader('Content-Type', 'image/webp');
+    res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+    res.send(pequena);
+  } catch {
+    res.setHeader('Cache-Control', 'public, max-age=600');
+    res.redirect(`/img/o/${id}.jpg`);
+  }
+});
 router.get('/img/o/:id.jpg', fotoDaOferta);
 router.get('/api/img/:id', fotoDaOferta);
 

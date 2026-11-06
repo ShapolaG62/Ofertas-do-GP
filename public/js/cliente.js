@@ -174,7 +174,7 @@
     $('#cli-sug-todas').hidden = $('#cli-sug-novas').hidden = !lista.length;
     $('#cli-sug-novas').hidden = SUG.length <= 6;
     $('#cli-sug').innerHTML = lista.map(o => `<div class="cli-sug-item" data-id="${o.id}">
-        <div class="cli-sug-foto"><img src="/img/o/${o.id}.jpg" alt="" loading="lazy"><span>-${Math.round(o.desconto_pct)}%</span></div>
+        <div class="cli-sug-foto"><img src="/img/p/${o.id}.webp" alt="" loading="lazy"><span>-${Math.round(o.desconto_pct)}%</span></div>
         <small>${esc(o.plataforma)}</small><b title="${esc(o.produto)}">${esc(o.produto)}</b>
         <div class="cli-sug-preco">R$ ${reais(o.preco_atual)}</div>
         <div class="cli-sug-tags">${o.comissao_extra_pct > 0 ? `<em class="extra">Extra +${pct(o.comissao_extra_pct)}</em>` : o.comissao_pct ? `<em>Comissão ${pct(o.comissao_pct)}</em>` : ''}${o.cupom_texto ? '<em>Cupom</em>' : ''}</div>

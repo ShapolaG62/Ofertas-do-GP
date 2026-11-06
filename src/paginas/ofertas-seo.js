@@ -65,7 +65,7 @@ function marcaLoja(o) {
 
 function cartao(o) {
   return `<a class="card" href="/oferta/${h(slugOferta(o))}" target="_blank" rel="noopener sponsored nofollow" data-id="${o.id}">
-      <div class="card-media"><img src="/img/o/${o.id}.jpg" alt="" loading="lazy" decoding="async" width="300" height="300">
+      <div class="card-media"><img src="/img/p/${o.id}.webp" alt="" loading="lazy" decoding="async" width="300" height="300">
         <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span></div></div>
       <div class="card-body"><div class="card-store">${marcaLoja(o)}</div>
         <h3 class="card-title">${h(o.produto)}</h3>

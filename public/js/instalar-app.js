@@ -22,17 +22,17 @@
   .app-btn { display: inline-flex; align-items: center; gap: 6px; }
   .app-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .header-actions .app-btn { color: var(--brand); }
-  @media (max-width: 720px) { .header-actions .app-btn { width: 36px; padding: 0; justify-content: center; } .header-actions .app-btn span { display: none; } }
+  @media (max-width: 720px) { .header-actions .app-btn { width: 44px; padding: 0; justify-content: center; } .header-actions .app-btn span { display: none; } }
   .app-aviso { position: fixed; z-index: 2147483050; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); margin: 0 auto; max-width: 520px;
-    display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--surface, #161b18); color: var(--ink, #edf1ee);
+    display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 10px; border-radius: 14px; background: var(--surface, #161b18); color: var(--ink, #edf1ee);
     border: 1px solid var(--line-strong, #343c36); box-shadow: 0 16px 44px -12px rgba(0, 0, 0, .55); font-family: Figtree, system-ui, sans-serif;
     animation: app-sobe .25s ease-out; }
-  .app-aviso img { width: 46px; height: 46px; border-radius: 12px; flex: none; }
+  .app-aviso img { width: 34px; height: 34px; border-radius: 9px; flex: none; }
   .app-aviso div { flex: 1; min-width: 0; display: grid; gap: 1px; }
   .app-aviso b { font-size: 14.5px; }
-  .app-aviso span { font-size: 12.5px; color: var(--ink-3, #87918b); line-height: 1.35; }
-  .app-aviso .app-sim { flex: none; height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--brand, #2bb673); color: #fff; font: inherit; font-weight: 800; font-size: 13.5px; cursor: pointer; }
-  .app-aviso .app-x { flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--surface-2, #1b211d); color: inherit; font-size: 17px; cursor: pointer; }
+  .app-aviso b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .app-aviso .app-sim { flex: none; height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--brand, #2bb673); color: #fff; font: inherit; font-weight: 800; font-size: 13.5px; cursor: pointer; }
+  .app-aviso .app-x { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 17px; cursor: pointer; }
   @keyframes app-sobe { from { transform: translateY(30px); } }
   @media (prefers-reduced-motion: reduce) { .app-aviso { animation: none; } }`;
   document.head.appendChild(css);
@@ -94,7 +94,7 @@
     aviso.className = 'app-aviso';
     aviso.setAttribute('role', 'dialog');
     aviso.setAttribute('aria-label', 'Instalar o app');
-    aviso.innerHTML = `<img src="/images/icon-192.png" alt=""><div><b>Baixe o app do Ofertou!</b><span>Ofertas na tela inicial do celular, abrindo mais rápido.</span></div>
+    aviso.innerHTML = `<img src="/images/icon-192.png" alt=""><div><b>Baixe o app</b></div>
       <button type="button" class="app-sim">Instalar</button><button type="button" class="app-x" aria-label="Agora não">×</button>`;
     aviso.querySelector('.app-sim').addEventListener('click', instalar);
     aviso.querySelector('.app-x').addEventListener('click', () => {

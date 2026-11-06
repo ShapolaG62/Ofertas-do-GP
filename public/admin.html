@@ -654,15 +654,38 @@
   [data-body="aff"] .store-card > h4 .store-marca { height: 26px; width: auto; }
   /* Abas das telas da equipe */
   .tabs-line [aria-selected="true"] { background: var(--azul-soft); color: var(--azul-texto); border-color: transparent; }
+  /* Celular: sem zoom ao tocar nos campos, áreas de toque de 44 px, texto legível e menu que abre inteiro */
+  .menu-cel-btn { display: none; }
+  @media (max-width: 900px) {
+    input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea { font-size: 16px !important; }
+    .btn, .btn.small, header.top .btn, .side .tab, .db-seg button, summary.btn, [data-tema-controle] button { min-height: 44px; }
+    .btn.small { font-size: 13.5px; }
+    small, .badge { font-size: 12px; }
+    .db-graf text { font-size: 12px; }
+    a.btn { display: inline-flex; align-items: center; }
+    .dobra-cab, h2.dobra-tit { min-height: 44px; display: flex; align-items: center; }
+    label.check { padding-block: 10px; }
+    summary { padding-block: 12px; }
+    .tag, .badge, th, small, .db-kpi small, .db-kpi span { font-size: 12px !important; }
+    .menu-cel-btn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; }
+    .menu-cel-btn svg { flex: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; color: var(--azul-texto); }
+    .menu-cel-btn .menu-cel-nome { flex: 1; min-width: 0; text-align: left; }
+    .menu-cel-btn svg:last-child { transition: transform .15s; }
+    .menu-cel-btn[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+    .menu-cel:not(.menu-cel-aberto) { display: none !important; }
+    .side.menu-cel-aberto { position: static; display: grid; grid-template-columns: minmax(0, 1fr); overflow: visible; gap: 2px; }
+    .side.menu-cel-aberto .side-grupo { display: block; }
+    .side.menu-cel-aberto .tab { width: 100%; white-space: normal; font-size: 15px; }
+  }
 </style>
-<script src="/js/tema.js?v=20261297"></script>
-<script src="/js/dialogo.js?v=20261297"></script>
-<script src="/js/modelo-post.js?v=20261297"></script>
-<script src="/js/avisos-entrada.js?v=20261297"></script>
-<script src="/js/capi-minerando.js?v=20261297" defer></script>
-<script src="/js/cadastro-auto.js?v=20261297" defer></script>
-<script src="/js/seletor.js?v=20261297" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261297">
+<script src="/js/tema.js?v=20261298"></script>
+<script src="/js/dialogo.js?v=20261298"></script>
+<script src="/js/modelo-post.js?v=20261298"></script>
+<script src="/js/avisos-entrada.js?v=20261298"></script>
+<script src="/js/capi-minerando.js?v=20261298" defer></script>
+<script src="/js/cadastro-auto.js?v=20261298" defer></script>
+<script src="/js/seletor.js?v=20261298" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261298">
 </head>
 <body>
 <div class="wrap">
@@ -2136,9 +2159,10 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261297"></script>
-<script src="/js/wa-temas.js?v=20261297"></script>
-<script src="/js/envio-resultados.js?v=20261297"></script>
-<script src="/js/wa-proprio.js?v=20261297"></script>
+<script src="/js/menu-celular.js?v=20261298"></script>
+<script src="/js/admin.js?v=20261298"></script>
+<script src="/js/wa-temas.js?v=20261298"></script>
+<script src="/js/envio-resultados.js?v=20261298"></script>
+<script src="/js/wa-proprio.js?v=20261298"></script>
 </body>
 </html>

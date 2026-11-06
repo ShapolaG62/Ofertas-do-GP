@@ -364,7 +364,7 @@
       const r = await api('/api/cliente/whatsapp/grupos');
       if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups')); }
       $('#wa-groups').innerHTML = r.grupos.length
-        ? r.grupos.map(g => OfertouTemas.linha(g, r.temas)).join('')
+        ? r.grupos.map(g => OfertouTemas.linha(g, r.temas, r.lojas)).join('')
         : '<span class="cli-hint">Nenhum grupo criado e administrado por este número.</span>';
       $('#wa-ocultos').textContent = OfertouTemas.avisoOcultos(r.ocultos);
       $('#wa-groups-box').hidden = false;

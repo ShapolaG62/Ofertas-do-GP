@@ -34,25 +34,29 @@ const enviar = (s, destino, { imagem, texto }) => proprio().enviar(donoDe(s), de
 function gruposEscolhidos(s) {
   try {
     const g = JSON.parse(s.whatsapp_groups || '[]');
-    return Array.isArray(g) ? g.filter(x => x && x.id).map(x => ({ ...x, categorias: Array.isArray(x.categorias) ? x.categorias.map(String) : [] })) : [];
+    return Array.isArray(g) ? g.filter(x => x && x.id).map(x => ({ ...x, categorias: Array.isArray(x.categorias) ? x.categorias.map(String) : [], lojas: Array.isArray(x.lojas) ? x.lojas.map(String) : [] })) : [];
   } catch { return []; }
 }
-// Grupos que recebem uma oferta deste tipo (grupo sem tipo marcado recebe todas)
-const gruposDaOferta = (s, categoria) => gruposEscolhidos(s).filter(g => !g.categorias.length || g.categorias.includes(categoria));
+// O grupo recebe esta oferta? Sem tipo marcado, recebe todos os tipos; sem loja marcada, todas as lojas.
+const grupoRecebe = (g, categoria, loja) => (!g.categorias?.length || g.categorias.includes(categoria)) && (!g.lojas?.length || g.lojas.includes(loja));
+const gruposDaOferta = (s, categoria, loja) => gruposEscolhidos(s).filter(g => grupoRecebe(g, categoria, loja));
 
-// Grupos escolhidos para esta postagem. porTipo: cada produto vai só para os grupos do tipo dele (o que foi marcado no
-// painel; grupo sem marcação usa o tipo que o nome indica). Sem porTipo, vai para todos os grupos escolhidos.
+// Grupos escolhidos para esta postagem. porTipo: cada produto vai só para os grupos do tipo e da loja dele (o que foi
+// marcado no painel; grupo sem marcação usa o tipo que o nome indica). Sem porTipo, vai para todos os grupos escolhidos.
 function comDestinos(s, grupos, porTipo = true) {
   const salvos = new Map(gruposEscolhidos(s).map(g => [g.id, g]));
   const { categoriasDoNome } = require('./temas-grupos');
   const lista = (grupos || []).filter(g => g && g.id).map(g => {
     const salvo = salvos.get(String(g.id));
     const nome = g.nome || salvo?.nome || String(g.id);
-    let categorias = [];
-    if (porTipo) categorias = salvo ? salvo.categorias : categoriasDoNome(nome);
-    return { id: String(g.id), nome, categorias };
+    let categorias = [], lojas = [];
+    if (porTipo) {
+      categorias = salvo ? salvo.categorias : categoriasDoNome(nome);
+      lojas = salvo ? salvo.lojas : [];
+    }
+    return { id: String(g.id), nome, categorias, lojas };
   });
   return { ...s, whatsapp_groups: JSON.stringify(lista) };
 }
 
-module.exports = { config, status, listarGrupos, resumoGrupos, tamanhoGrupos, enviar, gruposEscolhidos, gruposDaOferta, comDestinos };
+module.exports = { config, status, listarGrupos, resumoGrupos, tamanhoGrupos, enviar, gruposEscolhidos, grupoRecebe, gruposDaOferta, comDestinos };

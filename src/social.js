@@ -201,12 +201,12 @@ async function postX(o, _texto, s) {
   } catch (err) { throw apiError(err, 'X'); }
 }
 
-// WhatsApp: foto + texto em cada grupo do tema da oferta, com uma pausa aleatória entre grupos (parece menos robô).
+// WhatsApp: foto + texto em cada grupo do tipo e da loja da oferta, com uma pausa aleatória entre grupos (parece menos robô).
 // Cada grupo recebe um link próprio para contar os cliques; o que falhar é tentado de novo (src/envio-grupos.js).
 async function postWhatsApp(o, texto, s) {
   const envioGrupos = require('./envio-grupos');
-  const grupos = whatsapp.gruposDaOferta(s, o.categoria);
-  if (!grupos.length) throw new Error('Nenhum grupo de destino recebe ofertas deste tema.');
+  const grupos = whatsapp.gruposDaOferta(s, o.categoria, o.store_id);
+  if (!grupos.length) throw new Error('Nenhum grupo de destino recebe ofertas deste tipo e desta loja.');
   const imagem = postImage(o, s); // endereço da foto da loja
   const ok = [], erros = [];
   let novasTentativas = 0;

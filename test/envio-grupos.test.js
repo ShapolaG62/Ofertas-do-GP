@@ -302,7 +302,7 @@ test('temas: cada grupo recebe só o seu tema; grupo sem tema recebe tudo', asyn
   settings.set('whatsapp_groups', JSON.stringify([GRUPOS[1]]));
   const [r] = await social.publicar(oferta({ categoria: 'casa' }), ['whatsapp'], 'casa', 'teste');
   assert.equal(r.ok, false);
-  assert.match(r.mensagem, /deste tema/);
+  assert.match(r.mensagem, /deste tipo e desta loja/);
 });
 
 test('temas: oferta da fila sem grupo do tema não conta como falha', async () => {
@@ -312,7 +312,7 @@ test('temas: oferta da fila sem grupo do tema não conta como falha', async () =
   agenda.enfileirar([{ offer_id: oferta({ categoria: 'casa' }), texto: 'x' }], 'teste');
   const r = await agenda.executar('manual');
   assert.equal(r.feitos.length, 0);
-  assert.match(db.get('SELECT resultado FROM post_queue').resultado, /deste tema/);
+  assert.match(db.get('SELECT resultado FROM post_queue').resultado, /deste tipo e desta loja/);
   assert.equal(avisosDoSite().length, 0);
 });
 
@@ -438,4 +438,59 @@ test('brinquedo em forma de carro não vai para o grupo de automóveis', () => {
   for (const nome of ['Pneu Aro 15 Para Carro', 'Som Automotivo Bluetooth', 'Capacete Para Moto Fechado']) {
     assert.equal(classifyCategory(nome), 'automotivo', nome);
   }
+});
+
+test('lojas de cada grupo: tipo e loja valem juntos, em todos os envios', async () => {
+  limpar();
+  const L = id => db.get('SELECT store_id FROM offers WHERE id = ?', id).store_id;
+  settings.set('whatsapp_groups', JSON.stringify([
+    { id: 'tudo@g.us', nome: 'Tudo' },
+    { id: 'ml@g.us', nome: 'Só ML', lojas: ['mercadolivre'] },
+    { id: 'shp@g.us', nome: 'Tech Shopee', categorias: ['informatica'], lojas: ['shopee'] },
+  ]));
+  const s = settings.getAll();
+  const ids = lista => lista.map(g => g.id);
+  assert.deepEqual(ids(whatsapp.gruposDaOferta(s, 'casa', 'amazon')), ['tudo@g.us']);
+  assert.deepEqual(ids(whatsapp.gruposDaOferta(s, 'casa', 'mercadolivre')), ['tudo@g.us', 'ml@g.us']);
+  assert.deepEqual(ids(whatsapp.gruposDaOferta(s, 'informatica', 'shopee')), ['tudo@g.us', 'shp@g.us']);
+  assert.deepEqual(ids(whatsapp.gruposDaOferta(s, 'casa', 'shopee')), ['tudo@g.us'], 'loja certa e tipo errado não recebe');
+
+  const shopee = oferta({ store_id: 'shopee', categoria: 'informatica' });
+  assert.equal(L(shopee), 'shopee');
+  await social.publicar(shopee, ['whatsapp'], 'x', 'teste');
+  assert.deepEqual(enviados.map(e => e.grupo), ['tudo@g.us', 'shp@g.us']);
+
+  // Escolhendo os grupos da postagem: por tipo respeita a loja; "todos" não
+  const escolhidos = [{ id: 'ml@g.us', nome: 'Só ML' }, { id: 'shp@g.us', nome: 'Tech Shopee' }];
+  assert.deepEqual(ids(whatsapp.gruposDaOferta(whatsapp.comDestinos(s, escolhidos, true), 'informatica', 'mercadolivre')), ['ml@g.us']);
+  assert.equal(whatsapp.gruposDaOferta(whatsapp.comDestinos(s, escolhidos, false), 'casa', 'amazon').length, 2);
+
+  // Agendamento: oferta da fila que nenhum grupo recebe é descartada, sem contar como falha
+  settings.set('whatsapp_groups', JSON.stringify([{ id: 'ml@g.us', nome: 'Só ML', lojas: ['mercadolivre'] }]));
+  settings.set('agenda_completar', '0');
+  enviados = [];
+  agenda.enfileirar([{ offer_id: oferta({ store_id: 'amazon' }), texto: 'x' }], 'teste');
+  const r = await agenda.executar('manual');
+  assert.equal(r.feitos.length, 0);
+  assert.equal(enviados.length, 0);
+  assert.match(db.get('SELECT resultado FROM post_queue').resultado, /desta loja/);
+});
+
+test('lojas na escolha automática: só o que algum grupo recebe, e cada grupo na sua vez', async () => {
+  limpar();
+  settings.set('whatsapp_groups', JSON.stringify([
+    { id: 'ml@g.us', nome: 'ML', lojas: ['mercadolivre'] }, { id: 'shp@g.us', nome: 'Shopee', lojas: ['shopee'] },
+  ]));
+  const barata = { preco_atual: 50, preco_anterior: 100, desconto_pct: 50 };
+  const ml = oferta({ ...barata, store_id: 'mercadolivre', produto: 'Fone de ouvido bluetooth modelo alfa', categoria: 'audio_tv' });
+  const shp = oferta({ ...barata, store_id: 'shopee', produto: 'Liquidificador potente modelo beta', categoria: 'cozinha' });
+  const amz = oferta({ ...barata, store_id: 'amazon', produto: 'Mochila resistente modelo gama', categoria: 'moda' });
+  await busca.atualizar();
+  const s = settings.getAll();
+  const so = agenda.melhoresOfertas(10, new Set(), null, s, { soTemas: true });
+  assert.ok(so.includes(ml) && so.includes(shp));
+  assert.ok(!so.includes(amz), 'nenhum grupo recebe Amazon');
+  const a = agenda.melhoresOfertas(1, new Set(), null, s, { soTemas: true, girar: true })[0];
+  const b = agenda.melhoresOfertas(1, new Set(), null, s, { soTemas: true, girar: true })[0];
+  assert.deepEqual([a, b].sort(), [ml, shp].sort());
 });

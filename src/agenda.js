@@ -134,19 +134,19 @@ function regraDeRepeticao(cid) {
 // Melhores ofertas do momento: as de maior nota (chance de venda + comissão extra, sem descontos suspeitos), categorias
 // variadas, sem repetir produto (regra acima), respeitando os filtros do dono. Para o afiliado, só das lojas em que ele já
 // tem link de afiliado (postar das outras não rende comissão).
-// Grupos por tema: cada grupo com tema tem a vez de receber a melhor oferta dele. soTemas: nada fora dos temas dos grupos
-// (quando o WhatsApp é a única rede). girar: passa a vez para o próximo grupo.
+// Grupos por tipo e loja: cada grupo com escolha tem a vez de receber a melhor oferta dele. soTemas: nada que nenhum grupo
+// receba (quando o WhatsApp é a única rede). girar: passa a vez para o próximo grupo.
 const vezDoTema = new Map();
 function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid), { soTemas = false, girar = false } = {}) {
   const passa = filtroDoDono(s);
   const repeticao = regraDeRepeticao(cid);
   const grupos = whatsapp.gruposEscolhidos(s);
-  const comTema = grupos.filter(g => g.categorias.length);
-  const temasAceitos = soTemas && grupos.length && comTema.length === grupos.length ? new Set(comTema.flatMap(g => g.categorias)) : null;
+  const comTema = grupos.filter(g => g.categorias.length || g.lojas.length);
+  const soDosGrupos = soTemas && grupos.length && comTema.length === grupos.length;
   const pagas = cid ? new Set(clientes.lojasComAfiliado(s)) : null;
   const limite = Date.now() - 12 * 3600000;
   let rows = require('./busca-ofertas').paraPostar(o => !repeticao.porOferta(o) && !excluir.has(o.id) && passa(o)
-    && (!temasAceitos || temasAceitos.has(o.categoria)) && Date.parse(`${String(o.last_seen_at).replace(' ', 'T')}Z`) > limite && (!pagas?.size || pagas.has(o.store_id))).slice(0, 1500);
+    && (!soDosGrupos || grupos.some(g => whatsapp.grupoRecebe(g, o.categoria, o.store_id))) && Date.parse(`${String(o.last_seen_at).replace(' ', 'T')}Z`) > limite && (!pagas?.size || pagas.has(o.store_id))).slice(0, 1500);
   // Só com foto pública (a postagem sai com a imagem)
   const comFoto = new Set();
   for (let i = 0; i < rows.length; i += 500) {
@@ -167,7 +167,7 @@ function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid), { soTemas 
     if (girar) vezDoTema.set(dono(cid), inicio + 1);
     for (let i = 0; i < comTema.length && out.length < qtd; i++) {
       const g = comTema[(inicio + i) % comTema.length];
-      const r = rows.find(x => g.categorias.includes(x.categoria) && !out.includes(x.id) && offers.isActive(x.id));
+      const r = rows.find(x => whatsapp.grupoRecebe(g, x.categoria, x.store_id) && !out.includes(x.id) && offers.isActive(x.id));
       if (r) { out.push(r.id); cats.add(r.categoria); }
     }
   }
@@ -240,10 +240,10 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
 
     let it;
     while (feitos.length < qtd && (it = proxima())) {
-      const categoria = db.get('SELECT categoria FROM offers WHERE id = ?', it.offer_id)?.categoria;
+      const alvo = db.get('SELECT categoria, store_id FROM offers WHERE id = ?', it.offer_id) || {};
       const sItem = it.destino?.grupos?.length ? whatsapp.comDestinos(s, it.destino.grupos, it.destino.por_tipo !== false) : s;
-      const redes = prontas.filter(id => id !== 'whatsapp' || whatsapp.gruposDaOferta(sItem, categoria).length);
-      if (!redes.length) { descartar(it, 'Nenhum grupo de destino recebe ofertas deste tema.'); continue; }
+      const redes = prontas.filter(id => id !== 'whatsapp' || whatsapp.gruposDaOferta(sItem, alvo.categoria, alvo.store_id).length);
+      if (!redes.length) { descartar(it, 'Nenhum grupo de destino recebe ofertas deste tipo e desta loja.'); continue; }
       const conferencia = await precoNaHora.conferir(it.offer_id);
       if (conferencia.acao === 'pular') { descartar(it, conferencia.motivo); continue; }
       if (conferencia.situacao !== 'sem_checagem') conferidos++;

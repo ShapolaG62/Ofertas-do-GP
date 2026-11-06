@@ -2099,7 +2099,7 @@ const REDE_NOME = { telegram: 'Telegram', facebook: 'Facebook', instagram: 'Inst
 function updateWaProvider() {
   let g = [];
   try { g = JSON.parse(SETTINGS.whatsapp_groups || '[]'); } catch { /* vazio */ }
-  $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>${g.some(x => x.categorias?.length) ? ' (alguns só recebem os tipos escolhidos)' : ''}` : 'Nenhum grupo de destino escolhido ainda.';
+  $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>${g.some(x => x.categorias?.length || x.lojas?.length) ? ' (alguns só recebem os tipos ou as lojas escolhidas)' : ''}` : 'Nenhum grupo de destino escolhido ainda.';
 }
 
 // Salva o formulário do WhatsApp antes de testar (para usar o que está digitado).
@@ -2126,7 +2126,7 @@ $('#wa-load').addEventListener('click', async () => {
     await saveWaForm();
     const r = await api('/api/admin/whatsapp/grupos');
     if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups')); }
-    $('#wa-groups').innerHTML = r.grupos.length ? r.grupos.map(g => OfertouTemas.linha(g, r.temas)).join('')
+    $('#wa-groups').innerHTML = r.grupos.length ? r.grupos.map(g => OfertouTemas.linha(g, r.temas, r.lojas)).join('')
       : '<span class="hint">Nenhum grupo criado e administrado por este número.</span>';
     $('#wa-ocultos').textContent = OfertouTemas.avisoOcultos(r.ocultos);
     $('#wa-groups-box').classList.remove('hidden');

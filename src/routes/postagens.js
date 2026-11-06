@@ -157,9 +157,9 @@ router.get('/api/postagens/meus-grupos', async (req, res) => {
   const temas = require('../temas-grupos');
   try {
     const { grupos, ocultos } = await whatsapp.resumoGrupos(req.cfg);
-    res.json({ conectado: true, ocultos, temas: temas.listar(), grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(req.cfg), '/api/postagens/wa-foto/') });
+    res.json({ conectado: true, ocultos, temas: temas.listar(), lojas: temas.listarLojas(), grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(req.cfg), '/api/postagens/wa-foto/') });
   } catch (err) {
-    res.json({ conectado: false, erro: err.message, grupos: [], temas: temas.listar(), ocultos: 0 });
+    res.json({ conectado: false, erro: err.message, grupos: [], temas: temas.listar(), lojas: temas.listarLojas(), ocultos: 0 });
   }
 });
 router.get('/api/postagens/wa-foto/:jid', async (req, res) => {
@@ -186,8 +186,8 @@ router.post('/api/postagens/enviar-grupos', async (req, res) => {
   if (!o) return res.status(404).json({ error: 'Oferta não encontrada.' });
   const todos = require('../whatsapp').gruposEscolhidos(req.cfg);
   const pedido = String(req.body?.grupo || 'todos');
-  // "Todos" respeita o tema de cada grupo; escolher um grupo específico é decisão de quem está enviando
-  const grupos = pedido === 'todos' ? todos : todos.filter(g => g.id === pedido).map(g => ({ ...g, categorias: [] }));
+  // "Todos" respeita o tipo e a loja de cada grupo; escolher um grupo específico é decisão de quem está enviando
+  const grupos = pedido === 'todos' ? todos : todos.filter(g => g.id === pedido).map(g => ({ ...g, categorias: [], lojas: [] }));
   if (!todos.length) return res.status(400).json({ error: cid ? 'Escolha os grupos de destino em Meu painel → WhatsApp.' : 'Escolha os grupos de destino em Painel → Redes sociais → WhatsApp.' });
   if (!grupos.length) return res.status(400).json({ error: 'Esse grupo não está mais na sua lista de grupos.' });
   const s = { ...req.cfg, whatsapp_groups: JSON.stringify(grupos) };

@@ -98,12 +98,13 @@
   const categoriasDoGrupo = g => (g.categorias?.length ? g.categorias : (g.sugestao || []).flatMap(id => TEMAS.find(t => t.id === id)?.categorias || []));
   const destinosDe = o => GRUPOS.filter(g => marcados.has(g.id)).filter(g => {
     if (!porTipo) return true;
-    const c = categoriasDoGrupo(g);
-    return !c.length || c.includes(o.categoria);
+    const c = categoriasDoGrupo(g), l = g.lojas || [];
+    return (!c.length || c.includes(o.categoria)) && (!l.length || l.includes(o.store_id));
   });
   const nomesTemas = g => {
-    const c = categoriasDoGrupo(g);
-    return c.length ? TEMAS.filter(t => t.categorias.some(x => c.includes(x))).map(t => `${t.icone} ${t.nome}`).join(', ') : 'Recebe todas as ofertas';
+    const c = categoriasDoGrupo(g), l = g.lojas || [];
+    const partes = [...TEMAS.filter(t => t.categorias.some(x => c.includes(x))).map(t => `${t.icone} ${t.nome}`), ...l.map(id => STORES[id] || id)];
+    return partes.length ? partes.join(', ') : 'Recebe todas as ofertas';
   };
   function desenharGrupos(d) {
     const caixa = $('#wa-destinos');
@@ -113,7 +114,7 @@
     $('#wa-destinos-lista').innerHTML = GRUPOS.map(g => `<label class="wa-destino">
       <input type="checkbox" data-destino="${esc(g.id)}" ${marcados.has(g.id) ? 'checked' : ''}>
       ${window.OfertouTemas.avatar(g.nome, g.foto)}
-      <span class="wa-grupo-nome"><b>${esc(g.nome)}</b><small>${esc(nomesTemas(g))}${g.membros ? ` · ${Number(g.membros).toLocaleString('pt-BR')} pessoas` : ''}</small></span>
+      <span class="wa-grupo-nome"><b>${esc(g.nome)}</b><small>${esc(nomesTemas(g))}${g.membros ? ` · ${window.OfertouTemas.pessoas(g.membros)}` : ''}</small></span>
     </label>`).join('');
     document.querySelectorAll('[data-wa-modo]').forEach(b => {
       const ativo = (b.dataset.waModo === 'tipo') === porTipo;
@@ -129,7 +130,7 @@
       const d = destinosDe(o);
       el.hidden = false;
       el.classList.toggle('sem-grupo', !d.length);
-      el.textContent = d.length ? `Vai para: ${d.map(g => g.nome).join(', ')}` : 'Nenhum grupo marcado recebe este tipo de produto.';
+      el.textContent = d.length ? `Vai para: ${d.map(g => g.nome).join(', ')}` : 'Nenhum grupo marcado recebe este tipo de produto desta loja.';
     }
   }
   function salvarMarcados() { save(GRUPOS_KEY, [...marcados]); atualizarDestinosDosCards(); }
@@ -367,7 +368,7 @@
       const st = document.querySelector(`[data-status="${o.id}"]`);
       // Sem grupo do tipo dele e sem outra rede: nada a publicar neste produto
       if (comGrupos && redes.length === 1 && !destinosDe(o).length) {
-        if (st) st.innerHTML = '<span class="post-fail">Pulado: nenhum grupo marcado recebe este tipo de produto.</span>';
+        if (st) st.innerHTML = '<span class="post-fail">Pulado: nenhum grupo marcado recebe este tipo de produto desta loja.</span>';
         continue;
       }
       if (st) st.innerHTML = '<span class="post-pending">Publicando…</span>';

@@ -32,8 +32,8 @@ async function postar(cid, { offerId, texto, grupos, porTipo = true, autor }) {
   const s = lista ? whatsapp.comDestinos(s0, lista, porTipo) : s0;
   const motivo = social.REDES.whatsapp.pronta(s);
   if (motivo) throw falha(motivo, 409);
-  const vaoReceber = whatsapp.gruposDaOferta(s, o.categoria);
-  if (!vaoReceber.length) throw falha('Nenhum grupo escolhido recebe este tipo de produto.', 409);
+  const vaoReceber = whatsapp.gruposDaOferta(s, o.categoria, o.store_id);
+  if (!vaoReceber.length) throw falha('Nenhum grupo escolhido recebe este tipo de produto desta loja.', 409);
   const conferencia = await require('./preco-na-hora').conferir(o.id);
   if (conferencia.acao === 'pular') throw falha(conferencia.motivo, 409);
   const atual = db.get('SELECT * FROM offers WHERE id = ?', offerId);

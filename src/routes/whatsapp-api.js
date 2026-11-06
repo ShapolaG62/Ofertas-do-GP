@@ -55,7 +55,7 @@ function rotasComuns(r) {
     const { grupos, ocultos } = await proprio.resumoGrupos(req.dono);
     const lista = req.query.todos === '1' ? await proprio.carregarGrupos(req.dono, { todos: true }) : grupos;
     const escolhidos = require('../whatsapp').gruposEscolhidos(cfgDe(cid(req)));
-    res.json({ ocultos, temas: temas.listar(), grupos: temas.paraTelaGrupos(lista, escolhidos, baseFoto(req)).map((g, i) => ({ ...g, descricao: lista[i].descricao, admin: lista[i].admin, criador: lista[i].criador })) });
+    res.json({ ocultos, temas: temas.listar(), lojas: temas.listarLojas(), grupos: temas.paraTelaGrupos(lista, escolhidos, baseFoto(req)).map((g, i) => ({ ...g, descricao: lista[i].descricao, admin: lista[i].admin, criador: lista[i].criador })) });
   }));
   r.get('/grupos/:id/convite', async_(async (req, res) => res.json({ link: await proprio.convite(req.dono, req.params.id) })));
   r.get('/foto/:jid', async_(async (req, res) => {

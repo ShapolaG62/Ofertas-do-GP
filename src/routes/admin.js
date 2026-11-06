@@ -518,7 +518,7 @@ router.get('/api/admin/whatsapp/status', async (req, res) => {
 
 router.get('/api/admin/whatsapp/grupos', async (req, res) => {
   try {
-    const { grupos, ocultos } = await whatsapp.resumoGrupos(settings.getAll()); const temas = require('../temas-grupos'); res.json({ grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(settings.getAll()), '/api/admin/wa/foto/'), ocultos, temas: temas.listar() });
+    const { grupos, ocultos } = await whatsapp.resumoGrupos(settings.getAll()); const temas = require('../temas-grupos'); res.json({ grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(settings.getAll()), '/api/admin/wa/foto/'), ocultos, temas: temas.listar(), lojas: temas.listarLojas() });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

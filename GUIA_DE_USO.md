@@ -158,7 +158,7 @@ O site tem espaços reservados para propaganda de empresas que entrarem em conta
 **WhatsApp:** não tem API oficial para grupos. A postagem automática usa um **número separado** conectado por um destes serviços (Painel → Redes sociais → WhatsApp):
 
 - Em **Painel → Redes sociais → WhatsApp**, clique em **Conectar** e leia o QR code no celular (Dispositivos conectados → Conectar um dispositivo). A sessão fica salva no servidor e volta sozinha quando o site reinicia.
-- Em **Carregar grupos do número** aparecem só os grupos que o número criou e administra, com foto e nome. Marque os grupos e o tipo de produto de cada um (Tecnologia, Casa, Automóveis…).
+- Em **Carregar grupos do número** aparecem só os grupos que o número criou e administra, com foto e nome. Marque os grupos, o tipo de produto (Tecnologia, Casa, Automóveis…) e as lojas (Mercado Livre, Shopee, Amazon, Magalu, KaBuM!) de cada um. Sem nada marcado, o grupo recebe todos os tipos e todas as lojas.
 
 Depois clique em **Testar conexão**, **Carregar grupos do número**, marque os grupos de destino e **Salvar grupos**. Cada oferta vai com foto e texto para todos os grupos marcados, com pausa de alguns segundos entre os grupos e o intervalo configurado (padrão 90 s) entre uma oferta e outra.
 

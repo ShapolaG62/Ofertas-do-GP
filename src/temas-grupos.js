@@ -23,6 +23,13 @@ const TEMAS = [
     palavras: ['alimento', 'alimentos', 'mercado', 'supermercado', 'bebida', 'bebidas', 'comida', 'cafe', 'vinho'] },
 ];
 
+// Lojas que cada grupo pode escolher
+const LOJAS = [
+  { id: 'mercadolivre', nome: 'Mercado Livre' }, { id: 'shopee', nome: 'Shopee' }, { id: 'amazon', nome: 'Amazon' },
+  { id: 'magalu', nome: 'Magalu' }, { id: 'kabum', nome: 'KaBuM!' },
+];
+const listarLojas = () => LOJAS.map(l => ({ ...l }));
+
 const semAcento = v => String(v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const paraTela = t => ({ id: t.id, nome: t.nome, icone: t.icone, categorias: t.categorias });
 const listar = () => TEMAS.map(paraTela);
@@ -46,9 +53,9 @@ function paraTelaGrupos(grupos, escolhidos, baseFoto) {
     const salvo = salvos.get(g.id);
     return {
       id: g.id, nome: g.nome, membros: g.membros ?? null, foto: `${baseFoto}${encodeURIComponent(g.id)}`, salvo: Boolean(salvo),
-      categorias: salvo ? salvo.categorias : [], sugestao: salvo ? [] : temasDoNome(g.nome),
+      categorias: salvo ? salvo.categorias : [], lojas: salvo?.lojas || [], sugestao: salvo ? [] : temasDoNome(g.nome),
     };
   });
 }
 
-module.exports = { listar, temaDaCategoria, temasDoNome, categoriasDoNome, paraTelaGrupos };
+module.exports = { listarLojas, listar, temaDaCategoria, temasDoNome, categoriasDoNome, paraTelaGrupos };

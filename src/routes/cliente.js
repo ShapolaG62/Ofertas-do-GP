@@ -69,7 +69,7 @@ router.get('/api/cliente/whatsapp/status', async (req, res) => {
 
 router.get('/api/cliente/whatsapp/grupos', async (req, res) => {
   const s = clientes.config(req.cliente.id);
-  try { const { grupos, ocultos } = await whatsapp.resumoGrupos(s); const temas = require('../temas-grupos'); res.json({ grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(s), '/api/cliente/wa/foto/'), ocultos, temas: temas.listar() }); } catch (err) { sendError(res, err); }
+  try { const { grupos, ocultos } = await whatsapp.resumoGrupos(s); const temas = require('../temas-grupos'); res.json({ grupos: temas.paraTelaGrupos(grupos, whatsapp.gruposEscolhidos(s), '/api/cliente/wa/foto/'), ocultos, temas: temas.listar(), lojas: temas.listarLojas() }); } catch (err) { sendError(res, err); }
 });
 
 // Dashboard do painel: envios no período (por dia, ok e falha), conexões, fila e cliques nos links do cliente

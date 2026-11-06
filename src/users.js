@@ -335,6 +335,7 @@ function deleteOwnAccount(u, body) {
     throw new Error('Digite EXCLUIR para confirmar.');
   }
   logAction(u, 'conta_excluida_pelo_usuario', null);
+  if (u.cliente_id) require('./whatsapp-proprio').esquecer(`c:${u.cliente_id}`).catch(err => console.error('[CONTA] WhatsApp:', err.message));
   db.run('DELETE FROM users WHERE id = ?', u.id); // loja, anúncios e sessões saem junto (ON DELETE CASCADE)
   require('./perfis').excluir(`u:${u.id}`); // perfil, conquistas e fotos
 }
@@ -426,6 +427,7 @@ function moderate(id, action, { motivo = '', dias = 0, bloquearEmail = false } =
         }
       }
       logAction(u, 'perfil_excluido', `${motivo || ''}${bloquearEmail ? ' (e-mail e documentos bloqueados)' : ''}`.trim());
+      if (u.cliente_id) require('./whatsapp-proprio').esquecer(`c:${u.cliente_id}`).catch(err => console.error('[USUARIOS] WhatsApp:', err.message));
       db.run('DELETE FROM users WHERE id = ?', id);
       break;
     default:

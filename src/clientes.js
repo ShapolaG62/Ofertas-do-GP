@@ -76,6 +76,7 @@ function definirStatus(id, status) {
 
 function excluir(id) {
   require('./perfis').excluir(`c:${id}`);
+  require('./whatsapp-proprio').esquecer(`c:${id}`).catch(err => console.error('[CLIENTES] WhatsApp:', err.message));
   db.run('DELETE FROM post_queue WHERE cliente_id = ?', id);
   db.run('DELETE FROM clientes WHERE id = ?', id);
 }

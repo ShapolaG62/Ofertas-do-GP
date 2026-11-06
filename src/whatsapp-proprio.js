@@ -640,6 +640,13 @@ function mensagens(dono, { chat, limite, depois, busca } = {}) {
 function limpar() {
   db.run(`DELETE FROM whatsapp_mensagens WHERE criado_em < datetime('now', ?)`, `-${DIAS_GUARDADOS} days`);
 }
+// Acesso excluído: desconecta e apaga tudo o que está guardado deste número
+async function esquecer(dono) {
+  validarDono(dono);
+  await desconectar(dono);
+  db.run('DELETE FROM whatsapp_ajustes WHERE dono = ?', dono);
+  db.run('DELETE FROM whatsapp_webhooks WHERE dono = ?', dono);
+}
 // Quem tem sessão salva neste servidor
 function donosComSessao() {
   const donos = [];
@@ -674,6 +681,7 @@ function _paraTestes({ criar, intervalo, intervaloFotos } = {}) {
 }
 
 module.exports = {
+  esquecer,
   donoDe, cidDe, paraJid, lerMensagem, status, pronto, temSessao, conectar, desconectar, fechar, carregarGrupos, resumoGrupos, enviar, foto, convite,
   conversas, mensagens, salvarWebhook, lerWebhook, lerAjustes, salvarAjustes, reiniciar, socket, enviarConteudo, meuJid, gruposMudaram, linhaMensagem, ultimaMensagem,
   textoEditado, nomeConhecido, etiquetas, contatos, baixarMidia, iniciar, limpar, pastaSessao, pastaFotos, _paraTestes,

@@ -325,3 +325,21 @@ test('apaga as mensagens com mais de 30 dias', () => {
   proprio.limpar();
   assert.deepEqual(proprio.mensagens(SITE, { chat: 'x@g.us' }).map(m => m.texto), ['nova']);
 });
+
+test('acesso excluído: apaga mensagens, contatos, ajustes e avisos só daquele número', async () => {
+  const db = require('../src/db');
+  const proprio = require('../src/whatsapp-proprio');
+  for (const dono of ['c:901', 'c:902']) {
+    db.run(`INSERT INTO whatsapp_mensagens (dono, wa_id, chat, de_mim, tipo, texto, criado_em) VALUES (?, 'x', 'y', 0, 'texto', 'oi', datetime('now'))`, dono);
+    db.run(`INSERT INTO whatsapp_contatos (dono, jid) VALUES (?, 'y')`, dono);
+    db.run(`INSERT INTO whatsapp_ajustes (dono, valores) VALUES (?, '{}')`, dono);
+    db.run(`INSERT INTO whatsapp_webhooks (dono, url, segredo) VALUES (?, 'https://x.test', 's')`, dono);
+  }
+  await proprio.esquecer('c:901');
+  const conta = (tabela, dono) => db.get(`SELECT COUNT(*) n FROM ${tabela} WHERE dono = ?`, dono).n;
+  for (const tabela of ['whatsapp_mensagens', 'whatsapp_contatos', 'whatsapp_ajustes', 'whatsapp_webhooks']) {
+    assert.equal(conta(tabela, 'c:901'), 0, tabela);
+    assert.equal(conta(tabela, 'c:902'), 1, `${tabela} de outro número fica`);
+  }
+  await assert.rejects(proprio.esquecer('../outra-pasta'), /Dono inválido/);
+});

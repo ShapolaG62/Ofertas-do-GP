@@ -25,8 +25,8 @@ const SAIDA = path.join(DIR, '..', '..', 'public', 'videos');
       await new Promise(ok => { v.onloadeddata = ok; });
       const W = 1280, H = 720;
       const cv = document.createElement('canvas'); cv.width = W; cv.height = H; document.body.appendChild(cv); const g = cv.getContext('2d');
-      // capa (aos 2 s)
-      v.currentTime = 2; await new Promise(ok => { v.onseeked = ok; }); g.drawImage(v, 0, 0, W, H);
+      // capa (aos 3 s, com a logo na tela)
+      v.currentTime = 3; await new Promise(ok => { v.onseeked = ok; }); g.drawImage(v, 0, 0, W, H);
       window.__capa = cv.toDataURL('image/jpeg', .82);
       v.currentTime = 0; await new Promise(ok => { v.onseeked = ok; });
       const ac = new AudioContext({ sampleRate: 48000 }); await ac.resume();
@@ -39,7 +39,7 @@ const SAIDA = path.join(DIR, '..', '..', 'public', 'videos');
       let rodando = true;
       const quadro = () => { if (!rodando) return; g.drawImage(v, 0, 0, W, H); requestAnimationFrame(quadro); };
       requestAnimationFrame(quadro);
-      await new Promise(ok => { rec.onstart = ok; rec.start(1000); });
+      rec.start(1000); // sem esperar o onstart, para o arquivo não abrir parado
       await v.play();
       await new Promise(ok => { v.onended = ok; });
       rodando = false;

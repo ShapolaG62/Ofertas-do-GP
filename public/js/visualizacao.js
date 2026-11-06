@@ -19,8 +19,8 @@
   const quando = d => `${hoje(d)} 13:30:00`;
   const validade = '9999-12-31 23:59:59';
   const LOJAS = { mercadolivre: 'Mercado Livre', shopee: 'Shopee', amazon: 'Amazon', magalu: 'Magalu', aliexpress: 'AliExpress', kabum: 'KaBuM!' };
-  const PRODUTOS = ['Air Fryer 4L Inox', 'Fone Bluetooth com Cancelamento de Ruído', 'Smart TV 50" 4K', 'Cafeteira Elétrica 30 Xícaras', 'Tênis de Corrida Masculino', 'Aspirador Robô com Mapeamento',
-    'Liquidificador 1200W', 'Kit de Panelas Antiaderentes', 'Mochila para Notebook', 'Monitor 27" Full HD', 'Cadeira de Escritório', 'Ventilador de Mesa 40cm'];
+  const PRODUTOS = ['Air Fryer 4L Inox', 'Fone Bluetooth com Cancelamento de Ruído', 'Monitor 27" Full HD', 'Garrafa Térmica 1 Litro', 'Tênis de Corrida Masculino', 'Relógio Inteligente com GPS',
+    'Liquidificador 1200W', 'Kit de Panelas Antiaderentes', 'Mochila para Notebook', 'Smart TV 50" 4K', 'Cadeira de Escritório', 'Ventilador de Mesa 40cm'];
   const ofertas = PRODUTOS.map((produto, i) => {
     const preco_atual = 79.9 + i * 53, desconto_pct = 18 + (i * 7) % 40;
     return { id: 900001 + i, produto, preco_atual, preco_anterior: Math.round(preco_atual / (1 - desconto_pct / 100) * 100) / 100, desconto_pct,

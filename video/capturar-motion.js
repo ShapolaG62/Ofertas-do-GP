@@ -10,7 +10,7 @@ const TOKEN = process.argv[3] || '';
 const DIR = path.join(__dirname, 'telas-motion');
 const FOTOS = "new Promise(ok => { const t = Date.now(); const f = () => { const imgs = [...document.images].filter(i => { const r = i.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; }); if (imgs.every(i => i.complete) || Date.now() - t > 12000) ok(imgs.length); else setTimeout(f, 300); }; f(); })";
 // Some com anúncios, avisos e banners que atrapalham o print
-const LIMPAR = `document.querySelectorAll('.ad-slot, #expired-notice, .app-aviso, .aviso-entrada, dialog[open]:not(#filters-dialog):not([data-manter]), [aria-label="Aviso de cookies"]').forEach(e => e.tagName === 'DIALOG' ? e.close() : e.remove()); document.querySelectorAll('#comu-card, #comu-sug').forEach(e => e.style.display = "none"); 1`;
+const LIMPAR = `document.querySelectorAll('.ad-slot, .awa-faixa, #expired-notice, .app-aviso, .aviso-entrada, dialog[open]:not(#filters-dialog):not([data-manter]), [aria-label="Aviso de cookies"]').forEach(e => e.tagName === 'DIALOG' ? e.close() : e.remove()); document.querySelectorAll('#comu-card, #comu-sug').forEach(e => e.style.display = "none"); 1`;
 const espera = ms => new Promise(r => setTimeout(r, ms));
 fs.mkdirSync(DIR, { recursive: true });
 
@@ -30,7 +30,9 @@ fs.mkdirSync(DIR, { recursive: true });
     await b.ir(`${SITE}/conta`, 2500);
     await tema('escuro');
     await b.js(`[...document.querySelectorAll('button, a')].find(e => /cadastro r[aá]pido/i.test(e.textContent))?.click(); 1`);
-    await espera(800); await print('cel-cadastro');
+    await espera(800);
+    await b.js(`document.querySelectorAll('.app-aviso').forEach(e => e.remove()); document.querySelector('#form-rapido')?.scrollIntoView({ block: 'center' }); 1`); await espera(400);
+    await print('cel-cadastro');
     if (TOKEN) await b.cookie('gp_user', TOKEN, SITE);
 
     for (const t of ['escuro', 'claro']) {

@@ -15,6 +15,7 @@ fs.mkdirSync(DIR, { recursive: true });
   const b = await abrirNavegador({ largura: 1600, altura: 900, porta: 9334 });
   try {
     await b.cmd('Network.enable');
+    await b.cookie('ofertou_cookies', 'nao', SITE); // sem o aviso de cookies nos prints
     // 1. Página de entrada (sem login)
     await b.ir(`${SITE}/conta`, 2500);
     await b.print(path.join(DIR, 'entrada.png'));
@@ -22,31 +23,33 @@ fs.mkdirSync(DIR, { recursive: true });
     if (TOKEN) await b.cookie('gp_user', TOKEN, SITE);
     // 2. Ofertas (topo e grade)
     await b.ir(`${SITE}/`, 4000);
-    await b.js(`document.querySelector('#expired-notice')?.remove(); document.querySelectorAll('.ad-slot').forEach(e => e.remove()); 1`);
+    await b.js(`document.querySelector('#expired-notice')?.remove(); document.querySelectorAll('.ad-slot, .awa-faixa').forEach(e => e.remove()); 1`);
     await new Promise(r => setTimeout(r, 2500)); await b.js(FOTOS); await new Promise(r => setTimeout(r, 3000)); await b.js(FOTOS); await b.print(path.join(DIR, 'inicio.png'));
     await b.js(`window.scrollTo(0, document.querySelector('#ofertas').getBoundingClientRect().top + scrollY - 80); 1`);
     await new Promise(r => setTimeout(r, 1200)); await b.js(FOTOS); await new Promise(r => setTimeout(r, 3000)); await b.js(FOTOS);
     await b.print(path.join(DIR, 'grade.png'));
     // 3. Busca
     await b.ir(`${SITE}/?q=air+fryer`, 3500);
-    await b.js(`document.querySelectorAll('.ad-slot').forEach(e => e.remove()); window.scrollTo(0, document.querySelector('#ofertas').getBoundingClientRect().top + scrollY - 80); 1`);
+    await b.js(`document.querySelectorAll('.ad-slot, .awa-faixa').forEach(e => e.remove()); window.scrollTo(0, document.querySelector('#ofertas').getBoundingClientRect().top + scrollY - 80); 1`);
     await new Promise(r => setTimeout(r, 1200)); await b.js(FOTOS); await new Promise(r => setTimeout(r, 3000)); await b.js(FOTOS);
     await b.print(path.join(DIR, 'busca.png'));
     // 4. Categoria com tipos
     await b.ir(`${SITE}/?cat=celulares&ordem=desconto`, 3500);
-    await b.js(`document.querySelectorAll('.ad-slot').forEach(e => e.remove()); window.scrollTo(0, document.querySelector('#ofertas').getBoundingClientRect().top + scrollY - 80); 1`);
+    await b.js(`document.querySelectorAll('.ad-slot, .awa-faixa').forEach(e => e.remove()); window.scrollTo(0, document.querySelector('#ofertas').getBoundingClientRect().top + scrollY - 80); 1`);
     await new Promise(r => setTimeout(r, 1200)); await b.js(FOTOS); await new Promise(r => setTimeout(r, 3000)); await b.js(FOTOS);
     await b.print(path.join(DIR, 'categoria.png'));
     // 5. Suporte no painel de Mensagens
     await b.ir(`${SITE}/?sac=1`, 4000);
+    await b.js(`document.querySelectorAll('.ad-slot, .awa-faixa').forEach(e => e.remove()); 1`);
     await b.print(path.join(DIR, 'suporte.png'));
     // 6. Celular
     await b.tela({ largura: 390, altura: 844, celular: true });
     await b.ir(`${SITE}/`, 4000);
-    await b.js(`document.querySelectorAll('.ad-slot').forEach(e => e.remove()); 1`);
+    await b.js(`document.querySelectorAll('.ad-slot, .awa-faixa, .app-aviso').forEach(e => e.remove()); 1`);
     await b.js(FOTOS); await new Promise(r => setTimeout(r, 3000)); await b.js(FOTOS); await b.print(path.join(DIR, 'celular.png'));
     await b.js(`window.scrollTo(0, document.querySelector('#ofertas').getBoundingClientRect().top + scrollY - 60); 1`);
     await new Promise(r => setTimeout(r, 1200)); await b.js(FOTOS); await new Promise(r => setTimeout(r, 3000)); await b.js(FOTOS);
+    await b.js(`document.querySelectorAll('.app-aviso').forEach(e => e.remove()); 1`);
     await b.print(path.join(DIR, 'celular-grade.png'));
     console.log('prints prontos em', DIR, fs.readdirSync(DIR));
   } finally { await b.fechar(); }

@@ -14,7 +14,7 @@
 <script>
 'use strict';
 // ════════════════════════════════════════════════════════════════════════════════════════════
-// Motion graphics do Ofertou! (33 s, 30 fps) em dois formatos, desenhados num canvas:
+// Motion graphics do Ofertou! (66 s, 30 fps, sem narração) em dois formatos, desenhados num canvas:
 //   motion.html                    → 16:9 (1920×1080)
 //   motion.html?formato=vertical   → 9:16 (1080×1920) para Reels, Shorts, TikTok e Status
 // Prints em video/telas-motion (node video/capturar-motion.js). Gravação: node video/gravar-motion.js
@@ -22,7 +22,7 @@
 // ════════════════════════════════════════════════════════════════════════════════════════════
 const PARAMS = new URLSearchParams(location.search);
 const V = PARAMS.get('formato') === 'vertical';
-const W = V ? 1080 : 1920, H = V ? 1920 : 1080, DUR = 52;
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080, DUR = 66.5;
 const cv = document.getElementById('tela');
 cv.width = W; cv.height = H;
 const ctx = cv.getContext('2d');
@@ -48,6 +48,7 @@ const IMG = {
   celInicio: T('cel-inicio-escuro'), celInicioClaro: T('cel-inicio-claro'), celGrade: T('cel-grade-escuro'), celGradeClaro: T('cel-grade-claro'),
   celFiltros: T('cel-filtros'), celAlertas: T('cel-alertas'), celApp: T('cel-app'), celCadastro: T('cel-cadastro'),
   celCupom: T('cel-cupom'), pcPainel: T('pc-painel'), pcComissao: T('pc-comissao'), pcMembros: T('pc-membros'), celComissao: T('cel-comissao'), celMembros: T('cel-membros'),
+  pcAlta: T('pc-alta'), celAlta: T('cel-alta'), pcLoja: T('pc-loja'), pcLojaFunil: T('pc-loja-funil'), celLoja: T('cel-loja'), pcCentral: T('pc-central-ofertas'), celCentral: T('cel-central-ofertas'), celPainel: T('cel-painel'),
   lojas: ['mercadolivre-escuro.webp', 'amazon-escuro.webp', 'shopee.svg', 'magalu.svg', 'aliexpress.webp', 'kabum-escuro.svg'].map(a => img(`../public/images/lojas/${a}`)),
 };
 const pronta = i => i.complete && i.naturalWidth;
@@ -233,6 +234,14 @@ function etiqueta(s, x, y, a, { icone: ic = null, cor = VERDE, tam = V ? 34 : 30
   ctx.restore();
 }
 
+function etiquetaEsq(s, x, y, a, op = {}) {
+  const tam = op.tam || (V ? 34 : 30);
+  ctx.save(); ctx.font = `800 ${tam}px Figtree, sans-serif`;
+  const w = ctx.measureText(s).width + (op.icone ? tam * 3.1 : tam * 1.9);
+  ctx.restore();
+  etiqueta(s, x + w / 2, y, a, op);
+}
+
 // ════════════════════════════════ CENAS ════════════════════════════════
 function cenaAbertura(t) { // 0 – 3.6
   const a = cena(t, 0, 3.6, .25, .5);
@@ -272,7 +281,7 @@ function cenaNumeros(t) { // 3.4 – 7.6
   ctx.save();
   const esc = E.back(prog(t, 3.5, .5));
   ctx.translate(W / 2, yNum); ctx.scale(esc, esc);
-  texto(Math.round(82000 * pn).toLocaleString('pt-BR'), 0, 0, { tam: V ? 230 : 210, peso: 900, cor: VERDE, sombra: 40 });
+  texto(Math.round(120000 * pn).toLocaleString('pt-BR') + (pn >= 1 ? '+' : ''), 0, 0, { tam: V ? 190 : 210, peso: 900, cor: VERDE, sombra: 40 });
   ctx.restore();
   texto('ofertas no ar agora', W / 2, yNum + (V ? 160 : 140), { tam: V ? 60 : 54, peso: 800, alpha: E.out(prog(t, 3.9, .5)) });
   texto('das maiores lojas do Brasil', W / 2, yNum + (V ? 235 : 205), { tam: V ? 44 : 40, peso: 700, cor: TXT2, alpha: E.out(prog(t, 4.2, .5)) });
@@ -503,15 +512,84 @@ function cenaAfiliado(t) { // 37.6 – 42.6
     notificacao(90, 1240, 900, n1, 'Air fryer 5L com 42% OFF', 'Enviado nos seus grupos às 09:00');
     etiqueta('WhatsApp, Telegram, Facebook, Instagram e X', W / 2, 1620, E.back(prog(t, 39.6, .5)), { icone: 'check', tam: 32 });
   } else {
-    titulo([[['Divulga ofertas?', TXT]], [['Posta sozinho', VERDE]]], 110, 200, t, 37.7, { tam: 78 });
+    ctx.translate(0, 60);
+    titulo([[['Divulga ofertas?', TXT]], [['Posta sozinho', VERDE]]], 110, 200, t, 37.7, { tam: 72 });
     texto('Com o seu link de afiliado, no seu horário', 110, 400, { tam: 34, peso: 700, cor: TXT2, alinhar: 'left', alpha: E.out(prog(t, 38.2, .5)) });
-    notificacao(110, 520, 700, n1, 'Air fryer 5L com 42% OFF', 'Enviado nos seus grupos às 09:00');
-    navegador(IMG.pcPainel, 870, 170 + (1 - pe) * 300 - drift, 980, { alpha: pe });
+    notificacao(110, 500, 640, n1, 'Air fryer 5L com 42% OFF', 'Enviado nos seus grupos às 09:00');
+    navegador(IMG.pcPainel, 790, 150 + (1 - pe) * 300 - drift, 1100, { alpha: pe });
   }
   ctx.restore();
 }
 
-function cenaComissao(t) { // 42.4 – 47.8
+function cenaAlta(t) { // 42.4 – 47.2
+  const a = cena(t, 42.4, 47.2, .6);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const p1 = E.out(prog(t, 42.4, 1));
+  if (V) {
+    titulo([[['O que está', TXT]], [['em alta', VERDE]]], W / 2, 190, t, 42.5);
+    celular(IMG.celAlta, W / 2 - 280, 440 + (1 - p1) * 700, 560, { alpha: p1 });
+    etiqueta('Mais pesquisados e mais clicados', W / 2, 1720, E.back(prog(t, 43.4, .5)), { icone: 'raio', cor: OURO });
+  } else {
+    ctx.translate(0, 60);
+    titulo([[['O que está', TXT]], [['em alta', VERDE]]], 110, 240, t, 42.5, { tam: 84 });
+    texto('Saiba o que divulgar hoje', 110, 450, { tam: 36, peso: 700, cor: TXT2, alinhar: 'left', alpha: E.out(prog(t, 43, .5)) });
+    etiquetaEsq('Mais pesquisados', 110, 570, E.back(prog(t, 43.4, .5)), { icone: 'busca' });
+    etiquetaEsq('Mais clicados', 110, 670, E.back(prog(t, 43.7, .5)), { icone: 'raio', cor: OURO });
+    navegador(IMG.pcAlta, 790, 150 + (1 - p1) * 300, 1100, { alpha: p1 });
+  }
+  ctx.restore();
+}
+
+function cenaLoja(t) { // 52.2 – 57.2
+  const a = cena(t, 52.2, 57.2, .6);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const p1 = E.out(prog(t, 52.2, 1)), troca = E.inOut(prog(t, 54.3, .9));
+  if (V) {
+    titulo([[['Tem loja?', TXT]], [['Venda aqui', VERDE]]], W / 2, 190, t, 52.3);
+    celular(IMG.celLoja, W / 2 - 280, 440 + (1 - p1) * 700, 560, { alpha: p1, rolar: 0 });
+    etiqueta('Pix e cartão pelo Mercado Pago', W / 2, 1720, E.back(prog(t, 53.2, .5)), { icone: 'check' });
+    texto('Valores ilustrativos', W / 2, 1830, { tam: 28, peso: 600, cor: TXT2, alpha: E.out(prog(t, 53, .5)) });
+  } else {
+    ctx.translate(0, 60);
+    titulo([[['Tem loja?', TXT]], [['Venda aqui', VERDE]]], 110, 220, t, 52.3, { tam: 84 });
+    texto('Vendas, pedidos e acessos num painel', 110, 430, { tam: 34, peso: 700, cor: TXT2, alinhar: 'left', alpha: E.out(prog(t, 52.8, .5)) });
+    etiquetaEsq('Pix e cartão pelo Mercado Pago', 110, 545, E.back(prog(t, 53.2, .5)), { icone: 'check' });
+    etiquetaEsq('Funil de vendas', 110, 645, E.back(prog(t, 54.3, .5)), { icone: 'filtro', cor: OURO });
+    texto('Valores ilustrativos', 110, 735, { tam: 26, peso: 600, cor: TXT2, alinhar: 'left', alpha: E.out(prog(t, 53, .5)) });
+    navegador(IMG.pcLoja, 790, 150 + (1 - p1) * 300, 1100, { alpha: p1, b: IMG.pcLojaFunil, revela: troca });
+  }
+  ctx.restore();
+}
+
+// Menu da central: troca de área com a marca verde seguindo a escolha
+function cenaCentral(t) { // 57 – 62
+  const a = cena(t, 57, 62, .6);
+  if (a <= 0) return;
+  ctx.save(); ctx.globalAlpha = a;
+  const p1 = E.out(prog(t, 57, 1));
+  const t1 = E.inOut(prog(t, 58.4, .7)), t2 = E.inOut(prog(t, 60, .7));
+  const AREAS = ['Ofertas', 'Afiliado', 'Loja parceira'], ativa = t2 > .5 ? 2 : t1 > .5 ? 1 : 0;
+  const chips = (cx, cy, passo, tam) => AREAS.forEach((s, i) => etiqueta(s, cx + (i - 1) * passo, cy, E.back(prog(t, 57.6 + i * .14, .5)), { cor: i === ativa ? VERDE : 'rgba(255,255,255,.18)', tam }));
+  if (V) {
+    titulo([[['Tudo numa', TXT]], [['guia só', VERDE]]], W / 2, 190, t, 57.1);
+    chips(W / 2, 430, 340, 30);
+    const [a1, b1, r] = t2 > 0 ? [IMG.celPainel, IMG.celLoja, t2] : [IMG.celCentral, IMG.celPainel, t1];
+    celular(a1, W / 2 - 280, 520 + (1 - p1) * 700, 560, { alpha: p1, b: b1, revela: r });
+    texto('Para quem divulga e para quem vende', W / 2, 1810, { tam: 38, peso: 700, cor: TXT2, alpha: E.out(prog(t, 57.8, .5)) });
+  } else {
+    ctx.translate(0, 60);
+    titulo([[['Tudo numa', TXT]], [['guia só', VERDE]]], 110, 220, t, 57.1, { tam: 84 });
+    texto('Para quem divulga e para quem vende', 110, 430, { tam: 34, peso: 700, cor: TXT2, alinhar: 'left', alpha: E.out(prog(t, 57.6, .5)) });
+    AREAS.forEach((s, i) => etiquetaEsq(s, 110, 545 + i * 90, E.back(prog(t, 57.8 + i * .14, .5)), { cor: i === ativa ? VERDE : 'rgba(255,255,255,.18)' }));
+    const [a1, b1, r] = t2 > 0 ? [IMG.pcPainel, IMG.pcLoja, t2] : [IMG.pcCentral, IMG.pcPainel, t1];
+    navegador(a1, 790, 150 + (1 - p1) * 300, 1100, { alpha: p1, b: b1, revela: r });
+  }
+  ctx.restore();
+}
+
+function cenaComissao(t) { // 42.4 – 47.8 (no vídeo, 47 – 52.4)
   const a = cena(t, 42.4, 47.8, .6);
   if (a <= 0) return;
   ctx.save(); ctx.globalAlpha = a;
@@ -524,16 +602,17 @@ function cenaComissao(t) { // 42.4 – 47.8
     etiqueta(troca < .5 ? 'A receber por loja' : 'Quem entrou e quem saiu', W / 2, 1720, E.back(prog(t, 43.4, .5)), { icone: troca < .5 ? 'check' : 'usuario', cor: troca < .5 ? VERDE : OURO });
     texto('Valores ilustrativos', W / 2, 1830, { tam: 28, peso: 600, cor: TXT2, alpha: E.out(prog(t, 43.2, .5)) });
   } else {
+    ctx.translate(0, 60);
     titulo([[['Comissão', VERDE]], [['e membros', TXT]], [['num painel só', TXT]]], 110, 200, t, 42.5, { tam: 70 });
-    etiqueta('A receber por loja', 270, 540, E.back(prog(t, 43.4, .5)), { icone: 'check' });
-    etiqueta('Quem entrou e quem saiu', 330, 640, E.back(prog(t, 45.2, .5)), { icone: 'usuario', cor: OURO });
+    etiquetaEsq('A receber por loja', 110, 540, E.back(prog(t, 43.4, .5)), { icone: 'check' });
+    etiquetaEsq('Quem entrou e quem saiu', 110, 640, E.back(prog(t, 45.2, .5)), { icone: 'usuario', cor: OURO });
     texto('Valores ilustrativos', 110, 730, { tam: 26, peso: 600, cor: TXT2, alinhar: 'left', alpha: E.out(prog(t, 43.2, .5)) });
-    navegador(tela, 840, 170 + (1 - p1) * 300, 1000, { alpha: p1 * Math.max(.05, alfa) });
+    navegador(tela, 790, 150 + (1 - p1) * 300, 1100, { alpha: p1 * Math.max(.05, alfa) });
   }
   ctx.restore();
 }
 
-function cenaFinal(t) { // 47.6 – 52 (tempos abaixo descontam 18,8 s das cenas novas)
+function cenaFinal(t) { // 61.8 – 66.5 (os tempos abaixo descontam 33 s das cenas anteriores)
   const a = Math.min(E.out(prog(t, 28.8, .6)), 1 - E.inOut(prog(t, 32.3, .7)));
   if (a <= 0) return;
   ctx.save(); ctx.globalAlpha = a;
@@ -558,7 +637,7 @@ function cenaFinal(t) { // 47.6 – 52 (tempos abaixo descontam 18,8 s das cenas
 
 function desenhar(t) {
   fundo(t);
-  cenaAbertura(t); cenaNumeros(t); cenaSite(t); cenaTema(t); cenaFiltros(t); cenaWhatsapp(t); cenaApp(t); cenaLojas(t); cenaCupom(t); cenaAfiliado(t); cenaComissao(t); cenaFinal(t - 18.8);
+  cenaAbertura(t); cenaNumeros(t); cenaSite(t); cenaTema(t); cenaFiltros(t); cenaWhatsapp(t); cenaApp(t); cenaLojas(t); cenaCupom(t); cenaAfiliado(t); cenaAlta(t); cenaComissao(t - 4.6); cenaLoja(t); cenaCentral(t); cenaFinal(t - 33);
   const preto = Math.max(1 - prog(t, 0, .35), prog(t, DUR - .5, .5));
   if (preto > 0) { ctx.fillStyle = `rgba(0,0,0,${preto})`; ctx.fillRect(0, 0, W, H); }
 }
@@ -631,17 +710,16 @@ window.gravar = async () => {
   await ac.resume();
   const destino = ac.createMediaStreamDestination();
   const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...destino.stream.getAudioTracks()]);
+  const FIM = Number(PARAMS.get('ate')) || DUR; // ?ate=8 grava só o começo, para testes
   const tipo = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus'].find(m => MediaRecorder.isTypeSupported(m));
   const rec = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 10_000_000, audioBitsPerSecond: 192_000 });
   const partes = [];
   rec.ondataavailable = e => { if (e.data.size) partes.push(e.data); };
   desenhar(0);
   const silencio = ac.createConstantSource(); silencio.offset.value = 0; silencio.connect(destino); silencio.start();
-  let esperando = true; const manter = () => { if (!esperando) return; desenhar(0); requestAnimationFrame(manter); }; requestAnimationFrame(manter);
   let quadros = 0, lentos = 0, ultimo = 0;
   await new Promise(ok => {
-    rec.onstart = () => {
-      esperando = false;
+    const comecar = () => {
       musica(ac, destino, ac.currentTime + .05);
       const t0 = performance.now() + 50;
       const quadro = () => {
@@ -650,11 +728,11 @@ window.gravar = async () => {
         ultimo = agora; quadros++;
         window.__progresso = { t: +t.toFixed(1), DUR, quadros };
         desenhar(Math.min(t, DUR));
-        if (t < DUR) requestAnimationFrame(quadro); else ok();
+        if (t < FIM) requestAnimationFrame(quadro); else ok();
       };
       requestAnimationFrame(quadro);
     };
-    rec.start(1000);
+    rec.start(1000); comecar(); // o arquivo conta a partir daqui: esperar o onstart deixaria segundos de tela preta no começo
   });
   await new Promise(r => { rec.onstop = r; rec.stop(); });
   const blob = new Blob(partes, { type: tipo });

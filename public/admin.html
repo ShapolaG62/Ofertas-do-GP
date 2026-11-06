@@ -597,14 +597,72 @@
     .db-acoes-topo { width: 100%; } .db-manual, #db-minerar { flex: 1; }
   }
   @media (prefers-reduced-motion: reduce) { .db-pulso { animation: none; } }
+  /* ── O padrão da tela inicial em todas as abas ── */
+  .aba-kpis { margin-bottom: 12px; }
+  .aba-kpis[hidden] { display: none; }
+  @media (min-width: 900px) { .aba-kpis:has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); } .aba-kpis:has(> :nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .aba-kpis:has(> :only-child) { grid-template-columns: minmax(0, 1fr); } }
+  .aba-kpi { cursor: default; }
+  .aba-kpi:hover { border-color: var(--border); }
+  .aba-kpi small:empty { display: none; }
+  /* Títulos e quadros */
+  .panel h2, .panel.dobra h2.dobra-tit { font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+  .panel.dobra h2.dobra-tit::before { border-color: var(--azul-texto); }
+  .panel.dobra.fechado:hover { border-color: var(--border-strong); }
+  .panel h3 { font-weight: 700; }
+  /* Tabelas */
+  .tab-body th { padding: 6px 8px; font-size: 11.5px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .tab-body td { padding: 8px; font-size: 13px; }
+  .tab-body tbody tr:hover > td { background: var(--surface-2); }
+  .tab-body tbody tr:last-child > td { border-bottom: 0; }
+  .tab-body td.num { font-variant-numeric: tabular-nums; }
+  /* Campos */
+  .tab-body input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=file]), .tab-body select, .tab-body textarea { border-radius: 10px; }
+  .tab-body input:focus, .tab-body select:focus, .tab-body textarea:focus { border-color: var(--azul-texto); box-shadow: 0 0 0 3px var(--azul-soft); outline: 0; }
+  /* Selos */
+  .badge { border-radius: 999px; font-weight: 700; }
+  /* Situação das lojas */
+  .tab-lojas { min-width: 680px; }
+  .tab-loja { display: grid; gap: 3px; justify-items: start; min-width: 220px; }
+  .tab-loja small { color: var(--muted); font-size: 11.5px; font-weight: 400; }
+  .tab-lojas tr:has(+ .tab-msg) > td { border-bottom: 0; }
+  .tab-msg td { padding-top: 0; font-size: 12px; color: var(--muted); }
+  .tab-msg td.ruim { color: var(--yellow); }
+  /* Ganhos e planos */
+  .gn-card, .store-card { border-radius: 12px; background: var(--surface); }
+  .gn-card.is-pronto { border-color: var(--green-line); background: var(--green-soft); }
+  .gn-card-topo b .store-marca { height: 24px; }
+  /* No celular cada loja vira um bloco, sem arrastar a tabela para o lado */
+  @media (max-width: 700px) {
+    .tab-lojas { min-width: 0; display: block; }
+    .tab-lojas thead { display: none; }
+    .tab-lojas tbody { display: block; }
+    .tab-lojas tr { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .tab-lojas td { display: block; padding: 0; border: 0; white-space: normal; min-width: 0; }
+    .tab-lojas td.tab-loja { grid-column: 1 / -1; display: grid; min-width: 0; }
+    .tab-lojas td.num::before { content: attr(data-l); display: block; font-size: 11.5px; color: var(--muted); }
+    .tab-lojas tr:has(+ .tab-msg) { border-bottom: 0; padding-bottom: 0; }
+    .tab-lojas tr.tab-msg { padding-top: 8px; grid-template-columns: 1fr; }
+    .tab-lojas tbody tr:hover > td { background: none; }
+  }
+  /* Descontos suspeitos abre e fecha como os outros quadros */
+  #susp-box > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 16px; }
+  #susp-box > summary::-webkit-details-marker { display: none; }
+  #susp-box > summary::before { content: ""; flex: none; width: 7px; height: 7px; margin: 0 3px 0 2px; border-right: 2px solid var(--azul-texto); border-bottom: 2px solid var(--azul-texto); transform: rotate(-45deg); transition: transform .15s; }
+  #susp-box[open] > summary::before { transform: rotate(45deg) translate(-1px, -1px); }
+  #susp-box > summary b { font-weight: 700; }
+  /* Links de afiliado com a logo da loja */
+  [data-body="aff"] .store-card > h4 { min-height: 28px; display: flex; align-items: center; }
+  [data-body="aff"] .store-card > h4 .store-marca { height: 26px; width: auto; }
+  /* Abas das telas da equipe */
+  .tabs-line [aria-selected="true"] { background: var(--azul-soft); color: var(--azul-texto); border-color: transparent; }
 </style>
-<script src="/js/tema.js?v=20261278"></script>
-<script src="/js/dialogo.js?v=20261278"></script>
-<script src="/js/modelo-post.js?v=20261278"></script>
-<script src="/js/avisos-entrada.js?v=20261278"></script>
-<script src="/js/capi-minerando.js?v=20261278" defer></script>
-<script src="/js/cadastro-auto.js?v=20261278" defer></script>
-<script src="/js/seletor.js?v=20261278" defer></script>
+<script src="/js/tema.js?v=20261281"></script>
+<script src="/js/dialogo.js?v=20261281"></script>
+<script src="/js/modelo-post.js?v=20261281"></script>
+<script src="/js/avisos-entrada.js?v=20261281"></script>
+<script src="/js/capi-minerando.js?v=20261281" defer></script>
+<script src="/js/cadastro-auto.js?v=20261281" defer></script>
+<script src="/js/seletor.js?v=20261281" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1336,6 +1394,7 @@
         <div id="cli-msg"></div>
       </div>
       <div class="panel">
+        <h2>Clientes cadastrados</h2>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Cliente</th><th>Situação</th><th>Termos</th><th>Validade</th><th>Último acesso</th><th>Postagens</th><th></th></tr></thead>
@@ -1946,6 +2005,6 @@
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261278"></script>
+<script src="/js/admin.js?v=20261281"></script>
 </body>
 </html>

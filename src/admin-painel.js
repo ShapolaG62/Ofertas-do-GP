@@ -129,8 +129,23 @@ function dashboard() {
   const ultimosPedidos = todos(`SELECT p.id, p.produto, p.total, p.status, p.pago_em, l.nome loja FROM pedidos_loja p JOIN lojas l ON l.id = p.loja_id
     WHERE p.pago_em IS NOT NULL ORDER BY p.pago_em DESC LIMIT 5`);
 
+  // Números do topo das outras abas do painel
+  const abas = {
+    social: {
+      enviadas7: um(`SELECT COUNT(*) n FROM social_posts WHERE cliente_id IS NULL AND ok = 1 AND created_at >= datetime('now', '-7 days')`).n || 0,
+      erros7: um(`SELECT COUNT(*) n FROM social_posts WHERE cliente_id IS NULL AND ok = 0 AND created_at >= datetime('now', '-7 days')`).n || 0,
+      fila: um(`SELECT COUNT(*) n FROM post_queue WHERE cliente_id IS NULL AND status = 'pendente'`).n || 0,
+    },
+    ads: {
+      ativas: um(`SELECT COUNT(*) n FROM banners WHERE ativo = 1 AND inicio <= datetime('now') AND fim >= datetime('now')`).n || 0,
+      total: um('SELECT COUNT(*) n FROM banners').n || 0,
+    },
+    links: (() => { try { const f = require('./clientes').lojasSemAfiliado(require('./settings').getAll()); return { faltam: f, total: 6 }; } catch { return { faltam: [], total: 6 }; } })(),
+    clientes_ativos: clientesAtivos,
+  };
+
   return {
-    saude,
+    saude, abas,
     kpis: {
       ofertas: { no_ar: ofertasNoAr, novas24h: ofertasNovas.d1 || 0, novas7d: ofertasNovas.d7 || 0, var: variacao(ofertasNovas.d7 || 0, ofertasNovas.ant || 0) },
       cliques: { d7: cliques7, var: variacao(cliques7, cliquesAnt), total: cliquesTotal },

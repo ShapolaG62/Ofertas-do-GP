@@ -83,6 +83,7 @@ async function showApp() {
 }
 
 // Cabeçalho de cada página: título, para que serve e atalhos para as seções dela
+const ABAS_COM_NUMEROS = ['offers', 'mining', 'social', 'avisos', 'acessos', 'users', 'atendimento', 'clientes', 'planos', 'ganhos', 'aff', 'ads'];
 const PAGINAS = {
   offers: ['Ofertas', 'Adicione ofertas à mão e gerencie as que estão no site: buscar, ocultar, editar e ver os cliques.'],
   mining: ['Mineração', 'Situação de cada loja, busca pontual e as regras da mineração automática (lojas, termos e frequência).'],
@@ -97,6 +98,8 @@ const PAGINAS = {
   ganhos: ['Ganhos', 'Comissões das plataformas, vendas importadas, saques e avisos de saldo para sacar.'],
   aff: ['Links de afiliado', 'Suas tags e credenciais de afiliado de cada loja. Ao salvar, todos os links das ofertas são atualizados.'],
   ads: ['Publicidade', 'Google AdSense, campanhas de anunciantes e pedidos de empresas que querem anunciar.'],
+  avisos: ['Avisos na entrada', 'Mensagens que aparecem ao abrir o site: quem vê, em que período e quantas vezes.'],
+  acessos: ['Acessos suspeitos', 'Contas usadas em lugares distantes em pouco tempo e consulta de localização por IP.'],
   membros: ['Membros dos grupos', 'Quantas pessoas entraram e saíram dos seus grupos de envio.'],
   site: ['Site', 'Links das redes sociais, Google Analytics e os dados do responsável pelo site (LGPD).'],
   account: ['Senha e backup', 'Senha do painel, login em duas etapas e backup do banco de dados.'],
@@ -104,7 +107,7 @@ const PAGINAS = {
 for (const [aba, [titulo, desc]] of Object.entries(PAGINAS)) {
   const corpo = document.querySelector(`.tab-body[data-body="${aba}"]`);
   if (!corpo) continue;
-  corpo.insertAdjacentHTML('afterbegin', `<header class="page-head"><h1>${titulo}</h1><p>${desc}</p></header>`);
+  corpo.insertAdjacentHTML('afterbegin', `<header class="page-head"><h1>${titulo}</h1><p>${desc}</p></header>${ABAS_COM_NUMEROS.includes(aba) ? `<div class="db-kpis aba-kpis" id="kpis-${aba}" hidden></div>` : ''}`);
 }
 // ── Login em duas etapas ──
 let F2 = { ativo: false };
@@ -209,6 +212,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'sac' && !$('#sac-quadro').src) $('#sac-quadro').src = '/sac?embed=1';
   if (t.dataset.tab === 'chatmod' && !$('#mod-quadro').src) $('#mod-quadro').src = '/moderacao?embed=1';
   if (t.dataset.tab === 'dash') loadDashboard();
+  mostrarNumerosAba(t.dataset.tab);
   if (t.dataset.tab === 'mining') loadStores();
   if (t.dataset.tab === 'equipe' && !$('#eq-quadro').src) $('#eq-quadro').src = '/equipe?embed=1';
   if (t.dataset.tab === 'users') { loadUsers(); loadModLog(); }
@@ -592,6 +596,42 @@ async function loadDashboard() {
   });
 }
 
+// ── Números no topo de cada aba, no mesmo formato da tela inicial ──
+const abaKpi = (ico, rot, val, sub = '') => `<div class="db-kpi aba-kpi"><span>${rot}</span><i class="db-kpi-ico">${dbIco(ico)}</i><b>${val}</b><small>${sub}</small></div>`;
+let dashLidoEm = 0;
+async function mostrarNumerosAba(aba) {
+  const el = document.getElementById(`kpis-${aba}`);
+  if (!el || aba === 'avisos' || aba === 'acessos') return;
+  try {
+    if (!DASH || Date.now() - dashLidoEm > 60000) { DASH = await api('/api/admin/dashboard'); dashLidoEm = Date.now(); }
+    const d = DASH, k = d.kpis, p = d.pendencias, m = d.mineracao, x = d.abas || {};
+    const n = dbNum;
+    const M = {
+      offers: () => [abaKpi('ofertas', 'Ofertas no ar', n(k.ofertas.no_ar), `${dbVar(k.ofertas.var)} ${n(k.ofertas.novas7d)} novas em 7 dias`),
+        abaKpi('ofertas', 'Novas em 24 horas', n(k.ofertas.novas24h)), abaKpi('clique', 'Cliques em 7 dias', n(k.cliques.d7), `${dbVar(k.cliques.var)} sobre a semana anterior`),
+        abaKpi('alerta', 'Descontos suspeitos', n(d.saude?.suspeitas), 'para conferir')],
+      mining: () => [abaKpi('ok', 'Lojas funcionando', `${m.ok} de ${m.total}`), abaKpi('alerta', 'Lojas com problema', n(m.problemas.length), esc(m.problemas.map(l => l.nome).join(', '))),
+        abaKpi('ofertas', 'Ofertas no ar', n(k.ofertas.no_ar)), abaKpi('ofertas', 'Novas em 24 horas', n(k.ofertas.novas24h))],
+      social: () => [abaKpi('ok', 'Enviadas em 7 dias', n(x.social?.enviadas7)), abaKpi('alerta', 'Com erro em 7 dias', n(x.social?.erros7)), abaKpi('sino', 'Na fila', n(x.social?.fila))],
+      users: () => [abaKpi('pessoas', 'Usuários', n(k.usuarios.total), `${dbVar(k.usuarios.var)} ${n(k.usuarios.novos7)} novos em 7 dias`), abaKpi('pessoas', 'Consumidores ativos', n(k.usuarios.consumidores)),
+        abaKpi('sacola', 'Empresas ativas', n(k.usuarios.empresas)), abaKpi('alerta', 'Cadastros pendentes', n(p.cadastros))],
+      atendimento: () => [abaKpi('sacola', 'Pedidos em 30 dias', n(k.pedidos.n)), abaKpi('dinheiro', 'Vendido pelas lojas', brl(k.pedidos.valor)), abaKpi('dinheiro', 'Taxa do site', brl(k.receita.taxa_pedidos)), abaKpi('sino', 'Chamados no SAC', n(p.sac_fila))],
+      planos: () => [abaKpi('dinheiro', 'Assinaturas em 30 dias', brl(k.receita.assinaturas), `${n(k.receita.assinaturas_n)} pagamento(s)`), abaKpi('alerta', 'A confirmar', n(p.assinaturas)),
+        abaKpi('pessoas', 'Afiliados ativos', n(x.clientes_ativos)), abaKpi('dinheiro', 'Receita em 30 dias', brl(k.receita.total), `${dbVar(k.receita.var)} sobre o mês anterior`)],
+      ganhos: () => [abaKpi('dinheiro', 'Disponível para saque', brl(k.afiliados.disponivel), esc((k.afiliados.pode_sacar || []).join(', '))), abaKpi('dinheiro', 'A liberar', brl(k.afiliados.a_liberar)),
+        abaKpi('dinheiro', 'Comissões em 30 dias', brl(k.receita.afiliados), `${dbVar(k.receita.afiliados_var)} ${n(k.receita.afiliados_n)} venda(s)`), abaKpi('sino', 'Avisos de saldo', n(p.avisos))],
+      aff: () => { const f = x.links?.faltam || [], t = x.links?.total || 6; return [abaKpi('ok', 'Lojas com link', `${t - f.length} de ${t}`), abaKpi('alerta', 'Faltam', n(f.length), esc(f.join(', ')))]; },
+      ads: () => [abaKpi('ok', 'Campanhas no ar', n(x.ads?.ativas)), abaKpi('ofertas', 'Campanhas cadastradas', n(x.ads?.total)), abaKpi('sino', 'Pedidos novos', n(p.leads))],
+    };
+    if (aba === 'clientes') {
+      const l = await api('/api/admin/clientes');
+      el.innerHTML = abaKpi('pessoas', 'Clientes ativos', n(l.filter(c => c.status !== 'bloqueado' && !c.vencido).length)) + abaKpi('alerta', 'Vencem em até 5 dias', n(p.clientes_vencendo))
+        + abaKpi('ok', 'Aceitaram os Termos', `${n(l.filter(c => c.aceite_termos).length)} de ${n(l.length)}`) + abaKpi('ok', 'Postagens', n(l.reduce((s, c) => s + (c.postagens || 0), 0)));
+    } else el.innerHTML = M[aba]().join('');
+    el.hidden = false;
+  } catch { el.hidden = true; }
+}
+
 // Ícone da loja no painel
 const LOJAS_COM_LOGO = { mercadolivre: 'webp', amazon: 'webp', shopee: 'svg', magalu: 'svg', aliexpress: 'webp', kabum: 'svg' };
 const lojaLogo = (idOuNome, nome) => {
@@ -602,11 +642,17 @@ const lojaLogo = (idOuNome, nome) => {
   return ['mercadolivre', 'amazon', 'kabum'].includes(id) ? img(id, ' tema-claro') + img(`${id}-escuro`, ' tema-escuro') : img(id, '');
 };
 
+const LOGOS_AFF = { 'Mercado Livre': 'mercadolivre', Amazon: 'amazon', Shopee: 'shopee', AliExpress: 'aliexpress', 'KaBuM!': 'kabum', Magalu: 'magalu' };
+document.querySelectorAll('[data-body="aff"] .store-card > h4').forEach(h => {
+  const id = LOGOS_AFF[h.textContent.trim()];
+  if (id) h.innerHTML = lojaLogo(id, h.textContent.trim());
+});
+
 // ── Membros dos grupos ────
 async function loadMembros() {
   const d = await api('/api/admin/membros?dias=30');
   const n = v => Number(v || 0).toLocaleString('pt-BR');
-  const k = (r, v) => `<div class="db-kpi" style="cursor:default"><span>${r}</span><b>${v}</b></div>`;
+  const k = (r, v, ico = 'pessoas') => abaKpi(ico, r, v);
   $('#mb-kpis').innerHTML = k('Membros', d.grupos.some(g => g.total !== null) ? n(d.total) : '—') + k('Entradas em 30 dias', n(d.entradas)) + k('Saídas em 30 dias', n(d.saidas)) + k('Saldo', n(d.entradas - d.saidas));
   $('#mb-grupos').innerHTML = d.grupos.map(g => `<tr><td>${esc(g.nome)}</td><td>${g.total === null ? '—' : n(g.total)}</td><td>${n(g.entradas)}</td><td>${n(g.saidas)}</td></tr>`).join('')
     || '<tr><td colspan="4" class="hint">Sem dados ainda. Escolha os grupos em Redes sociais e toque em Atualizar o total agora.</td></tr>';
@@ -632,15 +678,17 @@ async function loadStores() {
     <td>${esc(STORE_LIST.find(s => s.id === c.store_id)?.name || c.store_id)}</td><td>${esc(c.texto || '—')}</td><td>${c.ofertas}</td>
     <td><a class="btn small" href="/?cupom=${encodeURIComponent(c.codigo)}" target="_blank" rel="noopener">Ver ofertas</a></td></tr>`).join('')
     || '<tr><td colspan="5" class="hint">Nenhum cupom ainda: eles aparecem depois da próxima mineração da KaBuM! e da Magalu.</td></tr>';
-  $('#store-cards').innerHTML = st.stores.map(s => {
+  const caixaLojas = $('#store-cards');
+  caixaLojas.className = 'table-wrap';
+  caixaLojas.innerHTML = `<table class="tab-lojas"><thead><tr><th>Loja</th><th>Situação</th><th>Última execução</th><th>Gravadas</th><th>Último sucesso</th></tr></thead><tbody>${st.stores.map(s => {
     const status = s.status || 'none';
-    return `<div class="store-card">
-      <h4>${lojaLogo(s.id || s.name, s.name)} <span class="badge b-${status}">${esc(STATUS_LABEL[status] || 'Ainda não rodou')}</span></h4>
-      <div class="hint" style="margin:2px 0 6px">${esc(s.method)}</div>
-      ${s.automatic ? `<div class="hint" style="margin:0">Última execução: ${fmtDate(s.last_run_at)} · ${s.saved || 0} gravadas de ${s.found || 0} encontradas<br>Último sucesso: ${fmtDate(s.last_success_at)}</div>` : ''}
-      ${s.message ? `<div class="hint" style="margin:6px 0 0;color:${status === 'ok' ? 'var(--muted)' : 'var(--yellow)'}">${esc(s.message)}</div>` : ''}
-    </div>`;
-  }).join('');
+    return `<tr><td class="tab-loja">${lojaLogo(s.id || s.name, s.name)}<small>${esc(s.method)}</small></td>
+      <td><span class="badge b-${status}">${esc(STATUS_LABEL[status] || 'Ainda não rodou')}</span></td>
+      <td class="num" data-l="Última execução">${s.automatic ? fmtDate(s.last_run_at) : '—'}</td>
+      <td class="num" data-l="Gravadas">${s.automatic ? `${s.saved || 0} de ${s.found || 0}` : '—'}</td>
+      <td class="num" data-l="Último sucesso">${s.automatic ? fmtDate(s.last_success_at) : '—'}</td></tr>
+      ${s.message ? `<tr class="tab-msg"><td colspan="5" class="${status === 'ok' ? '' : 'ruim'}">${esc(s.message)}</td></tr>` : ''}`;
+  }).join('')}</tbody></table>`;
   const lr = st.lastRun;
   $('#last-run').textContent = st.parando ? 'Parando a mineração… (termina a busca que está no meio)' : st.running ? 'Mineração em andamento...' :
     lr ? `Última mineração ${lr.parada ? 'parada' : 'terminou'} em ${new Date(lr.finishedAt).toLocaleString('pt-BR')}.` : 'Nenhuma mineração desde que o servidor iniciou.';
@@ -1821,7 +1869,7 @@ async function loadGanhos() {
   $('#gn-plataformas').innerHTML = GN.plataformas.map(p => {
     const pct = p.minimo > 0 ? Math.min(100, Math.round((p.disponivel / p.minimo) * 100)) : (p.disponivel > 0 ? 100 : 0);
     return `<div class="gn-card${p.pode_sacar ? ' is-pronto' : ''}${p.ativo ? '' : ' is-off'}">
-      <div class="gn-card-topo"><b>${esc(p.nome)}</b>${p.pode_sacar ? '<span class="badge b-active">Pode sacar</span>' : ''}</div>
+      <div class="gn-card-topo"><b>${lojaLogo(p.id, p.nome)}</b>${p.pode_sacar ? '<span class="badge b-active">Pode sacar</span>' : ''}</div>
       <div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div>
       <div class="gn-barra" title="${pct}% do mínimo"><span style="width:${pct}%"></span></div>
       <div class="hint" style="margin:6px 0 0">Mínimo: <b>${p.minimo ? gnMoeda(p.minimo, p.moeda) : 'não informado'}</b>${p.falta > 0 ? ` · faltam ${gnMoeda(p.falta, p.moeda)}` : ''}</div>
@@ -2258,6 +2306,12 @@ function aplicarAvisos(d) {
   }
   $('#av-max').textContent = d.max;
   const noAr = d.avisos.filter(a => a.situacao === 'no_ar').length;
+  const kpiAv = document.getElementById('kpis-avisos');
+  if (kpiAv) {
+    const soma = c => dbNum(d.avisos.reduce((s, a) => s + (Number(a[c]) || 0), 0));
+    kpiAv.innerHTML = abaKpi('ok', 'No ar agora', dbNum(noAr), `de ${dbNum(d.avisos.length)} criado(s)`) + abaKpi('pessoas', 'Vezes vistos', soma('visualizacoes')) + abaKpi('clique', 'Cliques', soma('cliques'));
+    kpiAv.hidden = false;
+  }
   $('#avisos-badge').textContent = noAr; $('#avisos-badge').classList.toggle('hidden', !noAr);
   const periodo = a => (a.inicio || a.fim ? `${a.inicio ? fmtDay(a.inicio) : 'já'} → ${a.fim ? fmtDay(a.fim) : 'sem fim'}` : 'Sempre');
   $('#av-body').innerHTML = d.avisos.length ? d.avisos.map(a => {

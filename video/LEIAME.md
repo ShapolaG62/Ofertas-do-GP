@@ -1,6 +1,6 @@
 # Vídeo de apresentação do Ofertou!
 
-Motion graphics de 58 s, sem narração (1920×1080, 30 fps, com música gerada no código, sem direitos autorais), feitos com o Microsoft Edge do próprio computador. Não é preciso instalar nada.
+Motion graphics de 1min38s, com a narração `video/narracao-site.wav` (1920×1080, 30 fps, com música gerada no código, sem direitos autorais), feitos com o Microsoft Edge do próprio computador. Não é preciso instalar nada.
 
 1. **Prints do site:** `node video/capturar.js http://localhost:3000 <token de sessão de um usuário consumidor>` gera `video/telas/*.png`. A cena de afiliado e loja usa os prints de `video/telas-motion` (ver abaixo).
 2. **Assistir antes de gravar:** abra `video/apresentacao.html` no navegador.
@@ -12,8 +12,8 @@ Motion graphics de 58 s, sem narração (1920×1080, 30 fps, com música gerada 
 - Textos, tempos e cenas ficam em `video/apresentacao.html`. Cada cena é uma função com o início e o fim em segundos.
 - A música fica na função `musica()`.
 
-## Narração (desligada)
-Os vídeos de motion graphics saem sem voz: `video/apresentacao.html` não carrega mais a narração. O passo a passo abaixo fica só como registro de como as falas eram geradas.
+## Narração
+Os motion graphics usam narrações prontas, um WAV por vídeo (`video/narracao-motion.wav` e `video/narracao-site.wav`, fora do Git). O início de cada fala fica em `CENAS_VOZ` e `DICAS_VOZ`, no topo de `video/motion.html` e `video/apresentacao.html`: trocou o áudio, atualize esses tempos. O passo a passo abaixo fica só como registro de como as falas antigas eram geradas.
 1. **Gerar as falas:** `powershell -ExecutionPolicy Bypass -File video\narrar.ps1` gera `video/narracao/fala01.wav … fala09.wav`, com a voz Microsoft Maria (pt-BR) do Windows. O texto, a velocidade e o tom de cada fala ficam no topo do arquivo.
 2. **Medir:** `node video/medir-falas.js` grava `video/narracao/tempos.json`.
 3. **Gravar:** `node video/gravar.js`.
@@ -24,7 +24,7 @@ Com a narração presente:
 
 Sem a pasta `narracao`, o vídeo sai sem voz, com 52 s.
 
-## Motion graphics 9:16 e 16:9 (66 s, sem narração)
+## Motion graphics 9:16 e 16:9 (≈2min11s, com narração)
 1. **Prints:** `node video/capturar-afiliado.js <endereço> <token de sessão do administrador>` (cupom e painéis de afiliado e loja, com os dados de exemplo da central) e `node video/capturar-motion.js <endereço> <token de sessão de consumidor>` gera `video/telas-motion/*.png` (tema claro e escuro, computador e celular). Use um banco de **teste**, com chaves apagadas, nunca o do site no ar.
 2. **Assistir:** abra `video/motion.html` (16:9) ou `video/motion.html?formato=vertical` (9:16).
 3. **Conferir instantes:** `node video/gravar-motion.js quadros 2,9.5,14` gera `video/quadros-motion/*.png`.

@@ -14,7 +14,7 @@
 <script>
 'use strict';
 // ════════════════════════════════════════════════════════════════════════════════════════════
-// Motion graphics do Ofertou! (66 s, 30 fps, sem narração) em dois formatos, desenhados num canvas:
+// Motion graphics do Ofertou! (≈2min11s, 30 fps, com a narração video/narracao-motion.wav) em dois formatos, desenhados num canvas:
 //   motion.html                    → 16:9 (1920×1080)
 //   motion.html?formato=vertical   → 9:16 (1080×1920) para Reels, Shorts, TikTok e Status
 // Prints em video/telas-motion (node video/capturar-motion.js). Gravação: node video/gravar-motion.js
@@ -22,11 +22,63 @@
 // ════════════════════════════════════════════════════════════════════════════════════════════
 const PARAMS = new URLSearchParams(location.search);
 const V = PARAMS.get('formato') === 'vertical';
-const W = V ? 1080 : 1920, H = V ? 1920 : 1080, DUR = 66.5;
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080, COMP_FIM = 66.5, DUR = 131;
 const cv = document.getElementById('tela');
 cv.width = W; cv.height = H;
 const ctx = cv.getContext('2d');
 const VERDE = '#2bd47d', VERDE_ESC = '#16a35c', OURO = '#f5b942', FUNDO = '#0b0f0d', TXT = '#eef3f0', TXT2 = '#9fb0a7', ZAP = '#25d366';
+
+// ── Sincronia com a narração ──
+// Tempo da fala (s no WAV, medido por transcrição) de cada cena e de momentos dentro delas. VOZ_ATRASO: a voz entra logo depois do fade inicial.
+const VOZ_ATRASO = .3;
+function montarMapa(cenas, dicas, realFim, compFim) {
+  const r = x => x + VOZ_ATRASO;
+  const mapa = cenas.map(([c, v], i) => [i ? r(v) : 0, c]).concat([[realFim, compFim]]);
+  const inserir = (real, comp) => {
+    const i = mapa.findIndex(k => k[0] >= real);
+    if (i <= 0 || mapa[i][0] === real) return;
+    if (mapa[i - 1][1] < comp && comp < mapa[i][1]) mapa.splice(i, 0, [real, comp]);
+  };
+  // O título entra sempre em velocidade normal, até o primeiro momento marcado da cena
+  cenas.forEach(([c, v], i) => {
+    const prox = dicas.map(d => d[0]).filter(d => d > c).reduce((a, d) => Math.min(a, d), Infinity);
+    const f = Math.min(1, prox - c - .1), R = i ? r(v) : 0;
+    if (f > 0) inserir(R + f, c + f);
+  });
+  for (const [c, v, firme = 1] of dicas) { inserir(r(v), c); inserir(r(v) + firme, c + firme); }
+  cenas.forEach(([c, v], i) => {
+    const R = i ? r(v) : 0, nR = i + 1 < cenas.length ? r(cenas[i + 1][1]) : realFim, nC = i + 1 < cenas.length ? cenas[i + 1][0] : compFim;
+    if (nR - R < nC - c) return; // cena mais curta que a composição: acelera por igual
+    inserir(R + 2, c + 2); inserir(nR - .6, nC - .6);
+  });
+  return mapa;
+}
+function tempoComposicao(t) {
+  if (t <= 0) return 0;
+  for (let i = 1; i < MAPA_TEMPO.length; i++) {
+    const [r0, c0] = MAPA_TEMPO[i - 1], [r1, c1] = MAPA_TEMPO[i];
+    if (t <= r1) return c0 + (t - r0) * (c1 - c0) / (r1 - r0);
+  }
+  return MAPA_TEMPO[MAPA_TEMPO.length - 1][1];
+}
+// Voz por cima da música
+async function carregarVoz(ac, arquivo) { return ac.decodeAudioData(await (await fetch(arquivo)).arrayBuffer()); }
+function tocarVoz(ac, destino, inicio, buffer) {
+  const voz = ac.createGain(); voz.gain.value = 1.5;
+  const comp = ac.createDynamicsCompressor(); comp.threshold.value = -20; comp.ratio.value = 3;
+  voz.connect(comp); comp.connect(destino);
+  const src = ac.createBufferSource(); src.buffer = buffer; src.connect(voz); src.start(inicio + VOZ_ATRASO);
+}
+
+// [início da cena na composição, início da fala]
+const CENAS_VOZ = [[0, 0], [3.5, 4.94], [7.5, 15.56], [11.9, 23.54], [16.3, 29.2], [20.5, 34.2], [25.1, 58.1], [28.9, 65.66], [33.3, 71.34], [37.7, 77.4], [42.5, 94.92], [47.1, 100.38], [52.3, 107.1], [57.1, 117], [61.9, 123.34]];
+// [momento na composição, fala, trecho em velocidade normal]
+const DICAS_VOZ = [
+  [4.5, 9.5, 1.4], [8.8, 16.7], [9.3, 19.5], [13, 24.6], [16.8, 30.7, 1.4], [21.9, 38.4], [22.9, 51.7], [26.2, 63.3], [34.6, 75.7],
+  [39, 83.1], [39.6, 90.7], [43.4, 98], [49.5, 104.2], [54.3, 114.4], [58.4, 120.7], [60, 122.1],
+];
+const MAPA_TEMPO = montarMapa(CENAS_VOZ, DICAS_VOZ, DUR, COMP_FIM);
+let REAL = 0;
 
 // ── Utilidades de animação ──
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -276,7 +328,7 @@ function cenaNumeros(t) { // 3.4 – 7.6
   const a = cena(t, 3.4, 7.6);
   if (a <= 0) return;
   ctx.save(); ctx.globalAlpha = a;
-  const pn = E.out(prog(t, 3.6, 1.8));
+  const pn = E.out(prog(REAL, 5.3, 1.6)); // o número acompanha o "120 mil" da fala
   const yNum = V ? 470 : 260;
   ctx.save();
   const esc = E.back(prog(t, 3.5, .5));
@@ -635,10 +687,12 @@ function cenaFinal(t) { // 61.8 – 66.5 (os tempos abaixo descontam 33 s das ce
   ctx.restore();
 }
 
-function desenhar(t) {
-  fundo(t);
+function desenhar(tReal) {
+  REAL = tReal;
+  fundo(tReal);
+  const t = tempoComposicao(tReal);
   cenaAbertura(t); cenaNumeros(t); cenaSite(t); cenaTema(t); cenaFiltros(t); cenaWhatsapp(t); cenaApp(t); cenaLojas(t); cenaCupom(t); cenaAfiliado(t); cenaAlta(t); cenaComissao(t - 4.6); cenaLoja(t); cenaCentral(t); cenaFinal(t - 33);
-  const preto = Math.max(1 - prog(t, 0, .35), prog(t, DUR - .5, .5));
+  const preto = Math.max(1 - prog(tReal, 0, .35), prog(tReal, DUR - .5, .5));
   if (preto > 0) { ctx.fillStyle = `rgba(0,0,0,${preto})`; ctx.fillRect(0, 0, W, H); }
 }
 
@@ -648,8 +702,8 @@ function desenhar(t) {
 function musica(ac, destino, inicio) {
   const BPM = 118, BEAT = 60 / BPM, COMP = BEAT * 4;
   const master = ac.createGain();
-  master.gain.setValueAtTime(0, inicio); master.gain.linearRampToValueAtTime(.8, inicio + 1);
-  master.gain.setValueAtTime(.8, inicio + DUR - 2.5); master.gain.linearRampToValueAtTime(0, inicio + DUR - .1);
+  master.gain.setValueAtTime(0, inicio); master.gain.linearRampToValueAtTime(.2, inicio + 1); // música baixa, por baixo da voz
+  master.gain.setValueAtTime(.2, inicio + DUR - 2.5); master.gain.linearRampToValueAtTime(0, inicio + DUR - .1);
   const comp = ac.createDynamicsCompressor(); master.connect(comp); comp.connect(destino);
   const nota = n => 440 * Math.pow(2, (n - 69) / 12);
   const ACORDES = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
@@ -710,6 +764,7 @@ window.gravar = async () => {
   await ac.resume();
   const destino = ac.createMediaStreamDestination();
   const stream = new MediaStream([...cv.captureStream(30).getVideoTracks(), ...destino.stream.getAudioTracks()]);
+  const vozBuffer = await carregarVoz(ac, 'narracao-motion.wav');
   const FIM = Number(PARAMS.get('ate')) || DUR; // ?ate=8 grava só o começo, para testes
   const tipo = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp9,opus'].find(m => MediaRecorder.isTypeSupported(m));
   const rec = new MediaRecorder(stream, { mimeType: tipo, videoBitsPerSecond: 10_000_000, audioBitsPerSecond: 192_000 });
@@ -720,7 +775,9 @@ window.gravar = async () => {
   let quadros = 0, lentos = 0, ultimo = 0;
   await new Promise(ok => {
     const comecar = () => {
-      musica(ac, destino, ac.currentTime + .05);
+      const inicioAudio = ac.currentTime + .05;
+      musica(ac, destino, inicioAudio);
+      tocarVoz(ac, destino, inicioAudio, vozBuffer);
       const t0 = performance.now() + 50;
       const quadro = () => {
         const agora = performance.now(), t = Math.max(0, (agora - t0) / 1000);

@@ -24,6 +24,7 @@ Thumbs.db
 
 # Vídeo de apresentação: arquivos gerados (refazer com node video/capturar.js e node video/gravar.js)
 video/*.mp4
+video/narracao-*.wav
 video/*.webm
 video/telas/
 video/quadros/

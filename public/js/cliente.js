@@ -140,8 +140,8 @@
     const lojasFeitas = 6 - d.sem_afiliado.length;
     const passos = [
       { ok: lojasFeitas > 0, tit: 'Coloque seus links de afiliado', det: d.sem_afiliado.length ? `${lojasFeitas} de 6 lojas · faltam: ${d.sem_afiliado.join(', ')}` : 'Todas as lojas', tab: 'afiliados' },
-      { ok: d.redes.some(r => r.pronta), tit: 'Conecte uma rede', det: 'WhatsApp, Telegram, Facebook ou X', tab: 'redes' },
-      ...(zap?.pronta ? [{ ok: d.grupos_whatsapp > 0, tit: 'Escolha os grupos do WhatsApp', det: `${d.grupos_whatsapp} grupo(s) escolhido(s)`, tab: 'redes' }] : []),
+      { ok: d.redes.some(r => r.pronta), tit: 'Conecte o WhatsApp ou outra rede', det: 'Leia o QR code para enviar nos seus grupos', tab: 'whatsapp' },
+      ...(zap?.pronta ? [{ ok: d.grupos_whatsapp > 0, tit: 'Escolha os grupos do WhatsApp', det: `${d.grupos_whatsapp} grupo(s) escolhido(s)`, tab: 'whatsapp' }] : []),
       { ok: Boolean(d.ultimo_envio), tit: 'Faça a primeira postagem', det: 'Use as sugestões abaixo ou escolha em Ver ofertas', link: '/postagens' },
       { ok: Boolean(d.agenda.ativa), tit: 'Ligue o agendamento', det: 'O site posta sozinho nos seus horários', tab: 'agenda' },
     ];

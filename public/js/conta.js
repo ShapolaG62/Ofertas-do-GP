@@ -476,6 +476,17 @@
   const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['pedidos', 'Meus pedidos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   const TABS_EMPRESA = [['painel', 'Painel da loja'], ['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
     ['pedidos', 'Meus pedidos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  // Menu lateral no mesmo padrão do painel do afiliado: grupos com título e ícone em cada item
+  const ICONES_NAV = {"equipe":"<circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2.5 20a6.5 6.5 0 0 1 13 0\"/><path d=\"M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6\"/>","painel":"<rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"2\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"2\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"2\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"2\"/>","anuncios":"<path d=\"M20 12l-8 8-9-9V3h8z\"/><circle cx=\"7.5\" cy=\"7.5\" r=\"1.5\"/>","loja":"<path d=\"M4 9l1.5-5h13L20 9\"/><path d=\"M4 9v11h16V9\"/><path d=\"M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0\"/><path d=\"M10 20v-6h4v6\"/>","vendas":"<path d=\"M4 19h16\"/><path d=\"M7 15l4-4 3 3 5-6\"/>","importar":"<path d=\"M12 3v12\"/><path d=\"M7 10l5 5 5-5\"/><path d=\"M4 20h16\"/>","mensagens":"<path d=\"M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z\"/>","meuperfil":"<path d=\"M12 2l3 6 6.5 1-4.7 4.6 1.1 6.4L12 17l-5.9 3 1.1-6.4L2.5 9 9 8z\"/>","pedidos":"<path d=\"M3 8l9-5 9 5v8l-9 5-9-5z\"/><path d=\"M3 8l9 5 9-5\"/><path d=\"M12 13v8\"/>","cartoes":"<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2.5\"/><path d=\"M3 10h18\"/>","perfil":"<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>","seguranca":"<rect x=\"5\" y=\"11\" width=\"14\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/>"};
+  const GRUPOS_NAV = [['Equipe', ['equipe']], ['Essencial', ['painel', 'anuncios', 'loja', 'vendas', 'importar']], ['Atendimento', ['mensagens']], ['Minha conta', ['meuperfil', 'pedidos', 'cartoes', 'perfil', 'seguranca']]];
+  function menuDaConta(tabs) {
+    const rotulo = new Map(tabs);
+    return GRUPOS_NAV.map(([titulo, chaves]) => {
+      const itens = chaves.filter(k => rotulo.has(k));
+      if (!itens.length) return '';
+      return `<p class="cli-nav-tit">${titulo}</p>${itens.map(k => `<button type="button" data-tab="${k}" aria-current="${k === currentTab}"><svg class="cli-ico" viewBox="0 0 24 24" aria-hidden="true">${ICONES_NAV[k] || ''}</svg><span>${rotulo.get(k)}</span>${k === 'mensagens' ? '<b class="nav-n" id="nav-msg-n" hidden></b>' : ''}</button>`).join('')}`;
+    }).join('');
+  }
   let currentTab = null; // empresa abre no Painel da loja; consumidor, em Meu perfil
 
   function renderAccount() {
@@ -484,6 +495,8 @@
     $('#who-name').textContent = empresa ? (ME.empresa_nome || ME.nome) : ME.nome;
     $('#who-type').textContent = empresa ? `Conta empresarial · ${ME.nome}` : ME.staff ? `Equipe Ofertou!${ME.cargo ? ` · ${({ proprietario: 'Proprietário', gerente: 'Gerente', admin: 'Admin', moderador: 'Moderador', suporte: 'Suporte' })[ME.cargo] || ''}` : ''}` : 'Conta de consumidor';
     $('#who-avatar').hidden = !ME.avatar_url;
+    $('#who-letra').hidden = Boolean(ME.avatar_url);
+    $('#who-letra').textContent = String((empresa ? ME.empresa_nome : ME.nome) || ME.nome || '?').trim().charAt(0).toUpperCase();
     if (ME.avatar_url) $('#who-avatar').src = ME.avatar_url;
     // Empresa ainda sem loja: o "Painel da loja" fica escondido e a conta abre em "Minha loja" para criar a loja
     const equipe = ME.staff || ME.pode_sac || ME.pode_postar || ME.pode_moderar;
@@ -498,8 +511,7 @@
     if (equipe && currentTab === null) currentTab = 'equipe';
     if (!tabs.some(([k]) => k === currentTab)) currentTab = empresa ? (LOJA ? 'painel' : 'loja') : 'meuperfil';
     $('#loja-boas-vindas').hidden = !(empresa && !LOJA);
-    $('#account-nav').innerHTML = tabs.map(([k, label]) =>
-      `<button type="button" data-tab="${k}" aria-current="${k === currentTab}">${label}${k === 'mensagens' ? '<b class="nav-n" id="nav-msg-n" hidden></b>' : ''}</button>`).join('');
+    $('#account-nav').innerHTML = menuDaConta(tabs);
     fetch('/api/chat/resumo', { cache: 'no-store' }).then(r => r.json()).then(r => {
       const n = (r.nao_lidas || 0) + (r.pedidos || 0);
       const el = $('#nav-msg-n');

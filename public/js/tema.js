@@ -48,7 +48,7 @@ window.ofertouSessao = (() => { let p; return () => (p ||= fetch('/api/sessao', 
       const u = new URL(a.href, location.href);
       if (u.origin !== location.origin) return;
       const txt = a.textContent;
-      const aba = { '/postagens': 'postagens', '/': 'ofertas', '/cliente': /afiliado/i.test(txt) ? 'afiliados' : /redes/i.test(txt) ? 'redes' : 'inicio' }[u.pathname];
+      const aba = { '/postagens': 'postagens', '/': 'ofertas', '/cliente': /afiliado/i.test(txt) ? 'afiliados' : /whatsapp/i.test(txt) ? 'whatsapp' : /redes/i.test(txt) ? 'redes' : 'inicio' }[u.pathname];
       if (aba) { e.preventDefault(); window.parent.postMessage({ ofertouAba: aba, busca: u.search }, location.origin); }
     }, true);
   }

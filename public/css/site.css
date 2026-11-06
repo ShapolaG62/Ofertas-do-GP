@@ -3535,3 +3535,48 @@ button.ex-lembrete { cursor: pointer; }
 .cli-kpi b, .dash-kpi b, .cli-dash-head h2, .dash-topo h1, .dash-topo h2 { color: var(--brand); }
 body .tabs-line:not(.cli-nav) button[aria-selected="true"] { background: var(--azul-soft); color: var(--azul-texto); border-color: var(--azul-texto); }
 @media (max-width: 760px) { .account-nav button[aria-current="true"] { border-color: transparent; } }
+
+/* ── Loja parceira, conta e postagens no padrão do painel do afiliado: menu lateral, grupos com título e tela inteira ── */
+.account-side { display: grid; gap: 12px; }
+.who-row { padding: 4px 4px 12px; border-bottom: 1px solid var(--line); min-width: 0; }
+.who-row > div { min-width: 0; }
+.who-row .who { font-size: 14.5px; overflow-wrap: anywhere; }
+.who-row .muted { font-size: 12px; }
+.who-row .cli-avatar[hidden] { display: none; }
+.account-nav { margin-top: 0; }
+.account-nav button { display: flex; align-items: center; gap: 10px; font: inherit; font-size: 14px; font-weight: 600; }
+.account-nav .cli-ico { color: var(--azul-texto); }
+.account-nav button[aria-current="true"] .cli-ico { color: #fff; }
+.account-nav .nav-n { margin-left: auto; }
+.account-side .guia-btn { margin-top: 0; }
+.cli-nav-link[hidden] { display: none; }
+.posts-page [data-pg-corpo][hidden] { display: none; }
+.posts-page .cli-main { gap: 14px; }
+.posts-page .posts-sub { margin: -8px 0 0; }
+.posts-page .cli-kpi b { font-size: 24px; }
+.embutido .posts-page .cli-side { display: none; }
+.embutido .posts-page .cli-shell { display: block; }
+.embutido .posts-page:has(.cli-shell:not([hidden])) { max-width: none; margin: 0; padding: 0 12px 16px; }
+@media (min-width: 901px) {
+  .account-grid { grid-template-columns: 236px minmax(0, 1fr); gap: 22px; }
+  .account-side { padding: 14px; border-radius: 18px; }
+  .account-nav button { width: 100%; padding: 9px 10px; border-radius: 10px; }
+}
+@media (max-width: 900px) {
+  .account-nav .cli-nav-tit { display: none; }
+}
+@media (min-width: 1100px) {
+  body:has(#view-conta:not([hidden])) .site-header { margin-left: 252px; }
+  body:has(#view-conta:not([hidden])) .site-header .brand { display: none; }
+  body:has(#view-conta:not([hidden])) .site-header .header-row { justify-content: flex-end; max-width: none; }
+  .container:has(#view-conta:not([hidden])) { max-width: none; margin: 0; padding-left: 276px; padding-right: 24px; }
+  .account-grid { display: block; }
+  .account-side { position: fixed; left: 0; top: 0; bottom: 0; z-index: 40; width: 252px; margin: 0; padding: 14px 12px; border-width: 0 1px 0 0; border-radius: 0; overflow-y: auto; align-content: start; }
+  .account-side .cli-side-logo { display: flex; align-items: center; gap: 8px; padding: 0 4px 6px; text-decoration: none; }
+  .account-side .cli-side-logo .brand-name { display: inline; }
+}
+@media (max-width: 520px) {
+  .posts-page .cli-kpi { min-width: 0; }
+  .posts-page .cli-kpi b { font-size: 19px; overflow-wrap: anywhere; }
+  .posts-page .cli-kpi em { white-space: normal; }
+}

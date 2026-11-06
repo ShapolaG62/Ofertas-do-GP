@@ -88,6 +88,31 @@
     atualizarDestinosDosCards();
   });
 
+  // ── Menu lateral e números do topo, no padrão do painel do afiliado ──
+  // Dentro do painel do afiliado (quadro) o menu dele já está na tela: aparece tudo, sem o segundo menu.
+  const embutido = document.documentElement.classList.contains('embutido');
+  function abrirAba(aba) {
+    document.querySelectorAll('[data-pg-aba]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.pgAba === aba)));
+    document.querySelectorAll('[data-pg-corpo]').forEach(c => { c.hidden = !embutido && c.dataset.pgCorpo !== aba; });
+  }
+  document.querySelector('.cli-nav').addEventListener('click', e => {
+    const b = e.target.closest('[data-pg-aba]');
+    if (b) abrirAba(b.dataset.pgAba);
+  });
+  abrirAba('postar');
+  let AGENDA = null;
+  function atualizarKpis() {
+    const incluidos = OFFERS.filter(o => !excluded.has(o.id)).length;
+    $('#pg-k-produtos').textContent = incluidos;
+    $('#pg-k-produtos-d').textContent = OFFERS.length === incluidos ? 'para postar agora' : `de ${OFFERS.length} escolhidos`;
+    $('#pg-k-grupos').textContent = GRUPOS.filter(g => marcados.has(g.id)).length;
+    $('#pg-k-grupos-d').textContent = GRUPOS.length ? `de ${GRUPOS.length} no WhatsApp` : 'no WhatsApp';
+    if (!AGENDA) return;
+    $('#pg-k-fila').textContent = AGENDA.pendentes;
+    $('#pg-k-agenda').textContent = AGENDA.ativa ? 'Ligado' : 'Desligado';
+    $('#pg-k-agenda-d').textContent = AGENDA.ativa && AGENDA.proximo ? `próximo às ${AGENDA.proximo}` : '';
+  }
+
   // ── Grupos do WhatsApp: você escolhe os produtos e depois os grupos ──
   let GRUPOS = [];
   let TEMAS = [];
@@ -133,7 +158,7 @@
       el.textContent = d.length ? `Vai para: ${d.map(g => g.nome).join(', ')}` : 'Nenhum grupo marcado recebe este tipo de produto desta loja.';
     }
   }
-  function salvarMarcados() { save(GRUPOS_KEY, [...marcados]); atualizarDestinosDosCards(); }
+  function salvarMarcados() { save(GRUPOS_KEY, [...marcados]); atualizarDestinosDosCards(); atualizarKpis(); }
   $('#wa-destinos-lista').addEventListener('change', e => {
     const c = e.target.closest('[data-destino]');
     if (!c) return;
@@ -159,6 +184,7 @@
     marcados = new Set(guardados.length ? guardados : GRUPOS.filter(g => g.salvo).map(g => g.id)); // começa pelos grupos salvos no painel
     desenharGrupos(d);
     atualizarDestinosDosCards();
+    atualizarKpis();
   }
 
   // ── Lista de produtos ──────────────────────────────────────────────────────
@@ -221,6 +247,7 @@
       </article>`;
     }).join('');
     atualizarDestinosDosCards();
+    atualizarKpis();
   }
 
   // Foto do produto em PNG (único formato de imagem que a área de transferência aceita)
@@ -314,6 +341,7 @@
     const id = Number(c.dataset.include);
     c.checked ? excluded.delete(id) : excluded.add(id);
     c.closest('article').classList.toggle('is-excluded', !c.checked);
+    atualizarKpis();
   });
 
   $('#copy-all').addEventListener('click', () => {
@@ -420,6 +448,8 @@
       toast(`${d.adicionados} produto(s) na fila. Total esperando: ${d.pendentes}.`);
       const info = await fetch('/api/postagens/redes').then(r => r.json());
       renderNets(info);
+      AGENDA = info.agenda;
+      atualizarKpis();
     } catch (err) { toast(err.message); }
   });
 
@@ -448,6 +478,11 @@
       });
       REDES = info.redes;
       MODELO = info.modelo || '';
+      AGENDA = info.agenda;
+      const quem = info.cliente?.nome || (info.admin ? 'Administrador' : 'Postagens');
+      $('#pg-nome').textContent = quem;
+      $('#pg-avatar').textContent = quem.trim().charAt(0).toUpperCase();
+      $('#pg-painel').hidden = !info.cliente;
       $('#painel-cliente').hidden = !info.cliente;
       WA_INTERVALO = Math.max(20, Number(info.whatsapp_intervalo_s) || 90);
       renderNets(info);

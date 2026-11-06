@@ -194,7 +194,7 @@ Você pode vender o acesso à ferramenta. Cada cliente usa as ofertas mineradas 
 **O que o cliente faz (em /cliente):**
 
 1. **Links de afiliado:** Amazon (tag), Mercado Livre (matt_word e matt_tool), KaBuM! (link de qualquer produto), AliExpress e Shopee (chaves da API de afiliados dele) e Magalu.
-2. **Redes sociais:** WhatsApp (conexão pelo QR code, número dele), Telegram, Facebook/Instagram e X.
+2. **Redes sociais:** WhatsApp (aba própria no painel: conexão pelo QR code, grupos, conversas e API, com o número dele), Telegram, Facebook/Instagram e X.
 3. **Ofertas:** navega pelas ofertas do site, marca com ✓ e vai para **Postagens** — os textos já saem com os links dele e publicam nos canais dele. Também pode pôr ofertas na fila.
 4. **Agendamento** próprio (horários, quantidade, redes) e **histórico** só das postagens dele.
 

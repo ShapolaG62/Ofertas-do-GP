@@ -70,3 +70,6 @@
 .er-falhas li { font-size: 14px; color: var(--ink, var(--text)); overflow-wrap: anywhere; }
 .er-falhas span, .er-falhas small { color: var(--ink-2, var(--muted)); }
 .er-grade + .er-bloco { margin-top: 18px; }
+.wap-ajustes { display: grid; gap: 8px; }
+.wap-ajuste { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.wap-ajuste input { flex: none; width: 20px; height: 20px; margin: 0; }

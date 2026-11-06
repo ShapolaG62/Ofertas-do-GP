@@ -11,21 +11,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261291">
-<script src="/js/tema.js?v=20261291"></script>
-<script src="/js/visualizacao.js?v=20261291"></script>
-<script src="/js/app-nativo.js?v=20261291"></script>
-<script src="/js/dialogo.js?v=20261291"></script>
-<script src="/js/modelo-post.js?v=20261291"></script>
-<script src="/js/aceite-parceiro.js?v=20261291"></script>
-<script src="/js/capi-minerando.js?v=20261291" defer></script>
-<script src="/js/cadastro-auto.js?v=20261291" defer></script>
-<script src="/js/voltar.js?v=20261291" data-padrao="/" defer></script>
-<script src="/js/rodape-legal.js?v=20261291" defer></script>
-<script src="/js/instalar-app.js?v=20261291" defer></script>
-<script src="/js/cookies.js?v=20261291"></script>
-<script src="/js/seletor.js?v=20261291" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261291">
+<link rel="stylesheet" href="/css/site.css?v=20261292">
+<script src="/js/tema.js?v=20261292"></script>
+<script src="/js/visualizacao.js?v=20261292"></script>
+<script src="/js/app-nativo.js?v=20261292"></script>
+<script src="/js/dialogo.js?v=20261292"></script>
+<script src="/js/modelo-post.js?v=20261292"></script>
+<script src="/js/aceite-parceiro.js?v=20261292"></script>
+<script src="/js/capi-minerando.js?v=20261292" defer></script>
+<script src="/js/cadastro-auto.js?v=20261292" defer></script>
+<script src="/js/voltar.js?v=20261292" data-padrao="/" defer></script>
+<script src="/js/rodape-legal.js?v=20261292" defer></script>
+<script src="/js/instalar-app.js?v=20261292" defer></script>
+<script src="/js/cookies.js?v=20261292"></script>
+<script src="/js/seletor.js?v=20261292" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261292">
 </head>
 <body>
 <header class="site-header">
@@ -243,7 +243,7 @@
 
       <div class="panel-card wa-proprio">
         <h2>API para outros programas</h2>
-        <p class="cli-hint">A chave lê as mensagens, envia e automatiza as postagens em nome do número, então guarde como uma senha. Ela não conecta nem desconecta o número.</p>
+        <p class="cli-hint">A chave faz tudo em nome do número: lê, envia, administra os grupos e muda o perfil. Guarde como uma senha. Ela só não conecta nem desconecta o número.</p>
         <p id="wap-chave-estado" class="cli-hint"></p>
         <p id="wap-chave-nova" class="wap-chave" hidden></p>
         <div class="cli-actions" style="justify-content:flex-start">
@@ -253,26 +253,93 @@
         <details class="wap-detalhes"><summary>Endereços da API</summary>
         <pre class="wap-doc">Authorization: Bearer SUA_CHAVE
 
+CONEXÃO E AJUSTES
 GET    /api/wa/status
-GET    /api/wa/temas
-GET    /api/wa/grupos            (?todos=1 inclui os de outras pessoas)
-GET    /api/wa/grupos/ID/convite
+GET    /api/wa/ajustes
+PUT    /api/wa/ajustes     { "rejeitar_chamadas": true, "mensagem_chamada": "...",
+                             "sempre_online": false, "ler_mensagens": false, "ler_status": false }
+
+ENVIAR ("para": grupo ou número; arquivo em "url" ou "base64")
+POST   /api/wa/enviar                { "para", "texto", "imagem" }
+POST   /api/wa/enviar/texto          { "para", "texto", "mencionar": [], "mencionar_todos", "responder_a" }
+POST   /api/wa/enviar/midia          { "para", "tipo": "imagem|video|documento", "url", "legenda", "nome", "mimetype" }
+POST   /api/wa/enviar/audio          { "para", "url" }
+POST   /api/wa/enviar/nota-de-video  { "para", "url" }
+POST   /api/wa/enviar/figurinha      { "para", "url" }
+POST   /api/wa/enviar/localizacao    { "para", "latitude", "longitude", "nome", "endereco" }
+POST   /api/wa/enviar/contato        { "para", "contatos": [{ "nome", "telefone" }] }
+POST   /api/wa/enviar/enquete        { "para", "pergunta", "opcoes": [], "escolhas" }
+POST   /api/wa/enviar/reacao         { "chat", "id", "emoji" }
+POST   /api/wa/enviar/status         { "tipo", "texto", "url", "destinatarios": [], "todos_contatos" }
+
+MENSAGENS E CONVERSAS
+GET    /api/wa/conversas             (?tipo=grupos ou contatos)
+GET    /api/wa/mensagens?chat=ID&amp;limite=50&amp;depois=ULTIMO_ID&amp;busca=TEXTO
+POST   /api/wa/mensagens/lidas       { "chat", "ids": [] }
+POST   /api/wa/mensagens/apagar      { "chat", "id" }
+POST   /api/wa/mensagens/editar      { "chat", "id", "texto" }
+POST   /api/wa/mensagens/midia       { "chat", "id" }
+POST   /api/wa/conversas/arquivar    { "chat", "arquivar" }
+POST   /api/wa/conversas/nao-lida    { "chat", "nao_lida" }
+POST   /api/wa/presenca              { "para", "tipo": "composing|recording|paused|available|unavailable" }
+
+CONTATOS E PERFIL
+GET    /api/wa/contatos?busca=NOME
+POST   /api/wa/numeros               { "numeros": [] }
 GET    /api/wa/foto/ID
-GET    /api/wa/conversas         (?tipo=grupos ou contatos)
-GET    /api/wa/mensagens?chat=ID&amp;limite=50&amp;depois=ULTIMO_ID
-POST   /api/wa/enviar
-       { "para": "ID", "texto": "Olá", "imagem": "https://..." }
+GET    /api/wa/bloqueios
+POST   /api/wa/bloqueios             { "numero", "bloquear" }
+GET    /api/wa/perfil                (?numero=)
+PUT    /api/wa/perfil                { "nome", "recado" }
+PUT    /api/wa/perfil/foto           { "url" }
+DELETE /api/wa/perfil/foto
+GET    /api/wa/privacidade
+PUT    /api/wa/privacidade           { "visto_por_ultimo", "online", "foto", "status",
+                                       "confirmacao_leitura", "adicionar_em_grupos" }
+
+GRUPOS
+GET    /api/wa/grupos                (?todos=1 inclui os de outras pessoas)
+POST   /api/wa/grupos                { "nome", "participantes": [] }
+GET    /api/wa/grupos/ID
+PUT    /api/wa/grupos/ID             { "nome", "descricao" }
+PUT    /api/wa/grupos/ID/foto        { "url" }
+PUT    /api/wa/grupos/ID/ajustes     { "so_admins_falam", "so_admins_editam", "todos_adicionam",
+                                       "aprovacao_para_entrar", "mensagens_temporarias" }
+POST   /api/wa/grupos/ID/participantes  { "acao": "adicionar|remover|promover|rebaixar", "numeros": [] }
+GET    /api/wa/grupos/ID/convite
+POST   /api/wa/grupos/ID/convite/novo
+POST   /api/wa/grupos/ID/convite/enviar  { "numeros": [], "texto" }
+GET    /api/wa/convites/CODIGO
+POST   /api/wa/convites/CODIGO
+DELETE /api/wa/grupos/ID             (sai do grupo)
+
+POSTAGENS
+GET    /api/wa/temas
 GET    /api/wa/ofertas?tema=tecnologia&amp;limite=10
-POST   /api/wa/postar
-       { "offer_id": 123, "grupos": ["ID"], "por_tipo": true }
+POST   /api/wa/postar                { "offer_id", "grupos": [], "por_tipo", "texto" }
 GET    /api/wa/fila
-POST   /api/wa/fila
-       { "itens": [{ "offer_id": 123 }], "grupos": ["ID"] }
+POST   /api/wa/fila                  { "itens": [{ "offer_id" }], "grupos": [], "por_tipo" }
 DELETE /api/wa/fila/ID
 POST   /api/wa/fila/executar
-GET    /api/wa/resultados?dias=30</pre></details>
+GET    /api/wa/resultados?dias=30
+
+WHATSAPP BUSINESS
+GET    /api/wa/etiquetas
+POST   /api/wa/etiquetas             { "chat", "etiqueta", "adicionar" }
+GET    /api/wa/catalogo              (?numero=)
+GET    /api/wa/colecoes              (?numero=)</pre></details>
+        <h3>Comportamento do número</h3>
+        <div class="wap-ajustes">
+          <label class="wap-ajuste"><input type="checkbox" data-wap-ajuste="rejeitar_chamadas"> Rejeitar chamadas de voz e vídeo</label>
+          <label class="field">Mensagem para quem ligar (opcional) <input type="text" id="wap-msg-chamada" maxlength="500" placeholder="Não atendemos ligações por aqui."></label>
+          <label class="wap-ajuste"><input type="checkbox" data-wap-ajuste="ler_mensagens"> Marcar como lidas as mensagens que chegam</label>
+          <label class="wap-ajuste"><input type="checkbox" data-wap-ajuste="ler_status"> Marcar como vistos os status dos contatos</label>
+          <label class="wap-ajuste"><input type="checkbox" data-wap-ajuste="sempre_online"> Aparecer sempre online</label>
+        </div>
+        <p class="cli-hint">Com "Aparecer sempre online" ligado, o celular pode deixar de receber as notificações.</p>
+        <p id="wap-ajustes-msg" class="cli-hint" role="status"></p>
         <h3>Avisar outro programa</h3>
-        <p class="cli-hint">A cada mensagem nova e mudança na conexão, o site envia um POST para este endereço, com a assinatura no cabeçalho X-Ofertou-Assinatura. Deixe vazio para desligar.</p>
+        <p class="cli-hint">A cada mensagem nova, entrega, chamada, entrada ou saída de grupo e mudança na conexão, o site envia um POST para este endereço, com a assinatura no cabeçalho X-Ofertou-Assinatura. Deixe vazio para desligar.</p>
         <div class="wap-form">
           <input type="url" id="wap-webhook-url" class="wap-busca" placeholder="https://..." aria-label="Endereço que recebe os avisos">
           <button class="btn" type="button" id="wap-webhook-salvar">Salvar</button>
@@ -522,10 +589,10 @@ GET    /api/wa/resultados?dias=30</pre></details>
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/cliente-extra.js?v=20261291" defer></script>
-<script src="/js/wa-temas.js?v=20261291" defer></script>
-<script src="/js/envio-resultados.js?v=20261291" defer></script>
-<script src="/js/wa-proprio.js?v=20261291" defer></script>
-<script src="/js/cliente.js?v=20261291" defer></script>
+<script src="/js/cliente-extra.js?v=20261292" defer></script>
+<script src="/js/wa-temas.js?v=20261292" defer></script>
+<script src="/js/envio-resultados.js?v=20261292" defer></script>
+<script src="/js/wa-proprio.js?v=20261292" defer></script>
+<script src="/js/cliente.js?v=20261292" defer></script>
 </body>
 </html>

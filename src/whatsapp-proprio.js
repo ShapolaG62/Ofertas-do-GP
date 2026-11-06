@@ -38,6 +38,10 @@ db.db.exec(`
 if (!db.all('PRAGMA table_info(whatsapp_mensagens)').some(c => c.name === 'dono')) {
   db.db.exec(`ALTER TABLE whatsapp_mensagens ADD COLUMN dono TEXT NOT NULL DEFAULT 'site'`);
 }
+// Remetente em grupo, situação de entrega e os dados para baixar a mídia (só a referência, nunca o arquivo)
+for (const [coluna, tipo] of [['participante', 'TEXT'], ['entrega', 'TEXT'], ['bruta', 'TEXT']]) {
+  if (!db.all('PRAGMA table_info(whatsapp_mensagens)').some(c => c.name === coluna)) db.db.exec(`ALTER TABLE whatsapp_mensagens ADD COLUMN ${coluna} ${tipo}`);
+}
 db.db.exec(`
   DROP INDEX IF EXISTS idx_whatsapp_msg_unica;
   DROP INDEX IF EXISTS idx_whatsapp_msg_chat;
@@ -57,6 +61,8 @@ db.db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_whatsapp_contatos_conversa ON whatsapp_contatos (dono, conversa, ultima_em);
   CREATE TABLE IF NOT EXISTS whatsapp_webhooks (dono TEXT PRIMARY KEY, url TEXT NOT NULL, segredo TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS whatsapp_ajustes (dono TEXT PRIMARY KEY, valores TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS whatsapp_etiquetas (dono TEXT NOT NULL, id TEXT NOT NULL, nome TEXT, cor INTEGER, PRIMARY KEY (dono, id));
 `);
 
 const log = (dono, m) => console.log(`[WHATSAPP ${dono}] ${m}`);
@@ -106,7 +112,8 @@ const segundos = v => Number(v?.toNumber ? v.toNumber() : v) || 0;
 const dataSql = s => new Date((s || Date.now() / 1000) * 1000).toISOString().replace('T', ' ').slice(0, 19);
 
 // Mensagem do WhatsApp → formato do site (ou nulo: status, canais, reações e avisos internos não entram)
-function lerMensagem(m) {
+const TIPOS_COM_ARQUIVO = ['imagem', 'video', 'audio', 'documento', 'figurinha'];
+function lerMensagem(m, serializar = null) {
   const chat = m?.key?.remoteJid;
   if (!chat || !m.key.id || /@(broadcast|newsletter)$/.test(chat)) return null;
   const c = desembrulhar(m.message);
@@ -115,7 +122,8 @@ function lerMensagem(m) {
   const texto = c.conversation || c.extendedTextMessage?.text || c.imageMessage?.caption || c.videoMessage?.caption || c.documentMessage?.caption || '';
   return {
     wa_id: String(m.key.id), chat, de_mim: m.key.fromMe ? 1 : 0, autor: m.key.fromMe ? null : (m.pushName || null),
-    tipo: TIPOS[chaveTipo], texto, segundos: segundos(m.messageTimestamp),
+    tipo: TIPOS[chaveTipo], texto, segundos: segundos(m.messageTimestamp), participante: m.key.participant || null,
+    bruta: TIPOS_COM_ARQUIVO.includes(TIPOS[chaveTipo]) && serializar ? serializar(m) : null,
   };
 }
 
@@ -147,7 +155,12 @@ async function criarSocketReal(dono) {
     markOnlineOnConnect: false, // o celular continua recebendo as notificações normalmente
     getMessage: async () => undefined,
   });
-  return { sock: socket, saveCreds, pareado: () => Boolean(state.creds.me), gerarId: () => b.generateMessageIDV2(socket.user?.id) };
+  return {
+    sock: socket, saveCreds, pareado: () => Boolean(state.creds.me), gerarId: () => b.generateMessageIDV2(socket.user?.id),
+    // Referência para baixar a mídia depois, sem miniatura nem o resto da conversa citada
+    serializar: m => JSON.stringify({ key: m.key, message: m.message, messageTimestamp: m.messageTimestamp }, (k, v) => (k === 'jpegThumbnail' || k === 'contextInfo' ? undefined : b.BufferJSON.replacer(k, v))),
+    baixar: texto => b.downloadMediaMessage(JSON.parse(texto, b.BufferJSON.reviver), 'buffer', {}, { logger, reuploadRequest: socket.updateMediaMessage }),
+  };
 }
 
 // ── Uma conexão ─────────────────────────────────────────────────────────────
@@ -162,6 +175,9 @@ class Conexao {
     this.abrindo = false;
     this.grupos = null;
     this.gerarId = null;
+    this.serializar = null;
+    this.baixar = null;
+    this.timerOnline = null;
     this.saidas = new Set(); // ids das mensagens que esta API enviou: o que chegar de volta com esse id não é comando
     this.filaEnvio = Promise.resolve();
     this.ultimoEnvio = 0;
@@ -174,6 +190,7 @@ class Conexao {
   }
   fecharSocket() {
     clearTimeout(this.timerVolta);
+    clearInterval(this.timerOnline);
     const s = this.sock;
     this.sock = null;
     this.grupos = null;
@@ -190,6 +207,8 @@ class Conexao {
       if (minha !== this.geracao) { try { criado.sock.end?.(undefined); } catch { /* ignorado */ } return; }
       this.sock = criado.sock;
       this.gerarId = criado.gerarId || null;
+      this.serializar = criado.serializar || null;
+      this.baixar = criado.baixar || null;
       this.ouvir(criado, minha);
     } catch (err) {
       if (minha === this.geracao) { log(this.dono, `não abriu: ${err.message}`); this.mudar({ fase: 'desligado', erro: `Não foi possível abrir a conexão: ${err.message}` }); }
@@ -204,11 +223,18 @@ class Conexao {
     s.ev.on('chats.upsert', vale(chats => this.guardarLista(chats, [])));
     s.ev.on('contacts.upsert', vale(c => this.guardarLista([], c)));
     s.ev.on('contacts.update', vale(c => this.guardarLista([], c)));
+    s.ev.on('messages.update', vale(lista => this.aoMudarEntrega(lista)));
+    s.ev.on('call', vale(chamadas => { for (const c of chamadas || []) this.aoReceberChamada(c); }));
+    s.ev.on('labels.edit', vale(e => {
+      if (e.deleted) db.run('DELETE FROM whatsapp_etiquetas WHERE dono = ? AND id = ?', this.dono, String(e.id));
+      else db.run(`INSERT INTO whatsapp_etiquetas (dono, id, nome, cor) VALUES (?, ?, ?, ?) ON CONFLICT (dono, id) DO UPDATE SET nome = excluded.nome, cor = excluded.cor`, this.dono, String(e.id), e.name || null, e.color ?? null);
+    }));
     s.ev.on('groups.update', vale(() => { this.grupos = null; }));
     s.ev.on('groups.upsert', vale(() => { this.grupos = null; this.carregarGrupos().catch(() => {}); }));
     s.ev.on('group-participants.update', vale(ev => {
       this.grupos = null;
       require('./membros-grupo').receber(cidDe(this.dono), { event: 'group-participants.update', data: ev });
+      emitir(this.dono, 'grupo', { id: ev.id, acao: ev.action, quantidade: ev.participants?.length || 0 });
     }));
   }
   async aoAtualizar({ connection, qr, lastDisconnect }, s, pareado) {
@@ -219,6 +245,7 @@ class Conexao {
       this.mudar({ fase: 'conectado', qr: null, erro: null, numero: id.split(/[:@]/)[0] || null, nome: s.user?.name || null, desde: new Date().toISOString() });
       log(this.dono, 'conectado');
       this.carregarGrupos().catch(err => log(this.dono, `grupos: ${err.message}`)); // nomes e quais são deste número
+      this.aplicarAjustes();
     }
     if (connection === 'close') this.aoFechar(lastDisconnect?.error?.output?.statusCode, pareado);
   }
@@ -257,9 +284,45 @@ class Conexao {
     });
   }
 
+  // ── Ajustes do número ──
+  aplicarAjustes() {
+    clearInterval(this.timerOnline);
+    const a = lerAjustes(this.dono);
+    const s = this.sock;
+    if (!s) return;
+    if (a.sempre_online) {
+      const avisar = () => this.sock?.sendPresenceUpdate?.('available').catch(() => {});
+      avisar();
+      this.timerOnline = setInterval(avisar, 60000);
+      this.timerOnline.unref?.();
+    } else s.sendPresenceUpdate?.('unavailable').catch(() => {});
+  }
+  aoReceberChamada(c) {
+    emitir(this.dono, 'chamada', { de: c.from, video: Boolean(c.isVideo), situacao: c.status });
+    if (c.status !== 'offer') return;
+    const a = lerAjustes(this.dono);
+    if (!a.rejeitar_chamadas) return;
+    this.sock?.rejectCall?.(c.id, c.from).catch(err => log(this.dono, `chamada: ${err.message}`));
+    if (a.mensagem_chamada) this.enviar(c.from, { texto: a.mensagem_chamada }).catch(err => log(this.dono, `chamada: ${err.message}`));
+  }
+  aoMudarEntrega(lista) {
+    for (const { key, update } of lista || []) {
+      const entrega = ENTREGA[update?.status];
+      if (!entrega || !key?.remoteJid || !key.id) continue;
+      if (db.run('UPDATE whatsapp_mensagens SET entrega = ? WHERE dono = ? AND chat = ? AND wa_id = ?', entrega, this.dono, key.remoteJid, key.id).changes) {
+        emitir(this.dono, 'entrega', { chat: key.remoteJid, id: key.id, entrega });
+      }
+    }
+  }
+
   // ── Mensagens recebidas ──
   receber(bruta, tipoEvento) {
-    const m = lerMensagem(bruta);
+    const ajustes = lerAjustes(this.dono);
+    if (bruta?.key?.remoteJid === 'status@broadcast') {
+      if (ajustes.ler_status && !bruta.key.fromMe) this.sock?.readMessages?.([bruta.key]).catch(() => {});
+      return;
+    }
+    const m = lerMensagem(bruta, this.serializar);
     if (!m) return;
     const ehGrupo = m.chat.endsWith('@g.us');
     const meu = !ehGrupo || db.get('SELECT meu_grupo FROM whatsapp_contatos WHERE dono = ? AND jid = ?', this.dono, m.chat)?.meu_grupo === 1;
@@ -267,6 +330,7 @@ class Conexao {
     if (meu) { // de grupos de outras pessoas, nada fica guardado
       guardarContato(this.dono, m.chat, { nome: !ehGrupo && !m.de_mim ? m.autor : null, conversa: 1, ultima: dataSql(m.segundos) });
       nova = salvar(this.dono, m);
+      if (nova && ajustes.ler_mensagens && tipoEvento === 'notify' && !m.de_mim) this.sock?.readMessages?.([bruta.key]).catch(() => {});
       if (nova) emitir(this.dono, 'mensagem', { chat: m.chat, de_mim: Boolean(m.de_mim), autor: m.autor, tipo: m.tipo, texto: m.texto, id: m.wa_id, em: dataSql(m.segundos) });
     }
     // Grupo de automação: comandos só do que chegou agora. O que você digita no celular conta; o que esta API enviou, não.
@@ -353,28 +417,33 @@ class Conexao {
     return vez;
   }
   async enviar(para, { imagem, texto }) {
-    let jid = paraJid(para);
+    const jid = paraJid(para);
     if (!imagem && !String(texto || '').trim()) throw falhou('Informe o texto ou a foto da mensagem.');
     this.exigir();
     const foto = imagem ? await prepararImagem(imagem) : null;
+    return this.enviarConteudo(jid, foto ? { image: foto, caption: texto || '' } : { text: String(texto) });
+  }
+  // Qualquer tipo de mensagem, pela fila de envio
+  enviarConteudo(jid, conteudo, opcoes = {}) {
+    this.exigir();
     return this.naFila(async () => {
       const s = this.exigir();
-      if (jid.endsWith('@s.whatsapp.net')) { // celular: confere o número (no Brasil, o cadastro pode ser com ou sem o 9)
-        const [achado] = await s.onWhatsApp(jid);
+      let destino = jid;
+      if (destino.endsWith('@s.whatsapp.net')) { // celular: confere o número (no Brasil, o cadastro pode ser com ou sem o 9)
+        const [achado] = await s.onWhatsApp(destino);
         if (!achado?.exists) throw falhou('Esse número não tem WhatsApp.');
-        jid = achado.jid;
+        destino = achado.jid;
       }
-      const conteudo = foto ? { image: foto, caption: texto || '' } : { text: String(texto) };
       const messageId = this.gerarId?.() || `OFW${crypto.randomBytes(9).toString('hex').toUpperCase()}`;
       if (this.saidas.size > 5000) this.saidas.clear();
       this.saidas.add(messageId);
       let limite;
       const r = await Promise.race([
-        s.sendMessage(jid, conteudo, { messageId }),
+        s.sendMessage(destino, conteudo, { ...opcoes, messageId }),
         new Promise((_, nao) => { limite = setTimeout(() => nao(falhou('O WhatsApp não confirmou o envio a tempo.', 504)), LIMITE_ENVIO_MS); }),
       ]).finally(() => clearTimeout(limite));
       if (r?.key?.id) this.saidas.add(r.key.id);
-      const m = lerMensagem(r);
+      const m = destino === 'status@broadcast' ? null : lerMensagem(r, this.serializar);
       if (m) {
         guardarContato(this.dono, m.chat, { conversa: 1, ultima: dataSql(m.segundos) });
         salvar(this.dono, m);
@@ -392,8 +461,8 @@ function conexao(dono) {
 }
 
 function salvar(dono, m) {
-  const r = db.run(`INSERT OR IGNORE INTO whatsapp_mensagens (dono, wa_id, chat, chat_nome, de_mim, autor, tipo, texto, criado_em) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    dono, m.wa_id, m.chat, null, m.de_mim, m.autor, m.tipo, m.texto, dataSql(m.segundos));
+  const r = db.run(`INSERT OR IGNORE INTO whatsapp_mensagens (dono, wa_id, chat, chat_nome, de_mim, autor, tipo, texto, criado_em, participante, bruta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    dono, m.wa_id, m.chat, null, m.de_mim, m.autor, m.tipo, m.texto, dataSql(m.segundos), m.participante || null, m.bruta || null);
   return Number(r?.changes ?? 1) > 0;
 }
 function temSessao(dono) {
@@ -410,6 +479,26 @@ async function prepararImagem(imagem) {
   }
   // Lojas costumam entregar WebP; o WhatsApp espera JPEG em mensagem de foto
   return require('sharp')(bruto).rotate().resize({ width: 1280, withoutEnlargement: true }).flatten({ background: '#ffffff' }).jpeg({ quality: 85 }).toBuffer();
+}
+
+// ── Ajustes de cada número ──────────────────────────────────────────────────
+const ENTREGA = { 0: 'erro', 1: 'pendente', 2: 'enviada', 3: 'entregue', 4: 'lida', 5: 'reproduzida' };
+const AJUSTES_PADRAO = { rejeitar_chamadas: false, mensagem_chamada: '', sempre_online: false, ler_mensagens: false, ler_status: false };
+function lerAjustes(dono) {
+  let salvos = {};
+  try { salvos = JSON.parse(db.get('SELECT valores FROM whatsapp_ajustes WHERE dono = ?', dono)?.valores || '{}'); } catch { /* usa o padrão */ }
+  return { ...AJUSTES_PADRAO, ...salvos };
+}
+function salvarAjustes(dono, novos) {
+  validarDono(dono);
+  const a = lerAjustes(dono);
+  for (const [k, v] of Object.entries(novos || {})) {
+    if (!(k in AJUSTES_PADRAO)) throw falhou(`Ajuste desconhecido: ${k}.`);
+    a[k] = k === 'mensagem_chamada' ? String(v ?? '').slice(0, 500) : Boolean(v);
+  }
+  db.run('INSERT INTO whatsapp_ajustes (dono, valores) VALUES (?, ?) ON CONFLICT (dono) DO UPDATE SET valores = excluded.valores', dono, JSON.stringify(a));
+  conexao(dono).aplicarAjustes();
+  return a;
 }
 
 // ── Avisos para outros programas (webhook) ──────────────────────────────────
@@ -459,6 +548,7 @@ async function desconectar(dono) {
   fs.rmSync(pastaFotos(dono), { recursive: true, force: true });
   db.run('DELETE FROM whatsapp_mensagens WHERE dono = ?', dono);
   db.run('DELETE FROM whatsapp_contatos WHERE dono = ?', dono);
+  db.run('DELETE FROM whatsapp_etiquetas WHERE dono = ?', dono);
   c.mudar({ fase: 'desligado', qr: null, numero: null, nome: null, erro: null, desde: null });
   return status(dono);
 }
@@ -468,6 +558,42 @@ function fechar(dono, motivo) {
   c.geracao++;
   c.fecharSocket();
   c.mudar({ fase: 'desligado', qr: null, erro: motivo || null });
+}
+async function reiniciar(dono) {
+  const c = conexao(dono);
+  if (!temSessao(dono) && !c.sock) throw falhou('Este número ainda não foi conectado.', 409);
+  c.tentativas = 0;
+  c.mudar({ erro: null });
+  await c.abrir();
+  return status(dono);
+}
+// Para as funções extras (src/whatsapp-funcoes.js)
+const socket = dono => conexao(dono).exigir();
+const enviarConteudo = (dono, jid, conteudo, opcoes) => conexao(dono).enviarConteudo(jid, conteudo, opcoes);
+const meuJid = dono => semAparelho(socket(dono).user?.id);
+const gruposMudaram = dono => { conexao(dono).grupos = null; };
+const linhaMensagem = (dono, chat, id) => db.get('SELECT * FROM whatsapp_mensagens WHERE dono = ? AND chat = ? AND wa_id = ?', dono, chat, id);
+const ultimaMensagem = (dono, chat) => db.get('SELECT * FROM whatsapp_mensagens WHERE dono = ? AND chat = ? ORDER BY id DESC LIMIT 1', dono, chat);
+const textoEditado = (dono, chat, id, texto) => db.run('UPDATE whatsapp_mensagens SET texto = ? WHERE dono = ? AND chat = ? AND wa_id = ?', texto, dono, chat, id);
+const nomeConhecido = (dono, jid) => db.get('SELECT nome FROM whatsapp_contatos WHERE dono = ? AND jid = ?', dono, jid)?.nome || null;
+const etiquetas = dono => db.all('SELECT id, nome, cor FROM whatsapp_etiquetas WHERE dono = ? ORDER BY nome', validarDono(dono));
+function contatos(dono, { busca = '', limite = 200 } = {}) {
+  const lim = Math.min(Math.max(Number(limite) || 200, 1), 5000);
+  return db.all(`SELECT jid, nome, numero FROM whatsapp_contatos WHERE dono = ? AND jid NOT LIKE '%@g.us' AND (? = '' OR nome LIKE ? OR numero LIKE ?) ORDER BY nome LIMIT ?`,
+    validarDono(dono), String(busca), `%${busca}%`, `%${busca}%`, lim);
+}
+async function baixarMidia(dono, linha, maximo) {
+  const c = conexao(dono);
+  c.exigir();
+  if (!c.baixar) throw falhou('Download indisponível nesta conexão.', 501);
+  const dados = JSON.parse(linha.bruta);
+  const conteudo = desembrulhar(dados.message) || {};
+  const tipo = Object.keys(conteudo).find(k => /Message$/.test(k) && conteudo[k]?.mimetype);
+  const info = conteudo[tipo] || {};
+  if (Number(info.fileLength?.low ?? info.fileLength) > maximo) throw falhou(`O arquivo passou de ${Math.round(maximo / 1048576)} MB.`, 413);
+  const arquivo = await c.baixar(linha.bruta);
+  if (arquivo.length > maximo) throw falhou(`O arquivo passou de ${Math.round(maximo / 1048576)} MB.`, 413);
+  return { base64: arquivo.toString('base64'), mimetype: info.mimetype || null, nome: info.fileName || null, tamanho: arquivo.length };
 }
 // Grupos: só os deste número (criados por ele e em que é administrador), a não ser que peça todos
 async function carregarGrupos(dono, { todos = false } = {}) {
@@ -501,12 +627,13 @@ function conversas(dono, { tipo = '', limite = 200 } = {}) {
     .map(c => ({ ...c, nome: nomeExibido(c), grupo: c.chat.endsWith('@g.us') }));
 }
 // Lista as mensagens em ordem de chegada. depois: só as mais novas que esse id (para buscar as que chegaram).
-function mensagens(dono, { chat, limite, depois } = {}) {
+function mensagens(dono, { chat, limite, depois, busca } = {}) {
   const lim = Math.min(Math.max(Number(limite) || 50, 1), 200);
   const onde = ['dono = ?'], args = [validarDono(dono)];
   if (chat) { onde.push('chat = ?'); args.push(paraJid(chat)); }
   if (Number(depois) > 0) { onde.push('id > ?'); args.push(Number(depois)); }
-  const sql = `SELECT id, wa_id, chat, de_mim, autor, tipo, texto, criado_em FROM whatsapp_mensagens WHERE ${onde.join(' AND ')}`;
+  if (busca) { onde.push('texto LIKE ?'); args.push(`%${String(busca)}%`); }
+  const sql = `SELECT id, wa_id, chat, de_mim, autor, tipo, texto, criado_em, entrega, bruta IS NOT NULL AS tem_arquivo FROM whatsapp_mensagens WHERE ${onde.join(' AND ')}`;
   if (Number(depois) > 0) return db.all(`${sql} ORDER BY id ASC LIMIT ?`, ...args, lim);
   return db.all(`${sql} ORDER BY id DESC LIMIT ?`, ...args, lim).reverse();
 }
@@ -548,5 +675,6 @@ function _paraTestes({ criar, intervalo, intervaloFotos } = {}) {
 
 module.exports = {
   donoDe, cidDe, paraJid, lerMensagem, status, pronto, temSessao, conectar, desconectar, fechar, carregarGrupos, resumoGrupos, enviar, foto, convite,
-  conversas, mensagens, salvarWebhook, lerWebhook, iniciar, limpar, pastaSessao, pastaFotos, _paraTestes,
+  conversas, mensagens, salvarWebhook, lerWebhook, lerAjustes, salvarAjustes, reiniciar, socket, enviarConteudo, meuJid, gruposMudaram, linhaMensagem, ultimaMensagem,
+  textoEditado, nomeConhecido, etiquetas, contatos, baixarMidia, iniciar, limpar, pastaSessao, pastaFotos, _paraTestes,
 };

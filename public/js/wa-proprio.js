@@ -171,6 +171,9 @@
     el('wap-chave-estado').textContent = c.existe ? `Há uma chave ativa, criada em ${hora(c.criada_em)}.` : 'Nenhuma chave criada.';
     el('wap-chave-gerar').textContent = c.existe ? 'Trocar chave' : 'Gerar chave';
     el('wap-chave-apagar').hidden = !c.existe;
+    const a = await pedir('/ajustes');
+    document.querySelectorAll('[data-wap-ajuste]').forEach(c => { c.checked = Boolean(a[c.dataset.wapAjuste]); });
+    if (document.activeElement !== el('wap-msg-chamada')) el('wap-msg-chamada').value = a.mensagem_chamada || '';
     const w = await pedir('/webhook');
     if (document.activeElement !== el('wap-webhook-url')) el('wap-webhook-url').value = w.url || '';
   }
@@ -199,6 +202,15 @@
       saida.textContent = r.segredo ? `Salvo. Use este segredo para conferir a assinatura (ele não aparece de novo): ${r.segredo}` : 'Aviso desligado.';
     } catch (err) { saida.textContent = err.message; }
   });
+
+  // ── Comportamento do número ──
+  async function salvarAjuste(corpo) {
+    const saida = el('wap-ajustes-msg');
+    try { await pedir('/ajustes', { method: 'PUT', body: corpo }); saida.textContent = 'Salvo.'; }
+    catch (err) { saida.textContent = err.message; }
+  }
+  document.querySelectorAll('[data-wap-ajuste]').forEach(c => c.addEventListener('change', () => salvarAjuste({ [c.dataset.wapAjuste]: c.checked })));
+  el('wap-msg-chamada').addEventListener('change', e => salvarAjuste({ mensagem_chamada: e.target.value }));
 
   // ── Atualização: QR code e mensagens enquanto a parte estiver na tela ──
   let chaveLida = false;

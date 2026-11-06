@@ -10,6 +10,7 @@ const auth = require('../auth');
 const db = require('../db');
 const clientes = require('../clientes');
 const proprio = require('../whatsapp-proprio');
+const f = require('../whatsapp-funcoes');
 const temas = require('../temas-grupos');
 
 // A primeira versão tinha uma chave só, do site: passa para a tabela por dono
@@ -19,10 +20,13 @@ if (db.get(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'whatsap
 }
 
 const router = express.Router();
-const lerJson = express.json({ limit: '12mb' });
+const lerJson = express.json({ limit: '45mb' }); // fotos, vídeos e documentos em base64
+// Erro do próprio WhatsApp (sem permissão, grupo inexistente) não é defeito do site
 const erro = (res, err) => {
-  if (!err.status) console.error('[WHATSAPP]', err.message);
-  res.status(err.status || 500).json({ error: err.message });
+  const doWhatsapp = err.output?.statusCode;
+  if (!err.status && !doWhatsapp) console.error('[WHATSAPP]', err.message);
+  const status = err.status || (doWhatsapp >= 400 && doWhatsapp < 500 && doWhatsapp !== 401 ? doWhatsapp : doWhatsapp ? 502 : 500);
+  res.status(status).json({ error: err.message });
 };
 const hash = chave => crypto.createHash('sha256').update(String(chave)).digest('hex');
 const semCache = (req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); };
@@ -112,6 +116,69 @@ function rotasComuns(r) {
     res.json({ ok: true, mensagem: 'Rodada iniciada: as ofertas saem com o intervalo configurado.' });
   }));
   r.get('/resultados', async_((req, res) => res.json(require('../envio-grupos').resultados(cid(req), req.query.dias))));
+
+  // ── Outros tipos de mensagem ──
+  const envio = (caminho, fn) => r.post(`/enviar/${caminho}`, lerJson, async_(async (req, res) => {
+    const saida = await fn(req.dono, req.body || {});
+    res.json(typeof saida === 'string' ? { ok: true, id: saida } : { ok: true, ...saida });
+  }));
+  envio('texto', f.enviarTexto);
+  envio('midia', f.enviarMidia);
+  envio('audio', f.enviarAudio);
+  envio('nota-de-video', f.enviarNotaDeVideo);
+  envio('figurinha', f.enviarFigurinha);
+  envio('localizacao', f.enviarLocalizacao);
+  envio('contato', f.enviarContato);
+  envio('enquete', f.enviarEnquete);
+  envio('reacao', f.enviarReacao);
+  envio('status', f.enviarStatus);
+
+  // Ação com corpo JSON que devolve o resultado direto
+  const acao = (metodo, caminho, fn) => r[metodo](caminho, lerJson, async_(async (req, res) => res.json(await fn(req))));
+
+  // ── Mensagens e conversas ──
+  acao('post', '/mensagens/lidas', req => f.marcarLidas(req.dono, req.body || {}));
+  acao('post', '/mensagens/apagar', req => f.apagarParaTodos(req.dono, req.body || {}));
+  acao('post', '/mensagens/editar', req => f.editarMensagem(req.dono, req.body || {}));
+  acao('post', '/mensagens/midia', req => f.baixarMidia(req.dono, req.body || {}));
+  acao('post', '/conversas/arquivar', req => f.arquivarConversa(req.dono, req.body || {}));
+  acao('post', '/conversas/nao-lida', req => f.marcarNaoLida(req.dono, req.body || {}));
+  acao('post', '/presenca', req => f.presenca(req.dono, req.body || {}));
+  acao('post', '/numeros', req => f.conferirNumeros(req.dono, req.body || {}));
+  r.get('/contatos', async_((req, res) => res.json({ contatos: proprio.contatos(req.dono, req.query) })));
+  acao('post', '/bloqueios', req => f.bloquear(req.dono, req.body || {}));
+  r.get('/bloqueios', async_(async (req, res) => res.json(await f.bloqueados(req.dono))));
+
+  // ── Perfil e privacidade ──
+  r.get('/perfil', async_(async (req, res) => res.json(await f.perfilDe(req.dono, req.query.numero))));
+  acao('put', '/perfil', req => f.atualizarPerfil(req.dono, req.body || {}));
+  acao('put', '/perfil/foto', req => f.trocarFotoPerfil(req.dono, req.body || {}));
+  r.delete('/perfil/foto', async_(async (req, res) => res.json(await f.removerFotoPerfil(req.dono))));
+  r.get('/privacidade', async_(async (req, res) => res.json(await f.lerPrivacidade(req.dono))));
+  acao('put', '/privacidade', req => f.salvarPrivacidade(req.dono, req.body || {}));
+
+  // ── Administração de grupos ──
+  acao('post', '/grupos', req => f.criarGrupo(req.dono, req.body || {}));
+  r.get('/grupos/:id', async_(async (req, res) => res.json(await f.detalhesDoGrupo(req.dono, req.params.id))));
+  acao('put', '/grupos/:id', req => f.editarGrupo(req.dono, req.params.id, req.body || {}));
+  acao('put', '/grupos/:id/foto', req => f.trocarFotoGrupo(req.dono, req.params.id, req.body || {}));
+  acao('post', '/grupos/:id/convite/novo', req => f.novoConvite(req.dono, req.params.id));
+  acao('post', '/grupos/:id/convite/enviar', req => f.enviarConvite(req.dono, req.params.id, req.body || {}));
+  acao('post', '/grupos/:id/participantes', req => f.participantes(req.dono, req.params.id, req.body || {}));
+  acao('put', '/grupos/:id/ajustes', req => f.ajustarGrupo(req.dono, req.params.id, req.body || {}));
+  r.delete('/grupos/:id', async_(async (req, res) => res.json(await f.sairDoGrupo(req.dono, req.params.id))));
+  r.get('/convites/:codigo', async_(async (req, res) => res.json(await f.infoConvite(req.dono, req.params.codigo))));
+  acao('post', '/convites/:codigo', req => f.aceitarConvite(req.dono, req.params.codigo));
+
+  // ── Etiquetas e catálogo (WhatsApp Business) ──
+  r.get('/etiquetas', async_((req, res) => res.json({ etiquetas: proprio.etiquetas(req.dono) })));
+  acao('post', '/etiquetas', req => f.etiquetar(req.dono, req.body || {}));
+  r.get('/catalogo', async_(async (req, res) => res.json(await f.catalogo(req.dono, req.query.numero, req.query.limite))));
+  r.get('/colecoes', async_(async (req, res) => res.json(await f.colecoes(req.dono, req.query.numero))));
+
+  // ── Ajustes do número ──
+  r.get('/ajustes', async_((req, res) => res.json(proprio.lerAjustes(req.dono))));
+  acao('put', '/ajustes', req => proprio.salvarAjustes(req.dono, req.body || {}));
 }
 
 // Painéis com login: conectar pelo QR code, desconectar, chave e aviso para outros programas
@@ -119,6 +186,7 @@ function rotasDoPainel(r) {
   r.get('/status', (req, res) => res.json(proprio.status(req.dono)));
   r.post('/conectar', async_(async (req, res) => res.json(await proprio.conectar(req.dono))));
   r.post('/desconectar', async_(async (req, res) => res.json(await proprio.desconectar(req.dono))));
+  r.post('/reiniciar', async_(async (req, res) => res.json(await proprio.reiniciar(req.dono))));
   r.get('/chave', (req, res) => {
     const c = db.get('SELECT criada_em FROM whatsapp_api_chaves WHERE dono = ?', req.dono);
     res.json({ existe: Boolean(c), criada_em: c?.criada_em || null });

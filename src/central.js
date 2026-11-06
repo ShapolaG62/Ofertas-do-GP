@@ -12,8 +12,9 @@ function areas(req) {
   const u = users.currentUser(req);
   const ativo = u && u.status === 'active' ? u : null;
   if (access.canSeeOffers(req)) lista.push({ id: 'ofertas', nome: 'Ofertas', inicio: '/' });
-  if (clientes.atual(req)) lista.push({ id: 'afiliado', nome: 'Afiliado', inicio: '/cliente' });
-  if (ativo?.tipo === 'empresa') lista.push({ id: 'loja', nome: 'Minha loja', inicio: '/conta?aba=painel' });
+  // O administrador sempre vê estas duas áreas. Sem conta entrada, elas abrem a tela de login: os dados continuam protegidos pela conta de cada uma.
+  if (admin || clientes.atual(req)) lista.push({ id: 'afiliado', nome: 'Afiliado', inicio: '/cliente' });
+  if (admin || ativo?.tipo === 'empresa') lista.push({ id: 'loja', nome: admin ? 'Loja parceira' : 'Minha loja', inicio: '/conta?aba=painel' });
   if (ativo && !(ativo.tipo === 'afiliado' && ativo.cliente_id)) lista.push({ id: 'conta', nome: 'Minha conta', inicio: '/conta?aba=meuperfil' });
   if (!admin && ativo) {
     const cargos = require('./cargos');

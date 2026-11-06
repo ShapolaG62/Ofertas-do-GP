@@ -297,7 +297,8 @@
     const me = await api('/api/conta/me');
     ME = me.user; LOJA = me.loja;
     // Administrador logado vai para o painel (ou para a página que pediu).
-    if (!ME && me.admin) return goToSite('/admin');
+    // Na central, a área Loja parceira mostra o login da loja em vez de voltar ao painel.
+    if (!ME && me.admin && !naCentral()) return goToSite('/admin');
     if (!ME) return showLogin();
     if (ME.status === 'onboarding') return showProfileChoice();
     if (ME.assinatura_vencida) {
@@ -335,6 +336,10 @@
     $('#auth-error').textContent = 'O login com Google ainda não foi ativado pelo administrador do site. Por enquanto, use e-mail e senha.';
     $('#auth-error').hidden = false;
   });
+
+  function naCentral() {
+    try { return window.top !== window && Boolean(window.top.OfertouCentral); } catch { return false; }
+  }
 
   // Depois de entrar, uma conta liberada vai direto para as ofertas (ou para a página que tentou abrir).
   function goToSite(padrao = '/') {
@@ -408,7 +413,9 @@
     if (r.admin) return goToSite('/admin');
     location.hash = '';
     const me = await api('/api/conta/me');
-    if (me.user?.status === 'active') return goToSite(me.user.tipo === 'afiliado' && me.user.ferramenta ? '/cliente' : '/');
+    const ferramenta = me.user?.tipo === 'afiliado' && me.user.ferramenta;
+    if (me.user?.status === 'active' && naCentral() && !ferramenta) return location.replace('/conta?aba=painel');
+    if (me.user?.status === 'active') return goToSite(ferramenta ? '/cliente' : '/');
     route();
   });
 

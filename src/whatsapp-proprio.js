@@ -646,6 +646,7 @@ async function esquecer(dono) {
   await desconectar(dono);
   db.run('DELETE FROM whatsapp_ajustes WHERE dono = ?', dono);
   db.run('DELETE FROM whatsapp_webhooks WHERE dono = ?', dono);
+  try { db.run('DELETE FROM whatsapp_api_chaves WHERE dono = ?', dono); } catch { /* tabela criada com as rotas */ }
 }
 // Quem tem sessão salva neste servidor
 function donosComSessao() {

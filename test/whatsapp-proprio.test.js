@@ -335,7 +335,11 @@ test('acesso excluído: apaga mensagens, contatos, ajustes e avisos só daquele 
     db.run(`INSERT INTO whatsapp_ajustes (dono, valores) VALUES (?, '{}')`, dono);
     db.run(`INSERT INTO whatsapp_webhooks (dono, url, segredo) VALUES (?, 'https://x.test', 's')`, dono);
   }
+  db.db.exec('CREATE TABLE IF NOT EXISTS whatsapp_api_chaves (dono TEXT PRIMARY KEY, hash TEXT NOT NULL UNIQUE, criada_em TEXT)');
+  db.run("INSERT INTO whatsapp_api_chaves (dono, hash) VALUES ('c:901', 'h901'), ('c:902', 'h902')");
   await proprio.esquecer('c:901');
+  assert.equal(db.get("SELECT COUNT(*) n FROM whatsapp_api_chaves WHERE dono = 'c:901'").n, 0, 'a chave de API sai junto');
+  assert.equal(db.get("SELECT COUNT(*) n FROM whatsapp_api_chaves WHERE dono = 'c:902'").n, 1);
   const conta = (tabela, dono) => db.get(`SELECT COUNT(*) n FROM ${tabela} WHERE dono = ?`, dono).n;
   for (const tabela of ['whatsapp_mensagens', 'whatsapp_contatos', 'whatsapp_ajustes', 'whatsapp_webhooks']) {
     assert.equal(conta(tabela, 'c:901'), 0, tabela);

@@ -525,7 +525,7 @@ router.get('/api/admin/whatsapp/status', async (req, res) => {
 
 router.get('/api/admin/whatsapp/grupos', async (req, res) => {
   try {
-    res.json({ grupos: await whatsapp.listarGrupos(settings.getAll()), escolhidos: whatsapp.gruposEscolhidos(settings.getAll()) });
+    res.json({ grupos: await whatsapp.listarGrupos(settings.getAll()), escolhidos: whatsapp.gruposEscolhidos(settings.getAll()), categorias: Object.entries(require('../busca-ofertas').CATEGORIAS).map(([id, nome]) => ({ id, nome })), });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

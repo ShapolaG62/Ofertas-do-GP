@@ -41,6 +41,7 @@ function saude() {
   } catch { /* sem backup */ }
   const erros = require('./erros-site').recentes(24);
   if (erros.length) alertas.push({ texto: `<b>${erros.reduce((t, e) => t + e.vezes, 0)} erro(s) no servidor</b> nas últimas 24 h: veja a lista no fim do resumo`, aba: 'dash', forte: true });
+  if (require('./envio-avisos').problema(null)) alertas.push({ texto: '<b>O WhatsApp está fora do ar:</b> as postagens agendadas não vão sair até conectar de novo', aba: 'social', forte: true });
   const suspeitas = busca.suspeitas(0).total;
 
   // Cliques dos últimos 7 dias

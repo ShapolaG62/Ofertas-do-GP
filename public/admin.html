@@ -656,13 +656,14 @@
   /* Abas das telas da equipe */
   .tabs-line [aria-selected="true"] { background: var(--azul-soft); color: var(--azul-texto); border-color: transparent; }
 </style>
-<script src="/js/tema.js?v=20261289"></script>
-<script src="/js/dialogo.js?v=20261289"></script>
-<script src="/js/modelo-post.js?v=20261289"></script>
-<script src="/js/avisos-entrada.js?v=20261289"></script>
-<script src="/js/capi-minerando.js?v=20261289" defer></script>
-<script src="/js/cadastro-auto.js?v=20261289" defer></script>
-<script src="/js/seletor.js?v=20261289" defer></script>
+<script src="/js/tema.js?v=20261290"></script>
+<script src="/js/dialogo.js?v=20261290"></script>
+<script src="/js/modelo-post.js?v=20261290"></script>
+<script src="/js/avisos-entrada.js?v=20261290"></script>
+<script src="/js/capi-minerando.js?v=20261290" defer></script>
+<script src="/js/cadastro-auto.js?v=20261290" defer></script>
+<script src="/js/seletor.js?v=20261290" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261290">
 </head>
 <body>
 <div class="wrap">
@@ -1536,7 +1537,7 @@
           <div id="wa-msg"></div>
           <div id="wa-groups-box" class="hidden">
             <h3>Grupos de destino</h3>
-            <p class="hint">Marque os grupos que vão receber as postagens. O número precisa ser membro (de preferência administrador) de cada grupo.</p>
+            <p class="hint">Marque os grupos que vão receber as postagens. O número precisa ser membro (de preferência administrador) de cada grupo. Em "Temas", escolha o que cada grupo recebe; sem tema marcado, ele recebe todas as ofertas.</p>
             <div id="wa-groups" style="display:grid;gap:6px;max-height:280px;overflow:auto"></div>
             <div class="actions" style="justify-content:flex-start"><button class="btn primary" type="button" id="wa-save-groups">Salvar grupos</button></div>
           </div>
@@ -1716,6 +1717,7 @@ POST /api/wa/enviar
         <table><thead><tr><th>Grupo</th><th>Membros</th><th>Entradas (30 dias)</th><th>Saídas (30 dias)</th></tr></thead><tbody id="mb-grupos"></tbody></table>
         <p class="hint" style="margin-top:10px">O total é conferido uma vez por dia. Para contar quem entra e sai, toque em Ativar no WhatsApp no grupo de automação. Só guardamos as contagens, nunca o número das pessoas.</p>
       </div>
+      <div class="panel" id="envio-resultados" data-aba="membros"></div>
     </div>
 
     <div class="tab-body hidden" data-body="ads">
@@ -2052,28 +2054,30 @@ POST /api/wa/enviar
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261289"></script>
-<script src="/js/wa-proprio.js?v=20261289"></script>
+<script src="/js/admin.js?v=20261290"></script>
+<script src="/js/wa-temas.js?v=20261290"></script>
+<script src="/js/envio-resultados.js?v=20261290"></script>
+<script src="/js/wa-proprio.js?v=20261290"></script>
 <style>
   .wa-proprio [hidden] { display: none !important; }
   .wap-status { font-weight: 600; margin: 8px 0; overflow-wrap: anywhere; }
   .wap-qr { display: block; background: #fff; border-radius: 12px; padding: 8px; max-width: 100%; height: auto; }
   .wap-caixa { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .wap-conversas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; align-content: start; max-height: 240px; overflow: auto; }
-  .wap-conversa { display: block; width: 100%; min-height: 44px; text-align: left; padding: 8px 10px; border: 1px solid var(--line, #ddd); border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
-  .wap-conversa[aria-current="true"] { border-color: var(--brand-strong); border-width: 2px; }
+  .wap-conversa { display: block; width: 100%; min-height: 44px; text-align: left; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+  .wap-conversa[aria-current="true"] { border-color: var(--green); border-width: 2px; }
   .wap-conversa b, .wap-conversa small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .wap-chat { min-width: 0; }
   .wap-chat h3 { margin-top: 0; overflow-wrap: anywhere; }
   .wap-mensagens { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow: auto; margin-bottom: 10px; }
-  .wap-bolha { align-self: flex-start; max-width: 85%; padding: 7px 10px; border: 1px solid var(--line, #ddd); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .wap-bolha { align-self: flex-start; max-width: 85%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
   .wap-bolha.eu { align-self: flex-end; background: rgba(37, 211, 102, .14); }
   .wap-bolha small { display: block; opacity: .7; font-size: 12px; }
   .wap-form { display: flex; gap: 8px; align-items: flex-end; }
   .wap-form textarea { flex: 1; min-width: 0; min-height: 64px; height: 64px; }
   .wap-form button { min-height: 44px; }
-  .wap-chave { font-family: monospace; overflow-wrap: anywhere; padding: 8px 10px; border: 1px solid var(--line, #ddd); border-radius: 10px; }
-  .wap-doc { font-size: 13px; overflow-x: auto; padding: 10px; margin: 12px 0 0; border: 1px solid var(--line, #ddd); border-radius: 10px; }
+  .wap-chave { font-family: monospace; overflow-wrap: anywhere; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
+  .wap-doc { font-size: 13px; overflow-x: auto; padding: 10px; margin: 12px 0 0; border: 1px solid var(--border); border-radius: 10px; }
   @media (min-width: 760px) {
     .wap-caixa { grid-template-columns: 260px minmax(0, 1fr); }
     .wap-conversas { max-height: 440px; }

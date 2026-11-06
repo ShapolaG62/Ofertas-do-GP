@@ -10,6 +10,9 @@ const whatsapp = require('./whatsapp');
 const GRAPH = 'https://graph.facebook.com/v23.0';
 const TIMEOUT = 25000;
 const LOCAL_IMAGE = /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/;
+// Preço de cada postagem: permite repostar quando o preço cai (src/agenda.js)
+if (!db.all('PRAGMA table_info(social_posts)').some(c => c.name === 'preco')) db.db.exec('ALTER TABLE social_posts ADD COLUMN preco REAL');
+const ajustes = { pausaEntreGrupos: true }; // os testes desligam a pausa
 
 const REDES = {
   telegram: {
@@ -108,7 +111,7 @@ const apiError = (err, rede) => {
     if (status === 403) return new Error(`O X recusou a publicação (permissão "Read and write" ativa? texto repetido?): ${msg}`);
     if (status === 429) return new Error('Limite de publicações do X atingido. Tente mais tarde.');
   }
-  return new Error(String(msg));
+  return new Error(String(msg || err.errors?.[0]?.message || err.code || 'O serviço não informou o motivo.'));
 };
 
 async function postTelegram(o, texto, s) {
@@ -198,22 +201,30 @@ async function postX(o, _texto, s) {
   } catch (err) { throw apiError(err, 'X'); }
 }
 
-// WhatsApp: foto + texto em cada grupo escolhido, com uma pausa aleatória entre grupos (parece menos robô).
+// WhatsApp: foto + texto em cada grupo do tema da oferta, com uma pausa aleatória entre grupos (parece menos robô).
+// Cada grupo recebe um link próprio para contar os cliques; o que falhar é tentado de novo (src/envio-grupos.js).
 async function postWhatsApp(o, texto, s) {
-  const grupos = whatsapp.gruposEscolhidos(s);
+  const envioGrupos = require('./envio-grupos');
+  const grupos = whatsapp.gruposDaOferta(s, o.categoria);
+  if (!grupos.length) throw new Error('Nenhum grupo de destino recebe ofertas deste tema.');
   const imagem = postImage(o, s); // endereço da foto da loja
   const ok = [], erros = [];
+  let novasTentativas = 0;
   for (let i = 0; i < grupos.length; i++) {
+    const envio = await envioGrupos.preparar(o, grupos[i], s, texto);
     try {
-      await whatsapp.enviar(s, grupos[i].id, { imagem, texto });
+      await whatsapp.enviar(s, grupos[i].id, { imagem, texto: envio.texto });
+      envioGrupos.confirmar(envio.id);
       ok.push(grupos[i].nome);
     } catch (err) {
-      erros.push(`${grupos[i].nome}: ${err.message}`);
+      if (envioGrupos.falhou(envio.id, err)) novasTentativas++;
+      erros.push(`${grupos[i].nome}: ${envioGrupos.motivoDe(err)}`);
     }
-    if (i < grupos.length - 1) await new Promise(r => setTimeout(r, 6000 + Math.random() * 6000));
+    if (ajustes.pausaEntreGrupos && i < grupos.length - 1) await new Promise(r => setTimeout(r, 6000 + Math.random() * 6000));
   }
-  if (!ok.length) throw new Error(erros.join(' | '));
-  return `enviado para ${ok.length} grupo(s)${erros.length ? `; falhou em ${erros.join(' | ')}` : ''}`;
+  const depois = novasTentativas ? ` (nova tentativa em 5 min em ${novasTentativas} grupo(s))` : '';
+  if (!ok.length) throw new Error(`${erros.join(' | ')}${depois}`);
+  return `enviado para ${ok.length} grupo(s)${erros.length ? `; falhou em ${erros.join(' | ')}${depois}` : ''}`;
 }
 
 // Título das postagens: no máximo ~2 linhas na tela do celular (corta na palavra e põe "…").
@@ -260,10 +271,10 @@ async function publicar(offerId, redes, texto, autor, ctx = {}) {
     if (motivo) r = { rede: id, ok: false, mensagem: motivo };
     else {
       try { r = { rede: id, ok: true, mensagem: await rede.publicar(o, msg, s) }; }
-      catch (err) { r = { rede: id, ok: false, mensagem: err.message.slice(0, 300) }; }
+      catch (err) { r = { rede: id, ok: false, mensagem: String(err.message || err.errors?.[0]?.message || err.code || 'O serviço não informou o motivo.').slice(0, 300) }; }
     }
-    db.run('INSERT INTO social_posts (offer_id, produto, rede, ok, mensagem, autor, cliente_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      o.id, o.produto, id, r.ok ? 1 : 0, r.mensagem, autor, ctx.clienteId || null);
+    db.run('INSERT INTO social_posts (offer_id, produto, rede, ok, mensagem, autor, cliente_id, preco) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      o.id, o.produto, id, r.ok ? 1 : 0, r.mensagem, autor, ctx.clienteId || null, o.preco_atual);
     resultados.push(r);
   }
   return resultados;
@@ -280,4 +291,4 @@ function historico(offerIds, clienteId = null) {
   return out;
 }
 
-module.exports = { REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, textoPadrao, tituloCurto, oauthHeader, toTelegramHtml, plain, textoCurto };
+module.exports = { ajustes, REDES, listarRedes, publicar, historico, postLink, postImage, slugOf, textoPadrao, tituloCurto, oauthHeader, toTelegramHtml, plain, textoCurto };

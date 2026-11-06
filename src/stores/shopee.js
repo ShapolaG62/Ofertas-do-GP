@@ -112,6 +112,7 @@ async function gerarLink(url, s) {
 }
 
 module.exports = {
+  porLink,
   gerarLink,
   gql,
   id: 'shopee',

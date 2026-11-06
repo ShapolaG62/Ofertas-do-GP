@@ -560,4 +560,4 @@ function suspeitas(limite = 200) {
   return { total: l.length, itens: l.sort((a, b) => b.desconto_pct - a.desconto_pct).slice(0, limite).map(o => ({ ...publico(o), motivo: o._susp })) };
 }
 
-module.exports = { buscar, mix, aquecer, montar, pronta, aguardar, atualizar, ativas, suspeitas, paraPostar, POR_PAGINA };
+module.exports = { CATEGORIAS, buscar, mix, aquecer, montar, pronta, aguardar, atualizar, ativas, suspeitas, paraPostar, POR_PAGINA };

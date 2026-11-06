@@ -140,6 +140,18 @@ router.get('/o/:id', (req, res) => {
 <meta http-equiv="refresh" content="0;url=/oferta/${o.id}"></head><body><a href="/oferta/${o.id}">${h(titulo)}</a></body></html>`);
 });
 
+// Link de cada envio a um grupo de WhatsApp (src/envio-grupos.js): conta o clique e segue para o destino de sempre.
+router.get('/p/:token', (req, res) => {
+  const envioGrupos = require('../envio-grupos');
+  const envio = envioGrupos.porToken(req.params.token);
+  if (!envio) return res.redirect('/');
+  res.set('Cache-Control', 'no-store');
+  const ua = String(req.get('user-agent') || '');
+  if (ROBO_PREVIA.test(ua) || /bot|crawl|spider|slurp|headless/i.test(ua)) return res.redirect(`/o/${envio.offer_id}`); // prévia do link: não é clique
+  envioGrupos.registrarClique(envio, req.ip);
+  res.redirect(envio.cliente_id ? `/ir/${envio.cliente_id}-${envio.offer_id}` : `/oferta/${envio.offer_id}?via=post`);
+});
+
 // Redireciona para a loja (link de afiliado). Só funciona para ofertas válidas e visíveis.
 router.get('/oferta/:slug', (req, res) => {
   const id = Number(String(req.params.slug).split('-').pop());

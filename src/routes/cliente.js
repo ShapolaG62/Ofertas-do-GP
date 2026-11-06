@@ -69,7 +69,7 @@ router.get('/api/cliente/whatsapp/status', async (req, res) => {
 
 router.get('/api/cliente/whatsapp/grupos', async (req, res) => {
   const s = clientes.config(req.cliente.id);
-  try { res.json({ grupos: await whatsapp.listarGrupos(s), escolhidos: whatsapp.gruposEscolhidos(s) }); } catch (err) { sendError(res, err); }
+  try { res.json({ grupos: await whatsapp.listarGrupos(s), escolhidos: whatsapp.gruposEscolhidos(s), categorias: Object.entries(require('../busca-ofertas').CATEGORIAS).map(([id, nome]) => ({ id, nome })), }); } catch (err) { sendError(res, err); }
 });
 
 // Dashboard do painel: envios no período (por dia, ok e falha), conexões, fila e cliques nos links do cliente

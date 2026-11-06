@@ -265,8 +265,19 @@ async function ofertaDoProduto(productId, s) {
   return dealFor(productId, await getToken(s));
 }
 
+// Preço de um anúncio agora, pela API oficial, logo antes de postar. null = não deu para conferir.
+async function anuncioAgora(itemId, s) {
+  if (!s.ml_client_id || !s.ml_client_secret || !/^MLB\d+$/.test(String(itemId))) return null;
+  const r = await apiGet(`/items/${itemId}`, await getToken(s));
+  if (r.status === 404) return { disponivel: false };
+  if (!ok(r)) return null;
+  if (r.data.status !== 'active' || r.data.available_quantity === 0) return { disponivel: false };
+  return { preco: Number(r.data.price), anterior: Number(r.data.original_price) || null };
+}
+
 module.exports = {
   ofertaDoProduto,
+  anuncioAgora,
   varredura,
   id: 'mercadolivre',
   name: 'Mercado Livre',

@@ -7,8 +7,12 @@ const settings = require('./settings');
 const offers = require('./offers');
 const social = require('./social');
 const clientes = require('./clientes');
+const whatsapp = require('./whatsapp');
+const precoNaHora = require('./preco-na-hora');
+const avisos = require('./envio-avisos');
 
 let timer = null;
+let pausaEntreOfertas = true; // os testes desligam a pausa
 const rodando = new Set();          // donos com rodada em andamento ('site' ou id do cliente)
 const ultimaExecucao = new Map();
 
@@ -91,16 +95,53 @@ function filtroDoDono(s) {
   };
 }
 
+// Repetição: o mesmo produto (mesmo por outro vendedor) não volta em 7 dias, a não ser que o preço tenha caído de verdade:
+// pelo menos 10% abaixo do menor preço postado na semana e depois de 24 horas da última postagem.
+const QUEDA_PARA_REPOSTAR = 0.9;
+const PALAVRAS_VAZIAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'com', 'para', 'por', 'em', 'a', 'o', 'as', 'os', 'kit', 'novo', 'original']);
+// Mesmo produto com outro título ou vendedor: as 6 primeiras palavras que importam, em qualquer ordem
+function impressaoDoProduto(nome) {
+  const palavras = semAcento(nome).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(p => p && !PALAVRAS_VAZIAS.has(p)).slice(0, 6);
+  return [...new Set(palavras)].sort().join(' ');
+}
+function regraDeRepeticao(cid) {
+  const porId = new Map(), porNome = new Map();
+  const juntar = (mapa, chave, p) => {
+    const atual = mapa.get(chave) || { menor: null, semPreco: false, ultima: 0 };
+    const preco = Number(p.preco);
+    if (preco > 0) atual.menor = atual.menor === null ? preco : Math.min(atual.menor, preco);
+    else atual.semPreco = true; // postagem antiga, de antes de guardar o preço
+    atual.ultima = Math.max(atual.ultima, Date.parse(`${String(p.created_at).replace(' ', 'T')}Z`) || 0);
+    mapa.set(chave, atual);
+  };
+  for (const p of db.all(`SELECT offer_id, produto, preco, created_at FROM social_posts WHERE ok = 1 AND cliente_id IS ? AND created_at > datetime('now', '-7 days')`, cid)) {
+    juntar(porId, p.offer_id, p);
+    juntar(porNome, impressaoDoProduto(p.produto), p);
+  }
+  const bloqueia = (reg, o) => {
+    if (!reg) return false;
+    if (reg.semPreco || reg.menor === null || Date.now() - reg.ultima < 24 * 3600000) return true;
+    return !(Number(o.preco_atual) <= reg.menor * QUEDA_PARA_REPOSTAR);
+  };
+  return { porOferta: o => bloqueia(porId.get(o.id), o), porProduto: o => bloqueia(porNome.get(impressaoDoProduto(o.produto)), o) };
+}
+
 // Melhores ofertas do momento: as de maior nota (chance de venda + comissão extra, sem descontos suspeitos), categorias
-// variadas, nada que o mesmo dono tenha postado nos últimos 7 dias, respeitando os filtros do dono. Para o afiliado, só
-// das lojas em que ele já tem link de afiliado (postar das outras não rende comissão).
-function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid)) {
+// variadas, sem repetir produto (regra acima), respeitando os filtros do dono. Para o afiliado, só das lojas em que ele já
+// tem link de afiliado (postar das outras não rende comissão).
+// Grupos por tema: cada grupo com tema tem a vez de receber a melhor oferta dele. soTemas: nada fora dos temas dos grupos
+// (quando o WhatsApp é a única rede). girar: passa a vez para o próximo grupo.
+const vezDoTema = new Map();
+function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid), { soTemas = false, girar = false } = {}) {
   const passa = filtroDoDono(s);
+  const repeticao = regraDeRepeticao(cid);
+  const grupos = whatsapp.gruposEscolhidos(s);
+  const comTema = grupos.filter(g => g.categorias.length);
+  const temasAceitos = soTemas && grupos.length && comTema.length === grupos.length ? new Set(comTema.flatMap(g => g.categorias)) : null;
   const pagas = cid ? new Set(clientes.lojasComAfiliado(s)) : null;
   const limite = Date.now() - 12 * 3600000;
-  const postadas = new Set(db.all(`SELECT DISTINCT offer_id FROM social_posts WHERE ok = 1 AND cliente_id IS ? AND created_at > datetime('now', '-7 days')`, cid).map(r => r.offer_id));
-  let rows = require('./busca-ofertas').paraPostar(o => !postadas.has(o.id) && !excluir.has(o.id) && passa(o)
-    && Date.parse(`${String(o.last_seen_at).replace(' ', 'T')}Z`) > limite && (!pagas?.size || pagas.has(o.store_id))).slice(0, 1500);
+  let rows = require('./busca-ofertas').paraPostar(o => !repeticao.porOferta(o) && !excluir.has(o.id) && passa(o)
+    && (!temasAceitos || temasAceitos.has(o.categoria)) && Date.parse(`${String(o.last_seen_at).replace(' ', 'T')}Z`) > limite && (!pagas?.size || pagas.has(o.store_id))).slice(0, 1500);
   // Só com foto pública (a postagem sai com a imagem)
   const comFoto = new Set();
   for (let i = 0; i < rows.length; i += 500) {
@@ -108,10 +149,26 @@ function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid)) {
     for (const r of db.all(`SELECT id FROM offers WHERE id IN (${ids.map(() => '?').join(',')}) AND imagem LIKE 'https://%'`, ...ids)) comFoto.add(r.id);
   }
   rows = rows.filter(r => comFoto.has(r.id));
+  const vistos = new Set(); // o mesmo produto de vendedores diferentes entra uma vez só
+  rows = rows.filter(r => {
+    const k = impressaoDoProduto(r.produto);
+    if (vistos.has(k) || repeticao.porProduto(r)) return false;
+    vistos.add(k);
+    return true;
+  });
   const out = [], cats = new Set();
+  if (comTema.length) {             // cada grupo com tema, na sua vez
+    const inicio = vezDoTema.get(dono(cid)) || 0;
+    if (girar) vezDoTema.set(dono(cid), inicio + 1);
+    for (let i = 0; i < comTema.length && out.length < qtd; i++) {
+      const g = comTema[(inicio + i) % comTema.length];
+      const r = rows.find(x => g.categorias.includes(x.categoria) && !out.includes(x.id) && offers.isActive(x.id));
+      if (r) { out.push(r.id); cats.add(r.categoria); }
+    }
+  }
   for (const r of rows) {           // primeiro uma por categoria
     if (out.length >= qtd) break;
-    if (cats.has(r.categoria) || !offers.isActive(r.id)) continue;
+    if (cats.has(r.categoria) || out.includes(r.id) || !offers.isActive(r.id)) continue;
     cats.add(r.categoria); out.push(r.id);
   }
   for (const r of rows) {           // completa se faltar
@@ -127,58 +184,89 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
   if (rodando.has(d)) return { erro: 'Já existe uma postagem agendada em andamento.' };
   const s = configDe(cid);
   const prontas = redesAgenda(s).filter(id => !social.REDES[id].pronta(s));
-  if (!prontas.length) return { erro: 'Nenhuma rede do agendamento está configurada.' };
+  if (!prontas.length) {
+    const erro = 'Nenhuma rede do agendamento está configurada.';
+    if (motivo !== 'manual') avisos.avisar(cid, { tipo: 'sem-rede', titulo: 'As postagens agendadas não saíram', texto: `${erro} Confira as redes e os grupos no painel.` });
+    return { erro };
+  }
   rodando.add(d);
   const qtd = qtdForcada || Math.min(Math.max(parseInt(s.agenda_qtd, 10) || 5, 1), 20);
   const intervalo = prontas.includes('whatsapp') ? Math.min(Math.max(Number(s.whatsapp_intervalo_s) || 90, 20), 900) * 1000 : 5000;
   const feitos = [];
+  let conferidos = 0;
+  const pulados = [];
   const quem = cid ? `cliente ${cid}` : 'site';
+  const soWhatsapp = prontas.length === 1 && prontas[0] === 'whatsapp';
   try {
-    // 1) fila (pula ofertas que saíram do ar)
-    const lote = [];
-    for (const q of db.all(`SELECT * FROM post_queue WHERE status = 'pendente' AND cliente_id IS ? ORDER BY id`, cid)) {
-      if (lote.length >= qtd) break;
-      if (!offers.isActive(q.offer_id)) {
-        db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Oferta saiu do ar antes de ser postada.' WHERE id = ?`, q.id);
-        continue;
+    // 1) fila (pula ofertas que saíram do ar); 2) completa com as melhores ofertas do momento
+    const fila = db.all(`SELECT * FROM post_queue WHERE status = 'pendente' AND cliente_id IS ? ORDER BY id`, cid);
+    const usadas = new Set(fila.map(q => q.offer_id));
+    let posFila = 0;
+    let candidatas = null;
+    const proxima = () => {
+      while (posFila < fila.length) {
+        const q = fila[posFila++];
+        if (!offers.isActive(q.offer_id)) {
+          db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Oferta saiu do ar antes de ser postada.' WHERE id = ?`, q.id);
+          continue;
+        }
+        // Antes de postar: oferta automática precisa ter o preço conferido na loja nas últimas 24 h
+        const v = db.get("SELECT fonte, last_seen_at < datetime('now', '-24 hours') AS velha FROM offers WHERE id = ?", q.offer_id);
+        if (v && v.fonte === 'auto' && v.velha) {
+          db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Preço não conferido na loja nas últimas 24 h (pode ter mudado).' WHERE id = ?`, q.id);
+          continue;
+        }
+        return { fila: q.id, offer_id: q.offer_id, texto: q.texto };
       }
-      // Antes de postar: oferta automática precisa ter o preço conferido na loja nas últimas 24 h
-      const v = db.get("SELECT fonte, last_seen_at < datetime('now', '-24 hours') AS velha FROM offers WHERE id = ?", q.offer_id);
-      if (v && v.fonte === 'auto' && v.velha) {
-        db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Preço não conferido na loja nas últimas 24 h (pode ter mudado).' WHERE id = ?`, q.id);
-        continue;
+      if (s.agenda_completar === '0') return null;
+      // Pega algumas a mais: as que tiverem mudado de preço na loja dão lugar à seguinte
+      if (!candidatas) {
+        const faltam = qtd - feitos.length;
+        candidatas = melhoresOfertas(faltam * 3 + 5, usadas, cid, s, { soTemas: soWhatsapp, girar: true }).map(id => ({ offer_id: id, texto: null }));
       }
-      lote.push({ fila: q.id, offer_id: q.offer_id, texto: q.texto });
-    }
-    // 2) completa com as melhores ofertas do momento
-    if (lote.length < qtd && s.agenda_completar !== '0') {
-      const ids = melhoresOfertas(qtd - lote.length, new Set(lote.map(l => l.offer_id)), cid, s);
-      lote.push(...ids.map(id => ({ offer_id: id, texto: null })));
-    }
-    log(`${quem} — ${motivo}: ${lote.length} oferta(s) em ${prontas.join(', ')}`);
+      return candidatas.shift() || null;
+    };
+    const temMais = () => posFila < fila.length || (s.agenda_completar !== '0' && (candidatas === null || candidatas.length > 0));
+    const descartar = (it, motivoPulo) => {
+      if (it.fila) db.run(`UPDATE post_queue SET status = 'expirado', resultado = ? WHERE id = ?`, motivoPulo, it.fila);
+      pulados.push({ offer_id: it.offer_id, motivo: motivoPulo });
+    };
+    log(`${quem} — ${motivo}: até ${qtd} oferta(s) em ${prontas.join(', ')}`);
 
-    for (let i = 0; i < lote.length; i++) {
-      const it = lote[i];
+    let it;
+    while (feitos.length < qtd && (it = proxima())) {
+      const categoria = db.get('SELECT categoria FROM offers WHERE id = ?', it.offer_id)?.categoria;
+      const redes = prontas.filter(id => id !== 'whatsapp' || whatsapp.gruposDaOferta(s, categoria).length);
+      if (!redes.length) { descartar(it, 'Nenhum grupo de destino recebe ofertas deste tema.'); continue; }
+      const conferencia = await precoNaHora.conferir(it.offer_id);
+      if (conferencia.acao === 'pular') { descartar(it, conferencia.motivo); continue; }
+      if (conferencia.situacao !== 'sem_checagem') conferidos++;
       const o = db.get('SELECT * FROM offers WHERE id = ?', it.offer_id);
+      // Texto da fila com o preço antigo: refaz pelo modelo, com o preço de agora
+      if (it.texto && conferencia.precoAntigo && it.texto.includes(Number(conferencia.precoAntigo).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))) it.texto = null;
       const link = cid ? await clientes.linkParaPostar(cid, o, s) : null; // cliente: link de afiliado dele
       if (link) o.__link = link;
       if (!it.texto) o.__link = await require('./encurtador').curto(social.postLink(o, s)); // link curto no post
       const texto = it.texto || social.textoPadrao(o, s);
       let resultados;
-      try { resultados = await social.publicar(it.offer_id, prontas, texto, `agenda (${motivo})`, cid ? { s, clienteId: cid, link } : {}); }
+      try { resultados = await social.publicar(it.offer_id, redes, texto, `agenda (${motivo})`, cid ? { s, clienteId: cid, link } : {}); }
       catch (err) { resultados = [{ rede: '-', ok: false, mensagem: err.message }]; }
       const ok = resultados.some(r => r.ok);
       const resumo = resultados.map(r => `${social.REDES[r.rede]?.nome || r.rede}: ${r.ok ? 'ok' : r.mensagem}`).join(' | ');
       if (it.fila) db.run(`UPDATE post_queue SET status = ?, resultado = ?, posted_at = datetime('now') WHERE id = ?`, ok ? 'postado' : 'erro', resumo, it.fila);
       feitos.push({ offer_id: it.offer_id, produto: o.produto, ok, resumo });
-      if (i < lote.length - 1) await sleep(intervalo);
+      if (pausaEntreOfertas && feitos.length < qtd && temMais()) await sleep(intervalo);
     }
   } finally {
     rodando.delete(d);
   }
-  const r = { em: new Date().toISOString(), motivo, feitos };
+  const r = { em: new Date().toISOString(), motivo, feitos, conferidos, pulados };
   ultimaExecucao.set(d, r);
-  log(`${quem} — concluído: ${feitos.filter(f => f.ok).length} de ${feitos.length} publicadas`);
+  log(`${quem} — concluído: ${feitos.filter(f => f.ok).length} de ${feitos.length} publicadas, ${conferidos} com preço conferido na hora, ${pulados.length} puladas`);
+  avisos.avaliarRodada(cid, feitos);
+  if (!feitos.length && motivo !== 'manual') {
+    avisos.avisar(cid, { tipo: 'sem-ofertas', titulo: 'Rodada de postagens sem nenhuma oferta', texto: 'Nenhuma oferta passou pelos filtros, temas e pela regra de repetição. Confira o agendamento no painel.' });
+  }
   return r;
 }
 
@@ -230,6 +318,8 @@ function verificar() {
 }
 
 function iniciar() {
+  require('./envio-grupos').iniciar();
+  avisos.iniciar();
   clearInterval(timer);
   timer = setInterval(verificar, 60 * 1000);
   setTimeout(verificar, 15 * 1000);
@@ -248,8 +338,11 @@ function estado(cid = null) {
     ativa: s.agenda_ativa === '1', modo: continuo ? 'continuo' : 'horarios',
     horarios: continuo ? [`${s.agenda_inicio || '08:00'}–${s.agenda_fim || '22:00'}, a cada ${s.agenda_intervalo_min || 20}–${s.agenda_intervalo_max || 40} min`] : lista,
     proximo: continuo ? proxTxt : proximo, rodando: rodando.has(dono(cid)), pendentes: pendentes(cid),
-    ultimaExecucao: ultimaExecucao.get(dono(cid)) || null, redes: redesAgenda(s),
+    ultimaExecucao: ultimaExecucao.get(dono(cid)) || null, redes: redesAgenda(s), problema: avisos.problema(cid),
   };
 }
 
-module.exports = { enfileirar, listarFila, removerDaFila, limparFila, pendentes, executar, iniciar, estado, horarios, melhoresOfertas, filtroDoDono };
+// Só para os testes
+const _paraTestes = ({ pausa } = {}) => { if (pausa !== undefined) pausaEntreOfertas = pausa; };
+
+module.exports = { _paraTestes, impressaoDoProduto, enfileirar, listarFila, removerDaFila, limparFila, pendentes, executar, iniciar, estado, horarios, melhoresOfertas, filtroDoDono };

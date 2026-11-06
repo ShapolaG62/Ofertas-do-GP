@@ -2114,7 +2114,7 @@ function updateWaProvider() {
   $$('.wa-reserva').forEach(el => el.classList.toggle('hidden', p === 'proprio'));
   let g = [];
   try { g = JSON.parse(SETTINGS.whatsapp_groups || '[]'); } catch { /* vazio */ }
-  $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>` : 'Nenhum grupo de destino escolhido ainda.';
+  $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>${g.some(x => x.categorias?.length) ? ' (alguns só recebem os temas escolhidos)' : ''}` : 'Nenhum grupo de destino escolhido ainda.';
 }
 $('#wa-provider').addEventListener('change', updateWaProvider);
 
@@ -2141,9 +2141,9 @@ $('#wa-load').addEventListener('click', async () => {
   try {
     await saveWaForm();
     const r = await api('/api/admin/whatsapp/grupos');
-    const chosen = new Set(r.escolhidos.map(g => g.id));
-    $('#wa-groups').innerHTML = r.grupos.length ? r.grupos.map(g => `
-      <label class="check"><input type="checkbox" data-wa-group="${esc(g.id)}" data-nome="${esc(g.nome)}" ${chosen.has(g.id) ? 'checked' : ''}> ${esc(g.nome)}</label>`).join('')
+    const chosen = new Map(r.escolhidos.map(g => [g.id, g]));
+    if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups'), r.categorias); }
+    $('#wa-groups').innerHTML = r.grupos.length ? r.grupos.map(g => OfertouTemas.linha(g, chosen.get(g.id), r.categorias)).join('')
       : '<span class="hint">O número não participa de nenhum grupo.</span>';
     $('#wa-groups-box').classList.remove('hidden');
     $('#wa-msg').innerHTML = '';
@@ -2152,7 +2152,7 @@ $('#wa-load').addEventListener('click', async () => {
 });
 
 $('#wa-save-groups').addEventListener('click', async () => {
-  const grupos = $$('[data-wa-group]').filter(c => c.checked).map(c => ({ id: c.dataset.waGroup, nome: c.dataset.nome }));
+  const grupos = OfertouTemas.ler($('#wa-groups'));
   try {
     await api('/api/admin/settings', { method: 'PUT', body: { whatsapp_groups: grupos } });
     await loadSettings();
@@ -2167,7 +2167,8 @@ async function loadAgenda() {
   const ult = estado.ultimaExecucao;
   $('#agenda-estado').innerHTML = `${estado.ativa ? `<b>Ligado</b> · horários ${estado.horarios.join(', ')} · próximo: <b>${esc(estado.proximo || '—')}</b>` : '<b>Desligado</b>'}
     · ${estado.pendentes} oferta(s) na fila${estado.rodando ? ' · <b>publicando agora…</b>' : ''}
-    ${ult ? `<br>Última rodada (${esc(ult.motivo)}): ${ult.feitos.filter(f => f.ok).length} de ${ult.feitos.length} publicadas em ${fmtDate(ult.em.replace('T', ' ').slice(0, 19))}` : ''}`;
+    ${ult ? `<br>Última rodada (${esc(ult.motivo)}): ${ult.feitos.filter(f => f.ok).length} de ${ult.feitos.length} publicadas em ${fmtDate(ult.em.replace('T', ' ').slice(0, 19))}${ult.conferidos ? ` · ${ult.conferidos} com preço conferido na loja na hora` : ''}${ult.pulados?.length ? ` · ${ult.pulados.length} pulada(s) por mudança na loja ou no tema` : ''}` : ''}
+    ${estado.problema ? `<br><b>Atenção:</b> ${esc(estado.problema.mensagem)}` : ''}`;
   $('#fila-body').innerHTML = fila.length ? fila.map(q => `<tr>
       <td><span class="offer-title">${esc(q.produto || `oferta #${q.offer_id}`)}</span></td>
       <td><span class="badge ${q.status === 'postado' ? 'b-ok' : q.status === 'erro' ? 'b-error' : q.status === 'pendente' ? 'b-pending' : 'b-none'}">${FILA_STATUS[q.status] || q.status}</span></td>

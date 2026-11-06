@@ -33,7 +33,7 @@ function config(s) {
 const falha = (err, servico) => {
   const d = err.response?.data;
   const msg = d?.error?.message || d?.message || (typeof d?.error === 'string' ? d.error : '') || d?.response?.message
-    || (typeof d === 'string' ? d.slice(0, 200) : '') || err.message;
+    || (typeof d === 'string' ? d.slice(0, 200) : '') || err.message || err.errors?.[0]?.message || err.code || 'o serviço não informou o motivo';
   if (/null not allowed/i.test(msg)) return new Error('A Z-API exige o "token de segurança da conta" (Client-Token): informe no painel.');
   if (err.response?.status === 401 || err.response?.status === 403) return new Error(`${servico} recusou a chave/token (confira no painel).`);
   if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') return new Error(`Não foi possível acessar a ${servico} (endereço certo? serviço ligado?).`);
@@ -175,8 +175,10 @@ async function enviarPor(c, grupoId, { imagem, texto }) {
 function gruposEscolhidos(s) {
   try {
     const g = JSON.parse(s.whatsapp_groups || '[]');
-    return Array.isArray(g) ? g.filter(x => x && x.id) : [];
+    return Array.isArray(g) ? g.filter(x => x && x.id).map(x => ({ ...x, categorias: Array.isArray(x.categorias) ? x.categorias.map(String) : [] })) : [];
   } catch { return []; }
 }
+// Grupos que recebem uma oferta deste tema (grupo sem tema marcado recebe todas)
+const gruposDaOferta = (s, categoria) => gruposEscolhidos(s).filter(g => !g.categorias.length || g.categorias.includes(categoria));
 
-module.exports = { PROVEDORES, config, configReserva, status, listarGrupos, tamanhoGrupos, enviar, gruposEscolhidos };
+module.exports = { PROVEDORES, config, configReserva, status, listarGrupos, tamanhoGrupos, enviar, gruposEscolhidos, gruposDaOferta };

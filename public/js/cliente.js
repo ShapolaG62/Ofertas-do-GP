@@ -373,9 +373,10 @@
     try {
       await salvarWa();
       const r = await api('/api/cliente/whatsapp/grupos');
-      const chosen = new Set(r.escolhidos.map(g => g.id));
+      const chosen = new Map(r.escolhidos.map(g => [g.id, g]));
+      if (!$('#wa-groups').dataset.ligado) { $('#wa-groups').dataset.ligado = '1'; OfertouTemas.ligar($('#wa-groups'), r.categorias); }
       $('#wa-groups').innerHTML = r.grupos.length
-        ? r.grupos.map(g => `<label class="check-line"><input type="checkbox" data-wa-group="${esc(g.id)}" data-nome="${esc(g.nome)}" ${chosen.has(g.id) ? 'checked' : ''}> ${esc(g.nome)}</label>`).join('')
+        ? r.grupos.map(g => OfertouTemas.linha(g, chosen.get(g.id), r.categorias)).join('')
         : '<span class="cli-hint">O número não participa de nenhum grupo.</span>';
       $('#wa-groups-box').hidden = false;
     } catch (err) { msg($('#wa-msg'), err.message, false); }
@@ -383,7 +384,7 @@
   });
 
   $('#wa-save-groups').addEventListener('click', async () => {
-    const grupos = $$('[data-wa-group]').filter(c => c.checked).map(c => ({ id: c.dataset.waGroup, nome: c.dataset.nome }));
+    const grupos = OfertouTemas.ler($('#wa-groups'));
     try { await api('/api/cliente/config', { method: 'PUT', body: { whatsapp_groups: grupos } }); await carregarConfig(); msg($('#wa-msg'), `${grupos.length} grupo(s) salvos.`); }
     catch (err) { msg($('#wa-msg'), err.message, false); }
   });
@@ -394,7 +395,8 @@
     const ult = estado.ultimaExecucao;
     $('#agenda-estado').innerHTML = `${estado.ativa ? `<b>Ligado</b> · ${estado.horarios.join(', ')} · próximo: <b>${esc(estado.proximo || '—')}</b>` : '<b>Desligado</b>'}
       · ${estado.pendentes} oferta(s) na fila${estado.rodando ? ' · <b>publicando agora…</b>' : ''}
-      ${ult ? `<br>Última rodada: ${ult.feitos.filter(f => f.ok).length} de ${ult.feitos.length} publicadas em ${fmtDate(ult.em)}` : ''}`;
+      ${ult ? `<br>Última rodada: ${ult.feitos.filter(f => f.ok).length} de ${ult.feitos.length} publicadas em ${fmtDate(ult.em)}${ult.conferidos ? ` · ${ult.conferidos} com preço conferido na loja na hora` : ''}${ult.pulados?.length ? ` · ${ult.pulados.length} pulada(s) por mudança na loja ou no tema` : ''}` : ''}
+      ${estado.problema ? `<br><b>Atenção:</b> ${esc(estado.problema.mensagem)}` : ''}`;
     $('#fila-body').innerHTML = fila.length ? fila.map(q => `<tr>
         <td>${esc(q.produto || `oferta #${q.offer_id}`)}</td>
         <td><span class="status-pill ${q.status === 'postado' ? 'ok' : q.status === 'erro' ? 'err' : ''}">${FILA[q.status] || q.status}</span></td>

@@ -276,7 +276,7 @@ app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send([
     'User-agent: *',
     'Allow: /',
-    ...['/admin', '/central', '/api/', '/o/', '/oferta/', '/grupo', '/g/', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
+    ...['/admin', '/central', '/api/', '/o/', '/p/', '/oferta/', '/grupo', '/g/', '/trabalho', '/moderacao', '/equipe', '/sac', '/mensagens', '/postagens', '/cliente', '/conta?'].map(p => `Disallow: ${p}`),
     '',
     `Sitemap: ${baseUrl(req)}/sitemap.xml`,
     '',

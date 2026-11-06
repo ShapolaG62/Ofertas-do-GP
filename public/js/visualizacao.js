@@ -73,13 +73,21 @@
       '/api/cliente/config': configAfiliado,
       '/api/cliente/grupo-automacao': { webhook: 'https://exemplo.com/webhook/exemplo', controle: '', ajuda: '' },
       '/api/cliente/whatsapp/status': { conectado: true, mensagem: 'Exemplo: WhatsApp conectado.' },
-      '/api/cliente/whatsapp/grupos': { grupos: [{ id: '1', nome: 'Ofertas do Dia 1' }, { id: '2', nome: 'Ofertas do Dia 2' }], escolhidos: [{ id: '1', nome: 'Ofertas do Dia 1' }, { id: '2', nome: 'Ofertas do Dia 2' }] },
+      '/api/cliente/whatsapp/grupos': { grupos: [{ id: '1', nome: 'Ofertas do Dia 1' }, { id: '2', nome: 'Ofertas do Dia 2' }], escolhidos: [{ id: '1', nome: 'Ofertas do Dia 1' }, { id: '2', nome: 'Ofertas do Dia 2' }], categorias: [{ id: 'celulares', nome: 'Celulares, tablets e relógios' }, { id: 'casa', nome: 'Casa, móveis e decoração' }] },
       '/api/cliente/agenda': agenda,
       '/api/cliente/comissao': () => comissao(dias > 0 ? dias : 30),
       '/api/cliente/membros': () => membros(dias),
       '/api/cliente/site-grupo': { slug: 'exemplo', endereco: `${location.origin}/g/exemplo`, grupos: [{ nome: 'Ofertas do Dia 1', entradas: 420, limite: 1000, lotado: false }, { nome: 'Ofertas do Dia 2', entradas: 1000, limite: 1000, lotado: true }] },
       '/api/cliente/populares': { buscados: ['air fryer', 'iphone', 'smart tv', 'fone bluetooth', 'tênis'].map((termo, i) => ({ termo, vezes: 320 - i * 45 })), clicados: ofertas.slice(0, 6).map(o => ({ ...o, link: '#exemplo' })) },
       '/api/postagens/historico': historico,
+      '/api/postagens/resultados': {
+        dias: 30, total: { envios: 120, cliques: 460, falhas: 2, tentando: 0, recuperados: 3, rastreados: 120 }, falhas: [],
+        grupos: [{ chave: '1', nome: 'Ofertas do Dia 1', envios: 60, cliques: 280, falhas: 1 }, { chave: '2', nome: 'Ofertas do Dia 2', envios: 60, cliques: 180, falhas: 1 }],
+        horas: [{ chave: '20', nome: '20h', envios: 40, cliques: 220 }, { chave: '14', nome: '14h', envios: 40, cliques: 140 }, { chave: '09', nome: '09h', envios: 40, cliques: 100 }],
+        temas: [{ chave: 'celulares', nome: 'Celulares, tablets e relógios', envios: 40, cliques: 210 }, { chave: 'casa', nome: 'Casa, móveis e decoração', envios: 80, cliques: 250 }],
+        lojas: [{ chave: 'mercadolivre', nome: 'Mercado Livre', envios: 70, cliques: 300 }, { chave: 'shopee', nome: 'Shopee', envios: 50, cliques: 160 }],
+        ofertas: [{ chave: 1, nome: 'Produto de exemplo', envios: 2, cliques: 48 }],
+      },
     }[u.pathname];
   }
 

@@ -158,7 +158,8 @@ router.post('/api/postagens/enviar-grupos', async (req, res) => {
   if (!o) return res.status(404).json({ error: 'Oferta não encontrada.' });
   const todos = require('../whatsapp').gruposEscolhidos(req.cfg);
   const pedido = String(req.body?.grupo || 'todos');
-  const grupos = pedido === 'todos' ? todos : todos.filter(g => g.id === pedido);
+  // "Todos" respeita o tema de cada grupo; escolher um grupo específico é decisão de quem está enviando
+  const grupos = pedido === 'todos' ? todos : todos.filter(g => g.id === pedido).map(g => ({ ...g, categorias: [] }));
   if (!todos.length) return res.status(400).json({ error: cid ? 'Escolha os grupos de destino em Meu painel → WhatsApp.' : 'Escolha os grupos de destino em Painel → Redes sociais → WhatsApp.' });
   if (!grupos.length) return res.status(400).json({ error: 'Esse grupo não está mais na sua lista de grupos.' });
   const s = { ...req.cfg, whatsapp_groups: JSON.stringify(grupos) };
@@ -173,6 +174,13 @@ router.post('/api/postagens/enviar-grupos', async (req, res) => {
   social.publicar(o.id, ['whatsapp'], texto, `${req.poster.autor} (botão Enviar)`, cid ? { s, clienteId: cid, link } : { s })
     .catch(err => console.error('[ENVIAR GRUPOS]', err.message));
   res.json({ ok: true, grupos: grupos.length });
+});
+
+// Resultado dos envios aos grupos: o admin vê o do site; cada cliente, só o dele.
+router.get('/api/postagens/resultados', (req, res) => {
+  if (!req.poster.clienteId && req.poster.key !== 'admin') return res.status(403).json({ error: 'Somente o administrador.' });
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(require('../envio-grupos').resultados(req.poster.clienteId, req.query.dias));
 });
 
 // Histórico: o admin vê o do site; cada cliente, só o dele. Usuários liberados não veem o histórico.

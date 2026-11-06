@@ -1,0 +1,376 @@
+// Envio aos grupos: entrega por grupo, nova tentativa, avisos, preço na hora, cliques, temas e repetição.
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const test = require('node:test');
+const assert = require('node:assert/strict');
+
+process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ofertou-envio-'));
+const db = require('../src/db');
+const settings = require('../src/settings');
+const whatsapp = require('../src/whatsapp');
+const social = require('../src/social');
+const agenda = require('../src/agenda');
+const envio = require('../src/envio-grupos');
+const avisos = require('../src/envio-avisos');
+const precoNaHora = require('../src/preco-na-hora');
+const busca = require('../src/busca-ofertas');
+const { getStore } = require('../src/stores');
+require('../src/ganhos'); // cria a tabela dos avisos do painel
+
+social.ajustes.pausaEntreGrupos = false;
+agenda._paraTestes({ pausa: false });
+
+const GRUPOS = [{ id: '120363000000000001@g.us', nome: 'Todos' }, { id: '120363000000000002@g.us', nome: 'Tecnologia', categorias: ['informatica'] }];
+let enviados = [];
+let falhar = null;
+let conectado = true;
+whatsapp.enviar = async (s, grupo, msg) => { const e = falhar && falhar(grupo); if (e) throw e; enviados.push({ grupo, ...msg }); return 'id'; };
+whatsapp.status = async () => ({ conectado, mensagem: conectado ? 'ok' : 'Número desconectado.' });
+
+function limpar() {
+  for (const t of ['social_posts', 'envio_grupo', 'post_queue', 'admin_notificacoes', 'offers']) db.run(`DELETE FROM ${t}`);
+  enviados = []; falhar = null; conectado = true;
+  settings.set('site_url', 'https://exemplo.test');
+  settings.set('whatsapp_provider', 'proprio');
+  settings.set('whatsapp_groups', JSON.stringify(GRUPOS));
+  settings.set('agenda_redes', JSON.stringify(['whatsapp']));
+  settings.set('agenda_ativa', '1');
+  settings.set('agenda_completar', '1');
+  settings.set('agenda_qtd', '1');
+  settings.set('smtp_host', '');
+}
+let seq = 0;
+function oferta(extra = {}) {
+  seq++;
+  const o = { store_id: 'amazon', store_product_id: `P${seq}`, plataforma: 'Amazon', produto: `Produto ${seq} unico${seq}`, preco_atual: 80, preco_anterior: 100, desconto_pct: 20, categoria: 'informatica', imagem: 'https://img.test/a.jpg', original_url: `https://www.amazon.com.br/dp/B00000000${seq}`, ...extra };
+  const k = Object.keys(o);
+  return Number(db.run(`INSERT INTO offers (${k.join(',')}) VALUES (${k.map(() => '?').join(',')})`, ...k.map(x => o[x])).lastInsertRowid);
+}
+const envios = () => db.all('SELECT * FROM envio_grupo ORDER BY id');
+const atualizarBusca = () => busca.atualizar();
+const voltarHoras = (id, h) => db.run(`UPDATE envio_grupo SET created_at = datetime('now', ?), proxima_em = datetime('now', '-1 minutes') WHERE id = ?`, `-${h * 60} minutes`, id);
+const vencer = id => db.run(`UPDATE envio_grupo SET proxima_em = datetime('now', '-1 minutes') WHERE id = ?`, id);
+const avisosDoSite = () => db.all('SELECT titulo, texto FROM admin_notificacoes');
+
+test('entrega por grupo: cada grupo recebe um link próprio e o clique conta', async () => {
+  limpar();
+  const id = oferta();
+  const [r] = await social.publicar(id, ['whatsapp'], `Oferta\nhttps://exemplo.test/o/${id}`, 'teste');
+  assert.equal(r.ok, true);
+  assert.equal(enviados.length, 2);
+  assert.notEqual(enviados[0].texto, enviados[1].texto);
+  assert.match(enviados[0].texto, /https:\/\/exemplo\.test\/p\/[\w-]+$/);
+  assert.ok(!enviados[0].texto.includes('/o/'));
+  const [a] = envios();
+  assert.equal(a.situacao, 'enviado');
+  assert.equal(a.texto, null);
+  const e = envio.porToken(a.token);
+  assert.equal(envio.registrarClique(e, '1.1.1.1'), true);
+  assert.equal(envio.registrarClique(e, '1.1.1.1'), false, 'a mesma pessoa conta uma vez por hora');
+  assert.equal(envio.registrarClique(e, '2.2.2.2'), true);
+  assert.equal(envios()[0].cliques, 2);
+  const res = envio.resultados(null, 30);
+  assert.equal(res.total.envios, 2);
+  assert.equal(res.total.cliques, 2);
+  assert.equal(res.grupos[0].nome, 'Todos');
+  assert.equal(res.temas[0].nome, 'Informática');
+  assert.equal(res.horas.length, 1);
+  assert.equal(envio.porToken('../../x'), null);
+});
+
+test('sem site público o envio sai normal, sem link próprio', async () => {
+  limpar();
+  settings.set('site_url', '');
+  const id = oferta();
+  await social.publicar(id, ['whatsapp'], 'Oferta https://www.amazon.com.br/dp/X', 'teste');
+  assert.equal(enviados[0].texto, 'Oferta https://www.amazon.com.br/dp/X');
+  assert.equal(envios()[0].rastreado, 0);
+});
+
+test('o erro nunca fica sem motivo', async () => {
+  limpar();
+  falhar = () => Object.assign(new AggregateError([new Error('connect ECONNREFUSED')], ''), {});
+  const id = oferta();
+  const [r] = await social.publicar(id, ['whatsapp'], 'x', 'teste');
+  assert.equal(r.ok, false);
+  assert.match(r.mensagem, /ECONNREFUSED/);
+  assert.match(db.get('SELECT mensagem FROM social_posts WHERE ok = 0').mensagem, /ECONNREFUSED/);
+});
+
+test('grupo que falha entra em nova tentativa, usa o mesmo link e aparece como entregue', async () => {
+  limpar();
+  falhar = g => (g === GRUPOS[1].id ? new Error('grupo fora') : null);
+  const id = oferta();
+  const [r] = await social.publicar(id, ['whatsapp'], `Oferta https://exemplo.test/o/${id}`, 'teste');
+  assert.equal(r.ok, true);
+  assert.match(r.mensagem, /nova tentativa em 5 min em 1 grupo/);
+  const f = envios().find(x => x.grupo_id === GRUPOS[1].id);
+  assert.equal(f.situacao, 'tentando');
+  await envio.rodarTentativas();
+  assert.equal(enviados.length, 1, 'não tenta antes da hora');
+
+  vencer(f.id);
+  await envio.rodarTentativas();
+  let g = envios().find(x => x.id === f.id);
+  assert.equal(g.tentativas, 2);
+  assert.equal(g.situacao, 'tentando');
+
+  falhar = null;
+  vencer(f.id);
+  await envio.rodarTentativas();
+  g = envios().find(x => x.id === f.id);
+  assert.equal(g.situacao, 'enviado');
+  assert.ok(enviados.at(-1).texto.endsWith(`/p/${f.token}`));
+  assert.equal(envio.resultados(null, 30).total.recuperados, 1);
+});
+
+test('depois de 3 tentativas desiste e avisa', async () => {
+  limpar();
+  falhar = () => new Error('sem permissão no grupo');
+  const id = oferta();
+  settings.set('whatsapp_groups', JSON.stringify([GRUPOS[0]]));
+  await social.publicar(id, ['whatsapp'], 'x', 'teste');
+  const [f] = envios();
+  for (let i = 0; i < 2; i++) { vencer(f.id); await envio.rodarTentativas(); }
+  const [g] = envios();
+  assert.equal(g.situacao, 'falhou');
+  assert.equal(g.tentativas, 3);
+  assert.match(avisosDoSite()[0].titulo, /não chegou ao grupo Todos/);
+  assert.match(avisosDoSite()[0].texto, /sem permissão/);
+});
+
+test('sem confirmação do envio não repete no grupo', async () => {
+  limpar();
+  falhar = () => Object.assign(new Error('timeout of 30000ms exceeded'), { code: 'ECONNABORTED' });
+  settings.set('whatsapp_groups', JSON.stringify([GRUPOS[0]]));
+  await social.publicar(oferta(), ['whatsapp'], 'x', 'teste');
+  assert.equal(envios()[0].situacao, 'falhou');
+  assert.match(envios()[0].erro, /não reenviei/);
+});
+
+test('número desconectado espera voltar sem gastar tentativa; oferta que mudou é cancelada', async () => {
+  limpar();
+  falhar = () => new Error('caiu');
+  settings.set('whatsapp_groups', JSON.stringify([GRUPOS[0]]));
+  const id = oferta();
+  await social.publicar(id, ['whatsapp'], 'x', 'teste');
+  const [f] = envios();
+  conectado = false;
+  vencer(f.id);
+  await envio.rodarTentativas();
+  assert.equal(envios()[0].tentativas, 1);
+  assert.equal(envios()[0].situacao, 'tentando');
+  conectado = true;
+  db.run('UPDATE offers SET preco_atual = 70 WHERE id = ?', id);
+  vencer(f.id);
+  await envio.rodarTentativas();
+  assert.equal(envios()[0].situacao, 'cancelado');
+  voltarHoras(f.id, 2);
+});
+
+test('passou de 1 hora sem conseguir: desiste e avisa', async () => {
+  limpar();
+  falhar = () => new Error('caiu');
+  settings.set('whatsapp_groups', JSON.stringify([GRUPOS[0]]));
+  await social.publicar(oferta(), ['whatsapp'], 'x', 'teste');
+  voltarHoras(envios()[0].id, 2);
+  await envio.rodarTentativas();
+  assert.equal(envios()[0].situacao, 'falhou');
+  assert.equal(avisosDoSite().length, 1);
+});
+
+test('aviso: número fora do ar avisa uma vez, aparece no painel e avisa quando volta', async () => {
+  limpar();
+  conectado = false;
+  await avisos.conferirDono(null);
+  assert.equal(avisos.problema(null), null, 'uma queda rápida não vira aviso');
+  await avisos.conferirDono(null);
+  assert.equal(avisos.problema(null).mensagem, 'Número desconectado.');
+  await avisos.conferirDono(null);
+  assert.equal(avisosDoSite().length, 1);
+  assert.match(avisosDoSite()[0].titulo, /fora do ar/);
+  assert.equal(agenda.estado(null).problema.mensagem, 'Número desconectado.');
+  conectado = true;
+  await avisos.conferirDono(null);
+  assert.equal(avisos.problema(null), null);
+  assert.match(avisosDoSite().at(-1).titulo, /voltou/);
+});
+
+test('aviso: rodada do agendamento com falha e sem rede configurada', async () => {
+  limpar();
+  falhar = () => new Error('fora do ar');
+  const id = oferta();
+  agenda.enfileirar([{ offer_id: id, texto: 'x' }], 'teste');
+  const r = await agenda.executar('horário 09:00');
+  assert.equal(r.feitos[0].ok, false);
+  assert.match(avisosDoSite()[0].titulo, /falharam/);
+  assert.match(db.get('SELECT status, resultado FROM post_queue').status, /erro/);
+  limpar();
+  settings.set('whatsapp_groups', '[]');
+  assert.match((await agenda.executar('horário 14:00')).erro, /Nenhuma rede/);
+  assert.match(avisosDoSite()[0].titulo, /não saíram/);
+});
+
+test('preço na hora: loja sem API segue a regra de sempre', async () => {
+  limpar();
+  assert.equal((await precoNaHora.conferir(oferta())).situacao, 'sem_checagem');
+  assert.equal((await precoNaHora.conferir(oferta({ store_id: 'shopee', fonte: 'manual' }))).situacao, 'sem_checagem');
+});
+
+test('preço na hora: igual, baixou, subiu, saiu e API fora do ar', async () => {
+  limpar();
+  const shopee = getStore('shopee');
+  const original = shopee.porLink;
+  settings.set('shopee_app_id', 'teste'); settings.set('shopee_app_secret', 'teste');
+  const s = settings.getAll();
+  const shp = () => oferta({ store_id: 'shopee', original_url: 'https://shopee.com.br/x-i.1.2' });
+  const deal = (preco, anterior = 100) => async () => ({ status: 'ok', deals: [{ preco_atual: preco, preco_anterior: anterior }] });
+  try {
+    shopee.porLink = deal(80);
+    assert.equal((await precoNaHora.conferir(shp(), s)).situacao, 'igual');
+
+    shopee.porLink = deal(70);
+    let id = shp();
+    let c = await precoNaHora.conferir(id, s);
+    assert.deepEqual([c.acao, c.situacao, c.precoAntigo], ['postar', 'baixou', 80]);
+    let o = db.get('SELECT preco_atual, desconto_pct FROM offers WHERE id = ?', id);
+    assert.deepEqual([o.preco_atual, o.desconto_pct], [70, 30]);
+    assert.equal(db.get('SELECT price FROM price_history WHERE offer_id = ?', id).price, 70);
+
+    shopee.porLink = deal(84);
+    assert.equal((await precoNaHora.conferir(shp(), s)).situacao, 'subiu_pouco');
+
+    shopee.porLink = deal(95);
+    c = await precoNaHora.conferir(shp(), s);
+    assert.deepEqual([c.acao, c.situacao], ['pular', 'subiu']);
+
+    shopee.porLink = async () => ({ status: 'ok', deals: [] });
+    id = shp();
+    c = await precoNaHora.conferir(id, s);
+    assert.deepEqual([c.acao, c.situacao], ['pular', 'saiu']);
+    assert.equal(require('../src/offers').isActive(id), false);
+
+    shopee.porLink = async () => { throw new Error('API fora'); };
+    assert.equal((await precoNaHora.conferir(shp(), s)).situacao, 'sem_checagem');
+    shopee.porLink = async () => ({ status: 'error', deals: [] });
+    assert.equal((await precoNaHora.conferir(shp(), s)).acao, 'postar');
+
+    // Com cupom, o preço da loja é o sem cupom
+    shopee.porLink = deal(90);
+    id = oferta({ store_id: 'shopee', original_url: 'https://shopee.com.br/x-i.1.3', cupom_codigo: 'ABC', preco_sem_cupom: 90 });
+    assert.equal((await precoNaHora.conferir(id, s)).situacao, 'igual');
+    shopee.porLink = deal(70);
+    assert.equal((await precoNaHora.conferir(id, s)).acao, 'pular');
+  } finally { shopee.porLink = original; settings.set('shopee_app_id', ''); settings.set('shopee_app_secret', ''); }
+});
+
+test('preço mudou: oferta da fila sai com o preço novo; a que encareceu dá lugar à próxima', async () => {
+  limpar();
+  const shopee = getStore('shopee');
+  const original = shopee.porLink;
+  settings.set('shopee_app_id', 'teste'); settings.set('shopee_app_secret', 'teste');
+  settings.set('agenda_qtd', '2');
+  settings.set('agenda_completar', '0');
+  settings.set('whatsapp_groups', JSON.stringify([GRUPOS[0]]));
+  const caiu = oferta({ store_id: 'shopee', store_product_id: 'CAIU', original_url: 'https://shopee.com.br/x-i.1.10' });
+  const subiu = oferta({ store_id: 'shopee', store_product_id: 'SUBIU', original_url: 'https://shopee.com.br/x-i.1.11' });
+  const normal = oferta();
+  shopee.porLink = async url => ({ status: 'ok', deals: [{ preco_atual: url.endsWith('.10') ? 60 : 95, preco_anterior: 100 }] });
+  try {
+    agenda.enfileirar([{ offer_id: subiu, texto: 'De R$ 100,00 por R$ 80,00' }, { offer_id: caiu, texto: 'De R$ 100,00 por R$ 80,00' }, { offer_id: normal, texto: 'Normal' }], 'teste');
+    const r = await agenda.executar('manual');
+    assert.equal(r.feitos.length, 2);
+    assert.equal(r.pulados.length, 1);
+    assert.match(r.pulados[0].motivo, /subiu/);
+    assert.equal(r.conferidos, 1);
+    assert.match(db.get('SELECT status FROM post_queue WHERE offer_id = ?', subiu).status, /expirado/);
+    assert.match(enviados[0].texto, /60,00/, 'refez o texto com o preço de agora');
+    assert.doesNotMatch(enviados[0].texto, /por R\$ 80,00/);
+    assert.equal(enviados[1].texto, 'Normal');
+  } finally { shopee.porLink = original; settings.set('shopee_app_id', ''); settings.set('shopee_app_secret', ''); }
+});
+
+test('temas: cada grupo recebe só o seu tema; grupo sem tema recebe tudo', async () => {
+  limpar();
+  await social.publicar(oferta({ categoria: 'casa' }), ['whatsapp'], 'casa', 'teste');
+  assert.deepEqual(enviados.map(e => e.grupo), [GRUPOS[0].id]);
+  enviados = [];
+  await social.publicar(oferta({ categoria: 'informatica' }), ['whatsapp'], 'pc', 'teste');
+  assert.deepEqual(enviados.map(e => e.grupo), [GRUPOS[0].id, GRUPOS[1].id]);
+
+  settings.set('whatsapp_groups', JSON.stringify([GRUPOS[1]]));
+  const [r] = await social.publicar(oferta({ categoria: 'casa' }), ['whatsapp'], 'casa', 'teste');
+  assert.equal(r.ok, false);
+  assert.match(r.mensagem, /deste tema/);
+});
+
+test('temas: oferta da fila sem grupo do tema não conta como falha', async () => {
+  limpar();
+  settings.set('whatsapp_groups', JSON.stringify([GRUPOS[1]]));
+  settings.set('agenda_completar', '0');
+  agenda.enfileirar([{ offer_id: oferta({ categoria: 'casa' }), texto: 'x' }], 'teste');
+  const r = await agenda.executar('manual');
+  assert.equal(r.feitos.length, 0);
+  assert.match(db.get('SELECT resultado FROM post_queue').resultado, /deste tema/);
+  assert.equal(avisosDoSite().length, 0);
+});
+
+test('temas e repetição na escolha automática', async () => {
+  limpar();
+  settings.set('whatsapp_groups', JSON.stringify([
+    { id: 'a@g.us', nome: 'A', categorias: ['informatica'] }, { id: 'b@g.us', nome: 'B', categorias: ['casa'] },
+  ]));
+  const pc = oferta({ produto: 'Notebook Acer Aspire Intel Core 512 Gb', categoria: 'informatica', preco_atual: 100, preco_anterior: 200, desconto_pct: 50 });
+  const mesmoOutroVendedor = oferta({ produto: 'Notebook Acer Aspire Intel Core 512 Gb Prata', categoria: 'informatica', preco_atual: 99, preco_anterior: 200, desconto_pct: 50 });
+  const cama = oferta({ produto: 'Jogo de cama solteiro algodao macio', categoria: 'casa', preco_atual: 50, preco_anterior: 100, desconto_pct: 50 });
+  const tv = oferta({ produto: 'Smart TV grande fora dos temas', categoria: 'audio_tv', preco_atual: 50, preco_anterior: 100, desconto_pct: 50 });
+  await atualizarBusca();
+  const s = settings.getAll();
+
+  let ids = agenda.melhoresOfertas(10, new Set(), null, s, { soTemas: true });
+  assert.ok(ids.includes(cama));
+  assert.ok(!ids.includes(tv), 'nada fora dos temas quando só há grupos com tema');
+  assert.equal(ids.filter(i => i === pc || i === mesmoOutroVendedor).length, 1, 'o mesmo produto entra uma vez só');
+  assert.ok(agenda.melhoresOfertas(10, new Set(), null, s).includes(tv), 'sem a regra, todas continuam disponíveis');
+
+  // Cada grupo tem a sua vez
+  const primeiro = agenda.melhoresOfertas(1, new Set(), null, s, { girar: true })[0];
+  const segundo = agenda.melhoresOfertas(1, new Set(), null, s, { girar: true })[0];
+  assert.notEqual(primeiro, segundo);
+
+  // Repetição: postado há pouco não volta, nem por outro vendedor
+  db.run(`INSERT INTO social_posts (offer_id, produto, rede, ok, preco, created_at) VALUES (?, ?, 'whatsapp', 1, 100, datetime('now', '-48 hours'))`, pc, 'Notebook Acer Aspire Intel Core 512 Gb');
+  ids = agenda.melhoresOfertas(10, new Set(), null, s);
+  assert.ok(!ids.includes(pc) && !ids.includes(mesmoOutroVendedor), 'preço igual não repete');
+
+  // Caiu 10% ou mais: pode voltar
+  db.run("UPDATE offers SET preco_atual = 85, desconto_pct = 57, updated_at = datetime('now', '+1 minutes') WHERE id = ?", pc);
+  await atualizarBusca();
+  assert.ok(agenda.melhoresOfertas(10, new Set(), null, s).includes(pc), 'caiu de verdade: volta');
+
+  // Caiu, mas postou há menos de 24 h: espera
+  db.run(`UPDATE social_posts SET created_at = datetime('now', '-3 hours') WHERE offer_id = ?`, pc);
+  assert.ok(!agenda.melhoresOfertas(10, new Set(), null, s).includes(pc));
+
+  // Postagem antiga, sem preço guardado: continua a regra de 7 dias
+  db.run(`UPDATE social_posts SET created_at = datetime('now', '-48 hours'), preco = NULL WHERE offer_id = ?`, pc);
+  assert.ok(!agenda.melhoresOfertas(10, new Set(), null, s).includes(pc));
+
+  // Passaram 7 dias: livre
+  db.run(`UPDATE social_posts SET created_at = datetime('now', '-8 days') WHERE offer_id = ?`, pc);
+  assert.ok(agenda.melhoresOfertas(10, new Set(), null, s).includes(pc));
+});
+
+test('impressão do produto ignora ordem, acento e palavras vazias', () => {
+  assert.equal(agenda.impressaoDoProduto('Fone de Ouvido Bluetooth JBL'), agenda.impressaoDoProduto('fone ouvido JBL bluetooth'));
+  assert.notEqual(agenda.impressaoDoProduto('Fone JBL Tune 510'), agenda.impressaoDoProduto('Fone JBL Tune 720'));
+});
+
+test('limpa os registros antigos', () => {
+  limpar();
+  const id = oferta();
+  db.run(`INSERT INTO envio_grupo (token, offer_id, grupo_id, situacao, created_at) VALUES ('velhoo', ?, 'x', 'enviado', datetime('now', '-181 days')), ('novooo', ?, 'x', 'enviado', datetime('now', '-179 days'))`, id, id);
+  envio.limpar();
+  assert.deepEqual(envios().map(e => e.token), ['novooo']);
+});

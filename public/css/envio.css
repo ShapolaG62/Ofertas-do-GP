@@ -1,0 +1,27 @@
+/* Temas dos grupos de WhatsApp e resultado das postagens (painéis do admin e do cliente) */
+/* Grupos de WhatsApp por tema */
+.wa-grupo-linha { display: grid; gap: 4px; padding: 6px 0; border-bottom: 1px solid var(--line, var(--border)); min-width: 0; }
+.wa-temas summary { cursor: pointer; font-size: 13px; color: var(--ink-2, var(--muted)); min-height: 28px; overflow-wrap: anywhere; }
+.wa-temas-lista { display: grid; gap: 4px; padding: 6px 0 4px 8px; }
+/* Resultado das postagens */
+.er-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.er-cab h2 { margin: 0; }
+.er-periodo { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-2, var(--muted)); }
+.er-periodo select { min-height: 40px; }
+.er-vazio, .er-nota { color: var(--ink-2, var(--muted)); font-size: 14px; }
+.er-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.er-kpis > div { border: 1px solid var(--line, var(--border)); border-radius: 12px; padding: 12px; }
+.er-kpis b { display: block; font-size: 24px; line-height: 1.2; color: var(--ink, var(--text)); }
+.er-kpis span { font-size: 13px; color: var(--ink-2, var(--muted)); }
+.er-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 18px; margin-top: 16px; }
+.er-bloco { min-width: 0; }
+.er-bloco h3 { margin: 0 0 8px; font-size: 15px; }
+.er-lista, .er-falhas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.er-lista li { display: grid; gap: 3px; min-width: 0; }
+.er-nome { font-size: 14px; color: var(--ink, var(--text)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.er-barra { display: block; height: 8px; border-radius: 4px; background: var(--line, var(--border)); overflow: hidden; }
+.er-barra i { display: block; height: 100%; min-width: 2px; border-radius: 4px; background: var(--brand, var(--green)); }
+.er-num { font-size: 12.5px; color: var(--ink-2, var(--muted)); }
+.er-falhas li { font-size: 14px; color: var(--ink, var(--text)); overflow-wrap: anywhere; }
+.er-falhas span, .er-falhas small { color: var(--ink-2, var(--muted)); }
+.er-grade + .er-bloco { margin-top: 18px; }

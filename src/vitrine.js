@@ -162,6 +162,7 @@ function intercalar(lista) {
 }
 
 async function montar() {
+  await require('./busca-ofertas').pronta(); // servidor acabou de ligar: espera a lista sem travar os outros pedidos
   const achados = [];
   parcial = achados;
   // Mesmo produto em lojas diferentes (ou variações de cor) aparece uma vez só.

@@ -29,14 +29,50 @@ const assinatura = () => {
   return `${r.n}|${r.u}|${r.s}|${r.h}|${r.c}|${r.e}|${r.k}`;
 };
 // Quem visita nunca espera a lista ser refeita: recebe a lista pronta e a atualização roda logo depois, em segundo plano.
-let refazendo = false;
+// Com 120 mil ofertas a montagem leva ~4 s de processamento: em segundo plano ela roda em fatias curtas, deixando o
+// servidor atender os outros pedidos entre uma fatia e outra (de uma vez só, travava o site inteiro durante a montagem).
+const FATIA_MS = 25;
+const PASSO_ID = 10000; // ofertas lidas do banco por vez (faixa de ids)
+const PASSO_LISTA = 2000; // ofertas processadas entre uma verificação de tempo e outra
+let emAndamento = null; // { passos, promessa } da montagem em segundo plano
+let ultimaMontagem = 0;
+const logErro = e => console.error('[BUSCA]', e.message);
+const drenar = passos => { let r; do r = passos.next(); while (!r.done); return r.value; };
+function emPartes() {
+  if (emAndamento) return emAndamento.promessa;
+  const passos = montagem();
+  const promessa = new Promise((ok, erro) => {
+    const parte = () => {
+      try {
+        const fim = performance.now() + FATIA_MS;
+        for (;;) {
+          if (passos.next().done) return ok(CACHE);
+          if (performance.now() >= fim) break;
+        }
+        setImmediate(parte);
+      } catch (e) { erro(e); }
+    };
+    setImmediate(parte);
+  }).finally(() => { emAndamento = null; });
+  emAndamento = { passos, promessa };
+  return promessa;
+}
 function lista() {
-  if (!CACHE.sig) return montar(); // primeira vez (servidor acabou de ligar)
-  if (Date.now() - CACHE.at >= 60000 && !refazendo) {
-    refazendo = true;
-    setImmediate(() => { try { montar(); } catch (e) { console.error('[BUSCA]', e.message); } finally { refazendo = false; } });
-  }
+  // Primeira vez e quem chamou não pode esperar (código síncrono): termina a montagem aqui mesmo
+  if (!CACHE.sig) { if (emAndamento) drenar(emAndamento.passos); else montar(); return CACHE; }
+  if (Date.now() - CACHE.at >= 60000 && !emAndamento) emPartes().catch(logErro);
   return CACHE;
+}
+// Rotas: enquanto a primeira lista não fica pronta, o pedido espera sem travar o servidor.
+const pronta = () => (CACHE.sig ? Promise.resolve(CACHE) : emPartes());
+function aguardar(req, res, next) {
+  if (CACHE.sig) return next();
+  emPartes().catch(logErro).then(() => next());
+}
+// Depois de gravar ofertas: refaz sem travar, incluindo o que acabou de entrar (a montagem em andamento pode ser anterior).
+async function atualizar() {
+  if (emAndamento) await emAndamento.promessa.catch(logErro);
+  return emPartes();
 }
 // Desconto suspeito: não some do site, mas não vira destaque e cai na ordem (o motivo aparece no Painel → Ofertas).
 const FALSIFICADO = /\b(replica|primeira linha|1:1|similar ao original|tipo original|estilo original)\b/;
@@ -55,41 +91,59 @@ function suspeita(o, h, n) {
   return '';
 }
 // Anúncios com o nome idêntico: todos aparecem; o mais barato (ou os empatados) ganha "Menor preço entre N anúncios"
-function marcarIguais(rows) {
+function* marcarIguais(rows) {
   const grupos = new Map();
-  for (const o of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const o = rows[i];
+    if (i % PASSO_LISTA === 0) yield;
     if (o.loja_slug || o._k.length < 16) continue;
     const g = grupos.get(o._k);
     if (!g) grupos.set(o._k, { n: 1, menor: o.preco_atual });
     else { g.n++; if (o.preco_atual < g.menor) g.menor = o.preco_atual; }
   }
-  for (const o of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const o = rows[i];
+    if (i % PASSO_LISTA === 0) yield;
     const g = !o.loja_slug && grupos.get(o._k);
     if (g && g.n > 1 && o.preco_atual === g.menor) o.iguais = g.n;
   }
 }
 
-function montar() {
+// Monta a lista inteira, de uma vez. Para código que precisa dela já (a montagem em partes está em emPartes).
+function montar() { return drenar(montagem()); }
+
+// As etapas da montagem: cada "yield" é um ponto em que o servidor pode atender outros pedidos.
+function* montagem() {
+  const minha = ++ultimaMontagem;
   const sig = assinatura();
   if (sig === CACHE.sig) { CACHE.at = Date.now(); return CACHE; }
+  yield;
   // Duas consultas simples juntadas aqui (a junção no SQL levava ~1,3 s com 100 mil ofertas e travava o servidor)
   const active = offers.activeClause();
-  const brutas = db.all(
-    `SELECT o.id, o.store_id, o.plataforma, o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct, o.categoria,
-       o.subcategoria, o.link_clicks, o.fonte, o.created_at, o.last_seen_at, o.comissao_pct, o.comissao_extra_pct,
-       o.cupom_codigo, o.cupom_texto, o.preco_sem_cupom, l.slug AS loja_slug
-     FROM offers o LEFT JOIN lojas l ON l.id = o.loja_id WHERE ${active.sql}`, ...active.params);
+  const maiorId = db.get('SELECT MAX(id) AS m FROM offers').m || 0;
+  const brutas = [];
+  for (let de = 0; de < maiorId; de += PASSO_ID) {
+    brutas.push(...db.all(
+      `SELECT o.id, o.store_id, o.plataforma, o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct, o.categoria,
+         o.subcategoria, o.link_clicks, o.fonte, o.created_at, o.last_seen_at, o.comissao_pct, o.comissao_extra_pct,
+         o.cupom_codigo, o.cupom_texto, o.preco_sem_cupom, l.slug AS loja_slug
+       FROM offers o LEFT JOIN lojas l ON l.id = o.loja_id WHERE o.id > ? AND o.id <= ? AND ${active.sql}`, de, de + PASSO_ID, ...active.params));
+    yield;
+  }
   // Menor preço dos últimos 30 dias: refeito a cada 10 min (o selo não precisa ser ao segundo)
   if (Date.now() - HIST.at > 10 * 60 * 1000) {
     const m = new Map();
-    for (const h of db.all(`SELECT offer_id, MIN(price) AS min30, MAX(price) AS max30, MIN(checked_at) AS desde, COUNT(*) AS n FROM price_history
-                            WHERE checked_at >= datetime('now', '-30 days') GROUP BY offer_id`)) m.set(h.offer_id, h);
+    for (let de = 0; de < maiorId; de += PASSO_ID) {
+      for (const h of db.all(`SELECT offer_id, MIN(price) AS min30, MAX(price) AS max30, MIN(checked_at) AS desde, COUNT(*) AS n FROM price_history
+                              WHERE offer_id > ? AND offer_id <= ? AND checked_at >= datetime('now', '-30 days') GROUP BY offer_id`, de, de + PASSO_ID)) m.set(h.offer_id, h);
+      yield;
+    }
     HIST = { at: Date.now(), m };
   }
   const hist = HIST.m;
   const seteDias = Date.now() - 7 * 86400000;
   const memo = new Map();
-  let rows = brutas.map(o => {
+  const linha = o => {
     const h = hist.get(o.id);
     // O que depende só do nome e da data de entrada (nome normalizado, "em alta", acessório) é guardado e só
     // refeito quando o nome muda: era ~1 s de cada montagem
@@ -112,21 +166,33 @@ function montar() {
       ...(o.cupom_codigo ? { cupom: o.cupom_codigo, cupom_texto: o.cupom_texto, preco_sem_cupom: o.preco_sem_cupom } : {}),
       _n: n, _k: m.k, _t: m.t, _c: c, _alta: m.alta, _acess: m.acess, _susp: suspeita(o, h, n),
     };
-  });
-  NOMES = memo;
-  marcarIguais(rows);
+  };
+  const rows = [];
+  for (let i = 0; i < brutas.length; i++) {
+    rows.push(linha(brutas[i]));
+    if (i % PASSO_LISTA === 0) yield;
+  }
+  yield* marcarIguais(rows);
   rows.sort((a, b) => (b._c - a._c) || b.id - a.id); // mais novas primeiro (ordem base, como antes)
-  for (const o of rows) o._s = atratividade(o);
+  yield;
+  for (let i = 0; i < rows.length; i++) {
+    rows[i]._s = atratividade(rows[i]);
+    if (i % PASSO_LISTA === 0) yield;
+  }
   // Resumo do topo da página: total, lojas, maior desconto, última conferência e a oferta de maior desconto
   let maior = 0, ultima = '', melhor = null;
   const lojas = new Set();
-  for (const o of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const o = rows[i];
+    if (i % PASSO_LISTA === 0) yield;
     lojas.add(o.store_id);
     if (!o._susp && o.desconto_pct > maior) maior = o.desconto_pct;
     if (o.last_seen_at > ultima) ultima = o.last_seen_at; // mesmo formato de texto: compara direto
     if (!o._susp && o.desconto_pct >= 30 && o.preco_atual >= 40 && (LOJA_CONFIANCA[o.store_id] ?? 0) >= 6 && !o._acess
       && (!melhor || o.desconto_pct > melhor.desconto_pct)) melhor = o;
   }
+  if (minha !== ultimaMontagem) return CACHE; // outra mais nova começou e terminou enquanto esta rodava: fica a mais nova
+  NOMES = memo;
   RESPOSTAS.clear();
   CACHE = { sig, at: Date.now(), lista: rows, ordenadas: {}, resumo: {
     total: rows.length, lojas: lojas.size, maior_desconto: maior,
@@ -479,7 +545,7 @@ function mix(loja = '') {
 }
 
 // Deixa a lista pronta assim que o servidor liga
-function aquecer() { setTimeout(() => { try { montar(); } catch (e) { console.error('[BUSCA]', e.message); } }, 3000); }
+function aquecer() { setTimeout(() => { emPartes().catch(logErro); }, 3000); }
 
 // Ofertas no ar (lista em memória), para outras partes do site que precisam varrer todas (ex.: a vitrine)
 const ativas = () => lista().lista;
@@ -494,4 +560,4 @@ function suspeitas(limite = 200) {
   return { total: l.length, itens: l.sort((a, b) => b.desconto_pct - a.desconto_pct).slice(0, limite).map(o => ({ ...publico(o), motivo: o._susp })) };
 }
 
-module.exports = { buscar, mix, aquecer, montar, ativas, suspeitas, paraPostar, POR_PAGINA };
+module.exports = { buscar, mix, aquecer, montar, pronta, aguardar, atualizar, ativas, suspeitas, paraPostar, POR_PAGINA };

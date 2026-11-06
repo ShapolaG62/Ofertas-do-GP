@@ -158,7 +158,7 @@ router.get('/api/cliente/site-grupo', (req, res) => {
 router.post('/api/cliente/site-grupo/zerar', (req, res) => { require('../grupos-convite').zerar(req.cliente.id); res.json({ ok: true }); });
 
 // Sugestões para postar hoje: o mesmo critério do agendamento, com a comissão e o cupom de cada produto
-router.get('/api/cliente/sugestoes', (req, res) => {
+router.get('/api/cliente/sugestoes', (req, res, next) => require('../busca-ofertas').aguardar(req, res, next), (req, res) => {
   const ids = agenda.melhoresOfertas(12, new Set(), req.cliente.id, clientes.config(req.cliente.id));
   const dados = new Map(require('../busca-ofertas').ativas().filter(o => ids.includes(o.id)).map(o => [o.id, o]));
   res.json({ itens: ids.map(id => dados.get(id)).filter(Boolean).map(o => ({

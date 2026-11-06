@@ -46,7 +46,7 @@ function dashboard() {
     SUM(created_at >= datetime('now', '-14 days') AND created_at < datetime('now', '-7 days')) ant FROM offers`);
   const cliques7 = um(`SELECT COALESCE(SUM(n), 0) n FROM cliques_dia WHERE dia >= date('now', '-6 days')`).n || 0;
   const cliquesAnt = um(`SELECT COALESCE(SUM(n), 0) n FROM cliques_dia WHERE dia >= date('now', '-13 days') AND dia < date('now', '-6 days')`).n || 0;
-  const cliquesTotal = um('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers').n || 0;
+  const cliquesTotal = um('SELECT COALESCE(SUM(link_clicks), 0) n FROM offers WHERE link_clicks > 0').n || 0;
 
   // Pessoas
   const usuarios = um(`SELECT COUNT(*) total, SUM(tipo = 'empresa' AND status = 'active') empresas, SUM(tipo = 'consumidor' AND status = 'active') consumidores,

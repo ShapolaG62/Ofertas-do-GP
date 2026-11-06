@@ -41,7 +41,7 @@
   }
 
   function desenharMenu() {
-    const logo = '<img class="central-logo" src="/images/icon-192.png" alt="Ofertou!" onerror="this.src=\'/images/favicon-32x32.png\'">';
+    const logo = '<img class="central-logo" src="/images/logo-ofertou.png" alt="Ofertou!">';
     menu.innerHTML = logo + areas.map(a => `<button type="button" data-area="${a.id}"${a.id === atual ? ' aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONES[a.id] || ''}</svg>${a.nome}</button>`).join('');
   }
 

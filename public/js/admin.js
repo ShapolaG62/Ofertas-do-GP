@@ -2110,6 +2110,8 @@ function updateWaProvider() {
   const p = $('#wa-provider').value;
   $$('.wa-zapi').forEach(el => el.classList.toggle('hidden', p !== 'zapi'));
   $$('.wa-evolution').forEach(el => el.classList.toggle('hidden', p !== 'evolution'));
+  $$('.wa-proprio').forEach(el => el.classList.toggle('hidden', p !== 'proprio'));
+  $$('.wa-reserva').forEach(el => el.classList.toggle('hidden', p === 'proprio'));
   let g = [];
   try { g = JSON.parse(SETTINGS.whatsapp_groups || '[]'); } catch { /* vazio */ }
   $('#wa-chosen').innerHTML = g.length ? `Grupos de destino salvos: <b>${g.map(x => esc(x.nome)).join(', ')}</b>` : 'Nenhum grupo de destino escolhido ainda.';

@@ -127,3 +127,14 @@ test('login em duas etapas nas duas portas de entrada', async () => {
   assert.equal((await json('/api/admin/2fa/desligar', { senha: SENHA, codigo: conf.codigos[1] }, admin)).status, 200);
   assert.equal((await json('/api/admin/login', { password: SENHA })).status, 200);
 });
+
+test('API própria de WhatsApp: sem login ou sem a chave, nada abre', async () => {
+  for (const p of ['/api/admin/wa/status', '/api/admin/wa/conversas', '/api/admin/wa/chave', '/api/wa/status', '/api/wa/mensagens', '/api/wa/grupos']) {
+    assert.equal((await pede(p)).status, 401, p);
+  }
+  for (const p of ['/api/admin/wa/conectar', '/api/admin/wa/desconectar', '/api/admin/wa/enviar', '/api/wa/enviar', '/api/admin/wa/chave']) {
+    assert.equal((await json(p, { para: '120363000000000001@g.us', texto: 'x' })).status, 401, p);
+  }
+  assert.equal((await pede('/api/wa/status', { headers: { Authorization: 'Bearer chave-errada' } })).status, 401);
+  assert.equal((await json('/api/wa/conectar', {})).status, 401, 'a chave não conecta o número');
+});

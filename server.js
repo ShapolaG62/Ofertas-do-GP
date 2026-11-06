@@ -81,6 +81,8 @@ app.post('/api/whatsapp/webhook/:segredo', express.json({ limit: '5mb' }), (req,
   if (m) ga.processar({ cid: dono.cid, s: ga.configDe(dono.cid) }, m).catch(err => console.error('[GRUPO AUTOMAÇÃO]', err.message));
 });
 
+app.use(require('./src/routes/whatsapp-api')); // API própria de WhatsApp (conexão pelo QR code)
+
 app.use(['/api/cliente/comissao/previa', '/api/cliente/comissao/importar'], express.json({ limit: '12mb' })); // planilha de vendas
 app.use(express.json({ limit: '100kb' }));
 
@@ -373,6 +375,7 @@ if (process.env.VERCEL) {
     console.log('==================================================\n');
     if (process.env.DISABLE_MINER !== '1') miner.startScheduler();
     if (process.env.DISABLE_MINER !== '1') require('./src/comissao-shopee').iniciar(); // comissão das ofertas antigas da Shopee
+    if (process.env.DISABLE_AGENDA !== '1') require('./src/whatsapp-proprio').iniciar(); // volta a conectar o número, antes do agendamento
     if (process.env.DISABLE_AGENDA !== '1') require('./src/agenda').iniciar();
     if (process.env.DISABLE_AGENDA !== '1') require('./src/alertas-whatsapp').iniciar(); // alertas de ofertas no WhatsApp particular
     require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); require('./src/vitrine').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)

@@ -80,8 +80,8 @@ const DEFAULTS = {
   x_access_token: '',
   x_access_secret: '',
 
-  // WhatsApp (número separado, conectado por Z-API ou Evolution API)
-  whatsapp_provider: '',        // 'zapi' | 'evolution'
+  // WhatsApp (número separado, conectado por Z-API, Evolution API ou pela API própria)
+  whatsapp_provider: '',        // 'zapi' | 'evolution' | 'proprio'
   zapi_instance: '',
   zapi_token: '',
   zapi_client_token: '',        // "token de segurança da conta" (opcional)

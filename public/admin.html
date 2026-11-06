@@ -656,13 +656,13 @@
   /* Abas das telas da equipe */
   .tabs-line [aria-selected="true"] { background: var(--azul-soft); color: var(--azul-texto); border-color: transparent; }
 </style>
-<script src="/js/tema.js?v=20261288"></script>
-<script src="/js/dialogo.js?v=20261288"></script>
-<script src="/js/modelo-post.js?v=20261288"></script>
-<script src="/js/avisos-entrada.js?v=20261288"></script>
-<script src="/js/capi-minerando.js?v=20261288" defer></script>
-<script src="/js/cadastro-auto.js?v=20261288" defer></script>
-<script src="/js/seletor.js?v=20261288" defer></script>
+<script src="/js/tema.js?v=20261289"></script>
+<script src="/js/dialogo.js?v=20261289"></script>
+<script src="/js/modelo-post.js?v=20261289"></script>
+<script src="/js/avisos-entrada.js?v=20261289"></script>
+<script src="/js/capi-minerando.js?v=20261289" defer></script>
+<script src="/js/cadastro-auto.js?v=20261289" defer></script>
+<script src="/js/seletor.js?v=20261289" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -1493,6 +1493,7 @@
                 <option value="">— escolha —</option>
                 <option value="zapi">Z-API (z-api.io)</option>
                 <option value="evolution">Evolution API</option>
+                <option value="proprio">API própria (conectar pelo QR code)</option>
               </select></label>
             <label class="field">Intervalo entre ofertas (segundos) <input type="number" name="whatsapp_intervalo_s" min="20" max="900"></label>
           </div>
@@ -1508,8 +1509,18 @@
             <label class="field">Nome da instância <input type="text" name="evolution_instance" placeholder="ofertou"></label>
           </div>
           <p class="hint wa-evolution">Na Evolution API (v2): crie uma instância, leia o QR code com o WhatsApp do número separado e informe aqui o endereço, a chave global (AUTHENTICATION_API_KEY) e o nome da instância.</p>
-          <h3>Número de contingência (opcional)</h3>
-          <p class="hint">Um segundo número nos mesmos grupos. Os dois <b>se revezam</b> a cada mensagem (cada oferta sai uma vez só, por um deles), o que deixa o envio menos previsível e diminui o risco de bloqueio. Se um cair (desconectado, banido ou fora do ar), o outro segue enviando sozinho. Deixe os dois números como <b>administradores</b> dos grupos de destino.</p>
+          <div class="wa-proprio hidden" style="margin-top:14px">
+            <p class="hint"><b>Atenção:</b> esta conexão também não é a API oficial do WhatsApp, e o número pode ser banido. Prefira um número só para as postagens, porque um número pessoal também pode ser perdido. Enquanto estiver conectado, o servidor recebe as mensagens novas da conta e guarda o texto por 30 dias.</p>
+            <p id="wap-status" class="wap-status" role="status">Carregando…</p>
+            <img id="wap-qr" class="wap-qr" alt="QR code para conectar o WhatsApp" width="280" height="280" hidden>
+            <p id="wap-instrucao" class="hint" hidden>No celular, abra o WhatsApp, toque em <b>Dispositivos conectados</b> e depois em <b>Conectar um dispositivo</b>. Aponte a câmera para o QR code.</p>
+            <div class="actions" style="justify-content:flex-start">
+              <button class="btn primary" type="button" id="wap-conectar">Conectar</button>
+              <button class="btn" type="button" id="wap-desconectar" hidden>Desconectar</button>
+            </div>
+          </div>
+          <h3 class="wa-reserva">Número de contingência (opcional)</h3>
+          <p class="hint wa-reserva">Um segundo número nos mesmos grupos. Os dois <b>se revezam</b> a cada mensagem (cada oferta sai uma vez só, por um deles), o que deixa o envio menos previsível e diminui o risco de bloqueio. Se um cair (desconectado, banido ou fora do ar), o outro segue enviando sozinho. Deixe os dois números como <b>administradores</b> dos grupos de destino.</p>
           <div class="grid wa-zapi">
             <label class="field">ID da instância reserva <input type="text" name="zapi2_instance"></label>
             <label class="field">Token da instância reserva <input type="password" name="zapi2_token" autocomplete="off" data-secret></label>
@@ -1532,6 +1543,42 @@
           <p class="hint" id="wa-chosen"></p>
         </div>
       </form>
+
+      <div class="panel wa-proprio hidden">
+        <h2>Mensagens do WhatsApp</h2>
+        <p class="hint">Aparecem as mensagens que chegarem depois de conectar. Fotos, áudios e vídeos ficam só indicados, sem o arquivo.</p>
+        <div class="wap-caixa">
+          <div id="wap-conversas" class="wap-conversas"><span class="hint">Nenhuma mensagem ainda.</span></div>
+          <div class="wap-chat">
+            <h3 id="wap-chat-nome">Escolha uma conversa</h3>
+            <div id="wap-mensagens" class="wap-mensagens" aria-live="polite"></div>
+            <form id="wap-form" class="wap-form" hidden>
+              <textarea id="wap-texto" rows="2" maxlength="4000" placeholder="Escreva a mensagem" aria-label="Mensagem"></textarea>
+              <button class="btn primary" type="submit">Enviar</button>
+            </form>
+            <div id="wap-msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel wa-proprio hidden">
+        <h2>Chave da API</h2>
+        <p class="hint">Para outro programa usar este WhatsApp. A chave lê as mensagens e envia em nome do número, então guarde como uma senha. Ela não conecta nem desconecta o número.</p>
+        <p id="wap-chave-estado" class="hint"></p>
+        <p id="wap-chave-nova" class="wap-chave" hidden></p>
+        <div class="actions" style="justify-content:flex-start">
+          <button class="btn" type="button" id="wap-chave-gerar">Gerar chave</button>
+          <button class="btn" type="button" id="wap-chave-apagar" hidden>Apagar chave</button>
+        </div>
+        <pre class="wap-doc">Authorization: Bearer SUA_CHAVE
+
+GET  /api/wa/status
+GET  /api/wa/grupos
+GET  /api/wa/conversas
+GET  /api/wa/mensagens?chat=ID&amp;limite=50&amp;depois=ULTIMO_ID
+POST /api/wa/enviar
+     { "para": "ID_DO_GRUPO", "texto": "Olá", "imagem": "https://..." }</pre>
+      </div>
 
       <div class="panel">
         <h2>Alertas de ofertas no WhatsApp particular</h2>
@@ -2005,6 +2052,32 @@
   </form>
 </dialog>
 
-<script src="/js/admin.js?v=20261288"></script>
+<script src="/js/admin.js?v=20261289"></script>
+<script src="/js/wa-proprio.js?v=20261289"></script>
+<style>
+  .wa-proprio [hidden] { display: none !important; }
+  .wap-status { font-weight: 600; margin: 8px 0; overflow-wrap: anywhere; }
+  .wap-qr { display: block; background: #fff; border-radius: 12px; padding: 8px; max-width: 100%; height: auto; }
+  .wap-caixa { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .wap-conversas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; align-content: start; max-height: 240px; overflow: auto; }
+  .wap-conversa { display: block; width: 100%; min-height: 44px; text-align: left; padding: 8px 10px; border: 1px solid var(--line, #ddd); border-radius: 10px; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+  .wap-conversa[aria-current="true"] { border-color: var(--brand-strong); border-width: 2px; }
+  .wap-conversa b, .wap-conversa small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wap-chat { min-width: 0; }
+  .wap-chat h3 { margin-top: 0; overflow-wrap: anywhere; }
+  .wap-mensagens { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow: auto; margin-bottom: 10px; }
+  .wap-bolha { align-self: flex-start; max-width: 85%; padding: 7px 10px; border: 1px solid var(--line, #ddd); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .wap-bolha.eu { align-self: flex-end; background: rgba(37, 211, 102, .14); }
+  .wap-bolha small { display: block; opacity: .7; font-size: 12px; }
+  .wap-form { display: flex; gap: 8px; align-items: flex-end; }
+  .wap-form textarea { flex: 1; min-width: 0; min-height: 64px; height: 64px; }
+  .wap-form button { min-height: 44px; }
+  .wap-chave { font-family: monospace; overflow-wrap: anywhere; padding: 8px 10px; border: 1px solid var(--line, #ddd); border-radius: 10px; }
+  .wap-doc { font-size: 13px; overflow-x: auto; padding: 10px; margin: 12px 0 0; border: 1px solid var(--line, #ddd); border-radius: 10px; }
+  @media (min-width: 760px) {
+    .wap-caixa { grid-template-columns: 260px minmax(0, 1fr); }
+    .wap-conversas { max-height: 440px; }
+  }
+</style>
 </body>
 </html>

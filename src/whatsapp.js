@@ -1,12 +1,17 @@
 // WhatsApp por um serviço que conecta um número ao WhatsApp Web (não é API oficial do WhatsApp):
 //  • Z-API (z-api.io, pago, na nuvem)      • Evolution API v2 (código aberto, roda no seu servidor)
+//  • API própria (src/whatsapp-proprio.js): conexão direta pelo QR code, só para o número do site
 // Use um número separado só para as postagens: o WhatsApp pode banir números automatizados.
 const axios = require('axios');
 
 const TIMEOUT = 30000;
-const PROVEDORES = { zapi: 'Z-API', evolution: 'Evolution API' };
+const PROVEDORES = { zapi: 'Z-API', evolution: 'Evolution API', proprio: 'API própria' };
+const proprio = () => require('./whatsapp-proprio');
 
 function config(s) {
+  if (s.whatsapp_provider === 'proprio') {
+    return s.cliente_id ? { erro: 'A API própria está disponível só para o número do site.' } : { tipo: 'proprio' };
+  }
   if (s.whatsapp_provider === 'zapi') {
     if (!s.zapi_instance || !s.zapi_token) return { erro: 'Informe o ID da instância e o token da Z-API.' };
     return {
@@ -22,7 +27,7 @@ function config(s) {
     }
     return { tipo: 'evolution', base: url, instancia: encodeURIComponent(s.evolution_instance.trim()), headers: { apikey: s.evolution_api_key.trim() } };
   }
-  return { erro: 'Escolha o serviço de WhatsApp (Z-API ou Evolution API) no painel.' };
+  return { erro: 'Escolha o serviço de WhatsApp no painel.' };
 }
 
 const falha = (err, servico) => {
@@ -39,6 +44,10 @@ const falha = (err, servico) => {
 async function status(s) {
   const c = config(s);
   if (c.erro) return { conectado: false, mensagem: c.erro };
+  if (c.tipo === 'proprio') {
+    const e = proprio().status();
+    return { conectado: e.conectado, mensagem: e.conectado ? 'Número conectado.' : (e.erro || 'Número desconectado: clique em Conectar e leia o QR code.') };
+  }
   try {
     if (c.tipo === 'zapi') {
       const r = await axios.get(`${c.base}/status`, { headers: c.headers, timeout: TIMEOUT });
@@ -56,6 +65,7 @@ async function status(s) {
 async function listarGrupos(s) {
   const c = config(s);
   if (c.erro) throw new Error(c.erro);
+  if (c.tipo === 'proprio') return (await proprio().carregarGrupos()).map(({ id, nome }) => ({ id, nome }));
   try {
     if (c.tipo === 'zapi') {
       const out = [];
@@ -80,6 +90,10 @@ async function tamanhoGrupos(s, ids) {
   const c = config(s);
   if (c.erro) throw new Error(c.erro);
   const out = new Map();
+  if (c.tipo === 'proprio') {
+    for (const g of await proprio().carregarGrupos()) if (ids.includes(g.id) && Number.isInteger(g.membros)) out.set(g.id, g.membros);
+    return out;
+  }
   try {
     if (c.tipo === 'zapi') {
       for (const id of ids.slice(0, 60)) {
@@ -125,6 +139,7 @@ async function enviar(s, grupoId, msg) {
 }
 async function enviarPor(c, grupoId, { imagem, texto }) {
   if (c.erro) throw new Error(c.erro);
+  if (c.tipo === 'proprio') return proprio().enviar(grupoId, { imagem, texto });
   if (Buffer.isBuffer(imagem)) {
     const b64 = imagem.toString('base64');
     imagem = c.tipo === 'zapi' ? `data:image/jpeg;base64,${b64}` : b64; // Z-API pede o prefixo; Evolution, só o base64

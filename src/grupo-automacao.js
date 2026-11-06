@@ -181,6 +181,7 @@ async function ativarWebhook(cid = null) {
   const s = configDe(cid);
   const c = whatsapp.config(s);
   if (c.erro) throw new Error(c.erro);
+  if (c.tipo === 'proprio') throw new Error('Com a API própria não precisa ativar: as mensagens já chegam direto ao site.');
   if (!/^https:\/\//i.test(baseSite())) throw new Error('Preencha o "Endereço público do site" (https://…) em Painel → Site antes de ativar.');
   const url = enderecoWebhook(cid);
   if (c.tipo === 'zapi') {

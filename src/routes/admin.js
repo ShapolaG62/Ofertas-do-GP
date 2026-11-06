@@ -133,9 +133,10 @@ router.get('/api/admin/backups/:nome', (req, res) => {
 });
 
 // ── Dashboard (resumo do site) ───────────────────────────────────────────────
-// Resumo do painel: varre o site inteiro (~0,5 s); guardado por 1 min para não travar o site a cada abertura do painel
+// Resumo do painel: varre o site inteiro (~0,5 s); guardado por 1 min para não travar o site a cada abertura do painel.
+// Precisa da lista de ofertas: logo depois de ligar o servidor, espera ela ficar pronta sem travar os outros pedidos.
 let dashCache = { at: 0, dados: null };
-router.get('/api/admin/dashboard', (req, res) => {
+router.get('/api/admin/dashboard', (req, res, next) => require('../busca-ofertas').aguardar(req, res, next), (req, res) => {
   try {
     if (!dashCache.dados || Date.now() - dashCache.at > 60 * 1000) dashCache = { at: Date.now(), dados: require('../admin-painel').dashboard() };
     res.json(dashCache.dados);
@@ -189,7 +190,7 @@ router.post('/api/admin/mineracao/ml-cupons', (req, res) => {
 
 // ── Ofertas ───────────────────────────────────────────────────────────────────
 // Ofertas com desconto suspeito, para conferir e ocultar se quiser
-router.get('/api/admin/offers/suspeitas', (req, res) => res.json(require('../busca-ofertas').suspeitas(200)));
+router.get('/api/admin/offers/suspeitas', (req, res, next) => require('../busca-ofertas').aguardar(req, res, next), (req, res) => res.json(require('../busca-ofertas').suspeitas(200)));
 router.get('/api/admin/offers', (req, res) => {
   res.json(offers.listForAdmin({
     q: String(req.query.q || ''),

@@ -162,6 +162,11 @@ if (!offerColumns.includes('loja_id')) {
   db.exec('ALTER TABLE offers ADD COLUMN loja_id INTEGER REFERENCES lojas(id) ON DELETE CASCADE');
 }
 db.exec('CREATE INDEX IF NOT EXISTS idx_offers_loja ON offers (loja_id)');
+// Painel: cupons em Mineração e cliques/novidades no resumo, sem percorrer a tabela inteira a cada abertura.
+// Parciais: guardam só as poucas ofertas com cupom ou com clique, sem pesar na gravação das demais.
+db.exec(`CREATE INDEX IF NOT EXISTS idx_offers_cupom ON offers (store_id, cupom_codigo) WHERE cupom_codigo IS NOT NULL;
+  CREATE INDEX IF NOT EXISTS idx_offers_cliques ON offers (link_clicks) WHERE link_clicks > 0;
+  CREATE INDEX IF NOT EXISTS idx_offers_created ON offers (created_at);`);
 
 // Bancos antigos: a tabela de usuários exigia tipo e senha (e depois não aceitava o perfil afiliado).
 // Recria com a estrutura nova copiando os dados.

@@ -52,7 +52,7 @@ async function processar() {
     if (!job) continue;
     rodando++;
     job.status = 'minerando';
-    require('./miner').minerarTermo(job.termo).then(r => {
+    require('./miner').minerarTermo(job.termo).then(async r => {
       job.encontradas = r.encontradas; job.gravadas = r.gravadas;
       if (r.encontradas || r.falhas) {
         db.run(`INSERT INTO termos_auto (chave, termo, encontradas, gravadas) VALUES (?, ?, ?, ?)
@@ -60,7 +60,7 @@ async function processar() {
       } else {
         retirar(chave); // todas as lojas responderam e nenhuma tem: não fica gastando as próximas rodadas
       }
-      if (r.gravadas) require('./busca-ofertas').montar(); // a lista já sai pronta quando a pessoa recarregar
+      if (r.gravadas) await require('./busca-ofertas').atualizar(); // a lista já sai pronta quando a pessoa recarregar
       job.status = r.gravadas ? 'pronto' : 'sem_ofertas';
     }).catch(err => {
       console.error('[TERMOS]', err.message);

@@ -13,14 +13,15 @@ const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 const router = express.Router();
 
 // Página de ofertas: o servidor filtra e devolve só a página pedida (24 ofertas) + os números dos filtros
-router.get('/api/offers/busca', (req, res) => {
+const listaPronta = (req, res, next) => require('../busca-ofertas').aguardar(req, res, next); // servidor acabou de ligar: espera sem travar
+router.get('/api/offers/busca', listaPronta, (req, res) => {
   res.setHeader('Cache-Control', 'private, no-cache');
   res.json(require('../busca-ofertas').buscar(req.query, { comissao: require('./postagens').veComissao(req) }));
 });
 // A pessoa confirmou uma busca: conta nos mais pesquisados e, se o termo não está na lista de mineração, minera agora.
 // (Não é a busca acima, que roda a cada letra digitada: "gel", "gela"... não podem virar termos.)
 const contaBuscaLimiter = createLimiter(120, 60);
-router.post('/api/offers/termo', (req, res) => {
+router.post('/api/offers/termo', listaPronta, (req, res) => {
   const q = String(req.body?.q || '').trim().slice(0, 100);
   if (!q) return res.json({ status: 'ignorado' });
   res.setHeader('Cache-Control', 'no-store');
@@ -35,7 +36,7 @@ router.get('/api/offers/termo', (req, res) => {
   res.json(require('../termos-busca').situacao(String(req.query.q || '')));
 });
 // Postagens: "melhor de cada categoria"
-router.get('/api/offers/mix', (req, res) => {
+router.get('/api/offers/mix', listaPronta, (req, res) => {
   res.setHeader('Cache-Control', 'private, no-cache');
   res.json({ ids: require('../busca-ofertas').mix(String(req.query.loja || '')) });
 });

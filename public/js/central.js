@@ -17,6 +17,7 @@
   const caixa = document.getElementById('central-quadros');
   const quadros = {};
   let areas = [];
+  let visualizar = [];
   let atual = null;
 
   const tem = id => areas.some(a => a.id === id);
@@ -60,6 +61,7 @@
     const f = document.createElement('iframe');
     f.title = areas.find(a => a.id === id)?.nome || 'Ofertou!';
     f.hidden = true;
+    f.dataset.area = id;
     f.addEventListener('load', () => aoCarregar(id, f));
     caixa.append(f);
     quadros[id] = f;
@@ -86,6 +88,7 @@
     const d = await r.json();
     const mudou = d.areas.map(a => a.id).join() !== areas.map(a => a.id).join();
     areas = d.areas;
+    visualizar = d.visualizar || [];
     if (mudou) desenharMenu();
     return d;
   }
@@ -134,7 +137,7 @@
     ativar(destino, caminhoDe(u));
     return true;
   }
-  window.OfertouCentral = { abrir };
+  window.OfertouCentral = { abrir, visualiza: id => visualizar.includes(id) };
 
   menu.addEventListener('click', e => {
     const b = e.target.closest('button[data-area]');

@@ -117,7 +117,7 @@ app.use(central.redirecionar);
 app.get('/api/central', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const areas = central.areas(req);
-  res.json({ areas, trabalho: central.temTrabalho(areas) });
+  res.json({ areas, trabalho: central.temTrabalho(areas), visualizar: central.visualizar(req) });
 });
 app.get('/central', (req, res) => {
   const areas = central.areas(req);

@@ -1,7 +1,8 @@
 // Ofertou! — minerador de cupons do Mercado Livre (só age quando ligado pelo botão "Minerar cupons" do Painel).
 //  1. Lê a central de cupons (mercadolivre.com.br/cupons/filter?all=true&page=N), página por página: título, desconto,
 //     compra mínima, limite, validade e se o cupom já está ativo na sua conta;
-//  2. Abre a lista de produtos de cada cupom ativo (o link "Conferir") e pega os produtos marcados "com Cupom";
+//  2. Lê por trás a lista de produtos de cada cupom ativo (o link "Conferir") e pega os produtos marcados "com Cupom";
+//     uma lista que não abre é pulada, sem parar a coleta;
 //  3. Volta para o Painel do Ofertou! entregando tudo (o Painel grava os cupons e as ofertas).
 // Com "Aplicar sozinho" marcado no Painel, toca em "Aplicar" nos cupons ainda não aplicados (até o limite escolhido),
 // para o Mercado Livre liberar a lista de produtos deles. Fora isso, só lê as páginas.
@@ -79,9 +80,9 @@
   }
 
   // Produtos marcados "com Cupom" na lista do cupom
-  function produtosDaLista() {
+  function produtosDaLista(doc) {
     const out = [];
-    for (const card of document.querySelectorAll('.poly-card')) {
+    for (const card of doc.querySelectorAll('.poly-card')) {
       const rotulo = [...card.querySelectorAll('[class*="label"]')].map(x => x.textContent.trim()).find(t => /OFF.*cupom/i.test(t))
         || [...card.querySelectorAll('[class*="label"]')].map(x => x.textContent.trim()).find(t => /cupom/i.test(t));
       if (!rotulo) continue;
@@ -147,11 +148,56 @@
     return 0;
   }
 
+  // Lista de produtos lida por trás, sem abrir a página. O Mercado Livre pedindo verificação ou limitando os pedidos
+  // encerra a leitura e entrega o que já veio: quem resolve é a pessoa, no Mercado Livre.
+  const RE_VERIFICACAO = /account-verification|negative_traffic|captcha|\/login|\/lgz\//i;
+  async function lerLista(url) {
+    let r;
+    try { r = await chrome.runtime.sendMessage({ tipo: 'ler-lista', url }); } catch { return { falhou: true }; }
+    if (!r || r.erro) return { falhou: true };
+    if (r.status === 403 || r.status === 429 || RE_VERIFICACAO.test(r.url || '')) return { verificacao: true };
+    if (!r.html) return { falhou: true };
+    return { doc: new DOMParser().parseFromString(r.html, 'text/html') };
+  }
+  async function produtosDoCupom(j, cupom) {
+    const lista = j.produtos[cupom.id] || (j.produtos[cupom.id] = []);
+    const vistos = new Set(lista.map(p => p.produto || p.item));
+    let url = cupom.link;
+    for (let pag = 1; url && pag <= j.paginasProd; pag++) {
+      const { doc, falhou, verificacao } = await lerLista(url);
+      if (verificacao) return 'verificacao';
+      if (falhou) { if (pag === 1) j.listasFalhas = (j.listasFalhas || 0) + 1; return 'ok'; }
+      const achados = produtosDaLista(doc);
+      for (const p of achados) if (!vistos.has(p.produto || p.item) && lista.length < 150) { lista.push(p); vistos.add(p.produto || p.item); }
+      url = achados.length ? doc.querySelector('.andes-pagination__button--next a')?.getAttribute('href') : null;
+      if (url) await espera(300);
+    }
+    return 'ok';
+  }
+  // Três cupons de cada vez, com uma pausa. O progresso fica guardado: se a guia recarregar, continua de onde parou.
+  async function lerProdutos(j) {
+    while (j.idx < j.fila.length) {
+      const { cuponsJob: ainda } = await chrome.storage.local.get('cuponsJob');
+      if (!ainda) return; // parado pela pessoa
+      const lote = j.fila.slice(j.idx, j.idx + 3);
+      const res = await Promise.all(lote.map(c => produtosDoCupom(j, c)));
+      const { cuponsJob: seguir } = await chrome.storage.local.get('cuponsJob');
+      if (!seguir) return; // parado durante a leitura: não grava de novo, senão a coleta voltaria
+      j.idx += lote.length;
+      await chrome.storage.local.set({ cuponsJob: j });
+      if (res.includes('verificacao')) return terminar('verificacao');
+      const total = Object.values(j.produtos).reduce((s, l) => s + l.length, 0);
+      caixa(`produtos: cupom ${j.idx} de ${j.fila.length} · ${total} com cupom${j.listasFalhas ? ` · ${j.listasFalhas} listas puladas` : ''}`);
+      await espera(500);
+    }
+    return terminar('ok');
+  }
+
   async function terminar(motivo) {
     const { cuponsJob: j } = await chrome.storage.local.get('cuponsJob');
     await chrome.storage.local.remove('cuponsJob');
     if (!j) return;
-    await chrome.storage.local.set({ cuponsResultado: { em: Date.now(), motivo, aplicados: j.aplicados || 0, cupons: Object.values(j.cupons || {}), esgotados: Object.keys(j.esgotados || {}), produtos: j.produtos || {} } });
+    await chrome.storage.local.set({ cuponsResultado: { em: Date.now(), motivo, aplicados: j.aplicados || 0, listasFalhas: j.listasFalhas || 0, cupons: Object.values(j.cupons || {}), esgotados: Object.keys(j.esgotados || {}), produtos: j.produtos || {} } });
     caixa('Pronto! Voltando para o Painel…');
     location.href = `${j.painel}/admin?ml-cupons=1#mining`;
   }
@@ -204,28 +250,12 @@
       }
       // 2. Produtos dos cupons ativos (os que têm o link "Conferir")
       j.fila = Object.values(j.cupons).filter(c => c.link).slice(0, j.maxCupons).map(c => ({ id: c.id, link: c.link }));
-      j.fase = 'produtos'; j.idx = 0; j.pag = 1;
+      j.fase = 'produtos'; j.idx = 0;
       await chrome.storage.local.set({ cuponsJob: j });
-      if (!j.fila.length) return terminar('ok');
-      location.href = j.fila[0].link;
-      return;
+      return lerProdutos(j);
     }
 
-    if (j.fase === 'produtos' && location.hostname === 'lista.mercadolivre.com.br') {
-      const atual = j.fila[j.idx];
-      if (!atual) return terminar('ok');
-      const achados = produtosDaLista();
-      const lista = j.produtos[atual.id] || (j.produtos[atual.id] = []);
-      const vistos = new Set(lista.map(p => p.produto || p.item));
-      for (const p of achados) if (!vistos.has(p.produto || p.item) && lista.length < 150) { lista.push(p); vistos.add(p.produto || p.item); }
-      caixa(`produtos: cupom ${j.idx + 1} de ${j.fila.length} · página ${j.pag} · ${lista.length} com cupom`);
-      const prox = document.querySelector('.andes-pagination__button--next a')?.href;
-      if (prox && j.pag < j.paginasProd && achados.length) { j.pag++; await chrome.storage.local.set({ cuponsJob: j }); location.href = prox; return; }
-      j.idx++; j.pag = 1;
-      await chrome.storage.local.set({ cuponsJob: j });
-      if (j.idx >= j.fila.length) return terminar('ok');
-      await espera(800);
-      location.href = j.fila[j.idx].link;
-    }
+    // A guia recarregou no meio da leitura dos produtos
+    if (j.fase === 'produtos' && location.hostname === 'www.mercadolivre.com.br') return lerProdutos(j);
   })();
 })();

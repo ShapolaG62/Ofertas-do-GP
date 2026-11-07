@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Ofertou! Mercado Livre",
   "short_name": "Ofertou ML",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "description": "Leva do Mercado Livre para o Ofertou! as ofertas relâmpago, os cupons, os produtos com comissão extra e o ganho estimado de afiliado, sem copiar e colar.",
   "icons": {
     "16": "icone.png",
@@ -13,6 +13,12 @@
     "storage",
     "unlimitedStorage"
   ],
+  "host_permissions": [
+    "https://lista.mercadolivre.com.br/*"
+  ],
+  "background": {
+    "service_worker": "fundo.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -34,8 +40,7 @@
     },
     {
       "matches": [
-        "https://www.mercadolivre.com.br/cupons*",
-        "https://lista.mercadolivre.com.br/*"
+        "https://www.mercadolivre.com.br/cupons*"
       ],
       "js": [
         "cupons.js"

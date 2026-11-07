@@ -55,7 +55,7 @@
     await chrome.storage.local.remove(['cuponsResultado', 'ofertasResultado']);
     if (Date.now() - r.em > 30 * 60 * 1000) return;
     const ofertas = o && Date.now() - o.em < 4 * 60 * 60 * 1000 ? o.itens : [];
-    avisar({ tipo: 'cupons', cupons: r.cupons, esgotados: r.esgotados || [], produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0, ofertas });
+    avisar({ tipo: 'cupons', cupons: r.cupons, esgotados: r.esgotados || [], produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0, listasFalhas: r.listasFalhas || 0, ofertas });
   });
 
   // Página do Mercado Livre trazida pela extensão (vale 15 min): entrega ao Painel uma vez só

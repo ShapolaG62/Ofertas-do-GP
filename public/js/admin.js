@@ -893,7 +893,8 @@ async function mlcImportar(d) {
     const ativos = lista.filter(c => c.ativo).length;
     out.innerHTML = `<b>${lista.length}</b> cupons lidos (${ativos} ativos na sua conta${d.aplicados ? `, ${d.aplicados} aplicados agora pela extensão` : ''}) · <b>${gravados}</b> ofertas gravadas com cupom de ${recebidos} produtos "com Cupom" em ${produtos.length} cupons`
       + (esgotados.length ? ` · ${esgotados.length} esgotados ignorados${fora.ofertas ? ` (${fora.ofertas} ofertas perderam o cupom)` : ''}` : '')
-      + (d.motivo === 'parado' ? ' · mineração parada por você' : d.motivo === 'sem-dados' ? ' · a central de cupons não abriu (faça login no Mercado Livre)' : '');
+      + (d.motivo === 'parado' ? ' · mineração parada por você' : d.motivo === 'sem-dados' ? ' · a central de cupons não abriu (faça login no Mercado Livre)' : d.motivo === 'verificacao' ? ' · o Mercado Livre pediu verificação ou limitou os pedidos, então a leitura parou aqui. Abra o Mercado Livre, resolva e colete de novo mais tarde' : '')
+      + (d.listasFalhas ? ` · ${d.listasFalhas} listas de produtos não abriram e foram puladas` : '');
     // Ofertas por último: assim as relâmpago já saem com o cupom
     const ofertas = Array.isArray(d.ofertas) ? d.ofertas : [];
     let rel = 0, grav = 0;
@@ -948,9 +949,9 @@ function coletarMl() {
   }
   const [maior, menor] = extensaoVersao.split('.').map(Number);
   const RECARREGAR = 'Baixe a extensão de novo em Mineração, descompacte por cima da mesma pasta, toque em recarregar em chrome://extensions e atualize esta página.';
-  if (!(maior > 2 || (maior === 2 && menor >= 10))) {
+  if (!(maior > 2 || (maior === 2 && menor >= 11))) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    return globalMsg(`Sua extensão está desatualizada e ainda não sabe coletar as ofertas. ${RECARREGAR}`, false);
+    return globalMsg(`Sua extensão está desatualizada e a coleta pode travar. ${RECARREGAR}`, false);
   }
   clearTimeout(coletaEspera);
   coletaEspera = setTimeout(() => globalMsg(`A extensão não respondeu. ${RECARREGAR}`, false), 3000);

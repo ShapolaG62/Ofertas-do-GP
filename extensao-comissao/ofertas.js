@@ -46,6 +46,16 @@
     const m = String(texto).match(/(\d{1,2}):(\d{2}):(\d{2})/);
     return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : null;
   }
+  // O cartão mostra o relógio em blocos de dígitos ("0 8 : 0 7 : 1 3"), e o dígito dos segundos vem com o seguinte junto
+  function restanteDoCartao(card) {
+    const blocos = [...card.querySelectorAll('.poly-countdown__block')].map(b => Number([...b.querySelectorAll('.poly-countdown__roller-container')]
+      .map(r => r.querySelector('.poly-countdown__digit--current, .poly-countdown__digit--static')?.textContent || '').join('')));
+    if (blocos.length >= 3 && blocos.length <= 4 && blocos.every(Number.isFinite)) {
+      const [s, m, h, d = 0] = blocos.reverse();
+      return d * 86400 + h * 3600 + m * 60 + s;
+    }
+    return restante(card.innerText || '');
+  }
   function lerCartoes() {
     const out = [];
     for (const card of document.querySelectorAll('.poly-card, .promotion-item')) {
@@ -57,13 +67,12 @@
       const preco = valor(card.querySelector('.poly-price__current .andes-money-amount'));
       const anterior = valor(card.querySelector('.andes-money-amount--previous'));
       if (!preco || !anterior) continue;
-      const texto = card.innerText || '';
       const img = card.querySelector('img');
       out.push({
         produto, item: item ? `MLB${item}` : null, link: href,
         nome: (card.querySelector('.poly-component__title')?.textContent || a?.textContent || '').trim().slice(0, 200),
         preco, preco_anterior: anterior, imagem: img?.getAttribute('data-src') || img?.src || null,
-        relampago: true, resta_s: restante(texto),
+        relampago: true, resta_s: restanteDoCartao(card),
       });
     }
     return out;

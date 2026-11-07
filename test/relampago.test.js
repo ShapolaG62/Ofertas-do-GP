@@ -284,3 +284,68 @@ test('Mercado Livre: as ofertas da extensão chegam com o link de afiliado', () 
     settings.set('ml_matt_tool', antes[1] || '');
   }
 });
+
+test('categoria Promoção relâmpago: só o que a loja marcou, com o que acaba antes na frente', async () => {
+  const busca = require('../src/busca-ofertas');
+  db.run(`UPDATE offers SET relampago_fim = NULL, relampago_tipo = NULL, relampago_desde = NULL, relampago_fim_real = 0`);
+  const agora = Date.now();
+  const longe = salvar(kabum, base({ produto: 'Relogio categoria longe', relampago: { fim: agora + 5 * 3600000 } }));
+  const perto = salvar(kabum, base({ produto: 'Relogio categoria perto', relampago: { fim: agora + 3600000 } }));
+  const semHora = salvar(amazon, base({ produto: 'Relogio categoria sem hora', relampago: { fim: 0 } }));
+  const queda = salvar(kabum, base({ produto: 'Relogio categoria queda' }));
+  db.run(`UPDATE offers SET relampago_tipo = 'queda', relampago_fim = datetime('now', '+6 hours'), relampago_fim_real = 0 WHERE id = ?`, queda);
+  const terminou = salvar(kabum, base({ produto: 'Relogio categoria terminou', relampago: { fim: agora + 3600000 } }));
+  db.run(`UPDATE offers SET relampago_fim = datetime('now', '-1 minutes') WHERE id = ?`, terminou);
+  const comum = salvar(kabum, base({ produto: 'Relogio categoria comum' }));
+  await busca.atualizar();
+
+  const r = busca.buscar({ relampago: '1', por: 96 });
+  assert.deepEqual(r.itens.map(o => o.id), [perto, longe, semHora]);
+  assert.equal(r.total, 3);
+  assert.equal(r.contagens.relampago, 3);
+  const c = r.itens[0];
+  assert.equal(c.relampago_fim_real, 1, 'o cartão recebe a hora real do fim');
+  assert.ok(c.relampago_fim, 'e quando acaba');
+
+  const geral = busca.buscar({ por: 96 });
+  assert.equal(geral.contagens.relampago, 3, 'a contagem aparece fora da categoria');
+  assert.ok(geral.itens.some(o => o.id === comum), 'o resto continua na lista geral');
+  assert.equal(busca.buscar({ relampago: '1', loja: 'amazon', por: 96 }).total, 1, 'respeita a loja');
+  assert.equal(busca.buscar({ relampago: '1', q: 'comum', por: 96 }).total, 0);
+});
+
+test('extensão: lê o relógio em dígitos separados do cartão do Mercado Livre', () => {
+  const vm = require('vm');
+  const digito = (cl, v) => ({ textContent: v, cl });
+  const bloco = (...digitos) => ({ querySelectorAll: () => digitos.map(d => ({ querySelector: () => d })) });
+  const card = (blocos, texto = '') => ({
+    innerText: texto,
+    querySelectorAll: s => (/countdown__block/.test(s) ? blocos : []),
+    querySelector: s => {
+      if (s.startsWith('a.poly')) return { href: 'https://www.mercadolivre.com.br/p/MLB1234567', textContent: 'Produto' };
+      if (/current|previous/.test(s)) return { querySelector: q => (/fraction/.test(q) ? { textContent: /current/.test(s) ? '90' : '180' } : null) };
+      if (s === 'img') return { getAttribute: () => null, src: 'https://x.test/f.jpg' };
+      return null;
+    },
+  });
+  const relogio = card([bloco(digito(0, '0'), digito(0, '8')), bloco(digito(0, '0'), digito(0, '7')), bloco(digito(0, '1'), digito(0, '3'))], '0 8 : 0 7 : 1 3 8');
+  const antigo = card([], 'Termina em 02:14:33');
+  const semNada = card([], 'sem relógio');
+  const dias = card([bloco(digito(0, '1')), bloco(digito(0, '0'), digito(0, '2')), bloco(digito(0, '0'), digito(0, '0')), bloco(digito(0, '0'), digito(0, '0'))]);
+  let cards = [];
+  const store = {};
+  const sandbox = { console, Number, String, Object, Math, URLSearchParams, Date, decodeURIComponent, setTimeout: () => 0, innerHeight: 800,
+    chrome: { storage: { local: { get: async () => ({}), set: async () => {}, remove: async () => {} } } }, location: {}, document: { querySelectorAll: () => cards, createElement: () => ({ style: {} }), documentElement: { append() {} } } };
+  sandbox.window = sandbox;
+  const codigo = fs.readFileSync(path.join(__dirname, '../extensao-comissao/ofertas.js'), 'utf8').replace('function lerCartoes() {', 'window.__ler = () => lerCartoes(); function lerCartoes() {');
+  vm.runInNewContext(codigo, sandbox);
+  cards = [relogio];
+  assert.equal(sandbox.__ler()[0].resta_s, 8 * 3600 + 7 * 60 + 13);
+  cards = [antigo];
+  assert.equal(sandbox.__ler()[0].resta_s, 2 * 3600 + 14 * 60 + 33, 'continua lendo o formato antigo');
+  cards = [semNada];
+  assert.equal(sandbox.__ler()[0].resta_s, null);
+  cards = [dias];
+  assert.equal(sandbox.__ler()[0].resta_s, 86400 + 2 * 3600);
+  void store;
+});

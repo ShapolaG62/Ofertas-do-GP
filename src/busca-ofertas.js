@@ -242,15 +242,19 @@ function ler(q) {
   return {
     loja: String(q.loja || ''), cat: String(q.cat || ''), tipo: String(q.tipo || ''), q: String(q.q || '').slice(0, 120),
     min: num(q.min), max: num(q.max), desc: Number(q.desc) || 0, extra: q.com === 'extra',
-    cupom: String(q.cupom || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30), ordem: String(q.ordem || 'destaques'),
+    rel: q.relampago === '1', cupom: String(q.cupom || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30), ordem: String(q.ordem || 'destaques'),
     sem: String(q.sem || '').replace(/[^a-z0-9]/gi, '').slice(0, 12),
     pagina: Math.max(1, parseInt(q.pagina, 10) || 1), por: Math.min(Math.max(parseInt(q.por, 10) || POR_PAGINA, 1), 96),
   };
 }
+// Categoria "Promoção relâmpago": só o que a própria loja marcou. A queda de preço ("Preço caiu agora") não tem hora para acabar.
+const agoraSql = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
+const ehRelampago = (o, agora = agoraSql()) => o.relampago_tipo === 'loja' && o.relampago_fim > agora && !o._susp;
 function filtro(f, pular = '') {
   const termos = f.q ? termosDe(f.q) : [];
   return o => {
     if (pular !== 'loja' && f.loja && (f.loja === 'parceiros' ? !o.loja_slug : o.store_id !== f.loja)) return false;
+    if (f.rel && !ehRelampago(o)) return false;
     if (pular !== 'cat' && f.cat && o.categoria !== f.cat) return false;
     if (pular !== 'tipo' && f.tipo && o.subcategoria !== f.tipo) return false;
     if (termos.length && !casaTodos(o, termos)) return false;
@@ -378,6 +382,8 @@ function ordenadaComissao(sem) {
 // No máximo metade da página, para não esconder o resto. Busca por palavra e outras ordens continuam como estão.
 function relampagosPrimeiro(l, f) {
   if (f.ordem !== 'destaques' || f.q) return l;
+  // Na categoria: as que têm hora para acabar primeiro, começando pelas que acabam antes
+  if (f.rel) return [...l].sort((a, b) => (b.relampago_fim_real ? 1 : 0) - (a.relampago_fim_real ? 1 : 0) || String(a.relampago_fim).localeCompare(String(b.relampago_fim)));
   const agora = new Date().toISOString().slice(0, 19).replace('T', ' ');
   const ativas = l.filter(o => o.relampago_fim && o.relampago_fim > agora && !o._susp);
   if (!ativas.length) return l;
@@ -431,7 +437,8 @@ function buscar(query, { comissao = false } = {}) {
 
   // Números dos filtros (cada um ignora o próprio filtro), numa passada só pela lista
   const lojas = {}, categorias = {}, subcategorias = {};
-  let parceiros = 0, categoriasTotal = 0, comissaoExtra = 0, comCupom = 0;
+  let parceiros = 0, categoriasTotal = 0, comissaoExtra = 0, comCupom = 0, relampagos = 0;
+  const agoraRel = agoraSql();
   const codigos = {};
   for (const o of aproximado ? todas : doTermo) {
     // Filtros comuns a todas as contagens
@@ -443,6 +450,9 @@ function buscar(query, { comissao = false } = {}) {
     const okCat = !f.cat || o.categoria === f.cat;
     const okTipo = !f.tipo || o.subcategoria === f.tipo;
     const okExtra = (!f.extra || o.comissao_extra_pct > 0) && (!f.cupom || temCupom(o, f.cupom));
+    const rel = ehRelampago(o, agoraRel);
+    if (rel && okLoja && okExtra) relampagos++; // conta em qualquer categoria: a relâmpago fica fora das outras
+    if (f.rel && !rel) continue;
     if (okLoja && okCat && okTipo && (!f.extra || o.comissao_extra_pct > 0) && o.cupom) { comCupom++; codigos[o.cupom] = (codigos[o.cupom] || 0) + 1; }
     if (okCat && okTipo && okExtra) { lojas[o.store_id] = (lojas[o.store_id] || 0) + 1; if (o.loja_slug) parceiros++; }
     if (okLoja && okTipo && okExtra) { categorias[o.categoria] = (categorias[o.categoria] || 0) + 1; categoriasTotal++; }
@@ -452,7 +462,7 @@ function buscar(query, { comissao = false } = {}) {
   // Cupons: total e os 8 códigos com mais ofertas (filtro "Cupons de desconto")
   const cupons = { total: comCupom, codigos: Object.entries(codigos).sort((a, b) => b[1] - a[1]).slice(0, 8)
     .map(([codigo, n]) => ({ codigo, n, texto: (todas.find(o => o.cupom === codigo) || {}).cupom_texto || '' })) };
-  const contagens = { lojas, parceiros, categorias, categorias_total: categoriasTotal, subcategorias, cupons };
+  const contagens = { lojas, parceiros, categorias, categorias_total: categoriasTotal, subcategorias, cupons, relampago: relampagos };
   if (comissao) contagens.comissao_extra = comissaoExtra;
   // Ordem "por tipo": quantas ofertas cada grupo tem na lista inteira
   let grupos = null;

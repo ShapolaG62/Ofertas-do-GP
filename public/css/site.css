@@ -3671,3 +3671,10 @@ body .tabs-line:not(.cli-nav) button[aria-selected="true"] { background: var(--a
 .ass-coluna { display: grid; gap: 16px; min-width: 0; align-content: start; }
 .ass-coluna > .ass-cartao { display: grid; gap: 10px; }
 .ass-coluna > .ass-cartao[hidden] { display: none; }
+
+/* Categoria "Promoção relâmpago" e relógio do cartão */
+.rl-relampago .count { margin-left: auto; padding-right: 6px; color: var(--ink-3); font-size: 12.5px; font-weight: 600; }
+.rl-relampago .rl-ico { color: #d23b2a; }
+.card-relampago b { font-variant-numeric: tabular-nums; }
+.card-relampago .rel-acaba { white-space: pre; }
+@media (max-width: 520px) { .card-relampago .rel-acaba { display: none; } }

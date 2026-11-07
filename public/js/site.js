@@ -50,7 +50,7 @@
 
   // ── Estado (espelhado na URL para links compartilháveis) ─────────────────
   const PAGINA_SEO = window.OFERTOU_PAGINA || null; // /ofertas/celulares etc. (src/paginas/ofertas-seo.js)
-  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', ordem: 'destaques', pagina: 1, vista: '' };
+  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', rel: false, ordem: 'destaques', pagina: 1, vista: '' };
   let CUPONS = null; // lista de cupons ativos (a vista "Cupons" troca os produtos por ela)
   // Resposta do servidor para os filtros atuais: { total, pagina, paginas, itens, contagens, grupos, resumo }
   let DATA = { total: 0, pagina: 1, paginas: 1, itens: [], contagens: { lojas: {}, parceiros: 0, categorias: {}, categorias_total: 0, subcategorias: {} }, grupos: null, resumo: null };
@@ -72,6 +72,7 @@
     state.desc = Number(p.get('desc')) || 0;
     state.com = p.get('com') === 'extra' ? 'extra' : '';
     state.cupom = (p.get('cupom') || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30);
+    state.rel = p.get('relampago') === '1';
     state.ordem = p.get('ordem') || 'destaques';
     state.pagina = Math.max(1, Number(p.get('pagina')) || 1);
     state.vista = location.pathname.replace(/\/+$/, '') === '/cupons' ? 'cupons' : '';
@@ -88,6 +89,7 @@
     if (state.desc) p.set('desc', state.desc);
     if (state.com) p.set('com', state.com);
     if (state.cupom) p.set('cupom', state.cupom);
+    if (state.rel) p.set('relampago', '1');
     if (state.ordem !== 'destaques') p.set('ordem', state.ordem);
     if (state.pagina > 1) p.set('pagina', state.pagina);
     const qs = p.toString();
@@ -100,6 +102,7 @@
     if (state.vista && !('vista' in changes) && Object.keys(changes).some(k => k !== 'loja')) state.vista = '';
     Object.assign(state, changes);
     if ('cat' in changes && !('tipo' in changes)) state.tipo = '';
+    if ('cat' in changes && !('rel' in changes)) state.rel = false; // é uma categoria como as outras: escolher outra sai dela
     if (!keepPage) state.pagina = 1;
     writeUrl();
     loadOffers();
@@ -176,6 +179,7 @@
     outros: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
     cupom: '<path d="M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1zM14 5v2M14 11v2M14 17v2"/>',
   };
+  RL_ICO.relampago = '<path d="M13 2 4.5 13.5H11L10 22l8.500-11.500H12z"/>';
   const rlIco = k => `<svg class="rl-ico" viewBox="0 0 24 24" aria-hidden="true">${RL_ICO[k] || RL_ICO.outros}</svg>`;
   const RL_SETA = '<svg class="rl-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   const RL_VISIVEIS = 7; // categorias à mostra antes de "Ver todas"
@@ -207,12 +211,18 @@
     }).join('')}</ul>`;
   }
 
+  // Sempre a primeira da lista
+  function relampagoCatHtml() {
+    const n = DATA.contagens.relampago || 0;
+    return `<li class="rl-item"><div class="rl-linha${state.rel ? ' is-ativa' : ''}">
+      <button class="rl-nome rl-relampago" type="button" data-relampago aria-pressed="${state.rel}">${rlIco('relampago')}<span>Promoção relâmpago</span>${n ? `<span class="count">${n.toLocaleString('pt-BR')}</span>` : ''}</button></div></li>`;
+  }
   function categoriasHtml() {
     const cats = DATA.contagens.categorias;
     if (catAberta === null) catAberta = state.cat;
     const todas = Object.keys(CATEGORIES).filter(c => cats[c] || state.cat === c).sort((a, b) => (cats[b] || 0) - (cats[a] || 0));
     const visiveis = verTodasCats ? todas : todas.filter((c, i) => i < RL_VISIVEIS || c === state.cat);
-    return visiveis.map(c => {
+    return relampagoCatHtml() + visiveis.map(c => {
       const aberta = catAberta === c;
       return `<li class="rl-item">
         <div class="rl-linha${state.cat === c ? ' is-ativa' : ''}">
@@ -253,7 +263,7 @@
     const descontos = [0, ...DISCOUNTS].map(d => `<label><input type="radio" name="rl-desc" value="${d}"${state.desc === d ? ' checked' : ''}><span>${d ? `${d}% ou mais` : 'Qualquer desconto'}</span></label>`).join('');
     return `
       <div class="rl-bloco"><h3 class="rl-tit">Categorias</h3>
-        <ul class="rl-lista">${state.cat ? `<li><button class="rl-mais" type="button" data-cat="">Todas as categorias</button></li>` : ''}${categoriasHtml()}</ul></div>
+        <ul class="rl-lista">${state.cat || state.rel ? `<li><button class="rl-mais" type="button" data-cat="">Todas as categorias</button></li>` : ''}${categoriasHtml()}</ul></div>
       <div class="rl-bloco"><h3 class="rl-tit">Faixa de Preço</h3>${precoHtml()}</div>
       <div class="rl-bloco"><h3 class="rl-tit">Desconto</h3><form class="rl-radios">${descontos}</form></div>
       <div class="rl-bloco com-only"><h3 class="rl-tit">Comissão de afiliado</h3><ul class="filter-list">
@@ -287,6 +297,7 @@
     const el = document.activeElement;
     if (!el || !el.closest?.('#filters, #filters-mobile')) return '';
     if (el.name) return el.type === 'radio' ? `[name="${el.name}"]:checked` : `[name="${el.name}"]`;
+    if (el.dataset.relampago !== undefined) return '[data-relampago]';
     for (const k of ['cat', 'abrirCat', 'com', 'cupom']) {
       if (el.dataset[k] !== undefined) return `[data-${k.replace(/[A-Z]/g, l => `-${l.toLowerCase()}`)}="${CSS.escape(el.dataset[k])}"]`;
     }
@@ -319,6 +330,7 @@
       items.push(['preco', state.max == null ? `Acima de R$ ${state.min}` : `R$ ${state.min ?? 0} a ${state.max}`]);
     }
     if (state.desc) items.push(['desc', `${state.desc}% ou mais`]);
+    if (state.rel) items.push(['rel', 'Promoção relâmpago']);
     if (state.com) items.push(['com', 'Comissão extra']);
     if (state.vista) items.push(['vista', 'Cupons ativos']);
     if (state.cupom) items.push(['cupom', state.cupom === '1' ? 'Com cupom' : cupomMl(state.cupom) ? 'Cupom do Mercado Livre' : `Cupom ${state.cupom}`]);
@@ -339,20 +351,21 @@
   }
 
   // Selo da oferta relâmpago: com contagem regressiva só quando a loja informa a hora do fim
+  const doisDig = n => String(n).padStart(2, '0');
   const faltaTxt = fim => {
     const s = Math.floor((Date.parse(`${String(fim).replace(' ', 'T')}Z`) - Date.now()) / 1000);
     if (s <= 0) return 'terminou';
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-    return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h ? `${h}h ${String(m).padStart(2, '0')}` : `${m || 1} min`;
+    return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${doisDig(h)}:${doisDig(m)}:${doisDig(s % 60)}`;
   };
   function relampagoHtml(o) {
     if (!o.relampago_fim || Date.parse(`${String(o.relampago_fim).replace(' ', 'T')}Z`) <= Date.now()) return '';
     if (o.relampago_tipo !== 'loja') return `<span class="card-relampago queda${o.cupom ? ' com-cupom' : ''}">🚨 Preço caiu agora</span>`;
-    return `<span class="card-relampago${o.cupom ? ' com-cupom' : ''}"${o.relampago_fim_real ? ` data-relampago-fim="${esc(o.relampago_fim)}"` : ''}>⚡ Relâmpago${o.relampago_fim_real ? ` · <b>${faltaTxt(o.relampago_fim)}</b>` : ''}</span>`;
+    return `<span class="card-relampago${o.cupom ? ' com-cupom' : ''}"${o.relampago_fim_real ? ` data-relampago-fim="${esc(o.relampago_fim)}"` : ''}>⚡ ${o.relampago_fim_real ? `<span class="rel-acaba">Acaba em </span><b>${faltaTxt(o.relampago_fim)}</b>` : 'Relâmpago'}</span>`;
   }
   setInterval(() => {
     document.querySelectorAll('[data-relampago-fim] b').forEach(b => { b.textContent = faltaTxt(b.parentElement.dataset.relampagoFim); });
-  }, 30000);
+  }, 1000);
 
   function cardHtml(o) {
     const isSel = selected.has(o.id);
@@ -386,10 +399,10 @@
   }
 
   function emptyHtml() {
-    const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc || state.com || state.cupom;
+    const hasFilters = state.q || state.loja || state.cat || state.min != null || state.max != null || state.desc || state.com || state.cupom || state.rel;
     return `<div class="empty"><img src="/images/pet-capi.png" alt="" width="120">
-      <h3>${minaTermo && !$('#mina-aviso').hidden && $('#mina-aviso').classList.contains('mina-minerando') ? 'Procurando nas lojas…' : DATA.resumo?.total ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
-      <p>${DATA.resumo?.total ? 'Tente outra busca ou remova alguns filtros.' : 'O minerador está procurando descontos reais nas lojas. Volte em alguns minutos.'}</p>
+      <h3>${state.rel && !state.q ? 'Nenhuma promoção relâmpago no ar agora' : minaTermo && !$('#mina-aviso').hidden && $('#mina-aviso').classList.contains('mina-minerando') ? 'Procurando nas lojas…' : DATA.resumo?.total ? 'Nenhuma oferta com esses filtros' : 'Ainda não há ofertas no ar'}</h3>
+      <p>${state.rel && !state.q ? 'As lojas abrem novas promoções ao longo do dia. Volte em breve.' : DATA.resumo?.total ? 'Tente outra busca ou remova alguns filtros.' : 'O minerador está procurando descontos reais nas lojas. Volte em alguns minutos.'}</p>
       ${hasFilters ? '<button class="btn" type="button" data-clear>Limpar filtros</button>' : ''}</div>`;
   }
 
@@ -437,7 +450,7 @@
     state.pagina = DATA.pagina;
     const pageItems = DATA.itens;
 
-    const title = state.tipo || (state.cat ? CATEGORIES[state.cat] : state.loja === 'parceiros' ? 'Lojas parceiras' : state.loja ? STORE_BY_ID[state.loja]?.name : 'Todas as ofertas');
+    const title = state.rel ? 'Promoção relâmpago' : state.tipo || (state.cat ? CATEGORIES[state.cat] : state.loja === 'parceiros' ? 'Lojas parceiras' : state.loja ? STORE_BY_ID[state.loja]?.name : 'Todas as ofertas');
     $('#results-title').textContent = !state.q ? title : DATA.aproximado ? `Nada exato para “${state.q}”: veja parecidos` : `Resultados para “${state.q}”`;
     $('#results-count').textContent = `${DATA.total.toLocaleString('pt-BR')} oferta${DATA.total === 1 ? '' : 's'}${DATA.resumo?.ultima_conferencia ? ` · preços conferidos ${timeAgo(DATA.resumo.ultima_conferencia)}` : ''}`;
 
@@ -621,9 +634,15 @@
     if (t.dataset.loja !== undefined) return setFilter({ loja: t.dataset.loja });
     if (t.dataset.abrirCat !== undefined) return abrirCategoria(t.dataset.abrirCat);
     if (t.dataset.abrirCupons !== undefined) { cuponsAberto = !(cuponsAberto || state.cupom); return renderFilters(); }
+    if (t.dataset.relampago !== undefined) {
+      if ($('#filters-dialog').open) $('#filters-dialog').close();
+      setFilter({ rel: !state.rel, cat: '', tipo: '' });
+      $('#ofertas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (t.dataset.verCupons !== undefined) {
       if ($('#filters-dialog').open) $('#filters-dialog').close();
-      setFilter({ vista: 'cupons', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', loja: STORE_BY_ID[state.loja] ? state.loja : '' });
+      setFilter({ vista: 'cupons', rel: false, cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', loja: STORE_BY_ID[state.loja] ? state.loja : '' });
       $('#ofertas').scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
@@ -646,7 +665,7 @@
       return setFilter(k === 'preco' ? { min: null, max: null } : { [k]: k === 'desc' ? 0 : '' });
     }
     if (t.dataset.clear !== undefined) {
-      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', vista: '' });
+      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', rel: false, vista: '' });
     }
   }
 
@@ -1002,6 +1021,7 @@
     if (state.desc) p.set('desc', state.desc);
     if (state.com) p.set('com', state.com);
     if (state.cupom) p.set('cupom', state.cupom);
+    if (state.rel) p.set('relampago', '1');
     p.set('pagina', state.pagina);
     p.set('por', PER_PAGE);
     p.set('sem', SEMENTE); // embaralha a comissão extra a cada visita (mesma ordem nas páginas seguintes)

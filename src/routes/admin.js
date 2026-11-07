@@ -263,9 +263,20 @@ router.post('/api/admin/offers', (req, res) => {
 router.patch('/api/admin/offers/:id', (req, res) => {
   const id = Number(req.params.id);
   if (typeof req.body?.oculto === 'boolean') {
-    db.run('UPDATE offers SET oculto = ? WHERE id = ?', req.body.oculto ? 1 : 0, id);
+    db.run('UPDATE offers SET oculto = ?, oculto_palavra = 0 WHERE id = ?', req.body.oculto ? 1 : 0, id);
   }
   res.json({ ok: true });
+});
+
+router.get('/api/admin/palavras-proibidas', (req, res) => res.json(require('../palavras-proibidas').estado()));
+router.post('/api/admin/palavras-proibidas', (req, res) => {
+  const pp = require('../palavras-proibidas');
+  try {
+    res.json(req.body?.remover ? pp.remover(req.body.remover) : pp.adicionar(req.body?.adicionar));
+  } catch (err) {
+    if (err.status !== 400) throw err;
+    res.status(400).json({ error: err.message });
+  }
 });
 
 router.delete('/api/admin/offers/:id', (req, res) => {

@@ -72,6 +72,13 @@
   .ext-status.ok { color: var(--green); } .ext-status.atencao { color: var(--yellow); }
   .ext-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
   .ext-acoes .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .pp-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 8px; }
+  .pp-form .field { flex: 1 1 240px; min-width: 0; margin: 0; }
+  .pp-form input, .pp-form .btn { min-height: 44px; }
+  .pp-lista { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; }
+  .pp-lista li { display: inline-flex; align-items: center; max-width: 100%; min-height: 44px; padding-left: 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 14px; overflow-wrap: anywhere; }
+  .pp-lista button { flex: none; width: 40px; height: 42px; border: 0; border-radius: 999px; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; }
+  .pp-lista button:hover, .pp-lista button:focus-visible { color: var(--text); }
   .ml-coleta-aviso div { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
   .ml-coleta-aviso .btn { min-height: 44px; }
   .btn.danger { color: var(--red); }
@@ -687,14 +694,14 @@
     .side.menu-cel-aberto .tab { width: 100%; white-space: normal; font-size: 15px; }
   }
 </style>
-<script src="/js/tema.js?v=20261306"></script>
-<script src="/js/dialogo.js?v=20261306"></script>
-<script src="/js/modelo-post.js?v=20261306"></script>
-<script src="/js/avisos-entrada.js?v=20261306"></script>
-<script src="/js/capi-minerando.js?v=20261306" defer></script>
-<script src="/js/cadastro-auto.js?v=20261306" defer></script>
-<script src="/js/seletor.js?v=20261306" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261306">
+<script src="/js/tema.js?v=20261307"></script>
+<script src="/js/dialogo.js?v=20261307"></script>
+<script src="/js/modelo-post.js?v=20261307"></script>
+<script src="/js/avisos-entrada.js?v=20261307"></script>
+<script src="/js/capi-minerando.js?v=20261307" defer></script>
+<script src="/js/cadastro-auto.js?v=20261307" defer></script>
+<script src="/js/seletor.js?v=20261307" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261307">
 </head>
 <body>
 <div class="wrap">
@@ -969,6 +976,18 @@
         <p class="hint"><b>Coletar agora</b> faz tudo em sequência: até 10 páginas de ofertas relâmpago, comissão extra com 10 rolagens e os cupons ativos na sua conta, com os produtos de cada um. Tudo chega ao site com o seu link de afiliado. Ofertas normais continuam com a mineração do site.</p>
         <p class="hint">O painel lembra da coleta às 9h, 14h e 20h, e o aviso só some depois que as ofertas e os cupons chegarem. Mantenha o Chrome logado no Mercado Livre.</p>
         <p class="hint" id="ml-coleta-resumo"></p>
+      </div>
+      <div class="panel" id="pp-painel">
+        <h2>Palavras proibidas na mineração</h2>
+        <p class="hint">A mineração, o radar e a extensão não trazem produtos com estas palavras. O que já estava no site com uma palavra da lista sai do ar na hora e volta se você tirar a palavra. Ofertas cadastradas à mão e produtos de lojas parceiras não passam por esta lista.</p>
+        <p class="hint">Vale a palavra inteira, com ou sem acento, e o plural com s ou es: "arma" barra "armas", mas não "armário". Para outros plurais, como munição e munições, adicione as duas formas.</p>
+        <form class="pp-form" id="pp-form">
+          <label class="field">Adicionar palavras (separe por vírgula)
+            <input type="text" id="pp-nova" maxlength="500" autocomplete="off" placeholder="Ex.: estilingue, isqueiro"></label>
+          <button class="btn primary" type="submit">Adicionar</button>
+        </form>
+        <p class="hint" id="pp-msg" role="status"></p>
+        <ul class="pp-lista" id="pp-lista" aria-label="Palavras proibidas"></ul>
       </div>
       <div class="panel">
         <h2>Cupons de desconto encontrados</h2>
@@ -2215,11 +2234,11 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
   </form>
 </dialog>
 
-<script src="/js/menu-celular.js?v=20261306"></script>
-<script src="/js/admin.js?v=20261306"></script>
-<script src="/js/wa-temas.js?v=20261306"></script>
-<script src="/js/envio-resultados.js?v=20261306"></script>
-<script src="/js/wa-proprio.js?v=20261306"></script>
-<script src="/js/agenda-extras.js?v=20261306"></script>
+<script src="/js/menu-celular.js?v=20261307"></script>
+<script src="/js/admin.js?v=20261307"></script>
+<script src="/js/wa-temas.js?v=20261307"></script>
+<script src="/js/envio-resultados.js?v=20261307"></script>
+<script src="/js/wa-proprio.js?v=20261307"></script>
+<script src="/js/agenda-extras.js?v=20261307"></script>
 </body>
 </html>

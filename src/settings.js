@@ -172,6 +172,13 @@ const DEFAULTS = {
   agenda_cupons_redes: '["whatsapp"]', // redes que recebem a lista de cupons
   agenda_cupons_pos: '0',         // de onde a próxima lista de cupons continua
   agenda_cupons_ultima: '',       // resultado do último envio da lista de cupons
+  // A mineração nunca traz produtos com estas palavras (src/palavras-proibidas.js). Editável em Painel → Mineração.
+  mineracao_palavras_proibidas: [
+    'arma', 'revólver', 'espingarda', 'carabina', 'fuzil', 'rifle', 'munição', 'munições', 'pólvora', 'pistola airsoft', 'pistola de airsoft', 'pistola de pressão', 'marcador de paintball', 'soco inglês', 'taser', 'spray de pimenta', 'gás de pimenta', 'coldre para pistola',
+    'droga', 'maconha', 'cannabis', 'cocaína', 'haxixe', 'lsd', 'ecstasy', 'óleo de cbd', 'óleo cbd', 'lança perfume', 'anabolizante', 'dichavador', 'bong',
+    'cigarro', 'vape', 'vaper', 'pod descartável', 'narguile', 'narguilé', 'tabaco para', 'tabaco de', 'fumo de rolo', 'fumo para', 'tabacaria', 'charuto', 'cigarrilha', 'piteira', 'seda para enrolar',
+    'sex shop', 'sexshop', 'sex toy', 'vibrador', 'consolo', 'dildo', 'masturbador', 'plug anal', 'lubrificante íntimo', 'gel íntimo', 'erótico', 'erótica', 'sexual', 'bdsm', 'fetiche', 'boneca inflável', 'pênis', 'peniano', 'peniana', 'clitoriano', 'clitóris', 'pompoarismo',
+  ].join(', '),
   post_modelo: '',              // modelo do texto das postagens (public/js/modelo-post.js); vazio = padrão
   ia_sac_ativa: '1',
   wa_grupo_controle: '',
@@ -194,7 +201,7 @@ const SECRET_KEYS = ['ml_client_secret', 'shopee_app_secret', 'aliexpress_app_se
   'zapi_token', 'zapi_client_token', 'evolution_api_key', 'zapi2_token', 'ganhos_awin_token', 'mp_access_token', 'mp_mkt_client_secret', 'smtp_pass', 'rc_chave_secreta', 'rc_webhook_auth'];
 
 // Chaves internas que o painel não pode alterar pela tela de configurações.
-const INTERNAL_KEYS = ['ml_coleta_ofertas_em', 'ml_coleta_cupons_em', 'admin_password_hash', 'mining_cursor', 'agenda_ultimas', 'agenda_cupons_pos', 'agenda_cupons_ultima', 'ganhos_ml_estimado', 'ml_varredura'];
+const INTERNAL_KEYS = ['mineracao_palavras_proibidas', 'ml_coleta_ofertas_em', 'ml_coleta_cupons_em', 'admin_password_hash', 'mining_cursor', 'agenda_ultimas', 'agenda_cupons_pos', 'agenda_cupons_ultima', 'ganhos_ml_estimado', 'ml_varredura'];
 
 for (const [key, value] of Object.entries(DEFAULTS)) {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', key, value);

@@ -233,7 +233,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
 const semAcentoP = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 // ── Seções que abrem e fecham: o trabalho do dia fica aberto, as configurações recolhidas ────
 // Títulos abertos da primeira vez; a escolha de cada pessoa fica guardada neste navegador
-const DOBRA_ABERTAS = ['Extensão do Chrome', 'Ofertas cadastradas', 'Links de afiliado', 'Situação das lojas', 'Busca pontual', 'Usuários', 'Pedidos de assinatura', 'Planos à venda',
+const DOBRA_ABERTAS = ['Extensão do Chrome', 'Palavras proibidas na mineração','Ofertas cadastradas', 'Links de afiliado', 'Situação das lojas', 'Busca pontual', 'Usuários', 'Pedidos de assinatura', 'Planos à venda',
   'Saldo por plataforma', 'Vendas registradas', 'Buscar ticket', 'Pedidos às lojas', 'Clientes da ferramenta', 'Postagens agendadas',
   'Histórico de postagens', 'Campanhas de anunciantes', 'Pedidos de empresas', 'Varredura de IP', 'Avisos', 'Backup do banco de dados', 'Trocar senha'];
 const DOBRA_CHAVE = 'ofertou-painel-dobras';
@@ -989,6 +989,36 @@ async function carregarRadar() {
 mostrarExtensao();
 carregarRadar();
 setInterval(carregarRadar, 5 * 60 * 1000);
+
+// Palavras proibidas na mineração
+function mostrarProibidas(d, aviso = '') {
+  $('#pp-lista').innerHTML = d.palavras.map(p => `<li><span>${esc(p)}</span><button type="button" data-tirar="${esc(p)}" aria-label="Tirar ${esc(p)} da lista" title="Tirar da lista">×</button></li>`).join('');
+  const resumo = `${d.palavras.length} palavra(s) na lista. ${d.fora_do_ar} oferta(s) fora do ar por causa dela.`;
+  $('#pp-msg').textContent = aviso ? `${aviso} ${resumo}` : resumo;
+}
+const resultadoProibidas = d => [d.ocultadas ? `${d.ocultadas} oferta(s) saíram do ar.` : '', d.devolvidas ? `${d.devolvidas} oferta(s) voltaram.` : ''].filter(Boolean).join(' ');
+async function enviarProibidas(corpo, feito) {
+  try {
+    const d = await api('/api/admin/palavras-proibidas', { method: 'POST', body: corpo });
+    mostrarProibidas(d, `${feito} ${resultadoProibidas(d)}`.trim());
+    return true;
+  } catch (err) {
+    $('#pp-msg').textContent = err.message;
+    return false;
+  }
+}
+$('#pp-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const campo = $('#pp-nova'), botao = e.target.querySelector('button');
+  botao.disabled = true;
+  if (await enviarProibidas({ adicionar: campo.value }, 'Adicionado.')) campo.value = '';
+  botao.disabled = false;
+});
+$('#pp-lista').addEventListener('click', e => {
+  const b = e.target.closest('[data-tirar]');
+  if (b) enviarProibidas({ remover: b.dataset.tirar }, `"${b.dataset.tirar}" saiu da lista.`);
+});
+api('/api/admin/palavras-proibidas').then(d => mostrarProibidas(d)).catch(() => {});
 
 window.postMessage({ ofertouPainel: true, tipo: 'ola' }, location.origin);
 if (new URLSearchParams(location.search).has('ml-importar') || new URLSearchParams(location.search).has('ml-cupons')) history.replaceState(null, '', `${location.pathname}${location.hash}`);

@@ -138,14 +138,35 @@ function importarOfertas(itens) {
     try { url = new URL(it.link); } catch { continue; }
     if (!id || !nome || !atual || !anterior || !/(^|\.)mercadoli(vre|bre)\.com(\.br)?$/i.test(url.hostname)) continue;
     const resta = Number(it.resta_s);
+    // A extensão manda a hora do fim calculada na leitura; a versão antiga, só o que faltava naquele momento
+    const fimLido = Number(it.fim_ms);
+    const fim = fimLido > Date.now() && fimLido < Date.now() + 7 * 86400000 ? fimLido : resta > 0 && resta < 7 * 86400 ? Date.now() + resta * 1000 : 0;
     const deal = {
       store_product_id: `MLB${id[1]}`, produto: nome, preco_atual: atual, preco_anterior: anterior,
       imagem: /^https:\/\//.test(it.imagem || '') ? it.imagem : null, original_url: `${url.origin}${url.pathname}`,
-      ...(it.relampago ? { relampago: { fim: resta > 0 && resta < 7 * 86400 ? Date.now() + resta * 1000 : 0 } } : {}),
+      ...(it.relampago ? { relampago: { fim } } : {}),
     };
     if (offers.saveDeal(ml, deal, { settings: s, manterCupom: true })) { out.gravados++; if (it.relampago) out.relampagos++; }
   }
   return out;
 }
 
-module.exports = { salvarCupons, removerEsgotados, importarProdutos, importarOfertas, listar };
+// Depois de gravar a leitura: o que estava como relâmpago do Mercado Livre e não veio nela já acabou.
+//  • sem hora real do fim: nunca dá para saber quando acaba, então sai se não veio;
+//  • com hora real: só sai se a leitura foi até o fim da lista (senão pode só estar numa página que não foi lida).
+function encerrarRelampagos(vistos, completa = false) {
+  const lidos = new Set((Array.isArray(vistos) ? vistos : []).map(v => String(v || '').toUpperCase().replace('-', '')).filter(v => /^MLB\d{6,}$/.test(v)));
+  if (!lidos.size) return { encerradas: 0 }; // leitura vazia não prova nada
+  const relampago = require('./relampago');
+  let encerradas = 0;
+  db.transaction(() => {
+    for (const o of db.all(`SELECT id, store_product_id, relampago_fim_real FROM offers WHERE store_id = 'mercadolivre' AND fonte = 'auto' AND relampago_tipo = 'loja' AND relampago_fim > datetime('now')`)) {
+      if (lidos.has(String(o.store_product_id).toUpperCase()) || (o.relampago_fim_real && !completa)) continue;
+      relampago.encerrar(o.id);
+      encerradas++;
+    }
+  });
+  return { encerradas };
+}
+
+module.exports = { salvarCupons, removerEsgotados, importarProdutos, importarOfertas, encerrarRelampagos, listar };

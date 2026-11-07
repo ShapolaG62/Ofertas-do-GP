@@ -364,7 +364,11 @@
     return `<span class="card-relampago${o.cupom ? ' com-cupom' : ''}"${o.relampago_fim_real ? ` data-relampago-fim="${esc(o.relampago_fim)}"` : ''}>⚡ ${o.relampago_fim_real ? `<span class="rel-acaba">Acaba em </span><b>${faltaTxt(o.relampago_fim)}</b>` : 'Relâmpago'}</span>`;
   }
   setInterval(() => {
-    document.querySelectorAll('[data-relampago-fim] b').forEach(b => { b.textContent = faltaTxt(b.parentElement.dataset.relampagoFim); });
+    document.querySelectorAll('[data-relampago-fim] b').forEach(b => {
+      const txt = faltaTxt(b.parentElement.dataset.relampagoFim);
+      if (txt === 'terminou') b.closest('.card, article')?.remove(); // acabou: sai da tela na hora
+      else b.textContent = txt;
+    });
   }, 1000);
 
   function cardHtml(o) {

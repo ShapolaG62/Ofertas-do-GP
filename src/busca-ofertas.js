@@ -250,9 +250,13 @@ function ler(q) {
 // Categoria "Promoção relâmpago": só o que a própria loja marcou. A queda de preço ("Preço caiu agora") não tem hora para acabar.
 const agoraSql = () => new Date().toISOString().slice(0, 19).replace('T', ' ');
 const ehRelampago = (o, agora = agoraSql()) => o.relampago_tipo === 'loja' && o.relampago_fim > agora && !o._susp;
+// A promoção da loja acabou: não aparece mais, mesmo antes da limpeza de cada minuto
+const relampagoAcabou = (o, agora) => o.relampago_tipo === 'loja' && o.relampago_fim && o.relampago_fim <= agora;
 function filtro(f, pular = '') {
   const termos = f.q ? termosDe(f.q) : [];
+  const agora = agoraSql();
   return o => {
+    if (relampagoAcabou(o, agora)) return false;
     if (pular !== 'loja' && f.loja && (f.loja === 'parceiros' ? !o.loja_slug : o.store_id !== f.loja)) return false;
     if (f.rel && !ehRelampago(o)) return false;
     if (pular !== 'cat' && f.cat && o.categoria !== f.cat) return false;
@@ -442,6 +446,7 @@ function buscar(query, { comissao = false } = {}) {
   const codigos = {};
   for (const o of aproximado ? todas : doTermo) {
     // Filtros comuns a todas as contagens
+    if (relampagoAcabou(o, agoraRel)) continue;
     if (aproximado && !quantosCasam(o, termos)) continue;
     if (f.min != null && o.preco_atual < f.min) continue;
     if (f.max != null && o.preco_atual > f.max) continue;

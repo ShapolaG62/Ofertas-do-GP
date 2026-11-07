@@ -13,6 +13,8 @@
   window.addEventListener('message', async e => {
     if (e.source !== window || e.origin !== ORIGEM || !e.data || e.data.ofertouPainel !== true) return;
     if (e.data.tipo === 'ola') avisar({ tipo: 'instalada' });
+    // O Painel terminou de gravar a coleta: só agora ela pode ser apagada daqui
+    if (e.data.tipo === 'coleta-gravada') chrome.storage.local.remove(['cuponsResultado', 'ofertasResultado']);
     if (e.data.tipo === 'buscar') {
       const rolagens = Math.min(Math.max(parseInt(e.data.rolagens, 10) || 10, 1), 100);
       await chrome.storage.local.set({ autoAte: Date.now() + 10 * 60 * 1000, rolagens });
@@ -54,14 +56,13 @@
     avisar({ tipo: 'ganho-estimado', valor: ganhoEstimado.valor, em: ganhoEstimado.em });
   });
 
-  // Cupons do Mercado Livre trazidos pelo minerador de cupons (vale 30 min): entrega ao Painel uma vez só
-  // A coleta completa traz as ofertas junto: o Painel grava os cupons primeiro, para as ofertas relâmpago já saírem com o cupom
+  // Cupons do Mercado Livre e ofertas relâmpago trazidos pela coleta (valem 2 horas). Ficam guardados até o Painel avisar que
+  // gravou tudo: se a página for fechada no meio, a próxima abertura do Painel termina de gravar.
   chrome.storage.local.get(['cuponsResultado', 'ofertasResultado']).then(async ({ cuponsResultado: r, ofertasResultado: o }) => {
     if (!r) return;
-    await chrome.storage.local.remove(['cuponsResultado', 'ofertasResultado']);
-    if (Date.now() - r.em > 30 * 60 * 1000) return;
+    if (Date.now() - r.em > 2 * 60 * 60 * 1000) { await chrome.storage.local.remove(['cuponsResultado', 'ofertasResultado']); return; }
     const ofertas = o && Date.now() - o.em < 4 * 60 * 60 * 1000 ? o.itens : [];
-    avisar({ tipo: 'cupons', cupons: r.cupons, esgotados: r.esgotados || [], produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0, listasFalhas: r.listasFalhas || 0, ofertas });
+    avisar({ tipo: 'cupons', ofertas_completa: Boolean(o?.completa), cupons: r.cupons, esgotados: r.esgotados || [], produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0, listasFalhas: r.listasFalhas || 0, ofertas });
   });
 
   // Página do Mercado Livre trazida pela extensão (vale 15 min): entrega ao Painel uma vez só

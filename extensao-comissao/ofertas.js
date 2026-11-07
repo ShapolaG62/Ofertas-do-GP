@@ -72,18 +72,18 @@
         produto, item: item ? `MLB${item}` : null, link: href,
         nome: (card.querySelector('.poly-component__title')?.textContent || a?.textContent || '').trim().slice(0, 200),
         preco, preco_anterior: anterior, imagem: img?.getAttribute('data-src') || img?.src || null,
-        relampago: true, resta_s: restanteDoCartao(card),
+        relampago: true, ...(() => { const s = restanteDoCartao(card); return s > 0 ? { resta_s: s, fim_ms: Date.now() + s * 1000 } : {}; })(),
       });
     }
     return out;
   }
 
-  async function terminar(motivo) {
+  async function terminar(motivo, completa = false) {
     const { ofertasJob: j } = await chrome.storage.local.get('ofertasJob');
     await chrome.storage.local.remove('ofertasJob');
     if (!j) return;
     // A comissão extra (mercadolivre.js) segue para os cupons quando terminar
-    await chrome.storage.local.set({ ofertasResultado: { em: Date.now(), motivo, itens: Object.values(j.itens || {}) }, coletaJob: { cupons: j.cupons, painel: j.painel, em: Date.now() }, autoAte: Date.now() + 10 * 60 * 1000, rolagens: 10 });
+    await chrome.storage.local.set({ ofertasResultado: { em: Date.now(), motivo, completa, itens: Object.values(j.itens || {}) }, coletaJob: { cupons: j.cupons, painel: j.painel, em: Date.now() }, autoAte: Date.now() + 10 * 60 * 1000, rolagens: 10 });
     caixa('Ofertas relâmpago lidas. Agora a comissão extra…');
     location.href = COMISSAO;
   }
@@ -100,7 +100,8 @@
     const total = Object.keys(j.itens).length;
     caixa(`${total} ofertas relâmpago até agora…`);
     // Acabou: última página, página vazia ou só repetidos
-    if (!lidos.length || total === antes || j.pagina >= j.paginas) return terminar(total ? 'ok' : 'sem-dados');
+    // "completa": a lista acabou antes do limite de páginas, então o que não veio já não está em promoção
+    if (!lidos.length || total === antes || j.pagina >= j.paginas) return terminar(total ? 'ok' : 'sem-dados', Boolean(total) && j.pagina < j.paginas);
     const pagina = j.pagina + 1;
     await chrome.storage.local.set({ ofertasJob: { ...j, pagina } });
     await espera(1500);

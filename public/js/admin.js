@@ -871,13 +871,29 @@ window.addEventListener('message', e => {
 });
 // ── Cupons do Mercado Livre (extensão): grava os cupons em lotes e depois os produtos de cada cupom ──
 const brl2 = v => v == null ? '—' : `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+let mlcGravando = false;
+const mlcAvisoSaida = e => { e.preventDefault(); e.returnValue = ''; };
 async function mlcImportar(d) {
+  if (mlcGravando) return;
+  mlcGravando = true;
+  window.addEventListener('beforeunload', mlcAvisoSaida); // a gravação leva alguns minutos
   if (location.hash !== '#mining') abrirAba('mining');
   const out = $('#mlc-resultado');
   out.closest('.panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
   const lista = Array.isArray(d.cupons) ? d.cupons : [];
   const produtos = d.produtos && typeof d.produtos === 'object' ? Object.entries(d.produtos) : [];
+  const ofertas = Array.isArray(d.ofertas) ? d.ofertas : [];
   try {
+    // Primeiro as relâmpago: têm hora para acabar e não podem depender do resto
+    let rel = 0, grav = 0, encerradas = 0, falhaOfertas = '';
+    try {
+      for (let i = 0; i < ofertas.length; i += 200) {
+        out.textContent = `Gravando ofertas relâmpago… ${Math.min(i + 200, ofertas.length)} de ${ofertas.length}`;
+        const r = await api('/api/admin/mineracao/ml-ofertas', { method: 'POST', body: { itens: ofertas.slice(i, i + 200) } });
+        grav += r.gravados; rel += r.relampagos;
+      }
+      if (ofertas.length) encerradas = (await api('/api/admin/mineracao/ml-ofertas', { method: 'POST', body: { vistos: ofertas.map(o => o.produto || o.item), completa: d.ofertas_completa === true } })).encerradas;
+    } catch (err) { falhaOfertas = err.message; }
     for (let i = 0; i < lista.length; i += 200) {
       out.textContent = `Gravando cupons… ${Math.min(i + 200, lista.length)} de ${lista.length}`;
       await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { cupons: lista.slice(i, i + 200) } });
@@ -885,28 +901,28 @@ async function mlcImportar(d) {
     if (!lista.length && d.motivo === 'ok') await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { cupons: [], leitura_ok: true } });
     const esgotados = Array.isArray(d.esgotados) ? d.esgotados : [];
     const fora = esgotados.length ? await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { esgotados } }) : { ofertas: 0 };
-    let gravados = 0, recebidos = 0;
+    let gravados = 0, recebidos = 0, falhasProdutos = 0;
     for (const [n, [campanha, itens]] of produtos.entries()) {
-      out.textContent = `Gravando produtos… cupom ${n + 1} de ${produtos.length}`;
-      const r = await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { campanha, itens: itens.slice(0, 150) } });
-      gravados += r.gravados; recebidos += r.recebidos;
+      out.textContent = `Gravando produtos… cupom ${n + 1} de ${produtos.length}. Deixe esta página aberta.`;
+      try {
+        const r = await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { campanha, itens: itens.slice(0, 150) } });
+        gravados += r.gravados; recebidos += r.recebidos;
+      } catch { falhasProdutos++; } // um cupom com problema não derruba os outros
     }
     const ativos = lista.filter(c => c.ativo).length;
     out.innerHTML = `<b>${lista.length}</b> cupons lidos (${ativos} ativos na sua conta${d.aplicados ? `, ${d.aplicados} aplicados agora pela extensão` : ''}) · <b>${gravados}</b> ofertas gravadas com cupom de ${recebidos} produtos "com Cupom" em ${produtos.length} cupons`
       + (esgotados.length ? ` · ${esgotados.length} esgotados ignorados${fora.ofertas ? ` (${fora.ofertas} ofertas perderam o cupom)` : ''}` : '')
       + (d.motivo === 'parado' ? ' · mineração parada por você' : d.motivo === 'sem-dados' ? ' · a central de cupons não abriu (faça login no Mercado Livre)' : d.motivo === 'verificacao' ? ' · o Mercado Livre pediu verificação ou limitou os pedidos, então a leitura parou aqui. Abra o Mercado Livre, resolva e colete de novo mais tarde' : '')
-      + (d.listasFalhas ? ` · ${d.listasFalhas} listas de produtos não abriram e foram puladas` : '');
-    // Ofertas por último: assim as relâmpago já saem com o cupom
-    const ofertas = Array.isArray(d.ofertas) ? d.ofertas : [];
-    let rel = 0, grav = 0;
-    for (let i = 0; i < ofertas.length; i += 200) {
-      const r = await api('/api/admin/mineracao/ml-ofertas', { method: 'POST', body: { itens: ofertas.slice(i, i + 200) } });
-      grav += r.gravados; rel += r.relampagos;
-    }
-    if (ofertas.length) out.innerHTML += ` · <b>${grav}</b> ofertas lidas, <b>${rel}</b> relâmpago`;
+      + (d.listasFalhas ? ` · ${d.listasFalhas} listas de produtos não abriram e foram puladas` : '')
+      + (falhasProdutos ? ` · ${falhasProdutos} cupons não gravaram os produtos` : '');
+    if (falhaOfertas) out.innerHTML += ` · <b>as ofertas relâmpago não gravaram:</b> ${esc(falhaOfertas)}`;
+    else if (ofertas.length) out.innerHTML += ` · <b>${grav}</b> ofertas lidas, <b>${rel}</b> relâmpago${encerradas ? `, ${encerradas} encerradas` : ''}`;
     else if (d.ofertas) out.innerHTML += ' · nenhuma oferta lida (confira se o Chrome está logado no Mercado Livre)';
     carregarRadar();
+    if (!falhaOfertas) window.postMessage({ ofertouPainel: true, tipo: 'coleta-gravada' }, location.origin);
   } catch (err) { out.textContent = `Erro ao gravar: ${err.message}`; }
+  mlcGravando = false;
+  window.removeEventListener('beforeunload', mlcAvisoSaida);
   mlcCarregar();
   loadStores();
 }

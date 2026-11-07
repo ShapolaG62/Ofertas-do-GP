@@ -341,11 +341,54 @@ test('extensão: lê o relógio em dígitos separados do cartão do Mercado Livr
   vm.runInNewContext(codigo, sandbox);
   cards = [relogio];
   assert.equal(sandbox.__ler()[0].resta_s, 8 * 3600 + 7 * 60 + 13);
+  assert.ok(Math.abs(sandbox.__ler()[0].fim_ms - (Date.now() + (8 * 3600 + 7 * 60 + 13) * 1000)) < 2000, 'a hora do fim sai da leitura');
   cards = [antigo];
   assert.equal(sandbox.__ler()[0].resta_s, 2 * 3600 + 14 * 60 + 33, 'continua lendo o formato antigo');
   cards = [semNada];
-  assert.equal(sandbox.__ler()[0].resta_s, null);
+  assert.equal(sandbox.__ler()[0].resta_s, undefined);
+  assert.equal(sandbox.__ler()[0].fim_ms, undefined, 'sem relógio não inventa hora');
   cards = [dias];
   assert.equal(sandbox.__ler()[0].resta_s, 86400 + 2 * 3600);
   void store;
+});
+
+test('relâmpago encerrada sai do site: passou da hora, sumiu da lista do Mercado Livre e fim calculado na leitura', async () => {
+  const busca = require('../src/busca-ofertas');
+  const cml = require('../src/cupons-ml');
+  const ml = getStore('mercadolivre');
+  const item = (n, extra = {}) => ({ produto: `MLB${7700000 + n}`, item: `MLB${7700000 + n}`, link: `https://www.mercadolivre.com.br/produto-${n}/p/MLB${7700000 + n}`, nome: `Produto encerrar ${n}`, preco: 90, preco_anterior: 180, imagem: 'https://x.test/f.jpg', relampago: true, ...extra });
+  const oferta = n => db.get('SELECT * FROM offers WHERE store_id = ? AND store_product_id = ?', 'mercadolivre', `MLB${7700000 + n}`);
+  db.run(`UPDATE offers SET relampago_fim = NULL, relampago_tipo = NULL, relampago_fim_real = 0`);
+
+  // A hora do fim vale a da leitura, mesmo gravando minutos depois
+  const fim = Date.now() + 3 * 3600000;
+  cml.importarOfertas([item(1, { fim_ms: fim, resta_s: 99 }), item(2, { resta_s: 3600 }), item(3), item(4, { fim_ms: fim }), item(5, { fim_ms: fim }), item(6, { fim_ms: Date.now() - 5000 })]);
+  assert.equal(oferta(1).relampago_fim, new Date(fim).toISOString().slice(0, 19).replace('T', ' '));
+  assert.equal(oferta(1).relampago_fim_real, 1);
+  assert.equal(oferta(2).relampago_fim_real, 1, 'a versão antiga continua valendo');
+  assert.equal(oferta(3).relampago_fim_real, 0);
+  assert.equal(oferta(6).relampago_fim_real, 0, 'fim no passado não é aceito');
+
+  // Leitura vazia não encerra nada
+  assert.equal(cml.encerrarRelampagos([], true).encerradas, 0);
+  // Leitura parcial: só sai o que não tinha hora real e não veio
+  assert.equal(cml.encerrarRelampagos([oferta(1).store_product_id], false).encerradas, 2, 'as duas sem hora real (3 e 6)');
+  assert.equal(oferta(3).relampago_fim, null);
+  assert.equal(oferta(4).relampago_fim_real, 1, 'com hora real continua: pode estar em página não lida');
+  // Lista lida até o fim: sai também o que tem hora real e não veio
+  assert.equal(cml.encerrarRelampagos([oferta(1).store_product_id], true).encerradas, 3, '2, 4 e 5');
+  assert.equal(oferta(4).relampago_fim, null);
+  assert.ok(oferta(1).relampago_fim, 'a que veio continua');
+
+  // Passou da hora: some da lista antes mesmo da limpeza e a limpeza a tira do site
+  await busca.atualizar();
+  assert.ok(busca.buscar({ relampago: '1', por: 96 }).itens.some(o => o.id === oferta(1).id));
+  db.run(`UPDATE offers SET relampago_fim = datetime('now', '-1 minutes'), updated_at = datetime('now', '+1 minutes') WHERE id = ?`, oferta(1).id);
+  await busca.atualizar();
+  assert.ok(!busca.buscar({ por: 96, q: 'Produto encerrar 1' }).itens.some(o => o.id === oferta(1).id), 'sai antes da limpeza');
+  const id = oferta(1).id;
+  assert.ok(relampago.varrer() >= 1);
+  assert.equal(linha(id).relampago_fim, null);
+  assert.equal(offers.isActive(id), false, 'fica fora do ar até a loja mostrar o preço novo');
+  void ml;
 });

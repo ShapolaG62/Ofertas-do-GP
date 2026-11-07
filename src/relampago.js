@@ -71,11 +71,17 @@ function aoGravar({ id, antes = null, deal, atual, desconto, fonte }) {
 
 // Terminou: a oferta marcada pela loja sai do ar até a próxima leitura trazer o preço certo. Na queda não há como saber
 // se acabou, então só deixa de ser destaque e o preço continua o da última leitura.
+function encerrar(id) {
+  limpar(id);
+  db.run(`UPDATE offers SET last_seen_at = datetime('now', '-30 days') WHERE id = ? AND fonte = 'auto'`, id);
+}
 function varrer() {
-  for (const o of db.all(`SELECT id, relampago_tipo, fonte FROM offers WHERE relampago_fim IS NOT NULL AND relampago_fim <= ?`, agora())) {
-    limpar(o.id);
-    if (o.relampago_tipo === 'loja' && o.fonte === 'auto') db.run(`UPDATE offers SET last_seen_at = datetime('now', '-30 days') WHERE id = ?`, o.id);
+  let saiu = 0;
+  for (const o of db.all(`SELECT id, relampago_tipo FROM offers WHERE relampago_fim IS NOT NULL AND relampago_fim <= ?`, agora())) {
+    if (o.relampago_tipo === 'loja') { encerrar(o.id); saiu++; } else limpar(o.id);
   }
+  if (saiu) require('./busca-ofertas').atualizar().catch(() => {}); // sai do site agora, sem esperar a próxima montagem
+  return saiu;
 }
 
 const estaAtiva = id => Boolean(db.get('SELECT 1 FROM offers WHERE id = ? AND relampago_fim > ?', id, agora()));
@@ -246,4 +252,4 @@ function iniciar({ radar: comRadar = true, postar = true } = {}) {
   setTimeout(passo, 30 * 1000).unref?.();
 }
 
-module.exports = { HORAS_SEM_FIM, POR_HORA, aoGravar, varrer, estaAtiva, textoDaPostagem, terminaEm, dentroDoHorario, despacharDono, despachar, radar, estado, iniciar, limpar };
+module.exports = { HORAS_SEM_FIM, POR_HORA, aoGravar, varrer, encerrar, estaAtiva, textoDaPostagem, terminaEm, dentroDoHorario, despacharDono, despachar, radar, estado, iniciar, limpar };

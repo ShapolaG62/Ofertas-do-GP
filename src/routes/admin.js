@@ -182,6 +182,11 @@ router.post('/api/admin/mineracao/ml-comissao-extra', async (req, res) => {
 // Ofertas do Mercado Livre lidas pela extensão (página de ofertas e relâmpago)
 router.post('/api/admin/mineracao/ml-ofertas', (req, res) => {
   try {
+    if (Array.isArray(req.body?.vistos)) {
+      const r = require('../cupons-ml').encerrarRelampagos(req.body.vistos, req.body.completa === true);
+      if (r.encerradas) require('../busca-ofertas').atualizar().catch(() => {});
+      return res.json(r);
+    }
     const r = require('../cupons-ml').importarOfertas(req.body?.itens);
     if (r.gravados > 0) { require('../aviso-ml').registrar('ofertas'); require('../busca-ofertas').atualizar().catch(() => {}); }
     res.json({ ...r, coleta: require('../aviso-ml').estado() });

@@ -13,7 +13,7 @@
   const CUPONS = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
   const paginaDe = (fase, n) => {
     const q = new URLSearchParams();
-    if (fase === 'relampago') q.set('promotion_type', 'lightning');
+    if (fase === 'relampago') { q.set('container_id', 'MLB779362-1'); q.set('promotion_type', 'lightning'); }
     if (n > 1) q.set('page', n);
     const t = q.toString();
     return `https://www.mercadolivre.com.br/ofertas${t ? `?${t}` : ''}`;

@@ -846,7 +846,7 @@ let extensaoInstalada = false;
 const ML_HUB = 'https://www.mercadolivre.com.br/afiliados/hub?is_affiliate=true';
 window.addEventListener('message', e => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
-  if (e.data.tipo === 'pode-ir-ofertas') window.top.location.href = 'https://www.mercadolivre.com.br/ofertas?promotion_type=lightning';
+  if (e.data.tipo === 'pode-ir-ofertas') window.top.location.href = 'https://www.mercadolivre.com.br/ofertas?container_id=MLB779362-1&promotion_type=lightning';
   if (e.data.tipo === 'instalada') { extensaoInstalada = true; }
   if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; $('#mlc-auto').hidden = false; $('#mlc-sem-ext').hidden = true; }
   if (e.data.tipo === 'pode-ir') window.top.location.href = ML_HUB;

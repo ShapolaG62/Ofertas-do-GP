@@ -243,7 +243,7 @@ async function postWhatsApp(o, texto, s) {
   const envioGrupos = require('./envio-grupos');
   const grupos = whatsapp.gruposDaOferta(s, o.categoria, o.store_id);
   if (!grupos.length) throw new Error('Nenhum grupo de destino recebe ofertas deste tipo e desta loja.');
-  const imagem = postImage(o, s); // endereço da foto da loja
+  const imagem = o.__foto || postImage(o, s); // a foto já baixada ou o endereço dela na loja
   const ok = [], erros = [];
   let novasTentativas = 0;
   for (let i = 0; i < grupos.length; i++) {
@@ -295,6 +295,7 @@ async function publicar(offerId, redes, texto, autor, ctx = {}) {
   const o = db.get('SELECT * FROM offers WHERE id = ?', offerId);
   if (!o) throw Object.assign(new Error('Oferta não encontrada.'), { status: 404 });
   if (ctx.link) o.__link = ctx.link;
+  if (ctx.foto) o.__foto = ctx.foto; // a rodada já baixou a foto: não pede de novo à loja
   const msg = String(texto || '').trim().slice(0, 4000);
   if (!msg) throw Object.assign(new Error('O texto da postagem está vazio.'), { status: 400 });
 

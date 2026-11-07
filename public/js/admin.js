@@ -1954,6 +1954,19 @@ let GN = null;
 const gnMoeda = (v, moeda) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: moeda || 'BRL' });
 const gnDia = s => (s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR') : '—');
 
+// De onde vem cada aviso: dá a cor do aviso e o nome em cima do título
+const NOME_ORIGEM = { dinheiro: 'Saldo para sacar', postagens: 'Postagens', whatsapp: 'WhatsApp', mercadolivre: 'Mercado Livre', cupons: 'Cupons', pagamentos: 'Planos e pagamentos', sistema: 'Sistema' };
+function origemDoAviso(n) {
+  if (n.tipo === 'saldo') return 'dinheiro';
+  if (n.tipo === 'ml-coleta') return 'mercadolivre';
+  if (n.tipo === 'arrependimento' || n.tipo === 'assinatura') return 'pagamentos';
+  if (n.tipo === 'envio') {
+    if (/^envio-whatsapp/.test(n.chave || '')) return 'whatsapp';
+    if (/^envio-cupons/.test(n.chave || '')) return 'cupons';
+    return 'postagens';
+  }
+  return 'sistema';
+}
 async function loadGanhos() {
   const plat = $('#gn-filtro-plat').value || '';
   const st = $('#gn-filtro-status').value || '';
@@ -1961,10 +1974,10 @@ async function loadGanhos() {
   const P = Object.fromEntries(GN.plataformas.map(p => [p.id, p]));
   // Avisos
   $('#gn-avisos-panel').hidden = !GN.notificacoes.length;
-  $('#gn-avisos').innerHTML = GN.notificacoes.map(n => `
-    <div class="gn-aviso"><div><b>${esc(n.titulo)}</b><br><span class="hint" style="margin:0">${esc(n.texto || '')} · ${fmtDate(n.created_at)}</span></div>
-      <div class="gn-aviso-acoes">${n.link ? `<a class="btn small primary" href="${esc(n.link)}" target="_blank" rel="noopener">Abrir portal ↗</a>` : ''}
-      <button class="btn small" data-gn-lida="${n.id}">Ok</button></div></div>`).join('');
+  $('#gn-avisos').innerHTML = GN.notificacoes.map(n => { const origem = origemDoAviso(n); return `
+    <div class="gn-aviso" data-origem="${origem}"><div class="gn-aviso-txt"><span class="gn-origem">${esc(NOME_ORIGEM[origem])}</span><b>${esc(n.titulo)}</b><span class="hint" style="margin:0">${esc(n.texto || '')} · ${fmtDate(n.created_at)}</span></div>
+      <div class="gn-aviso-acoes">${!n.link ? '' : n.link.startsWith('/') ? `<a class="btn small primary" href="${esc(n.link)}">Ver no painel</a>` : `<a class="btn small primary" href="${esc(n.link)}" target="_blank" rel="noopener">Abrir portal ↗</a>`}
+      <button class="btn small" data-gn-lida="${n.id}">Ok</button></div></div>`; }).join('');
   // Sincronização: situação de cada programa (automático pela API ou pela planilha)
   const nomes = Object.fromEntries(GN.plataformas.map(p => [p.id, p.nome]));
   $('#gn-sync').disabled = GN.sync.rodando;
@@ -2315,7 +2328,7 @@ async function loadAgenda() {
   const ult = estado.ultimaExecucao;
   $('#agenda-estado').innerHTML = `${estado.ativa ? `<b>Ligado</b> · horários ${estado.horarios.join(', ')} · próximo: <b>${esc(estado.proximo || '—')}</b>` : '<b>Desligado</b>'}
     · ${estado.pendentes} oferta(s) na fila${estado.rodando ? ' · <b>publicando agora…</b>' : ''}
-    ${ult ? `<br>Última rodada (${esc(ult.motivo)}): ${ult.feitos.filter(f => f.ok).length} de ${ult.feitos.length} publicadas em ${fmtDate(ult.em.replace('T', ' ').slice(0, 19))}${ult.conferidos ? ` · ${ult.conferidos} com preço conferido na loja na hora` : ''}${ult.pulados?.length ? ` · ${ult.pulados.length} pulada(s) por mudança na loja ou no tema` : ''}` : ''}
+    ${ult ? `<br>Última rodada (${esc(ult.motivo)}): ${ult.feitos.filter(f => f.ok).length} de ${ult.feitos.length} publicadas em ${fmtDate(ult.em.replace('T', ' ').slice(0, 19))}${ult.conferidos ? ` · ${ult.conferidos} com preço conferido na loja na hora` : ''}${ult.pulados?.length ? ` · ${ult.pulados.length} pulada(s) por mudança na loja, no tema ou foto recusada` : ''}` : ''}
     ${estado.problema ? `<br><b>Atenção:</b> ${esc(estado.problema.mensagem)}` : ''}`;
   $('#fila-body').innerHTML = fila.length ? fila.map(q => `<tr>
       <td><span class="offer-title">${esc(q.produto || `oferta #${q.offer_id}`)}</span></td>

@@ -17,6 +17,10 @@ const lerDestino = v => { try { return v ? JSON.parse(v) : null; } catch { retur
 
 let timer = null;
 let pausaEntreOfertas = true; // os testes desligam a pausa
+// Foto recusada pela loja: a oferta dá lugar a outra e só é tentada de novo depois de um tempo (a recusa pode passar)
+const fotosRecusadas = new Map(); // oferta → até quando evitar
+const ESPERA_FOTO_MS = 2 * 3600000;
+const fotoRecusada = id => { const ate = fotosRecusadas.get(id); if (ate && ate <= Date.now()) fotosRecusadas.delete(id); return Boolean(ate && ate > Date.now()); };
 const rodando = new Set();          // donos com rodada em andamento ('site' ou id do cliente)
 const ultimaExecucao = new Map();
 
@@ -208,8 +212,10 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null, { so
     // 1) fila (pula ofertas que saíram do ar); 2) completa com as melhores ofertas do momento
     const fila = db.all(`SELECT * FROM post_queue WHERE status = 'pendente' AND cliente_id IS ? ${soRelampago ? 'AND prioridade = 1' : ''} ORDER BY prioridade DESC, id`, cid);
     const usadas = new Set(fila.map(q => q.offer_id));
+    for (const id of [...fotosRecusadas.keys()]) if (fotoRecusada(id)) usadas.add(id);
     let posFila = 0;
     let candidatas = null;
+    let recargas = 0, fotosNestaLeva = 0;
     const proxima = () => {
       while (posFila < fila.length) {
         const q = fila[posFila++];
@@ -231,11 +237,15 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null, { so
       }
       if (soRelampago || s.agenda_completar === '0') return null;
       // Pega algumas a mais: as que tiverem mudado de preço na loja dão lugar à seguinte
+      // Acabaram as candidatas porque as lojas recusaram as fotos: busca mais, até duas vezes
+      if (candidatas && !candidatas.length && fotosNestaLeva && recargas < 2) { recargas++; fotosNestaLeva = 0; candidatas = null; }
       if (!candidatas) {
         const faltam = qtd - feitos.length;
         candidatas = melhoresOfertas(faltam * 3 + 5, usadas, cid, s, { soTemas: soWhatsapp, girar: true }).map(id => ({ offer_id: id, texto: null }));
       }
-      return candidatas.shift() || null;
+      const c = candidatas.shift() || null;
+      if (c) usadas.add(c.offer_id);
+      return c;
     };
     const temMais = () => posFila < fila.length || (!soRelampago && s.agenda_completar !== '0' && (candidatas === null || candidatas.length > 0));
     const descartar = (it, motivoPulo) => {
@@ -250,6 +260,21 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null, { so
       const sItem = it.destino?.grupos?.length ? whatsapp.comDestinos(s, it.destino.grupos, it.destino.por_tipo !== false) : s;
       const redes = prontas.filter(id => id !== 'whatsapp' || whatsapp.gruposDaOferta(sItem, alvo.categoria, alvo.store_id).length);
       if (!redes.length) { descartar(it, 'Nenhum grupo de destino recebe ofertas deste tipo e desta loja.'); continue; }
+      // WhatsApp: a mensagem sai com a foto. Se a loja não entregar, nada vai ao grupo e entra a oferta seguinte.
+      let foto = null;
+      if (redes.includes('whatsapp')) {
+        const motivoFoto = 'A loja recusou a foto: entrou outra oferta no lugar.';
+        const endereco = social.postImage(db.get('SELECT imagem FROM offers WHERE id = ?', it.offer_id) || {}, s);
+        if (endereco && fotoRecusada(it.offer_id)) { descartar(it, motivoFoto); fotosNestaLeva++; pulados[pulados.length - 1].foto = true; continue; }
+        if (endereco) {
+          try { foto = await whatsapp.fotoParaEnvio(endereco); } catch (err) {
+            log(`${quem}: foto da oferta ${it.offer_id} recusada (${err.message})`);
+            fotosRecusadas.set(it.offer_id, Date.now() + ESPERA_FOTO_MS);
+            descartar(it, motivoFoto); fotosNestaLeva++; pulados[pulados.length - 1].foto = true;
+            continue;
+          }
+        }
+      }
       const conferencia = await precoNaHora.conferir(it.offer_id);
       if (conferencia.acao === 'pular') { descartar(it, conferencia.motivo); continue; }
       if (conferencia.situacao !== 'sem_checagem') conferidos++;
@@ -261,7 +286,7 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null, { so
       if (!it.texto) o.__link = await require('./encurtador').curto(social.postLink(o, s)); // link curto no post
       const texto = it.texto || (it.relampago ? require('./relampago').textoDaPostagem(o, s) : social.textoPadrao(o, s));
       let resultados;
-      try { resultados = await social.publicar(it.offer_id, redes, texto, `agenda (${motivo})`, cid ? { s: sItem, clienteId: cid, link } : { s: sItem }); }
+      try { resultados = await social.publicar(it.offer_id, redes, texto, `agenda (${motivo})`, { s: sItem, foto, ...(cid ? { clienteId: cid, link } : {}) }); }
       catch (err) { resultados = [{ rede: '-', ok: false, mensagem: err.message }]; }
       const ok = resultados.some(r => r.ok);
       const resumo = resultados.map(r => `${social.REDES[r.rede]?.nome || r.rede}: ${r.ok ? 'ok' : r.mensagem}`).join(' | ');
@@ -276,7 +301,9 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null, { so
   ultimaExecucao.set(d, r);
   log(`${quem} — concluído: ${feitos.filter(f => f.ok).length} de ${feitos.length} publicadas, ${conferidos} com preço conferido na hora, ${pulados.length} puladas`);
   avisos.avaliarRodada(cid, feitos);
-  if (!feitos.length && motivo !== 'manual' && !soRelampago) {
+  if (!feitos.length && pulados.some(p => p.foto)) {
+    avisos.avisar(cid, { tipo: 'foto', titulo: 'As lojas recusaram as fotos desta rodada', texto: `${pulados.filter(p => p.foto).length} oferta(s) foram trocadas e não sobrou outra para postar. Nada foi enviado aos grupos.` });
+  } else if (!feitos.length && motivo !== 'manual' && !soRelampago) {
     avisos.avisar(cid, { tipo: 'sem-ofertas', titulo: 'Rodada de postagens sem nenhuma oferta', texto: 'Nenhuma oferta passou pelos filtros, temas e pela regra de repetição. Confira o agendamento no painel.' });
   }
   return r;
@@ -378,6 +405,6 @@ function estado(cid = null) {
 }
 
 // Só para os testes
-const _paraTestes = ({ pausa } = {}) => { if (pausa !== undefined) pausaEntreOfertas = pausa; };
+const _paraTestes = ({ pausa, limparFotos } = {}) => { if (pausa !== undefined) pausaEntreOfertas = pausa; if (limparFotos) fotosRecusadas.clear(); };
 
 module.exports = { regraDeRepeticao, redesAgenda, _paraTestes, impressaoDoProduto, enfileirar, listarFila, removerDaFila, limparFila, pendentes, executar, iniciar, estado, horarios, melhoresOfertas, filtroDoDono };

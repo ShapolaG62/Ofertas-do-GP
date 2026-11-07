@@ -18,6 +18,7 @@ const relampago = require('../src/relampago');
 const agenda = require('../src/agenda');
 const social = require('../src/social');
 const whatsapp = require('../src/whatsapp');
+whatsapp.fotoParaEnvio = async () => null; // sem internet nos testes
 const avisoMl = require('../src/aviso-ml');
 const { getStore } = require('../src/stores');
 

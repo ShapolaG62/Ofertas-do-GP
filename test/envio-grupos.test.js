@@ -28,10 +28,15 @@ let conectado = true;
 whatsapp.enviar = async (s, grupo, msg) => { const e = falhar && falhar(grupo); if (e) throw e; enviados.push({ grupo, ...msg }); return 'id'; };
 whatsapp.config = () => ({ tipo: 'proprio', dono: 'site' });
 whatsapp.status = async () => ({ conectado, mensagem: conectado ? 'ok' : 'Número desconectado.' });
+let fotoFalha = () => false;
+const FOTO = Buffer.from('foto');
+const pedidasDeFoto = [];
+whatsapp.fotoParaEnvio = async url => { pedidasDeFoto.push(url); if (fotoFalha(url)) throw new Error('Não consegui baixar a foto (erro 403).'); return FOTO; };
 
 function limpar() {
   for (const t of ['social_posts', 'envio_grupo', 'post_queue', 'admin_notificacoes', 'offers']) db.run(`DELETE FROM ${t}`);
-  enviados = []; falhar = null; conectado = true;
+  enviados = []; falhar = null; conectado = true; fotoFalha = () => false; pedidasDeFoto.length = 0;
+  agenda._paraTestes({ limparFotos: true });
   settings.set('site_url', 'https://exemplo.test');
   settings.set('whatsapp_groups', JSON.stringify(GRUPOS));
   settings.set('agenda_redes', JSON.stringify(['whatsapp']));
@@ -493,4 +498,62 @@ test('lojas na escolha automática: só o que algum grupo recebe, e cada grupo n
   const a = agenda.melhoresOfertas(1, new Set(), null, s, { soTemas: true, girar: true })[0];
   const b = agenda.melhoresOfertas(1, new Set(), null, s, { soTemas: true, girar: true })[0];
   assert.deepEqual([a, b].sort(), [ml, shp].sort());
+});
+
+test('foto recusada: nada vai ao grupo, entra a oferta seguinte e não vira erro', async () => {
+  limpar();
+  fotoFalha = url => url.includes('magalu');
+  const ruim = oferta({ store_id: 'magalu', plataforma: 'Magalu', imagem: 'https://a-static.mlcdn.com.br/magalu.jpg', original_url: 'https://www.magazineluiza.com.br/p/ruim' });
+  const boa = oferta();
+  agenda.enfileirar([{ offer_id: ruim, texto: 'oferta ruim' }, { offer_id: boa, texto: 'oferta boa' }], 'teste');
+  const r = await agenda.executar('horário 09:00');
+  assert.deepEqual(r.feitos.map(f => [f.offer_id, f.ok]), [[boa, true]]);
+  assert.equal(enviados.length, 2);
+  assert.ok(enviados.every(e => e.texto.includes('oferta boa') && e.imagem === FOTO), 'sai com a foto já baixada, sem pedir de novo à loja');
+  assert.equal(envios().filter(e => e.offer_id === ruim).length, 0, 'nem começa o envio da oferta recusada');
+  assert.equal(db.get('SELECT status FROM post_queue WHERE offer_id = ?', ruim).status, 'expirado');
+  assert.match(db.get('SELECT resultado FROM post_queue WHERE offer_id = ?', ruim).resultado, /recusou a foto/);
+  assert.equal(r.pulados[0].foto, true);
+  assert.equal(avisosDoSite().length, 0, 'sem aviso de falha: a rodada saiu certa');
+});
+
+test('foto recusada: completa a rodada com as melhores ofertas e evita a mesma foto por um tempo', async () => {
+  limpar();
+  settings.set('agenda_qtd', '2');
+  fotoFalha = url => url.includes('ruim');
+  const ruim = oferta({ produto: 'Cafeteira eletrica expresso inox grande', imagem: 'https://img.test/ruim.jpg', preco_atual: 100, preco_anterior: 200, desconto_pct: 50 });
+  const boa1 = oferta({ produto: 'Ventilador coluna silencioso branco', categoria: 'casa', preco_atual: 50, preco_anterior: 100, desconto_pct: 50 });
+  const boa2 = oferta({ produto: 'Caixa de som portatil resistente agua', categoria: 'audio_tv', preco_atual: 50, preco_anterior: 100, desconto_pct: 50 });
+  db.run(`UPDATE offers SET updated_at = datetime('now', '+1 minutes')`); // a lista de ofertas só remonta se algo mudar
+  await atualizarBusca();
+  const r = await agenda.executar('horário 10:00');
+  assert.deepEqual(r.feitos.map(f => f.offer_id).sort(), [boa1, boa2].sort());
+  assert.ok(r.pulados.some(p => p.offer_id === ruim));
+  const pedidas = pedidasDeFoto.filter(u => u.includes('ruim')).length;
+  assert.equal(pedidas, 1);
+  db.run('DELETE FROM social_posts');
+  await agenda.executar('horário 11:00');
+  assert.equal(pedidasDeFoto.filter(u => u.includes('ruim')).length, pedidas, 'não pede de novo a foto recusada há pouco');
+});
+
+test('foto recusada e nenhuma outra oferta: avisa pela foto, sem enviar nada', async () => {
+  limpar();
+  settings.set('agenda_completar', '0');
+  fotoFalha = () => true;
+  const id = oferta();
+  agenda.enfileirar([{ offer_id: id, texto: 'x' }], 'teste');
+  const r = await agenda.executar('horário 12:00');
+  assert.equal(r.feitos.length, 0);
+  assert.equal(enviados.length, 0);
+  assert.match(avisosDoSite()[0].titulo, /recusaram as fotos/);
+});
+
+test('outro erro no envio continua como antes, e foto baixada não atrapalha as outras redes', async () => {
+  limpar();
+  falhar = () => new Error('fora do ar');
+  const id = oferta();
+  agenda.enfileirar([{ offer_id: id, texto: 'x' }], 'teste');
+  const r = await agenda.executar('horário 13:00');
+  assert.equal(r.feitos[0].ok, false);
+  assert.match(avisosDoSite()[0].titulo, /falharam/);
 });

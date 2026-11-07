@@ -30,6 +30,8 @@ async function tamanhoGrupos(s, ids) {
 // Envia foto com legenda (ou só texto, sem foto) para um grupo ou celular.
 // imagem: endereço https da foto ou o arquivo (Buffer JPEG).
 const enviar = (s, destino, { imagem, texto }) => proprio().enviar(donoDe(s), destino, { imagem, texto });
+// Baixa a foto antes de postar: se a loja recusar, dá para trocar de oferta sem ter mandado nada ao grupo
+const fotoParaEnvio = url => proprio().prepararImagem(url);
 
 function gruposEscolhidos(s) {
   try {
@@ -59,4 +61,5 @@ function comDestinos(s, grupos, porTipo = true) {
   return { ...s, whatsapp_groups: JSON.stringify(lista) };
 }
 
-module.exports = { config, status, listarGrupos, resumoGrupos, tamanhoGrupos, enviar, gruposEscolhidos, grupoRecebe, gruposDaOferta, comDestinos };
+module.exports = {
+  fotoParaEnvio, config, status, listarGrupos, resumoGrupos, tamanhoGrupos, enviar, gruposEscolhidos, grupoRecebe, gruposDaOferta, comDestinos };

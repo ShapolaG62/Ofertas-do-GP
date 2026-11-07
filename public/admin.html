@@ -124,6 +124,20 @@
   .gn-card-acoes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .gn-aviso { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--green-line); background: var(--green-soft); margin-bottom: 8px; }
   .gn-aviso-acoes { display: flex; gap: 6px; flex-shrink: 0; }
+  .gn-aviso { --av: #7c8a83; border-color: color-mix(in srgb, var(--av) 60%, var(--border)); border-left: 5px solid var(--av); background: color-mix(in srgb, var(--av) 13%, var(--surface)); }
+  .gn-aviso[data-origem="dinheiro"] { --av: #22a565; }
+  .gn-aviso[data-origem="postagens"] { --av: #2f7fe0; }
+  .gn-aviso[data-origem="whatsapp"] { --av: #0ea5a4; }
+  .gn-aviso[data-origem="mercadolivre"] { --av: #e0b100; }
+  .gn-aviso[data-origem="cupons"] { --av: #8b5cf6; }
+  .gn-aviso[data-origem="pagamentos"] { --av: #ea7a1a; }
+  .gn-aviso-txt { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+  .gn-origem { justify-self: start; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--av) 26%, var(--surface)); color: var(--text); font-size: 11.5px; font-weight: 700; }
+  @media (max-width: 640px) {
+    .gn-aviso { flex-wrap: wrap; }
+    .gn-aviso-acoes { width: 100%; }
+    .gn-aviso-acoes .btn { min-height: 44px; flex: 1; display: inline-flex; align-items: center; justify-content: center; }
+  }
   .gn-status { font-size: 12px; padding: 4px 6px; border-radius: 8px; background: var(--surface-2); }
   dialog.dlg-pequena { width: min(520px, calc(100vw - 24px)); }
   .gn-dlg-campos { display: grid; gap: 12px; }
@@ -697,14 +711,14 @@
     .side.menu-cel-aberto .tab { width: 100%; white-space: normal; font-size: 15px; }
   }
 </style>
-<script src="/js/tema.js?v=20261315"></script>
-<script src="/js/dialogo.js?v=20261315"></script>
-<script src="/js/modelo-post.js?v=20261315"></script>
-<script src="/js/avisos-entrada.js?v=20261315"></script>
-<script src="/js/capi-minerando.js?v=20261315" defer></script>
-<script src="/js/cadastro-auto.js?v=20261315" defer></script>
-<script src="/js/seletor.js?v=20261315" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261315">
+<script src="/js/tema.js?v=20261316"></script>
+<script src="/js/dialogo.js?v=20261316"></script>
+<script src="/js/modelo-post.js?v=20261316"></script>
+<script src="/js/avisos-entrada.js?v=20261316"></script>
+<script src="/js/capi-minerando.js?v=20261316" defer></script>
+<script src="/js/cadastro-auto.js?v=20261316" defer></script>
+<script src="/js/seletor.js?v=20261316" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261316">
 </head>
 <body>
 <div class="wrap">
@@ -2243,11 +2257,11 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
   </form>
 </dialog>
 
-<script src="/js/menu-celular.js?v=20261315"></script>
-<script src="/js/admin.js?v=20261315"></script>
-<script src="/js/wa-temas.js?v=20261315"></script>
-<script src="/js/envio-resultados.js?v=20261315"></script>
-<script src="/js/wa-proprio.js?v=20261315"></script>
-<script src="/js/agenda-extras.js?v=20261315"></script>
+<script src="/js/menu-celular.js?v=20261316"></script>
+<script src="/js/admin.js?v=20261316"></script>
+<script src="/js/wa-temas.js?v=20261316"></script>
+<script src="/js/envio-resultados.js?v=20261316"></script>
+<script src="/js/wa-proprio.js?v=20261316"></script>
+<script src="/js/agenda-extras.js?v=20261316"></script>
 </body>
 </html>

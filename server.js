@@ -373,6 +373,7 @@ if (process.env.VERCEL) {
     if (process.env.DISABLE_AGENDA !== '1') require('./src/alertas-whatsapp').iniciar(); // alertas de ofertas no WhatsApp particular
     require('./src/pedidos-loja').iniciar(); require('./src/busca-ofertas').aquecer(); require('./src/vitrine').aquecer(); // confere no Mercado Pago os pedidos esperando pagamento // postagens agendadas (manhã, tarde, noite)
     if (process.env.DISABLE_AGENDA !== '1') require('./src/backup').iniciar(); // uma cópia do banco por dia, de madrugada
+    if (process.env.DISABLE_AGENDA !== '1') require('./src/assinaturas').iniciar(); // renovações automáticas do Mercado Pago e aviso do fim do período grátis
     require('./src/ganhos').iniciar(); // confere a cada hora se alguma plataforma de afiliados já tem saldo para sacar
     if (process.env.DISABLE_AGENDA !== '1') { require('./src/cliente-ganhos').iniciar(); require('./src/membros-grupo').iniciar(); }
     if (process.env.DISABLE_AGENDA !== '1') require('./src/ganhos-sync').iniciar(); // busca as vendas na Shopee e na Awin a cada 6 h

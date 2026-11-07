@@ -11,21 +11,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261311">
-<script src="/js/tema.js?v=20261311"></script>
-<script src="/js/visualizacao.js?v=20261311"></script>
-<script src="/js/app-nativo.js?v=20261311"></script>
-<script src="/js/dialogo.js?v=20261311"></script>
-<script src="/js/modelo-post.js?v=20261311"></script>
-<script src="/js/aceite-parceiro.js?v=20261311"></script>
-<script src="/js/capi-minerando.js?v=20261311" defer></script>
-<script src="/js/cadastro-auto.js?v=20261311" defer></script>
-<script src="/js/voltar.js?v=20261311" data-padrao="/" defer></script>
-<script src="/js/rodape-legal.js?v=20261311" defer></script>
-<script src="/js/instalar-app.js?v=20261311" defer></script>
-<script src="/js/cookies.js?v=20261311"></script>
-<script src="/js/seletor.js?v=20261311" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261311">
+<link rel="stylesheet" href="/css/site.css?v=20261312">
+<script src="/js/tema.js?v=20261312"></script>
+<script src="/js/visualizacao.js?v=20261312"></script>
+<script src="/js/app-nativo.js?v=20261312"></script>
+<script src="/js/dialogo.js?v=20261312"></script>
+<script src="/js/modelo-post.js?v=20261312"></script>
+<script src="/js/aceite-parceiro.js?v=20261312"></script>
+<script src="/js/capi-minerando.js?v=20261312" defer></script>
+<script src="/js/cadastro-auto.js?v=20261312" defer></script>
+<script src="/js/voltar.js?v=20261312" data-padrao="/" defer></script>
+<script src="/js/rodape-legal.js?v=20261312" defer></script>
+<script src="/js/instalar-app.js?v=20261312" defer></script>
+<script src="/js/cookies.js?v=20261312"></script>
+<script src="/js/seletor.js?v=20261312" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261312">
 </head>
 <body>
 <header class="site-header">
@@ -192,6 +192,7 @@
         <div class="wa-proprio">
           <p id="wap-status" class="wap-status" role="status" data-base="/api/cliente/wa">Carregando…</p>
           <img id="wap-qr" class="wap-qr" alt="QR code para conectar o WhatsApp" width="280" height="280" hidden>
+          <p class="cli-hint wap-risco"><b>Atenção:</b> A conexão do WhatsApp por QR code <b>não é a API oficial do WhatsApp</b>. O número pode sofrer restrição ou ser banido, principalmente com muitas mensagens. Use um número só para isso: o Ofertou! não responde por bloqueios feitos pelo WhatsApp.</p>
           <p id="wap-instrucao" class="cli-hint" hidden>No celular, abra o WhatsApp, toque em <b>Dispositivos conectados</b> e depois em <b>Conectar um dispositivo</b>. Aponte a câmera para o QR code.</p>
           <div class="cli-actions">
             <button class="btn btn-primary" type="button" id="wap-conectar">Conectar</button>
@@ -616,6 +617,7 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
 
     <!-- CONTA -->
     <div class="cli-tab" data-body="conta" hidden>
+        <div class="panel-card"><h2>Meus planos</h2><div id="meus-planos" data-auto><p class="muted">Carregando…</p></div></div>
       <form class="panel-card cli-form" id="senha-form" style="max-width:460px">
         <h2>Trocar senha</h2>
         <label class="field">Senha atual <input name="atual" type="password" autocomplete="current-password" required></label>
@@ -629,12 +631,13 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/cliente-extra.js?v=20261311" defer></script>
-<script src="/js/wa-temas.js?v=20261311" defer></script>
-<script src="/js/envio-resultados.js?v=20261311" defer></script>
-<script src="/js/wa-proprio.js?v=20261311" defer></script>
-<script src="/js/agenda-extras.js?v=20261311" defer></script>
-<script src="/js/menu-celular.js?v=20261311" defer></script>
-<script src="/js/cliente.js?v=20261311" defer></script>
+<script src="/js/cliente-extra.js?v=20261312" defer></script>
+<script src="/js/wa-temas.js?v=20261312" defer></script>
+<script src="/js/envio-resultados.js?v=20261312" defer></script>
+<script src="/js/wa-proprio.js?v=20261312" defer></script>
+<script src="/js/agenda-extras.js?v=20261312" defer></script>
+<script src="/js/menu-celular.js?v=20261312" defer></script>
+<script src="/js/meus-planos.js?v=20261312" defer></script>
+<script src="/js/cliente.js?v=20261312" defer></script>
 </body>
 </html>

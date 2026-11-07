@@ -70,6 +70,8 @@ async function pedir(u, motivo = '') {
       if (u.cliente_id === p.conta_id && u.assinatura_ate) db.run('UPDATE users SET assinatura_ate = ? WHERE id = ?', tirarDias(u.assinatura_ate, p.dias), u.id);
     }
   });
+  // Desistiu: para de cobrar também as próximas renovações deste plano
+  await require('./assinaturas').pararDaConta([[p.conta_tipo, p.conta_id]], p.plano).catch(err => console.error('[ASSINATURA]', err.message));
   users.logAction(users.getById(u.id), 'arrependimento', `pedido ${p.id} (${brl(p.valor)}) — ${status === 'reembolsado' ? 'reembolsado pelo Mercado Pago' : 'reembolso a fazer pelo administrador'}`);
   // Avisa o administrador no sino do painel
   try {

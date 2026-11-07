@@ -10,17 +10,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261311">
-<script src="/js/tema.js?v=20261311"></script>
-<script src="/js/app-nativo.js?v=20261311"></script>
-<script src="/js/dialogo.js?v=20261311"></script>
-<script src="/js/cadastro-auto.js?v=20261311" defer></script>
-<script src="/js/cartoes.js?v=20261311" defer></script>
-<script src="/js/voltar.js?v=20261311" data-padrao="/conta#planos" defer></script>
-<script src="/js/rodape-legal.js?v=20261311" defer></script>
-<script src="/js/instalar-app.js?v=20261311" defer></script>
-<script src="/js/cookies.js?v=20261311"></script>
-<script src="/js/seletor.js?v=20261311" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261312">
+<script src="/js/tema.js?v=20261312"></script>
+<script src="/js/app-nativo.js?v=20261312"></script>
+<script src="/js/dialogo.js?v=20261312"></script>
+<script src="/js/cadastro-auto.js?v=20261312" defer></script>
+<script src="/js/cartoes.js?v=20261312" defer></script>
+<script src="/js/voltar.js?v=20261312" data-padrao="/conta#planos" defer></script>
+<script src="/js/rodape-legal.js?v=20261312" defer></script>
+<script src="/js/instalar-app.js?v=20261312" defer></script>
+<script src="/js/cookies.js?v=20261312"></script>
+<script src="/js/seletor.js?v=20261312" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -45,6 +45,22 @@
 
         <div class="form-msg err" id="ass-vencido" hidden></div>
         <div class="ass-logado" id="ass-logado" hidden></div>
+        <div class="ass-troca" id="ass-troca" hidden></div>
+        <fieldset class="ass-bloco" id="ass-oferta" hidden>
+          <legend>Como você quer começar?</legend>
+          <div class="ass-metodos" id="ass-modos"></div>
+          <div id="ass-ciclo-bloco">
+            <p class="ass-sub">Período</p>
+            <div class="ass-metodos" id="ass-ciclos"></div>
+            <label class="ass-metodo ass-auto-op" id="ass-auto-op" hidden><input type="checkbox" name="renovacao_auto" id="ass-auto">
+              <span><b id="ass-auto-tit"></b><small id="ass-auto-txt"></small></span></label>
+          </div>
+          <div id="ass-mais" hidden>
+            <p class="ass-sub">Quer mais um plano na mesma conta?</p>
+            <div class="ass-metodos" id="ass-mais-lista"></div>
+            <p class="cli-hint">Primeiro concluímos este. Em seguida abrimos o outro, com a conta já logada.</p>
+          </div>
+        </fieldset>
         <div class="auth-google-ass" id="ass-google" hidden>
           <a class="btn btn-google btn-block" id="ass-google-btn" href="/auth/google">
             <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
@@ -128,6 +144,7 @@
           <div class="ass-metodos" id="metodos"></div>
         </fieldset>
 
+        <p class="ass-risco" id="ass-risco" hidden><b>Atenção ao usar o WhatsApp:</b> A conexão do WhatsApp por QR code não é a API oficial do WhatsApp. O número pode sofrer restrição ou ser banido, principalmente com muitas mensagens. Use um número só para isso: o Ofertou! não responde por bloqueios feitos pelo WhatsApp.</p>
         <div class="aceites" role="group" aria-label="Aceites obrigatórios">
             <p class="aceites-titulo">Antes de concluir, leia e confirme:</p>
             <label class="aceite"><input type="checkbox" name="aceite_privacidade" required>
@@ -137,7 +154,7 @@
             <label class="aceite" data-aceite-papel="lojista" hidden><input type="checkbox" name="aceite_lojista" required disabled>
               <span><b>Termos do Lojista Parceiro.</b> Li e aceito os <a href="/privacidade#parceiros" target="_blank" rel="noopener">Termos do Parceiro</a>. Sou o <b>único responsável</b> pelos produtos, preços, estoque, notas fiscais, <b>prazos de entrega, de troca e de atendimento</b> e pelo cumprimento do Código de Defesa do Consumidor nas vendas da minha loja. O Ofertou! <b>não responde</b> por descumprimentos meus e, se for reclamado, processado, condenado ou tiver de pagar qualquer valor por ato ou omissão minha, terá <b>direito de regresso</b>: eu o ressarcirei integralmente, com custas, honorários e multas. Sei que a loja pode ser suspensa ou excluída se eu descumprir essas regras.</span></label>
             <label class="aceite" data-aceite-papel="afiliado" hidden><input type="checkbox" name="aceite_afiliado" required disabled>
-              <span><b>Termos do Afiliado.</b> Li e aceito os <a href="/privacidade#parceiros" target="_blank" rel="noopener">Termos do Parceiro</a>. Sou o <b>único responsável</b> pelo que divulgo nos meus canais e pelos meus links, inclusive pelas regras dos programas de afiliados, da publicidade e da LGPD. O Ofertou! <b>não responde</b> por violações minhas e terá <b>direito de regresso</b> contra mim por qualquer valor que tiver de pagar por causa delas. O acesso é <b>pessoal e intransferível</b>: <b>não posso revender, alugar, emprestar, ceder ou compartilhar</b> a minha conta, o painel ou a ferramenta com outras pessoas, sob pena de encerramento do acesso sem reembolso e de responder pelos prejuízos.</span></label>
+              <span><b>Termos do Afiliado.</b> Li e aceito os <a href="/privacidade#parceiros" target="_blank" rel="noopener">Termos do Parceiro</a>. Sou o <b>único responsável</b> pelo que divulgo nos meus canais e pelos meus links, inclusive pelas regras dos programas de afiliados, da publicidade e da LGPD. O Ofertou! <b>não responde</b> por violações minhas e terá <b>direito de regresso</b> contra mim por qualquer valor que tiver de pagar por causa delas. O acesso é <b>pessoal e intransferível</b>: <b>não posso revender, alugar, emprestar, ceder ou compartilhar</b> a minha conta, o painel ou a ferramenta com outras pessoas, sob pena de encerramento do acesso sem reembolso e de responder pelos prejuízos. Sei que a conexão do WhatsApp por QR code <b>não é a API oficial</b> e que o número pode ser restrito ou banido pelo WhatsApp.</span></label>
           </div>
         <div class="form-msg err" id="ass-msg" hidden></div>
         <div class="ass-cartao" id="ass-cartao" hidden></div>
@@ -161,6 +178,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261311" defer></script>
+<script src="/js/assinar.js?v=20261312" defer></script>
 </body>
 </html>

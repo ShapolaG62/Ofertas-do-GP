@@ -8,6 +8,9 @@ const settings = require('../settings');
 const offers = require('../offers');
 const vitrine = require('../vitrine');
 const { createLimiter } = require('../ratelimit');
+const assinaturas = require('../assinaturas');
+const users = require('../users');
+const clientes = require('../clientes');
 
 const router = express.Router();
 const pedidoLimiter = createLimiter(20, 60);   // 20 tentativas de pedido por hora por IP (inclui erros de digitação)
@@ -15,9 +18,38 @@ const statusLimiter = createLimiter(240, 10);  // consultas da página de pagame
 
 router.get('/api/planos', (req, res) => {
   const s = settings.getAll();
-  res.json({ planos: planos.listar(s), funcoes_base: planos.FUNCOES_TIPO.consumidor, metodos: pagamentos.metodosDisponiveis(s, req.query.plano ? String(req.query.plano) : null),
+  res.json({ planos: planos.listar(s), lojas_gratis: assinaturas.lojasGratisRestantes(), lojas_gratis_total: assinaturas.LOJAS_GRATIS, funcoes_base: planos.FUNCOES_TIPO.consumidor, metodos: pagamentos.metodosDisponiveis(s, req.query.plano ? String(req.query.plano) : null),
     whatsapp: String(s.pag_whatsapp || s.whatsapp_anuncios || '').replace(/\D/g, ''),
     ufs: cadastro.UFS, ramos: cadastro.RAMOS, idade_minima: cadastro.IDADE_MINIMA });
+});
+
+// Quem está comprando: conta do site ou só o acesso da ferramenta
+const quem = req => { const u = users.currentUser(req); return { u, c: u ? null : clientes.atual(req) }; };
+
+// Meus planos (Minha conta e painel do afiliado)
+router.get('/api/planos/meus', (req, res) => {
+  const { u, c } = quem(req);
+  res.setHeader('Cache-Control', 'no-store');
+  if (!u && !c) return res.status(401).json({ error: 'Entre na sua conta.' });
+  res.json(assinaturas.meus(u, c));
+});
+router.post('/api/planos/renovacao/:id/desligar', async (req, res) => {
+  const { u, c } = quem(req);
+  if (!u && !c) return res.status(401).json({ error: 'Entre na sua conta.' });
+  try { res.json(await assinaturas.desligar(req.params.id, u, c)); } catch (err) { res.status(err.status || 400).json({ error: err.message }); }
+});
+// O que esta compra dá direito: período grátis e, na troca de plano, os dias a mais
+router.get('/api/planos/oferta', (req, res) => {
+  const p = planos.plano(req.query.plano);
+  if (!p || !p.ativo) return res.status(404).json({ error: 'Plano indisponível.' });
+  const { u, c } = quem(req);
+  res.setHeader('Cache-Control', 'no-store');
+  const ciclo = planos.ciclo(p, req.query.ciclo);
+  const oferta = { cortesia: assinaturas.cortesia(p, u ? assinaturas.identidade({ email: u.email }, u) : c ? [String(c.email).toLowerCase()] : []), ativo: assinaturas.planoAtivo(p, u, c), troca: null };
+  const de = String(req.query.trocar || '');
+  const velho = de && planos.plano(de);
+  if (velho && !velho.gratis && assinaturas.planoAtivo(velho, u, c)) oferta.troca = { plano: velho.id, nome: velho.nome, ...assinaturas.creditoDaTroca(velho, ciclo, u, c) };
+  res.json(oferta);
 });
 
 // Números e fotos para a apresentação da página inicial (sem preços nem links: só o "aperitivo").

@@ -58,6 +58,10 @@ db.db.exec(`
 
 // Vários tipos de acesso por plano (a coluna "tipo" guarda o principal, usado no ícone e no selo)
 try { db.db.exec('ALTER TABLE planos ADD COLUMN tipos TEXT'); } catch { /* já existe */ }
+// Períodos de compra do mesmo plano, dias grátis para testar e desconto de quem liga a renovação automática
+for (const col of ['ciclos TEXT', 'teste_dias INTEGER NOT NULL DEFAULT 0', 'desconto_auto REAL NOT NULL DEFAULT 0']) {
+  try { db.db.exec(`ALTER TABLE planos ADD COLUMN ${col}`); } catch { /* já existe */ }
+}
 
 // Primeira vez: cria os 3 planos de antes, com os preços e links que já estavam no painel.
 if (!db.get('SELECT 1 FROM planos LIMIT 1')) {
@@ -90,7 +94,33 @@ if (!db.get('SELECT 1 FROM planos LIMIT 1')) {
   }
 }
 
+// Preços de lançamento (novembro de 2026): uma única vez. Depois disso, quem manda é Painel → Planos.
+// Quem já assinou não muda: vale a validade que já tem.
+if (!db.get(`SELECT 1 FROM settings WHERE key = 'planos_precos_2026_11'`)) {
+  const PRECOS = { pro: [59.9, 159.9, 599], empresa: [39.9, 107.9, 399] };
+  for (const [id, [mes, tri, ano]] of Object.entries(PRECOS)) {
+    db.run('UPDATE planos SET preco = ?, ciclos = ?, teste_dias = 7, desconto_auto = 10 WHERE id = ? AND dias = 30', mes, JSON.stringify({ trimestral: tri, anual: ano }), id);
+  }
+  db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('planos_precos_2026_11', '1')`);
+}
+
 const json = (t, padrao) => { try { return JSON.parse(t) ?? padrao; } catch { return padrao; } };
+const CICLOS = { mensal: { nome: 'Mensal', meses: 1 }, trimestral: { nome: 'Trimestral', meses: 3, dias: 90 }, anual: { nome: 'Anual', meses: 12, dias: 365 } };
+const centavos = n => Math.round(n * 100) / 100;
+// Períodos à venda do plano, do mais curto ao mais longo, com o preço na renovação automática
+function ciclosDe(r) {
+  if (!(r.preco > 0) || !(r.dias > 0)) return [];
+  const extra = json(r.ciclos, {}) || {};
+  const desconto = Number(r.desconto_auto) || 0;
+  return Object.entries(CICLOS).map(([id, c]) => {
+    const preco = id === 'mensal' ? r.preco : Number(extra[id]);
+    if (!(preco > 0)) return null;
+    const dias = id === 'mensal' ? r.dias : c.dias;
+    const porMes = centavos(preco / c.meses);
+    return { id, nome: c.nome, meses: c.meses, dias, preco, por_mes: porMes, economia: Math.max(0, Math.round((1 - porMes / r.preco) * 100)),
+      preco_auto: centavos(preco * (1 - desconto / 100)) };
+  }).filter(Boolean);
+}
 const ORDEM_TIPOS = ['consumidor', 'empresa', 'ferramenta'];
 const tiposDe = r => { const t = json(r.tipos, null); const v = (Array.isArray(t) ? t : [r.tipo]).filter(x => TIPOS[x]); return ORDEM_TIPOS.filter(x => v.includes(x)); };
 const principal = tipos => (tipos.includes('empresa') ? 'empresa' : tipos.includes('consumidor') ? 'consumidor' : 'ferramenta');
@@ -109,7 +139,8 @@ function montar(r) {
     id: r.id, nome: r.nome, tipo: tipoP, tipos, tipo_nome: tipos.map(t => TIPOS[t].nome).join(' + '),
     // conta: 'usuario' (conta do site, com ou sem a ferramenta junto) ou 'cliente' (só a ferramenta)
     conta: perfis.length ? 'usuario' : 'cliente', perfis, perfil: perfis[0] || null, ferramenta: tipos.includes('ferramenta'),
-    preco: r.preco, gratis: !(r.preco > 0), dias: r.dias, sem_vencimento: r.dias === 0, ativo: Boolean(r.ativo) && !r.arquivado, arquivado: Boolean(r.arquivado), ordem: r.ordem,
+    preco: r.preco, gratis: !(r.preco > 0), ciclos: ciclosDe(r), teste_dias: r.preco > 0 ? Number(r.teste_dias) || 0 : 0, desconto_auto: r.preco > 0 ? Number(r.desconto_auto) || 0 : 0,
+    dias: r.dias, sem_vencimento: r.dias === 0, ativo: Boolean(r.ativo) && !r.arquivado, arquivado: Boolean(r.arquivado), ordem: r.ordem,
     chamada: r.chamada || '', ideal: r.ideal || '', beneficios: json(r.beneficios, []),
     destaque: r.destaque || '', icone: r.icone || tipo.icone,
     recursos: { perfil: { ...PERFIL_PADRAO, ...(recursos.perfil || {}) }, max_produtos: recursos.max_produtos || 0,
@@ -124,6 +155,8 @@ const plano = id => montar(db.get('SELECT * FROM planos WHERE id = ?', String(id
 // Planos à venda, na ordem do painel.
 const listar = () => db.all('SELECT * FROM planos WHERE ativo = 1 AND arquivado = 0 ORDER BY ordem, preco').map(montar);
 const todos = () => db.all('SELECT * FROM planos WHERE arquivado = 0 ORDER BY ordem, preco').map(montar);
+// Período escolhido na compra (sem escolha ou inválido: o mensal). Plano sem períodos: o preço e os dias do plano.
+const ciclo = (p, id) => p.ciclos.find(c => c.id === id) || p.ciclos[0] || { id: 'mensal', nome: 'Mensal', meses: 1, dias: p.dias, preco: p.preco, por_mes: p.preco, economia: 0, preco_auto: p.preco };
 
 // Quantas pessoas ainda têm este plano em vigor (contas do site e clientes da ferramenta)
 function assinantes(id) {
@@ -164,6 +197,18 @@ function validar(b, atual = null) {
   const beneficios = (Array.isArray(b.beneficios) ? b.beneficios : String(b.beneficios || '').split('\n'))
     .map(x => texto(x, 140)).filter(Boolean).slice(0, 12);
   if (!beneficios.length) throw fail('Escreva pelo menos um benefício (ou use "Gerar a partir das funções").');
+  // Preços dos outros períodos, dias grátis e desconto da renovação (sem o campo no pedido, ficam como estão)
+  const precoExtra = (campo, nome) => {
+    if (b[campo] === undefined) return Number(json(atual?.ciclos, {})?.[nome]) || 0;
+    if (String(b[campo]).trim() === '') return 0;
+    const n = Math.round(numero(b[campo]) * 100) / 100;
+    if (!(n > 0) || n > 100000) throw fail('Confira o preço do plano trimestral ou anual (ex.: 159,90), ou deixe em branco para não vender esse período.');
+    return n;
+  };
+  const trimestral = gratis ? 0 : precoExtra('preco_trimestral', 'trimestral');
+  const anual = gratis ? 0 : precoExtra('preco_anual', 'anual');
+  const testeDias = gratis ? 0 : b.teste_dias === undefined ? Number(atual?.teste_dias) || 0 : entre(b.teste_dias, [0, 30], 0);
+  const descAuto = gratis ? 0 : b.desconto_auto === undefined ? Number(atual?.desconto_auto) || 0 : Math.min(Math.max(numero(b.desconto_auto) || 0, 0), 50);
   const link = texto(b.link_pagamento, 300);
   if (link && !/^https:\/\//i.test(link)) throw fail('O link de pagamento precisa começar com https://');
   const produto = texto(b.produto_app, 100);
@@ -175,6 +220,8 @@ function validar(b, atual = null) {
     recursos: JSON.stringify({ perfil, max_produtos: tipos.includes('empresa') ? entre(b.max_produtos, [0, 100000], 0) : 0,
       moedas: entre(b.moedas, [0, 1000000], MOEDAS_PADRAO[tipo]) }),
     link_pagamento: link || null, produto_app: produto || null,
+    ciclos: trimestral || anual ? JSON.stringify({ ...(trimestral ? { trimestral } : {}), ...(anual ? { anual } : {}) }) : null,
+    teste_dias: testeDias, desconto_auto: descAuto,
   };
 }
 
@@ -264,4 +311,4 @@ const planoFerramenta = () => {
   return lista.find(p => p.conta === 'cliente') || lista[0] || null;
 };
 
-module.exports = { SEM_VENCIMENTO, somaDias, planoGratisPara, TIPOS, FUNCOES_TIPO, PERFIL_PADRAO, PERFIL_LIMITES, plano, listar, todos, assinantes, criar, editar, excluir, sugerirBeneficios, maxProdutos, planoFerramenta };
+module.exports = { CICLOS, ciclo, SEM_VENCIMENTO, somaDias, planoGratisPara, TIPOS, FUNCOES_TIPO, PERFIL_PADRAO, PERFIL_LIMITES, plano, listar, todos, assinantes, criar, editar, excluir, sugerirBeneficios, maxProdutos, planoFerramenta };

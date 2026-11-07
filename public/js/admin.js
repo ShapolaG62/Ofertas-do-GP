@@ -1779,6 +1779,8 @@ async function loadPlanos() {
     return `<div class="store-card pl-card${p.ativo ? '' : ' pl-off'}">
       <h4>${esc(p.nome)} ${p.destaque ? `<span class="badge b-active">${esc(p.destaque)}</span>` : ''} ${p.ativo ? '' : '<span class="badge b-none">fora da venda</span>'}</h4>
       <div class="pl-preco">${p.gratis ? 'Grátis' : brl(p.preco)} <span class="hint" style="margin:0">/ ${p.dias ? `${p.dias} dias` : 'sem vencimento'}</span></div>
+      ${(p.ciclos || []).length > 1 ? `<div class="hint" style="margin:2px 0">${p.ciclos.slice(1).map(c => `${esc(c.nome)}: ${brl(c.preco)}`).join(' · ')}</div>` : ''}
+      ${!p.gratis && (p.teste_dias || p.desconto_auto) ? `<div class="hint" style="margin:2px 0">${p.teste_dias ? `${p.teste_dias} dias grátis` : ''}${p.teste_dias && p.desconto_auto ? ' · ' : ''}${p.desconto_auto ? `${String(p.desconto_auto).replace('.', ',')}% na renovação automática` : ''}</div>` : ''}
       <div class="hint" style="margin:4px 0">${esc(p.tipo_nome)} · código <code>${esc(p.id)}</code> · <b>${p.assinantes}</b> assinante${p.assinantes === 1 ? '' : 's'}</div>
       <div class="pl-mini">Vitrine ${pf.vitrine} · resumo ${pf.bio} · links ${pf.links} · capa ${sim(pf.capa)} · degradê ${sim(pf.gradiente)} · endereço ${sim(pf.slug_livre)} · moldura ${sim(pf.moldura)}${p.tipos.includes('empresa') ? ` · produtos ${p.recursos.max_produtos || 'padrão'}` : ''} · ${Number(p.recursos.moedas || 0).toLocaleString('pt-BR')} moedas</div>
       <div class="actions" style="justify-content:flex-start;margin-top:10px">
@@ -1808,6 +1810,9 @@ function plAbrir(p) {
     icone: p?.icone || 'consumidor', beneficios: (p?.beneficios || []).join('\n'),
     link_pagamento: p?.link_pagamento || '', produto_app: p?.produto_app || '',
     p_vitrine: pf.vitrine, p_bio: pf.bio, p_links: pf.links, p_selo: pf.selo || '',
+    preco_trimestral: String((p?.ciclos || []).find(c => c.id === 'trimestral')?.preco ?? '').replace('.', ','),
+    preco_anual: String((p?.ciclos || []).find(c => c.id === 'anual')?.preco ?? '').replace('.', ','),
+    teste_dias: p?.teste_dias || 0, desconto_auto: String(p?.desconto_auto || 0).replace('.', ','),
   };
   for (const [k, val] of Object.entries(v)) if (f.elements[k]) f.elements[k].value = val;
   f.elements.ativo.checked = p ? p.ativo : true;
@@ -1834,6 +1839,7 @@ function plDados() {
     ordem: e.ordem.value, ativo: e.ativo.checked, tipos: plTipos(), max_produtos: e.max_produtos.value, moedas: e.moedas.value,
     chamada: e.chamada.value, ideal: e.ideal.value, destaque: e.destaque.value, icone: e.icone.value, beneficios: e.beneficios.value,
     link_pagamento: e.link_pagamento.value, produto_app: e.produto_app.value,
+    preco_trimestral: e.preco_trimestral.value, preco_anual: e.preco_anual.value, teste_dias: e.teste_dias.value, desconto_auto: e.desconto_auto.value,
     perfil: { vitrine: e.p_vitrine.value, bio: e.p_bio.value, links: e.p_links.value, selo: e.p_selo.value,
       capa: e.p_capa.checked, cores_extras: e.p_cores_extras.checked, gradiente: e.p_gradiente.checked, slug_livre: e.p_slug_livre.checked, moldura: e.p_moldura.checked },
   };
@@ -1885,7 +1891,7 @@ $('#pl-dlg').addEventListener('click', e => { if (e.target.closest('[data-close]
 // ── Planos e pagamentos ───────────────────────────────────────────────────────
 const PED_STATUS = { pendente: ['b-pending', 'Aguardando'], aprovado: ['b-active', 'Aprovado'], recusado: ['b-banned', 'Recusado'],
   cancelado: ['b-none', 'Cancelado'], expirado: ['b-none', 'Expirado'] };
-const PED_METODO = { gratis: 'Plano grátis', pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento', combinar: 'A combinar', app_store: 'App Store (app)', play_store: 'Google Play (app)' };
+const PED_METODO = { gratis: 'Plano grátis', teste: 'Período grátis', assinatura: 'Renovação automática (Mercado Pago)', pix: 'Pix (Mercado Pago)', mercadopago: 'Cartão (Mercado Pago)', pix_manual: 'Pix pela chave', transferencia: 'Transferência', link: 'Link de pagamento', combinar: 'A combinar', app_store: 'App Store (app)', play_store: 'Google Play (app)' };
 const PED_MANUAL = ['pix_manual', 'transferencia', 'link', 'combinar'];
 async function loadPedidos() {
   const d = await api('/api/admin/pagamentos');

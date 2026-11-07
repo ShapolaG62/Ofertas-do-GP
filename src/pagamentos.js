@@ -14,8 +14,9 @@ const clientes = require('./clientes');
 const cadastro = require('./cadastro');
 const planos = require('./planos');
 const email = require('./email');
+const assinaturas = require('./assinaturas');
 
-const MP = 'https://api.mercadopago.com';
+const MP_PADRAO = 'https://api.mercadopago.com';
 const fail = (msg, status = 400) => Object.assign(new Error(msg), { status });
 const nowSql = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 const sqlDe = d => d.toISOString().replace('T', ' ').slice(0, 19);
@@ -45,7 +46,7 @@ function metodosDisponiveis(s = settings.getAll(), planoId = null) {
   // Sem nenhuma forma configurada, a compra ainda é finalizada: o pedido fica registrado e o pagamento é combinado.
   if (!algum) lista.push({ id: 'combinar', nome: 'Combinar o pagamento', automatico: false,
     desc: 'Finalize o pedido e combinamos o pagamento com você pelo WhatsApp' });
-  return { lista, pix: pixAuto || pixManual, pix_automatico: pixAuto, mercadopago: lista.some(m => m.id === 'mercadopago'), algum };
+  return { lista, pix: pixAuto || pixManual, pix_automatico: pixAuto, mercadopago: lista.some(m => m.id === 'mercadopago'), algum, renovacao_auto: lista.some(m => m.id === 'mercadopago') };
 }
 
 // ── Pedido ───────────────────────────────────────────────────────────────────
@@ -54,13 +55,13 @@ const NOME_CONTA = { consumidor: 'consumidor', empresa: 'empresa', afiliado: 'us
 function perfilDaConta(p, b, u) {
   if (!p.perfis.length) return null;
   if (u && p.perfis.includes(u.tipo)) return u.tipo;
+  if (u && u.tipo === 'consumidor' && p.perfis.includes('empresa')) return 'empresa'; // consumidor virando loja: a conta muda de tipo
   if (u && u.tipo && u.tipo !== 'afiliado') {
     throw fail(`Sua conta é de ${NOME_CONTA[u.tipo]} e este plano é para ${p.perfis.map(t => NOME_CONTA[t]).join(' ou ')}. Para trocar de perfil, fale com o administrador.`, 409);
   }
   const escolhido = String(b.perfil_conta || '');
   const perfil = p.perfis.includes(escolhido) ? escolhido : p.perfis.length === 1 ? p.perfis[0] : null;
   if (!perfil) throw fail('Escolha o tipo da sua conta: consumidor ou empresa.');
-  if (u && u.tipo === 'afiliado' && perfil === 'empresa') throw fail('Para transformar sua conta de afiliado em conta de empresa, fale com o administrador.', 409);
   return perfil;
 }
 
@@ -100,6 +101,13 @@ function validarLogado(p, b, u) {
   }
   const perfil = perfilDaConta(p, b, u);
   parceiro(p, b, perfil);
+  // Conta que já existe e passa a ser loja: faltam só os dados da empresa
+  if (u.tipo && perfil === 'empresa' && u.tipo !== 'empresa') {
+    const emp = cadastro.dadosEmpresa({ nome: u.nome, telefone: u.telefone, ...b });
+    if (emp.cnpj && isBlocked(`cnpj:${emp.cnpj}`)) throw fail('Não é possível concluir com estes dados. Fale com o administrador.');
+    if (emp.cnpj && db.get('SELECT 1 FROM users WHERE cnpj = ? AND id <> ?', emp.cnpj, u.id)) throw fail('Já existe uma conta com este CNPJ.', 409);
+    return { email: u.email, nome: u.nome, renovar_user_id: u.id, perfil_conta: perfil, perfil_dados: emp, mudar_tipo: true };
+  }
   return { email: u.email, nome: u.nome, renovar_user_id: u.id, perfil_conta: perfil, ...(u.tipo ? {} : { perfil_dados: novosDados(perfil) }) };
 }
 
@@ -167,7 +175,7 @@ function baseUrl(req) {
 }
 
 async function mp(method, path, data, s, extraHeaders = {}) {
-  const r = await axios({ method, url: `${MP}${path}`, data, timeout: 20000, validateStatus: () => true,
+  const r = await axios({ method, url: `${process.env.MP_API_URL || MP_PADRAO}${path}`, data, timeout: 20000, validateStatus: () => true,
     headers: { Authorization: `Bearer ${s.mp_access_token}`, 'Content-Type': 'application/json', ...extraHeaders } });
   if (r.status >= 400) {
     const m = r.data?.message || r.data?.error || `HTTP ${r.status}`;
@@ -193,25 +201,63 @@ async function criarPedido(b, req) {
     aprovar(Number(ins.lastInsertRowid), 'plano grátis');
     return { token };
   }
+  const logado = users.currentUser(req);
+  const clienteLogado = logado ? null : clientes.atual(req);
+  const ciclo = planos.ciclo(p, b.ciclo);
+
+  // Período grátis (7 dias, ou 1 mês para as primeiras lojas): sem pagamento e sem cartão, uma vez por pessoa
+  if (b.teste === true || b.teste === '1') {
+    if (b.trocar_de) throw fail('O período grátis é para quem ainda não tem o plano. Para trocar, escolha uma forma de pagamento.', 409);
+    const dados = validarDados(p, b, logado);
+    if (assinaturas.planoAtivo(p, logado, clienteLogado)) throw fail(`Você já tem o plano ${p.nome} ativo.`, 409);
+    const chaves = assinaturas.identidade(dados, logado);
+    const oferta = assinaturas.cortesia(p, chaves);
+    if (!oferta) throw fail('O período grátis deste plano já foi usado. Escolha uma forma de pagamento para continuar.', 409);
+    const token = crypto.randomBytes(24).toString('hex');
+    const ins = db.run(`INSERT INTO pagamentos (token, plano, valor, dias, metodo, email, nome, dados, ciclo) VALUES (?, ?, 0, ?, 'teste', ?, ?, ?, 'teste')`,
+      token, p.id, oferta.dias, dados.email, dados.nome || null, JSON.stringify(dados));
+    const pedidoId = Number(ins.lastInsertRowid);
+    assinaturas.registrarCortesia(chaves, p.id, oferta.tipo, pedidoId);
+    aprovar(pedidoId, oferta.tipo === 'loja_mes' ? 'mês grátis das primeiras lojas' : 'período grátis');
+    return { token };
+  }
+
   const metodo = String(b.metodo || '');
   const disp = metodosDisponiveis(s, p.id);
   if (!disp.lista.some(m => m.id === metodo)) throw fail('Forma de pagamento indisponível no momento.');
-  const dados = validarDados(p, b, users.currentUser(req));
+  const auto = b.renovacao_auto === true || b.renovacao_auto === '1';
+  if (auto && metodo !== 'mercadopago') throw fail('A renovação automática funciona só no cartão. Escolha cartão ou desligue a renovação.');
+  if (auto && !p.ciclos.length) throw fail('Este plano não tem renovação automática.');
+  const dados = validarDados(p, b, logado);
+  const troca = assinaturas.prepararTroca(p, ciclo, b, logado, clienteLogado);
+  if (troca) Object.assign(dados, troca);
+  const valor = auto ? ciclo.preco_auto : ciclo.preco;
+  const dias = ciclo.dias + (troca?.dias_bonus || 0);
 
   const token = crypto.randomBytes(24).toString('hex');
-  const ins = db.run(`INSERT INTO pagamentos (token, plano, valor, dias, metodo, email, nome, dados) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    token, p.id, p.preco, p.dias, metodo === 'pix' && !disp.pix_automatico ? 'pix_manual' : metodo, dados.email, dados.nome || null, JSON.stringify(dados));
+  const ins = db.run(`INSERT INTO pagamentos (token, plano, valor, dias, metodo, email, nome, dados, ciclo, renovacao_auto, trocado_de) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    token, p.id, valor, dias, auto ? 'assinatura' : metodo === 'pix' && !disp.pix_automatico ? 'pix_manual' : metodo, dados.email, dados.nome || null, JSON.stringify(dados), ciclo.id, auto ? 1 : 0, troca?.trocar_de || null);
   const id = Number(ins.lastInsertRowid);
   const base = baseUrl(req);
   const publico = /^https:\/\//i.test(base); // o Mercado Pago só avisa / volta para endereços https
-  const descricao = `${p.nome} — ${p.dias ? `${p.dias} dias de acesso` : 'acesso sem vencimento'} (Ofertou!)`;
+  const descricao = `${p.nome} — ${ciclo.dias ? `${ciclo.nome.toLowerCase()}, ${ciclo.dias} dias de acesso` : 'acesso sem vencimento'} (Ofertou!)`;
 
   try {
+    // Renovação automática: a pessoa autoriza no Mercado Pago, que cobra sozinho a cada período
+    if (auto) {
+      const pre = await mp('post', '/preapproval', {
+        reason: descricao, external_reference: token, payer_email: dados.email, back_url: `${base}/assinar?pedido=${token}`, status: 'pending',
+        auto_recurring: { frequency: ciclo.id === 'mensal' && ciclo.dias !== 30 ? ciclo.dias : ciclo.meses, frequency_type: ciclo.id === 'mensal' && ciclo.dias !== 30 ? 'days' : 'months', transaction_amount: valor, currency_id: 'BRL' },
+      }, s, { 'X-Idempotency-Key': token });
+      db.run('UPDATE pagamentos SET mp_preference_id = ? WHERE id = ?', String(pre.id), id);
+      assinaturas.criarAuto({ token, preapproval: pre.id, plano: p.id, ciclo: ciclo.id, valor, dias: ciclo.dias, email: dados.email });
+      return { token, checkout_url: pre.init_point };
+    }
     if (metodo === 'pix' && disp.pix_automatico) {
       const [primeiro, ...resto] = String(dados.nome || 'Cliente').split(' ');
       const expira = new Date(Date.now() + PIX_MINUTOS * 60000);
       const pay = await mp('post', '/v1/payments', {
-        transaction_amount: p.preco, description: descricao, payment_method_id: 'pix', external_reference: token,
+        transaction_amount: valor, description: descricao, payment_method_id: 'pix', external_reference: token,
         date_of_expiration: expira.toISOString().replace('Z', '+00:00'),
         payer: { email: dados.email, first_name: primeiro, last_name: resto.join(' ') || primeiro,
           ...(dados.cpf ? { identification: { type: 'CPF', number: dados.cpf } } : {}) },
@@ -231,7 +277,7 @@ async function criarPedido(b, req) {
       const maxParc = Math.min(Math.max(parseInt(s.pag_mp_parcelas, 10) || 1, 1), 12);
       const parc = Math.min(Math.max(parseInt(b.cartao.installments, 10) || 1, 1), maxParc);
       const pay = await mp('post', '/v1/payments', {
-        transaction_amount: p.preco, token: String(b.cartao.token), installments: parc, payment_method_id: String(salvo.payment_method_id),
+        transaction_amount: valor, token: String(b.cartao.token), installments: parc, payment_method_id: String(salvo.payment_method_id),
         ...(salvo.issuer_id ? { issuer_id: String(salvo.issuer_id) } : {}),
         description: descricao, external_reference: token, statement_descriptor: 'OFERTOU',
         payer: { type: 'customer', id: salvo.customer_id, email: dados.email },
@@ -244,7 +290,7 @@ async function criarPedido(b, req) {
     }
     if (metodo === 'mercadopago') {
       const pref = await mp('post', '/checkout/preferences', {
-        items: [{ id: p.id, title: descricao, quantity: 1, unit_price: p.preco, currency_id: 'BRL' }],
+        items: [{ id: p.id, title: descricao, quantity: 1, unit_price: valor, currency_id: 'BRL' }],
         payer: { email: dados.email, name: dados.nome || undefined },
         external_reference: token,
         back_urls: { success: `${base}/assinar?pedido=${token}`, failure: `${base}/assinar?pedido=${token}`, pending: `${base}/assinar?pedido=${token}` },
@@ -269,6 +315,10 @@ const MP_STATUS = { approved: 'aprovado', rejected: 'recusado', cancelled: 'canc
 async function verificar(pedido) {
   if (pedido.status !== 'pendente') return pedido;
   const s = settings.getAll();
+  if (pedido.metodo === 'assinatura') {
+    await assinaturas.conferirPedido(pedido).catch(err => console.error('[ASSINATURA]', err.message));
+    return db.get('SELECT * FROM pagamentos WHERE id = ?', pedido.id);
+  }
   if (['pix', 'mercadopago'].includes(pedido.metodo) && s.mp_access_token) {
     let pay = null;
     if (pedido.mp_payment_id) pay = await mp('get', `/v1/payments/${pedido.mp_payment_id}`, null, s).catch(() => null);
@@ -299,6 +349,7 @@ function aprovar(pedidoId, origem) {
     const p = planos.plano(pedido.plano);
     const d = JSON.parse(pedido.dados);
     let contaTipo, contaId, validade;
+    if (d.trocar_de) assinaturas.encerrarPlanoAntigo(d);
     if (p.conta === 'cliente') {
       contaTipo = 'cliente';
       if (d.renovar_cliente_id && clientes.getById(d.renovar_cliente_id)) {
@@ -325,6 +376,10 @@ function aprovar(pedidoId, origem) {
             status: ['pending', 'onboarding'].includes(u.status) ? 'active' : u.status,
             ...(u.tipo ? {} : { aceite_termos_em: nowSql() }) };
           db.run(`UPDATE users SET ${Object.keys(cols).map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(cols), u.id);
+        } else if (d.trocar_de && planos.plano(d.trocar_de)?.conta === 'usuario') {
+          // Saiu da loja para a ferramenta: a conta vira de afiliado e a loja sai do ar, sem apagar (volta se assinar de novo)
+          db.run(`UPDATE users SET tipo = 'afiliado', plano = ?, assinatura_ate = ? WHERE id = ?`, p.id, validade, u.id);
+          if (u.tipo === 'empresa') db.run('UPDATE lojas SET oculta = 2 WHERE user_id = ? AND oculta = 0', u.id);
         }
       }
     } else {
@@ -334,11 +389,12 @@ function aprovar(pedidoId, origem) {
         contaId = d.renovar_user_id;
         const u = users.getById(contaId);
         validade = somaDias(u.assinatura_ate, pedido.dias);
-        db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = CASE WHEN tipo IS NULL OR tipo = 'afiliado' THEN ? ELSE tipo END,
-                status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, perfil, contaId);
-        // Conta que ainda não tinha perfil: grava os dados preenchidos na compra.
-        if (d.perfil_dados && !u.tipo) {
-          const cols = { ...d.perfil_dados, aceite_termos_em: nowSql() };
+        db.run(`UPDATE users SET plano = ?, assinatura_ate = ?, tipo = CASE WHEN tipo IS NULL OR tipo = 'afiliado' OR ? = 1 THEN ? ELSE tipo END,
+                status = CASE WHEN status IN ('pending', 'onboarding') THEN 'active' ELSE status END WHERE id = ?`, p.id, validade, d.mudar_tipo ? 1 : 0, perfil, contaId);
+        if (perfil === 'empresa') db.run('UPDATE lojas SET oculta = 0 WHERE user_id = ? AND oculta = 2', contaId);
+        // Conta que ainda não tinha perfil (ou que virou loja): grava os dados preenchidos na compra.
+        if (d.perfil_dados && (!u.tipo || d.mudar_tipo)) {
+          const cols = { ...d.perfil_dados, ...(u.tipo ? {} : { aceite_termos_em: nowSql() }) };
           db.run(`UPDATE users SET ${Object.keys(cols).map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...Object.values(cols), contaId);
         }
       } else {
@@ -360,6 +416,12 @@ function aprovar(pedidoId, origem) {
   });
   const atualizado = db.get('SELECT * FROM pagamentos WHERE id = ?', pedidoId);
   if (atualizado?.status === 'aprovado' && !atualizado.email_enviado) enviarConfirmacao(atualizado).catch(err => console.error('[PAGAMENTO] e-mail:', err.message));
+  // Troca de plano: para de cobrar o plano que saiu (a nova assinatura, se houver, continua)
+  if (atualizado?.status === 'aprovado' && atualizado.trocado_de) {
+    const d2 = JSON.parse(atualizado.dados || '{}');
+    const contas = [d2.trocar_user_id && ['usuario', d2.trocar_user_id], d2.trocar_cliente_id && ['cliente', d2.trocar_cliente_id]].filter(Boolean);
+    assinaturas.pararDaConta(contas, atualizado.trocado_de, atualizado.token).catch(err => console.error('[ASSINATURA]', err.message));
+  }
   return atualizado;
 }
 
@@ -372,14 +434,18 @@ async function enviarConfirmacao(pedido) {
   const onde = p.conta === 'cliente' ? `${site}/cliente` : `${site}/conta`;
   const semVenc = pedido.validade_ate === planos.SEM_VENCIMENTO;
   const gratis = !(pedido.valor > 0);
+  const teste = pedido.metodo === 'teste';
   const validade = semVenc ? 'sem vencimento' : fmtDia(pedido.validade_ate);
+  const proximo = teste ? `Seu período grátis vai até essa data. Nada é cobrado sem você escolher: para continuar, assine em ${site}/assinar?plano=${p.id}`
+    : pedido.renovacao_auto ? 'A renovação é automática no cartão. Você pode desligar quando quiser em Minha conta → Meus planos.'
+    : 'Para renovar, é só assinar o mesmo plano de novo com o mesmo e-mail e senha: os dias são somados.';
   const texto = [
     `Olá${pedido.nome ? `, ${pedido.nome.split(' ')[0]}` : ''}!`, '',
-    gratis ? `Seu plano ${p.nome} (grátis) está ativo.` : `Seu pagamento foi confirmado e o plano ${p.nome} está ativo.`, '',
+    teste ? `Seu período grátis do plano ${p.nome} começou.` : gratis ? `Seu plano ${p.nome} (grátis) está ativo.` : `Seu pagamento foi confirmado e o plano ${p.nome} está ativo.`, '',
     `Valor: ${gratis ? 'grátis' : `R$ ${pedido.valor.toFixed(2).replace('.', ',')}`}`,
     `Validade: ${validade}`,
     `Acesso: ${onde} (entre com o e-mail ${pedido.email} e a senha que você cadastrou)`, '',
-    'Para renovar, é só assinar o mesmo plano de novo com o mesmo e-mail e senha: os dias são somados.', '',
+    proximo, '',
     'Obrigado!', 'Ofertou!',
   ].join('\n');
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;color:#161b18;line-height:1.55">
@@ -390,7 +456,7 @@ async function enviarConfirmacao(pedido) {
       <tr><td style="padding:4px 12px 4px 0;color:#48514c">Validade</td><td><b>${validade}</b></td></tr>
       <tr><td style="padding:4px 12px 4px 0;color:#48514c">Acesso</td><td><a href="${escHtml(onde)}">${escHtml(onde)}</a></td></tr>
     </table>
-    <p style="color:#48514c">Entre com o e-mail <b>${escHtml(pedido.email)}</b> e a senha que você cadastrou. Para renovar, assine o mesmo plano com o mesmo e-mail e senha: os dias são somados.</p>
+    <p style="color:#48514c">Entre com o e-mail <b>${escHtml(pedido.email)}</b> e a senha que você cadastrou. ${escHtml(proximo)}</p>
     <p>Obrigado!<br>Ofertou!</p></div>`;
   await email.enviar({ para: pedido.email, assunto: `${gratis ? 'Plano ativado' : 'Pagamento confirmado'} — ${p.nome} (${semVenc ? 'sem vencimento' : `válido até ${validade}`})`, texto, html });
   db.run('UPDATE pagamentos SET email_enviado = 1 WHERE id = ?', pedido.id);
@@ -433,7 +499,7 @@ function publico(pedido) {
   const s = settings.getAll();
   return {
     status: pedido.status, plano: p.nome, valor: pedido.valor, dias: pedido.dias, metodo: pedido.metodo, email: pedido.email,
-    validade_ate: pedido.validade_ate, gratis: pedido.metodo === 'gratis', sem_vencimento: pedido.validade_ate === planos.SEM_VENCIMENTO,
+    validade_ate: pedido.validade_ate, gratis: pedido.metodo === 'gratis' || pedido.metodo === 'teste', teste: pedido.metodo === 'teste', renovacao_auto: Boolean(pedido.renovacao_auto), ciclo: pedido.ciclo || 'mensal', sem_vencimento: pedido.validade_ate === planos.SEM_VENCIMENTO,
     pix: pedido.metodo === 'pix' ? { copia_cola: pedido.pix_qr, qr_base64: pedido.pix_qr_base64, expira: pedido.pix_expira } : null,
     manual: MANUAIS.includes(pedido.metodo) ? instrucoesManuais(pedido, s) : null,
     email_configurado: email.configurado(s),
@@ -445,9 +511,21 @@ const porToken = token => db.get('SELECT * FROM pagamentos WHERE token = ?', Str
 // Aviso do Mercado Pago (webhook): só usamos o id para consultar o pagamento na API.
 async function webhook(body, query) {
   const id = body?.data?.id || query['data.id'] || (query.topic === 'payment' ? query.id : null);
-  if (!id || !/^\d+$/.test(String(id))) return;
   const s = settings.getAll();
   if (!s.mp_access_token) return;
+  // Renovação automática: o aviso só adianta a conferência na API
+  const tipo = String(body?.type || query.type || query.topic || '');
+  if (/^subscription_preapproval/.test(tipo)) {
+    if (/^[\w-]{6,64}$/.test(String(id))) await assinaturas.conferirPorId(id);
+    return;
+  }
+  if (tipo === 'subscription_authorized_payment') {
+    if (!/^\d+$/.test(String(id))) return;
+    const ap = await mp('get', `/authorized_payments/${id}`, null, s).catch(() => null);
+    if (ap?.preapproval_id) await assinaturas.conferirPorId(ap.preapproval_id);
+    return;
+  }
+  if (!id || !/^\d+$/.test(String(id))) return;
   const pay = await mp('get', `/v1/payments/${id}`, null, s).catch(() => null);
   const pedido = pay?.external_reference && porToken(pay.external_reference);
   if (pedido) {

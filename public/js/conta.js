@@ -212,21 +212,46 @@
 
   let planosPromise = null;
   const dadosPlanos = () => (planosPromise ||= fetch('/api/planos').then(r => r.json()).catch(() => ({ planos: [] })));
-  const planosHtml = planos => planos.map(p => {
+  const PERIODO_CICLO = { mensal: '/mês', trimestral: '/trimestre', anual: '/ano' };
+  const equivCiclo = c => (c.meses > 1 ? `equivale a ${brlFmt(c.por_mes)}/mês${c.economia ? `, ${c.economia}% a menos` : ''}` : '');
+  const planosHtml = (planos, lojasGratis = 0) => planos.map(p => {
+    const nativo = Boolean(window.OfertouApp?.nativo);
+    const ciclos = nativo ? [] : p.ciclos || [];
     const mensal = p.gratis || !p.dias || p.dias === 30 ? '' : `<small class="plano-equiv">equivale a ${brlFmt(p.preco / p.dias * 30)}/mês</small>`;
     const periodo = !p.dias ? ' · sem vencimento' : p.dias === 30 ? '/mês' : `/${p.dias} dias`;
+    const seletor = ciclos.length > 1 ? `<div class="plano-ciclos" role="group" aria-label="Período de ${esc(p.nome)}">${ciclos.map((c, i) => `<button type="button" aria-pressed="${i === 0}" data-ciclo="${c.id}" data-preco="${esc(brlFmt(c.preco))}" data-periodo="${PERIODO_CICLO[c.id]}" data-equiv="${esc(equivCiclo(c))}">${esc(c.nome)}</button>`).join('')}</div>` : '';
+    const lojaGratis = !nativo && !p.gratis && p.tipos?.includes('empresa') && lojasGratis > 0;
+    const gratisDias = !nativo && !p.gratis && p.teste_dias > 0;
+    const cortesia = lojaGratis ? `<p class="plano-cortesia">1 mês grátis para as 20 primeiras lojas. Restam ${lojasGratis}.</p>`
+      : gratisDias ? `<p class="plano-cortesia">${p.teste_dias} dias grátis para testar, sem cartão.</p>` : '';
+    const risco = !p.gratis && p.ferramenta ? '<p class="plano-risco">O WhatsApp por QR code não é a API oficial: o número pode ser banido.</p>' : '';
       return `
       <article class="plano-card${p.destaque ? ' is-destaque' : ''}" data-plano="${esc(p.id)}">
         ${p.destaque ? `<span class="plano-selo">${esc(p.destaque)}</span>` : ''}
         <div class="plano-topo"><span class="plano-ico">${ICONES[p.icone] || ''}</span><p class="plano-chamada">${esc(p.chamada)}</p></div>
         <h3>${esc(p.nome)}</h3>
+        ${seletor}
         <p class="plano-preco"><b>${p.gratis ? 'Grátis' : brlFmt(p.preco)}</b><span>${periodo}</span></p>
-        ${mensal}
+        ${seletor ? '<small class="plano-equiv" data-equiv-txt></small>' : mensal}
+        ${cortesia}
         <p class="plano-ideal">${esc(p.ideal || '')}</p>
         <ul>${p.beneficios.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
-        <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" href="/assinar?plano=${encodeURIComponent(p.id)}">${p.gratis ? `Começar grátis` : `Assinar ${esc(p.nome)}`}</a>
+        ${risco}
+        <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" data-assinar href="/assinar?plano=${encodeURIComponent(p.id)}">${p.gratis ? 'Começar grátis' : lojaGratis || gratisDias ? `Começar ${esc(p.nome)} grátis` : `Assinar ${esc(p.nome)}`}</a>
       </article>`;
   }).join('');
+
+  // Mensal, trimestral ou anual no cartão do plano: muda o preço e o que vai para a página de compra
+  document.addEventListener('click', e => {
+    const b = e.target.closest?.('.plano-ciclos [data-ciclo]');
+    if (!b) return;
+    const card = b.closest('.plano-card');
+    card.querySelectorAll('[data-ciclo]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    card.querySelector('.plano-preco b').textContent = b.dataset.preco;
+    card.querySelector('.plano-preco span').textContent = b.dataset.periodo;
+    card.querySelector('[data-equiv-txt]').textContent = b.dataset.equiv;
+    card.querySelector('[data-assinar]').href = `/assinar?plano=${encodeURIComponent(card.dataset.plano)}&ciclo=${encodeURIComponent(b.dataset.ciclo)}`;
+  });
 
   let planosCarregados = false;
   async function loadPlanos() {
@@ -240,7 +265,7 @@
       return;
     }
     const vende = d.metodos?.algum;
-    grid.innerHTML = planosHtml(d.planos);
+    grid.innerHTML = planosHtml(d.planos, d.lojas_gratis);
 
     // Formas de pagamento aceitas
     if (vende) {
@@ -442,7 +467,7 @@
         : mode === 'aprovacao' ? '⏳ Gratuito · passa por aprovação' : 'Gratuito · acesso liberado na hora';
     }
     dadosPlanos().then(d => {
-      $('#perfil-planos').innerHTML = d.planos?.length ? planosHtml(d.planos) : '';
+      $('#perfil-planos').innerHTML = d.planos?.length ? planosHtml(d.planos, d.lojas_gratis) : '';
       $('#perfil-pago').hidden = !d.planos?.length;
     });
   }
@@ -473,12 +498,13 @@
   });
 
   // ── Área do usuário ────────────────────────────────────────────────────────
-  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['pedidos', 'Meus pedidos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+  const TABS_CONSUMIDOR = [['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['pedidos', 'Meus pedidos'], ['planos', 'Meus planos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   const TABS_EMPRESA = [['painel', 'Painel da loja'], ['meuperfil', 'Meu perfil'], ['mensagens', 'Mensagens'], ['anuncios', 'Anúncios'], ['loja', 'Minha loja'], ['vendas', 'Vendas e pagamentos'], ['importar', 'Importação automática'],
-    ['pedidos', 'Meus pedidos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
+    ['pedidos', 'Meus pedidos'], ['planos', 'Meus planos'], ['cartoes', 'Meus cartões'], ['perfil', 'Meus dados'], ['seguranca', 'Senha e conta']];
   // Menu lateral no mesmo padrão do painel do afiliado: grupos com título e ícone em cada item
   const ICONES_NAV = {"equipe":"<circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2.5 20a6.5 6.5 0 0 1 13 0\"/><path d=\"M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6\"/>","painel":"<rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"2\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"2\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"2\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"2\"/>","anuncios":"<path d=\"M20 12l-8 8-9-9V3h8z\"/><circle cx=\"7.5\" cy=\"7.5\" r=\"1.5\"/>","loja":"<path d=\"M4 9l1.5-5h13L20 9\"/><path d=\"M4 9v11h16V9\"/><path d=\"M4 9a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0\"/><path d=\"M10 20v-6h4v6\"/>","vendas":"<path d=\"M4 19h16\"/><path d=\"M7 15l4-4 3 3 5-6\"/>","importar":"<path d=\"M12 3v12\"/><path d=\"M7 10l5 5 5-5\"/><path d=\"M4 20h16\"/>","mensagens":"<path d=\"M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z\"/>","meuperfil":"<path d=\"M12 2l3 6 6.5 1-4.7 4.6 1.1 6.4L12 17l-5.9 3 1.1-6.4L2.5 9 9 8z\"/>","pedidos":"<path d=\"M3 8l9-5 9 5v8l-9 5-9-5z\"/><path d=\"M3 8l9 5 9-5\"/><path d=\"M12 13v8\"/>","cartoes":"<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2.5\"/><path d=\"M3 10h18\"/>","perfil":"<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>","seguranca":"<rect x=\"5\" y=\"11\" width=\"14\" height=\"10\" rx=\"2\"/><path d=\"M8 11V7a4 4 0 0 1 8 0v4\"/>"};
-  const GRUPOS_NAV = [['Equipe', ['equipe']], ['Essencial', ['painel', 'anuncios', 'loja', 'vendas', 'importar']], ['Atendimento', ['mensagens']], ['Minha conta', ['meuperfil', 'pedidos', 'cartoes', 'perfil', 'seguranca']]];
+  const GRUPOS_NAV = [['Equipe', ['equipe']], ['Essencial', ['painel', 'anuncios', 'loja', 'vendas', 'importar']], ['Atendimento', ['mensagens']], ['Minha conta', ['meuperfil', 'pedidos', 'planos', 'cartoes', 'perfil', 'seguranca']]];
+  ICONES_NAV.planos = '<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5v7a2.5 2.5 0 0 1-2.500 2.500h-13A2.500 2.500 0 0 1 3 15.500z"/><path d="m8.500 12 2.300 2.300 4.700-4.600"/>';
   function menuDaConta(tabs) {
     const rotulo = new Map(tabs);
     return GRUPOS_NAV.map(([titulo, chaves]) => {
@@ -583,6 +609,7 @@
     if (tab === 'loja' && LOJA) loadEditorLoja().catch(err => toast(err.message));
     if (tab === 'pedidos') loadMeusPedidos().catch(err => toast(err.message));
     if (tab === 'seguranca') loadArrependimento();
+    if (tab === 'planos') window.OfertouMeusPlanos?.mostrar($('#meus-planos')).catch(err => toast(err.message));
     if (tab === 'cartoes') window.OfertouCartoes?.gerenciar($('#meus-cartoes'));
     else window.OfertouCartoes?.desmontar();
   }

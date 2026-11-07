@@ -1976,7 +1976,7 @@ async function loadGanhos() {
   $('#gn-avisos-panel').hidden = !GN.notificacoes.length;
   $('#gn-avisos').innerHTML = GN.notificacoes.map(n => { const origem = origemDoAviso(n); return `
     <div class="gn-aviso" data-origem="${origem}"><div class="gn-aviso-txt"><span class="gn-origem">${esc(NOME_ORIGEM[origem])}</span><b>${esc(n.titulo)}</b><span class="hint" style="margin:0">${esc(n.texto || '')} · ${fmtDate(n.created_at)}</span></div>
-      <div class="gn-aviso-acoes">${!n.link ? '' : n.link.startsWith('/') ? `<a class="btn small primary" href="${esc(n.link)}">Ver no painel</a>` : `<a class="btn small primary" href="${esc(n.link)}" target="_blank" rel="noopener">Abrir portal ↗</a>`}
+      <div class="gn-aviso-acoes">${!n.link ? '' : n.link.startsWith('/') ? `<a class="btn small primary" href="${esc(n.link)}" data-gn-ir>Ver no painel</a>` : `<a class="btn small primary" href="${esc(n.link)}" target="_blank" rel="noopener">Abrir portal ↗</a>`}
       <button class="btn small" data-gn-lida="${n.id}">Ok</button></div></div>`; }).join('');
   // Sincronização: situação de cada programa (automático pela API ou pela planilha)
   const nomes = Object.fromEntries(GN.plataformas.map(p => [p.id, p.nome]));
@@ -2103,6 +2103,15 @@ $('#gn-sync').addEventListener('click', async () => {
   loadGanhos();
 });
 
+// "Ver no painel": o aviso já está no painel, então é só trocar de aba (o endereço com # não troca sozinho)
+$('#gn-avisos').addEventListener('click', e => {
+  const a = e.target.closest('a[data-gn-ir]');
+  const aba = a && /^\/admin#([\w-]+)$/.exec(a.getAttribute('href'))?.[1];
+  if (!aba || !document.querySelector(`.tab[data-tab="${aba}"]`)) return;
+  e.preventDefault();
+  abrirAba(aba);
+  window.scrollTo(0, 0);
+});
 $('[data-body="ganhos"]').addEventListener('click', async e => {
   const b = e.target.closest('button');
   if (!b) return;

@@ -263,3 +263,23 @@ test('extensão: o .zip sai completo, íntegro e na versão atual', () => {
   const usados = manifesto.content_scripts.flatMap(c => c.js);
   for (const j of usados) assert.ok(fs.existsSync(path.join(pasta, j)), j);
 });
+
+test('Mercado Livre: as ofertas da extensão chegam com o link de afiliado', () => {
+  const cml = require('../src/cupons-ml');
+  const antes = [settings.get('ml_matt_word'), settings.get('ml_matt_tool')];
+  settings.set('ml_matt_word', 'minhaconta');
+  settings.set('ml_matt_tool', '123');
+  try {
+    const r = cml.importarOfertas([{ item: 'MLB5551112', nome: 'Oferta com link de afiliado', preco: 80, preco_anterior: 160, imagem: 'https://http2.mlstatic.com/x.jpg', link: 'https://produto.mercadolivre.com.br/MLB-5551112-oferta', relampago: true, resta_s: 1800 }]);
+    assert.equal(r.gravados, 1);
+    const o = db.get(`SELECT * FROM offers WHERE store_id = 'mercadolivre' AND store_product_id = 'MLB5551112'`);
+    assert.match(o.affiliate_url, /matt_word=minhaconta/);
+    assert.match(o.affiliate_url, /matt_tool=123/);
+    assert.equal(o.imagem, 'https://http2.mlstatic.com/x.jpg');
+    assert.equal(o.preco_atual, 80);
+    assert.equal(o.relampago_tipo, 'loja');
+  } finally {
+    settings.set('ml_matt_word', antes[0] || '');
+    settings.set('ml_matt_tool', antes[1] || '');
+  }
+});

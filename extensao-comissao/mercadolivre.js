@@ -189,10 +189,20 @@
     window.scrollTo(0, 0);
   }
 
+  // Coleta completa: terminou a comissão extra, agora os cupons ativos
+  async function seguirColeta(job) {
+    await chrome.storage.local.remove('coletaJob');
+    await chrome.storage.local.set({ cuponsJob: { ...job.cupons, ate: Date.now() + 3 * 60 * 60 * 1000 } });
+    texto('Comissão extra lida. Agora os cupons ativos…');
+    location.href = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
+  }
+
   async function enviar(filtro) {
     $('.ir').disabled = true;
     await carregar(limitar($('.n').value));
     const n = coletados.size || produtos();
+    const { coletaJob } = await chrome.storage.local.get('coletaJob');
+    if (!n && coletaJob) return seguirColeta(coletaJob); // sem produtos agora: a coleta não para aqui
     if (!n) {
       texto('Não encontrei produtos nesta página. Abra a lista de produtos com ganho extra e tente de novo.');
       $('.ir').disabled = false;
@@ -211,7 +221,8 @@
     if (ganho != null) await chrome.storage.local.set({ ganhoEstimado: { valor: Math.round(ganho * 100) / 100, em: Date.now() } });
     // Todos os cartões juntados (se nenhum tinha porcentagem, vai a página como está, como na colagem manual)
     const html = coletados.size ? `<div>${[...coletados.values()].join('\n')}</div>` : document.body.outerHTML;
-    await chrome.storage.local.set({ pagina: { html, url: location.href, filtro: filtro || null, em: Date.now() } });
+    await chrome.storage.local.set({ pagina: { html, url: location.href, filtro: filtro || null, em: Date.now(), coleta: Boolean(coletaJob) } });
+    if (coletaJob) return seguirColeta(coletaJob);
     location.href = `${painel}/admin?ml-importar=1#mining`;
   }
   $('.ir').addEventListener('click', async () => {

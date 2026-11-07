@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Ofertou! Mercado Livre",
   "short_name": "Ofertou ML",
-  "version": "2.9.3",
+  "version": "2.10.0",
   "description": "Leva do Mercado Livre para o Ofertou! as ofertas relâmpago, os cupons, os produtos com comissão extra e o ganho estimado de afiliado, sem copiar e colar.",
   "icons": {
     "16": "icone.png",

@@ -881,6 +881,7 @@ async function mlcImportar(d) {
       out.textContent = `Gravando cupons… ${Math.min(i + 200, lista.length)} de ${lista.length}`;
       await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { cupons: lista.slice(i, i + 200) } });
     }
+    if (!lista.length && d.motivo === 'ok') await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { cupons: [], leitura_ok: true } });
     const esgotados = Array.isArray(d.esgotados) ? d.esgotados : [];
     const fora = esgotados.length ? await api('/api/admin/mineracao/ml-cupons', { method: 'POST', body: { esgotados } }) : { ofertas: 0 };
     let gravados = 0, recebidos = 0;
@@ -947,14 +948,14 @@ function coletarMl() {
   }
   const [maior, menor] = extensaoVersao.split('.').map(Number);
   const RECARREGAR = 'Baixe a extensão de novo em Mineração, descompacte por cima da mesma pasta, toque em recarregar em chrome://extensions e atualize esta página.';
-  if (!(maior > 2 || (maior === 2 && menor >= 9))) {
+  if (!(maior > 2 || (maior === 2 && menor >= 10))) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return globalMsg(`Sua extensão está desatualizada e ainda não sabe coletar as ofertas. ${RECARREGAR}`, false);
   }
   clearTimeout(coletaEspera);
   coletaEspera = setTimeout(() => globalMsg(`A extensão não respondeu. ${RECARREGAR}`, false), 3000);
-  window.postMessage({ ofertouPainel: true, tipo: 'coletar-tudo', paginas: mlcN('#mlc-paginas', 1, 100, 70), cupons: mlcN('#mlc-cupons', 0, 2000, 100),
-    paginasProd: mlcN('#mlc-pagprod', 1, 10, 2), aplicar: $('#mlc-aplicar').checked, maxAplicar: mlcN('#mlc-maxaplicar', 0, 2000, 300) }, location.origin);
+  window.postMessage({ ofertouPainel: true, tipo: 'coletar-tudo', paginas: 100, cupons: mlcN('#mlc-cupons', 0, 2000, 100),
+    paginasProd: mlcN('#mlc-pagprod', 1, 10, 2) }, location.origin);
 }
 $('#ml-coleta-ir').addEventListener('click', coletarMl);
 $('#ml-coleta-botao').addEventListener('click', coletarMl);

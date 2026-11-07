@@ -1,7 +1,7 @@
 // Ofertou! — coleta das ofertas do Mercado Livre (só age quando ligada pelo botão "Coletar agora" do Painel).
-//  1. Lê a página de ofertas relâmpago e depois a de ofertas gerais, poucas páginas, rolando como uma pessoa;
-//  2. Guarda o que achou e segue para a mineração de cupons;
-//  3. No fim, a mineração de cupons volta para o Painel, que grava os dois.
+//  1. Lê até 10 páginas de ofertas relâmpago, rolando como uma pessoa (para antes se a lista acabar);
+//  2. Guarda o que achou e segue para a comissão extra e depois para os cupons ativos;
+//  3. No fim, a mineração de cupons volta para o Painel, que grava tudo.
 // Só lê as páginas. Se o Mercado Livre pedir login ou verificação, não tenta nada: segue em frente sem as ofertas.
 (() => {
   'use strict';
@@ -10,13 +10,11 @@
 
   const espera = ms => new Promise(r => setTimeout(r, ms));
   const num = s => { const t = String(s || '').replace(/[^\d,.]/g, ''); return t ? Number(t.replace(/\./g, '').replace(',', '.')) : null; };
-  const CUPONS = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
-  const paginaDe = (fase, n) => {
-    const q = new URLSearchParams();
-    if (fase === 'relampago') { q.set('container_id', 'MLB779362-1'); q.set('promotion_type', 'lightning'); }
+  const COMISSAO = 'https://www.mercadolivre.com.br/afiliados/hub?is_affiliate=true';
+  const paginaDe = n => {
+    const q = new URLSearchParams({ container_id: 'MLB779362-1', promotion_type: 'lightning' });
     if (n > 1) q.set('page', n);
-    const t = q.toString();
-    return `https://www.mercadolivre.com.br/ofertas${t ? `?${t}` : ''}`;
+    return `https://www.mercadolivre.com.br/ofertas?${q}`;
   };
 
   let raiz;
@@ -48,7 +46,7 @@
     const m = String(texto).match(/(\d{1,2}):(\d{2}):(\d{2})/);
     return m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : null;
   }
-  function lerCartoes(pagRelampago) {
+  function lerCartoes() {
     const out = [];
     for (const card of document.querySelectorAll('.poly-card, .promotion-item')) {
       const a = card.querySelector('a.poly-component__title, .poly-component__title-wrapper a, a[href*="MLB"]');
@@ -61,12 +59,11 @@
       if (!preco || !anterior) continue;
       const texto = card.innerText || '';
       const img = card.querySelector('img');
-      const relampago = pagRelampago || /REL[ÂA]MPAGO/i.test(texto);
       out.push({
         produto, item: item ? `MLB${item}` : null, link: href,
         nome: (card.querySelector('.poly-component__title')?.textContent || a?.textContent || '').trim().slice(0, 200),
         preco, preco_anterior: anterior, imagem: img?.getAttribute('data-src') || img?.src || null,
-        relampago, resta_s: relampago ? restante(texto) : null,
+        relampago: true, resta_s: restante(texto),
       });
     }
     return out;
@@ -76,29 +73,28 @@
     const { ofertasJob: j } = await chrome.storage.local.get('ofertasJob');
     await chrome.storage.local.remove('ofertasJob');
     if (!j) return;
-    await chrome.storage.local.set({ ofertasResultado: { em: Date.now(), motivo, itens: Object.values(j.itens || {}) }, cuponsJob: { ...j.cupons, ate: Date.now() + 3 * 60 * 60 * 1000 } });
-    caixa('Ofertas lidas. Agora os cupons…');
-    location.href = CUPONS;
+    // A comissão extra (mercadolivre.js) segue para os cupons quando terminar
+    await chrome.storage.local.set({ ofertasResultado: { em: Date.now(), motivo, itens: Object.values(j.itens || {}) }, coletaJob: { cupons: j.cupons, painel: j.painel, em: Date.now() }, autoAte: Date.now() + 10 * 60 * 1000, rolagens: 10 });
+    caixa('Ofertas relâmpago lidas. Agora a comissão extra…');
+    location.href = COMISSAO;
   }
 
   (async () => {
     const { ofertasJob: j } = await chrome.storage.local.get('ofertasJob');
     if (!j || Date.now() > j.ate) { if (j) await chrome.storage.local.remove('ofertasJob'); return; }
     await espera(1500);
-    caixa(`Lendo ofertas ${j.fase === 'relampago' ? 'relâmpago' : 'gerais'}, página ${j.pagina}…`);
+    caixa(`Lendo ofertas relâmpago, página ${j.pagina} de ${j.paginas}…`);
     for (let i = 0; i < 6; i++) { window.scrollBy(0, innerHeight); await espera(700); }
-    const lidos = lerCartoes(j.fase === 'relampago');
-    for (const it of lidos) {
-      const chave = it.produto || it.item;
-      if (!j.itens[chave] || it.relampago) j.itens[chave] = it;
-    }
-    caixa(`${Object.keys(j.itens).length} ofertas até agora…`);
-    let { fase, pagina } = j;
-    if (lidos.length && pagina < j.paginas) pagina++;
-    else if (fase === 'relampago') { fase = 'geral'; pagina = 1; }
-    else return terminar(Object.keys(j.itens).length ? 'ok' : 'sem-dados');
-    await chrome.storage.local.set({ ofertasJob: { ...j, fase, pagina } });
+    const lidos = lerCartoes();
+    const antes = Object.keys(j.itens).length;
+    for (const it of lidos) j.itens[it.produto || it.item] = it;
+    const total = Object.keys(j.itens).length;
+    caixa(`${total} ofertas relâmpago até agora…`);
+    // Acabou: última página, página vazia ou só repetidos
+    if (!lidos.length || total === antes || j.pagina >= j.paginas) return terminar(total ? 'ok' : 'sem-dados');
+    const pagina = j.pagina + 1;
+    await chrome.storage.local.set({ ofertasJob: { ...j, pagina } });
     await espera(1500);
-    location.href = paginaDe(fase, pagina);
+    location.href = paginaDe(pagina);
   })();
 })();

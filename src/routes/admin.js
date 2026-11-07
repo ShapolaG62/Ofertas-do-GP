@@ -172,7 +172,9 @@ router.post('/api/admin/mineracao/ml-comissao-extra', async (req, res) => {
   try {
     const cml = require('../comissao-ml');
     if (Array.isArray(req.body?.limpar_exceto)) return res.json({ limpos: cml.limparExceto(req.body.limpar_exceto) });
-    res.json(await cml.importar(req.body?.itens));
+    const r = await cml.importar(req.body?.itens);
+    if (r.marcados > 0) require('../aviso-ml').registrar('ofertas');
+    res.json(r);
   }
   catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -196,7 +198,7 @@ router.post('/api/admin/mineracao/ml-cupons', (req, res) => {
     if (Array.isArray(req.body?.esgotados)) return res.json(cml.removerEsgotados(req.body.esgotados));
     if (Array.isArray(req.body?.cupons)) {
       const cupons = cml.salvarCupons(req.body.cupons);
-      if (cupons > 0) require('../aviso-ml').registrar('cupons');
+      if (cupons > 0 || req.body.leitura_ok === true) require('../aviso-ml').registrar('cupons'); // leitura completa sem nenhum cupom ativo também conta
       return res.json({ cupons });
     }
     res.json(cml.importarProdutos(req.body?.campanha, req.body?.itens));

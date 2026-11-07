@@ -34,8 +34,8 @@
   }
 
   // Estado da página (o Mercado Livre manda os dados prontos num <script id="__NORDIC_RENDERING_CTX__">)
-  function estado() {
-    const txt = document.getElementById('__NORDIC_RENDERING_CTX__')?.textContent || '';
+  function estado(doc = document) {
+    const txt = doc.getElementById('__NORDIC_RENDERING_CTX__')?.textContent || '';
     const ini = txt.indexOf('{');
     if (ini < 0) return null;
     let d = 0, str = false, esc = false;
@@ -108,6 +108,45 @@
     return out;
   }
 
+  // Guarda os cupons de uma página. Na coleta completa, só os ativos na conta.
+  function guardarCupons(j, dados, cartoes = []) {
+    const brutos = dados.rawCoupons || [];
+    j.esgotados ||= {};
+    brutos.forEach((c, i) => {
+      const k = cupomDe(c);
+      if (!k.id) return;
+      if (esgotado(c, cartoes.length === brutos.length ? cartoes[i] : null)) { j.esgotados[k.id] = k.titulo; delete j.cupons[k.id]; return; }
+      if (j.soAtivos && !k.ativo) return;
+      j.cupons[k.id] = k;
+    });
+  }
+  // Lê as outras páginas da central sem abrir uma por uma (3 de cada vez, com uma pausa). Devolve a primeira página que
+  // não deu para ler, para continuar do jeito normal a partir dela, ou 0 se leu tudo.
+  async function lerPaginasPorTras(j, total) {
+    for (let p = j.pagina + 1; p <= total;) {
+      const { cuponsJob: ainda } = await chrome.storage.local.get('cuponsJob');
+      if (!ainda) return -1; // parado pela pessoa
+      const lote = [];
+      for (let i = 0; i < 3 && p + i <= total; i++) lote.push(p + i);
+      const lidas = await Promise.all(lote.map(async n => {
+        try {
+          const r = await fetch(`/cupons/filter?all=true&page=${n}`, { credentials: 'include' });
+          if (!r.ok) return null;
+          const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+          return estado(doc)?.appProps?.pageProps?.filteredCouponsData || null;
+        } catch { return null; }
+      }));
+      for (const [i, dados] of lidas.entries()) {
+        if (!dados) return lote[i];
+        guardarCupons(j, dados);
+      }
+      p += lote.length;
+      caixa(`cupons: página ${Math.min(p - 1, total)} de ${total} · ${Object.keys(j.cupons).length} ativos`);
+      await espera(500);
+    }
+    return 0;
+  }
+
   async function terminar(motivo) {
     const { cuponsJob: j } = await chrome.storage.local.get('cuponsJob');
     await chrome.storage.local.remove('cuponsJob');
@@ -143,14 +182,19 @@
       }
       const dados = estado()?.appProps?.pageProps?.filteredCouponsData;
       if (!dados) { caixa('não consegui ler os cupons desta página (faça login no Mercado Livre e tente de novo).'); return terminar('sem-dados'); }
-      const brutos = dados.rawCoupons || [], cartoes = [...document.querySelectorAll('.coupon-card')];
-      j.esgotados ||= {};
-      brutos.forEach((c, i) => {
-        const k = cupomDe(c);
-        if (!k.id) return;
-        if (esgotado(c, cartoes.length === brutos.length ? cartoes[i] : null)) { j.esgotados[k.id] = k.titulo; delete j.cupons[k.id]; } else j.cupons[k.id] = k;
-      });
+      guardarCupons(j, dados, [...document.querySelectorAll('.coupon-card')]);
       const total = Math.min(Number(dados.pagination?.total) || 1, j.paginas);
+      if (j.soAtivos && j.pagina < total) {
+        const parou = await lerPaginasPorTras(j, total);
+        if (parou === -1) return;
+        if (parou > 0) { // essa página não abriu por trás: continua abrindo normalmente a partir dela
+          j.pagina = parou;
+          await chrome.storage.local.set({ cuponsJob: j });
+          location.href = `https://www.mercadolivre.com.br/cupons/filter?all=true&page=${j.pagina}`;
+          return;
+        }
+        j.pagina = total;
+      }
       caixa(`cupons: página ${j.pagina} de ${total} · ${Object.keys(j.cupons).length} cupons · ${Object.keys(j.esgotados).length} esgotados`);
       if (j.pagina < total) {
         j.pagina++;

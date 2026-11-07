@@ -18,14 +18,14 @@
       await chrome.storage.local.set({ autoAte: Date.now() + 10 * 60 * 1000, rolagens });
       avisar({ tipo: 'pode-ir' });
     }
-    // Coleta completa: primeiro as ofertas (relâmpago e gerais), depois os cupons
+    // Coleta completa: até 10 páginas de ofertas relâmpago, comissão extra com 10 rolagens e os cupons ativos
     if (e.data.tipo === 'coletar-tudo') {
       const n = (v, min, max, pad) => Math.min(Math.max(parseInt(v, 10) || pad, min), max);
       await chrome.storage.local.set({ ofertasJob: {
-        ate: Date.now() + 30 * 60 * 1000, painel: ORIGEM, fase: 'relampago', pagina: 1, paginas: 3, itens: {},
-        cupons: { painel: ORIGEM, fase: 'cupons', pagina: 1, cupons: {}, produtos: {},
+        ate: Date.now() + 30 * 60 * 1000, painel: ORIGEM, fase: 'relampago', pagina: 1, paginas: 10, itens: {},
+        cupons: { painel: ORIGEM, fase: 'cupons', pagina: 1, cupons: {}, produtos: {}, soAtivos: true,
           paginas: n(e.data.paginas, 1, 100, 70), maxCupons: n(e.data.cupons, 0, 2000, 60), paginasProd: n(e.data.paginasProd, 1, 10, 2),
-          aplicar: e.data.aplicar === true, maxAplicar: n(e.data.maxAplicar, 0, 2000, 300), aplicados: 0 },
+          aplicar: false, maxAplicar: 0, aplicados: 0 },
       } });
       avisar({ tipo: 'pode-ir-ofertas' });
     }
@@ -62,7 +62,7 @@
   chrome.storage.local.get('pagina').then(async ({ pagina }) => {
     if (!pagina) return;
     await chrome.storage.local.remove('pagina');
-    if (Date.now() - pagina.em > 15 * 60 * 1000) return;
+    if (Date.now() - pagina.em > (pagina.coleta ? 4 * 60 : 15) * 60 * 1000) return; // na coleta completa, os cupons vêm depois
     avisar({ tipo: 'pagina', html: pagina.html, filtro: pagina.filtro });
   });
 })();

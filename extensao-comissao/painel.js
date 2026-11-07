@@ -6,7 +6,8 @@
   const ORIGEM = location.origin;
   chrome.storage.local.set({ painel: ORIGEM, soGanhoCliente: false }); // endereço do Painel, para voltar depois de buscar
 
-  const avisar = msg => window.postMessage({ ofertouExt: true, ...msg }, ORIGEM);
+  const VERSAO = chrome.runtime.getManifest().version;
+  const avisar = msg => window.postMessage({ ofertouExt: true, ...(msg.tipo === 'instalada' ? { versao: VERSAO } : {}), ...msg }, ORIGEM);
   avisar({ tipo: 'instalada' });
 
   window.addEventListener('message', async e => {

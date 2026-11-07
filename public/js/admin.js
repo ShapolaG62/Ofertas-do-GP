@@ -841,13 +841,14 @@ $('#mlx-cola').addEventListener('paste', e => {
   e.preventDefault();
   mlxProcessar(e.clipboardData.getData('text/html'));
 });
-let extensaoInstalada = false;
+let extensaoInstalada = false, extensaoVersao = '', coletaEspera = null;
 // Extensão do Chrome "Ofertou! Comissão extra ML" (pasta extensao-comissao/): conversa por mensagens nesta janela
 const ML_HUB = 'https://www.mercadolivre.com.br/afiliados/hub?is_affiliate=true';
 window.addEventListener('message', e => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
+  if (e.data.tipo === 'pode-ir-ofertas') clearTimeout(coletaEspera);
   if (e.data.tipo === 'pode-ir-ofertas') window.top.location.href = 'https://www.mercadolivre.com.br/ofertas?container_id=MLB779362-1&promotion_type=lightning';
-  if (e.data.tipo === 'instalada') { extensaoInstalada = true; }
+  if (e.data.tipo === 'instalada') { extensaoInstalada = true; extensaoVersao = String(e.data.versao || ''); }
   if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; $('#mlc-auto').hidden = false; $('#mlc-sem-ext').hidden = true; }
   if (e.data.tipo === 'pode-ir') window.top.location.href = ML_HUB;
   if (e.data.tipo === 'pode-ir-cupons') window.top.location.href = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
@@ -943,6 +944,14 @@ function coletarMl() {
     $('#mlc-sem-ext').scrollIntoView({ behavior: 'smooth', block: 'center' });
     return globalMsg('Instale a extensão do Chrome para coletar o Mercado Livre: as instruções estão aqui em Mineração.', false);
   }
+  const [maior, menor] = extensaoVersao.split('.').map(Number);
+  const RECARREGAR = 'Abra chrome://extensions, toque em recarregar na extensão Ofertou! e atualize esta página.';
+  if (!(maior > 2 || (maior === 2 && menor >= 9))) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return globalMsg(`Sua extensão está desatualizada e ainda não sabe coletar as ofertas. ${RECARREGAR}`, false);
+  }
+  clearTimeout(coletaEspera);
+  coletaEspera = setTimeout(() => globalMsg(`A extensão não respondeu. ${RECARREGAR}`, false), 3000);
   window.postMessage({ ofertouPainel: true, tipo: 'coletar-tudo', paginas: mlcN('#mlc-paginas', 1, 100, 70), cupons: mlcN('#mlc-cupons', 0, 2000, 100),
     paginasProd: mlcN('#mlc-pagprod', 1, 10, 2), aplicar: $('#mlc-aplicar').checked, maxAplicar: mlcN('#mlc-maxaplicar', 0, 2000, 300) }, location.origin);
 }

@@ -2,7 +2,8 @@
    - Botão "Baixar app" no topo, no menu da conta e no rodapé, só enquanto o site não está instalado.
    - No celular, um aviso aparece 3 segundos depois de abrir (no lugar do aviso do navegador, que demora): se a pessoa
      disser "Agora não", ele volta só depois de 3 dias.
-   - Android/Chrome: abre a instalação de verdade. iPhone (Safari) e outros navegadores: mostra o passo a passo. */
+   - Na Central (admin, afiliado, loja, equipe), o botão fica no menu de áreas: as páginas abrem em quadros, sem o topo do site.
+   - Quando o navegador oferece, abre a instalação de verdade. Sem isso (já instalado, iPhone, outros navegadores): mostra o passo a passo. */
 (() => {
   'use strict';
   if (window.OfertouInstalar || window.top !== window) return;
@@ -22,6 +23,7 @@
   .app-btn { display: inline-flex; align-items: center; gap: 6px; }
   .app-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .header-actions .app-btn { color: var(--brand); }
+  @media (min-width: 761px) { .central-menu .app-btn-area { margin-top: auto; } }
   @media (max-width: 720px) { .header-actions .app-btn { width: 44px; padding: 0; justify-content: center; } .header-actions .app-btn span { display: none; } }
   .app-aviso { position: fixed; z-index: 2147483050; left: 8px; right: 8px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); margin: 0 auto; max-width: 520px;
     display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 10px; border-radius: 14px; background: var(--surface, #161b18); color: var(--ink, #edf1ee);
@@ -38,7 +40,14 @@
   document.head.appendChild(css);
 
   function passoAPasso() {
-    const texto = ios
+    const edge = /Edg\//.test(nav.userAgent), firefox = /Firefox\//.test(nav.userAgent), safari = /Safari\//.test(nav.userAgent) && !/Chrome|Chromium|Edg\//.test(nav.userAgent);
+    const computador = !ios && !celular;
+    const texto = computador
+      ? (firefox ? 'O Firefox não instala sites como aplicativo. Abra o Ofertou! no Google Chrome ou no Microsoft Edge e use o botão Baixar app de novo.'
+        : safari ? 'No Safari do Mac:\n\n1. Abra o menu Arquivo.\n2. Clique em "Adicionar ao Dock".\n3. Confirme em "Adicionar".'
+        : edge ? 'No Microsoft Edge:\n\n1. Clique no menu ⋯, no canto superior direito.\n2. Abra "Aplicativos".\n3. Clique em "Instalar este site como um aplicativo" e confirme.\n\nSe aparecer a opção de abrir o Ofertou!, o app já está instalado neste computador.'
+        : 'No computador:\n\n1. Olhe o canto direito da barra de endereço: se houver o ícone de instalar, clique nele.\n2. Sem o ícone, abra o menu ⋮ e procure "Instalar página como app", em "Transmitir, salvar e compartilhar".\n3. Confirme em "Instalar".\n\nSe aparecer "Abrir no app" ou "Abrir Ofertou!", o app já está instalado neste computador.')
+      : ios
       ? 'No iPhone, o app é instalado pelo Safari:\n\n1. Toque no botão Compartilhar (o quadrado com a seta para cima, embaixo da tela).\n2. Role e toque em "Adicionar à Tela de Início".\n3. Toque em "Adicionar".\n\nO Ofertou! aparece na tela do celular como um aplicativo.'
       : 'Para instalar o app:\n\n1. Toque no menu do navegador (os três pontinhos ⋮).\n2. Toque em "Instalar app" ou "Adicionar à tela inicial".\n3. Confirme em "Instalar".\n\nSe não aparecer, abra o site pelo Google Chrome.';
     (window.OfertouUI?.avisar || alert)(texto, { titulo: 'Instalar o app do Ofertou!' });
@@ -53,9 +62,16 @@
   }
 
   // Botões
-  const podeMostrar = () => Boolean(pedido) || ios || celular;
   function botoes() {
-    if (!podeMostrar() || instalado()) return;
+    if (instalado()) return;
+    const areas = document.querySelector('#central-menu');
+    if (areas && !areas.querySelector('.app-btn')) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'app-btn app-btn-area'; b.title = 'Baixar o app do Ofertou!';
+      b.innerHTML = `${ICONE}Baixar app`;
+      b.addEventListener('click', instalar);
+      areas.appendChild(b);
+    }
     const topo = document.querySelector('.header-actions');
     if (topo && !topo.querySelector('.app-btn')) {
       const b = document.createElement('button');
@@ -68,7 +84,7 @@
     if (menu && !menu.querySelector('.app-btn')) {
       const i = document.createElement('button');
       i.type = 'button'; i.setAttribute('role', 'menuitem'); i.className = 'app-btn';
-      i.innerHTML = `${ICONE}<span><b>Baixar o app</b><small>Ofertas na tela inicial do celular</small></span>`;
+      i.innerHTML = `${ICONE}<span><b>Baixar o app</b><small>${celular ? 'Ofertas na tela inicial do celular' : 'O Ofertou! em uma janela própria'}</small></span>`;
       i.addEventListener('click', () => { menu.hidden = true; instalar(); });
       menu.insertBefore(i, menu.querySelector('.conta-tema') || menu.querySelector('#logout-site'));
     }
@@ -86,7 +102,7 @@
   let aviso = null;
   function fecharAviso() { aviso?.remove(); aviso = null; }
   function mostrarAviso() {
-    if (aviso || instalado() || !celular || !podeMostrar()) return;
+    if (aviso || instalado() || !celular) return;
     let ate = 0; try { ate = Number(localStorage.getItem(CHAVE)) || 0; } catch { /* */ }
     if (Date.now() < ate) return;
     if (document.querySelector('.ck-aviso, .avs-fundo, dialog[open], .oap')) return setTimeout(mostrarAviso, 4000); // espera o aviso de cookies e outras janelas
@@ -106,7 +122,12 @@
 
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedido = e; botoes(); });
   window.addEventListener('appinstalled', () => { pedido = null; esconderTudo(); });
-  const iniciar = () => { botoes(); setTimeout(mostrarAviso, 3000); setTimeout(botoes, 2500); };
+  const iniciar = () => {
+    botoes(); setTimeout(mostrarAviso, 3000); setTimeout(botoes, 2500);
+    // O menu da Central é redesenhado ao trocar de área
+    const areas = document.querySelector('#central-menu');
+    if (areas) new MutationObserver(botoes).observe(areas, { childList: true });
+  };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar); else iniciar();
   window.OfertouInstalar = { instalar, instalado: false };
 })();

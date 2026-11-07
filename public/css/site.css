@@ -3649,7 +3649,7 @@ body .tabs-line:not(.cli-nav) button[aria-selected="true"] { background: var(--a
 .plano-ciclos button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
 .plano-equiv:empty { display: none; }
 .plano-cortesia { margin: 2px 0 0; padding: 7px 10px; border-radius: 10px; background: var(--brand-soft); color: var(--ink); font-size: 13.5px; font-weight: 700; }
-.plano-risco, .ass-risco, .mp-risco { margin: 8px 0; padding: 8px 10px; border-left: 3px solid #d97706; border-radius: 6px; background: color-mix(in srgb, #d97706 10%, transparent); color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
+.ass-risco, .mp-risco { margin: 8px 0; padding: 8px 10px; border-left: 3px solid #d97706; border-radius: 6px; background: color-mix(in srgb, #d97706 10%, transparent); color: var(--ink-2); font-size: 12.5px; line-height: 1.45; }
 .ass-sub, .mp-titulo { margin: 14px 0 0; color: var(--ink-2); font-size: 13.5px; font-weight: 700; }
 .ass-auto-op { margin-top: 8px; }
 .ass-auto-op input { flex: none; }

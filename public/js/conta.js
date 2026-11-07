@@ -224,7 +224,6 @@
     const gratisDias = !nativo && !p.gratis && p.teste_dias > 0;
     const cortesia = lojaGratis ? `<p class="plano-cortesia">1 mês grátis para as 20 primeiras lojas. Restam ${lojasGratis}.</p>`
       : gratisDias ? `<p class="plano-cortesia">${p.teste_dias} dias grátis para testar, sem cartão.</p>` : '';
-    const risco = !p.gratis && p.ferramenta ? '<p class="plano-risco">O WhatsApp por QR code não é a API oficial: o número pode ser banido.</p>' : '';
       return `
       <article class="plano-card${p.destaque ? ' is-destaque' : ''}" data-plano="${esc(p.id)}">
         ${p.destaque ? `<span class="plano-selo">${esc(p.destaque)}</span>` : ''}
@@ -236,7 +235,6 @@
         ${cortesia}
         <p class="plano-ideal">${esc(p.ideal || '')}</p>
         <ul>${p.beneficios.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
-        ${risco}
         <a class="btn ${p.destaque ? 'btn-primary' : ''} btn-block btn-lg" data-assinar href="/assinar?plano=${encodeURIComponent(p.id)}">${p.gratis ? 'Começar grátis' : lojaGratis || gratisDias ? `Começar ${esc(p.nome)} grátis` : `Assinar ${esc(p.nome)}`}</a>
       </article>`;
   }).join('');

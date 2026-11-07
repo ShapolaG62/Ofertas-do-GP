@@ -126,7 +126,7 @@ function* montagem() {
     brutas.push(...db.all(
       `SELECT o.id, o.store_id, o.plataforma, o.produto, o.preco_atual, o.preco_anterior, o.desconto_pct, o.categoria,
          o.subcategoria, o.link_clicks, o.fonte, o.created_at, o.last_seen_at, o.comissao_pct, o.comissao_extra_pct,
-         o.cupom_codigo, o.cupom_texto, o.preco_sem_cupom, l.slug AS loja_slug
+         o.cupom_codigo, o.cupom_texto, o.preco_sem_cupom, o.relampago_fim, o.relampago_tipo, o.relampago_fim_real, l.slug AS loja_slug
        FROM offers o LEFT JOIN lojas l ON l.id = o.loja_id WHERE o.id > ? AND o.id <= ? AND ${active.sql}`, de, de + PASSO_ID, ...active.params));
     yield;
   }
@@ -164,6 +164,7 @@ function* montagem() {
       menor_preco_30d: h && h.n >= 2 && c <= seteDias && o.preco_atual <= h.min30 ? 1 : 0,
       comissao_pct: o.comissao_pct ?? null, comissao_extra_pct: o.comissao_extra_pct > 0 ? o.comissao_extra_pct : 0,
       ...(o.cupom_codigo ? { cupom: o.cupom_codigo, cupom_texto: o.cupom_texto, preco_sem_cupom: o.preco_sem_cupom } : {}),
+      ...(o.relampago_fim ? { relampago_fim: o.relampago_fim, relampago_tipo: o.relampago_tipo, relampago_fim_real: o.relampago_fim_real } : {}),
       _n: n, _k: m.k, _t: m.t, _c: c, _alta: m.alta, _acess: m.acess, _susp: suspeita(o, h, n),
     };
   };
@@ -373,6 +374,19 @@ function ordenadaComissao(sem) {
 }
 
 // comissao: true para o admin e os afiliados (veem a comissão e podem filtrar pela comissão extra)
+// Ofertas relâmpago no ar abrem a primeira página, as marcadas pela loja na frente e as que acabam antes primeiro.
+// No máximo metade da página, para não esconder o resto. Busca por palavra e outras ordens continuam como estão.
+function relampagosPrimeiro(l, f) {
+  if (f.ordem !== 'destaques' || f.q) return l;
+  const agora = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const ativas = l.filter(o => o.relampago_fim && o.relampago_fim > agora && !o._susp);
+  if (!ativas.length) return l;
+  const peso = o => (o.relampago_tipo === 'loja' ? 0 : 1);
+  const fixas = ativas.sort((a, b) => peso(a) - peso(b) || String(a.relampago_fim).localeCompare(String(b.relampago_fim))).slice(0, Math.max(1, Math.floor(f.por / 2)));
+  const ids = new Set(fixas.map(o => o.id));
+  return [...fixas, ...l.filter(o => !ids.has(o.id))];
+}
+
 function buscar(query, { comissao = false } = {}) {
   const f = ler(query);
   if (!comissao) { f.extra = false; f.sem = ''; if (f.ordem === 'comissao') f.ordem = 'destaques'; } // sem sorteio para visitantes (resposta pronta igual para todos)
@@ -410,6 +424,7 @@ function buscar(query, { comissao = false } = {}) {
     if (ordem === 'destaques') l = variar(l, f.por);
   }
 
+  l = relampagosPrimeiro(l, f);
   const paginas = Math.max(1, Math.ceil(l.length / f.por));
   const pagina = Math.min(f.pagina, paginas);
   const itens = l.slice((pagina - 1) * f.por, pagina * f.por);

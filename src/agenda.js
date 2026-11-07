@@ -66,8 +66,9 @@ function enfileirar(itens, autor, cid = null) {
     const ja = db.get(`SELECT id FROM post_queue WHERE offer_id = ? AND status = 'pendente' AND cliente_id IS ?`, id, cid);
     const texto = String(it.texto || '').trim().slice(0, 4000) || null;
     const destino = it.destino ? JSON.stringify(it.destino) : null;
-    if (ja) db.run('UPDATE post_queue SET texto = ?, autor = ?, destino = ? WHERE id = ?', texto, autor, destino, ja.id);
-    else db.run('INSERT INTO post_queue (offer_id, texto, autor, cliente_id, destino) VALUES (?, ?, ?, ?, ?)', id, texto, autor, cid, destino);
+    const prioridade = it.prioridade ? 1 : 0;
+    if (ja) db.run('UPDATE post_queue SET texto = ?, autor = ?, destino = ?, prioridade = MAX(prioridade, ?) WHERE id = ?', texto, autor, destino, prioridade, ja.id);
+    else db.run('INSERT INTO post_queue (offer_id, texto, autor, cliente_id, destino, prioridade) VALUES (?, ?, ?, ?, ?, ?)', id, texto, autor, cid, destino, prioridade);
     n++;
   }
   return n;
@@ -77,7 +78,7 @@ function listarFila(cid = null, limit = 200) {
   return db.all(
     `SELECT q.*, o.produto, o.preco_atual, o.desconto_pct FROM post_queue q LEFT JOIN offers o ON o.id = q.offer_id
      WHERE q.cliente_id IS ?
-     ORDER BY CASE q.status WHEN 'pendente' THEN 0 ELSE 1 END, CASE q.status WHEN 'pendente' THEN q.id ELSE -q.id END LIMIT ?`, cid, limit);
+     ORDER BY CASE q.status WHEN 'pendente' THEN 0 ELSE 1 END, CASE q.status WHEN 'pendente' THEN -q.prioridade ELSE 0 END, CASE q.status WHEN 'pendente' THEN q.id ELSE -q.id END LIMIT ?`, cid, limit);
 }
 const removerDaFila = (id, cid = null) => db.run(`DELETE FROM post_queue WHERE id = ? AND status = 'pendente' AND cliente_id IS ?`, id, cid);
 const limparFila = (cid = null) => db.run(`DELETE FROM post_queue WHERE status = 'pendente' AND cliente_id IS ?`, cid).changes;
@@ -109,7 +110,8 @@ function impressaoDoProduto(nome) {
   const palavras = semAcento(nome).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(p => p && !PALAVRAS_VAZIAS.has(p)).slice(0, 6);
   return [...new Set(palavras)].sort().join(' ');
 }
-function regraDeRepeticao(cid) {
+// relampago: a oferta relâmpago não espera as 24 horas, mas precisa estar pelo menos 10% abaixo do menor preço postado
+function regraDeRepeticao(cid, { relampago = false } = {}) {
   const porId = new Map(), porNome = new Map();
   const juntar = (mapa, chave, p) => {
     const atual = mapa.get(chave) || { menor: null, semPreco: false, ultima: 0 };
@@ -125,7 +127,7 @@ function regraDeRepeticao(cid) {
   }
   const bloqueia = (reg, o) => {
     if (!reg) return false;
-    if (reg.semPreco || reg.menor === null || Date.now() - reg.ultima < 24 * 3600000) return true;
+    if (reg.semPreco || reg.menor === null || (!relampago && Date.now() - reg.ultima < 24 * 3600000)) return true;
     return !(Number(o.preco_atual) <= reg.menor * QUEDA_PARA_REPOSTAR);
   };
   return { porOferta: o => bloqueia(porId.get(o.id), o), porProduto: o => bloqueia(porNome.get(impressaoDoProduto(o.produto)), o) };
@@ -184,7 +186,7 @@ function melhoresOfertas(qtd, excluir, cid = null, s = configDe(cid), { soTemas 
 }
 
 // ── Execução ─────────────────────────────────────────────────────────────────
-async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
+async function executar(motivo = 'agendado', cid = null, qtdForcada = null, { soRelampago = false } = {}) {
   const d = dono(cid);
   if (rodando.has(d)) return { erro: 'Já existe uma postagem agendada em andamento.' };
   const s = configDe(cid);
@@ -204,13 +206,17 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
   const soWhatsapp = prontas.length === 1 && prontas[0] === 'whatsapp';
   try {
     // 1) fila (pula ofertas que saíram do ar); 2) completa com as melhores ofertas do momento
-    const fila = db.all(`SELECT * FROM post_queue WHERE status = 'pendente' AND cliente_id IS ? ORDER BY id`, cid);
+    const fila = db.all(`SELECT * FROM post_queue WHERE status = 'pendente' AND cliente_id IS ? ${soRelampago ? 'AND prioridade = 1' : ''} ORDER BY prioridade DESC, id`, cid);
     const usadas = new Set(fila.map(q => q.offer_id));
     let posFila = 0;
     let candidatas = null;
     const proxima = () => {
       while (posFila < fila.length) {
         const q = fila[posFila++];
+        if (q.prioridade && !require('./relampago').estaAtiva(q.offer_id)) {
+          db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'A oferta relâmpago terminou antes de ser postada.' WHERE id = ?`, q.id);
+          continue;
+        }
         if (!offers.isActive(q.offer_id)) {
           db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Oferta saiu do ar antes de ser postada.' WHERE id = ?`, q.id);
           continue;
@@ -221,9 +227,9 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
           db.run(`UPDATE post_queue SET status = 'expirado', resultado = 'Preço não conferido na loja nas últimas 24 h (pode ter mudado).' WHERE id = ?`, q.id);
           continue;
         }
-        return { fila: q.id, offer_id: q.offer_id, texto: q.texto, destino: lerDestino(q.destino) };
+        return { fila: q.id, offer_id: q.offer_id, texto: q.texto, destino: lerDestino(q.destino), relampago: Boolean(q.prioridade) };
       }
-      if (s.agenda_completar === '0') return null;
+      if (soRelampago || s.agenda_completar === '0') return null;
       // Pega algumas a mais: as que tiverem mudado de preço na loja dão lugar à seguinte
       if (!candidatas) {
         const faltam = qtd - feitos.length;
@@ -231,7 +237,7 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
       }
       return candidatas.shift() || null;
     };
-    const temMais = () => posFila < fila.length || (s.agenda_completar !== '0' && (candidatas === null || candidatas.length > 0));
+    const temMais = () => posFila < fila.length || (!soRelampago && s.agenda_completar !== '0' && (candidatas === null || candidatas.length > 0));
     const descartar = (it, motivoPulo) => {
       if (it.fila) db.run(`UPDATE post_queue SET status = 'expirado', resultado = ? WHERE id = ?`, motivoPulo, it.fila);
       pulados.push({ offer_id: it.offer_id, motivo: motivoPulo });
@@ -253,7 +259,7 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
       const link = cid ? await clientes.linkParaPostar(cid, o, s) : null; // cliente: link de afiliado dele
       if (link) o.__link = link;
       if (!it.texto) o.__link = await require('./encurtador').curto(social.postLink(o, s)); // link curto no post
-      const texto = it.texto || social.textoPadrao(o, s);
+      const texto = it.texto || (it.relampago ? require('./relampago').textoDaPostagem(o, s) : social.textoPadrao(o, s));
       let resultados;
       try { resultados = await social.publicar(it.offer_id, redes, texto, `agenda (${motivo})`, cid ? { s: sItem, clienteId: cid, link } : { s: sItem }); }
       catch (err) { resultados = [{ rede: '-', ok: false, mensagem: err.message }]; }
@@ -270,7 +276,7 @@ async function executar(motivo = 'agendado', cid = null, qtdForcada = null) {
   ultimaExecucao.set(d, r);
   log(`${quem} — concluído: ${feitos.filter(f => f.ok).length} de ${feitos.length} publicadas, ${conferidos} com preço conferido na hora, ${pulados.length} puladas`);
   avisos.avaliarRodada(cid, feitos);
-  if (!feitos.length && motivo !== 'manual') {
+  if (!feitos.length && motivo !== 'manual' && !soRelampago) {
     avisos.avisar(cid, { tipo: 'sem-ofertas', titulo: 'Rodada de postagens sem nenhuma oferta', texto: 'Nenhuma oferta passou pelos filtros, temas e pela regra de repetição. Confira o agendamento no painel.' });
   }
   return r;
@@ -374,4 +380,4 @@ function estado(cid = null) {
 // Só para os testes
 const _paraTestes = ({ pausa } = {}) => { if (pausa !== undefined) pausaEntreOfertas = pausa; };
 
-module.exports = { _paraTestes, impressaoDoProduto, enfileirar, listarFila, removerDaFila, limparFila, pendentes, executar, iniciar, estado, horarios, melhoresOfertas, filtroDoDono };
+module.exports = { regraDeRepeticao, redesAgenda, _paraTestes, impressaoDoProduto, enfileirar, listarFila, removerDaFila, limparFila, pendentes, executar, iniciar, estado, horarios, melhoresOfertas, filtroDoDono };

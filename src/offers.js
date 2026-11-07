@@ -1,5 +1,6 @@
 const db = require('./db');
 const settings = require('./settings');
+require('./relampago'); // cria as colunas das ofertas relâmpago
 const { getStore } = require('./stores');
 const { classifyCategory, classifySubcategory } = require('./categorize');
 const { discountOf, round2 } = require('./util');
@@ -54,7 +55,7 @@ function saveDeal(store, deal, opts = {}) {
 
   return db.transaction(() => {
     const existing = db.get(
-      'SELECT id, preco_atual, categoria FROM offers WHERE store_id = ? AND store_product_id = ?',
+      'SELECT id, preco_atual, categoria, created_at, relampago_fim, cupom_codigo FROM offers WHERE store_id = ? AND store_product_id = ?',
       store.id, String(deal.store_product_id)
     );
     if (existing) {
@@ -67,7 +68,11 @@ function saveDeal(store, deal, opts = {}) {
         produto, atual, anterior, desconto, deal.imagem || null, deal.original_url, affiliate, affFixed,
         fonte, expiresAt, classifySubcategory(produto, existing.categoria), comissao, comissaoExtra, existing.id
       );
-      db.run('UPDATE offers SET cupom_codigo = ?, cupom_texto = ?, preco_sem_cupom = ? WHERE id = ?', ...cupom, existing.id);
+      // manterCupom: leitura que não vê cupom (ofertas do Mercado Livre) não apaga o cupom de um produto com o mesmo preço
+      if (!(opts.manterCupom && !deal.cupom_codigo && existing.cupom_codigo && atual <= Number(existing.preco_atual) * 1.01)) {
+        db.run('UPDATE offers SET cupom_codigo = ?, cupom_texto = ?, preco_sem_cupom = ? WHERE id = ?', ...cupom, existing.id);
+      }
+      require('./relampago').aoGravar({ id: existing.id, antes: existing, deal, atual, desconto, fonte });
       if (Number(existing.preco_atual) !== atual) {
         db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', existing.id, atual);
       }
@@ -83,6 +88,7 @@ function saveDeal(store, deal, opts = {}) {
       expiresAt, lojaId, comissao, comissaoExtra, ...cupom
     );
     const id = Number(res.lastInsertRowid);
+    require('./relampago').aoGravar({ id, deal, atual, desconto, fonte });
     db.run('INSERT INTO price_history (offer_id, price) VALUES (?, ?)', id, atual);
     return id;
   });

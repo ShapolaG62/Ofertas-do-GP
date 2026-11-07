@@ -19,6 +19,16 @@ function precoDe(a, agora = Date.now() / 1000) {
   return { atual, anterior, aPrazo };
 }
 
+// Oferta relâmpago de verdade: acaba em até 24 horas ou dura no máximo 3 dias. Campanhas longas (Black Friday, por exemplo)
+// também vêm neste campo, mas não são relâmpago.
+function relampagoDe(a, agora = Date.now() / 1000) {
+  const o = a.offer;
+  if (!o || !(o.price_with_discount > 0) || !o.ends_at || o.is_logged_user_exclusive) return null;
+  if ((o.starts_at && o.starts_at > agora) || o.ends_at <= agora || (o.quantity_available ?? 1) <= 0) return null;
+  const longa = o.starts_at && o.ends_at - o.starts_at > 3 * 86400;
+  return o.ends_at - agora <= 86400 || !longa ? { fim: o.ends_at * 1000 } : null;
+}
+
 // Cupom no selo do produto: { title: "CUPOM FLASHNOVEMBRO", description: "Use o cupom FLASHNOVEMBRO e ganhe 10% OFF neste item…" }
 function cupomDe(a) {
   const selo = a.stamps;
@@ -43,7 +53,9 @@ function parse(lista) {
     // Sem preço riscado só entra quando o cupom dá o desconto
     if (!(atual > 0) || (!(anterior > atual) && !cupom)) continue;
     const imagem = (a.images || []).find(u => /^https:\/\//.test(u)) || null;
+    const relampago = relampagoDe(a);
     deals.push(cupons.aplicar({
+      ...(relampago ? { relampago } : {}),
       store_product_id: String(p.id),
       produto: String(a.title).trim(),
       preco_atual: atual,
@@ -73,6 +85,7 @@ async function search(query) {
 
 module.exports = {
   parse,
+  relampagoDe,
   id: 'kabum',
   name: 'KaBuM!',
   method: 'Busca do catálogo da loja',

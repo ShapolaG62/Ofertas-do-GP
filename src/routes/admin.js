@@ -177,13 +177,28 @@ router.post('/api/admin/mineracao/ml-comissao-extra', async (req, res) => {
   catch (err) { res.status(400).json({ error: err.message }); }
 });
 
+// Ofertas do Mercado Livre lidas pela extensão (página de ofertas e relâmpago)
+router.post('/api/admin/mineracao/ml-ofertas', (req, res) => {
+  try {
+    const r = require('../cupons-ml').importarOfertas(req.body?.itens);
+    if (r.gravados > 0) { require('../aviso-ml').registrar('ofertas'); require('../busca-ofertas').atualizar().catch(() => {}); }
+    res.json({ ...r, coleta: require('../aviso-ml').estado() });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+// Radar de relâmpago e lembrete da coleta do Mercado Livre
+router.get('/api/admin/relampago', (req, res) => res.json({ ...require('../relampago').estado(), coleta: require('../aviso-ml').estado() }));
+
 // Cupons do Mercado Livre lidos pela extensão: { cupons: [...] } grava a lista; { campanha, itens } grava os produtos
 router.get('/api/admin/mineracao/ml-cupons', (req, res) => res.json(require('../cupons-ml').listar()));
 router.post('/api/admin/mineracao/ml-cupons', (req, res) => {
   try {
     const cml = require('../cupons-ml');
     if (Array.isArray(req.body?.esgotados)) return res.json(cml.removerEsgotados(req.body.esgotados));
-    if (Array.isArray(req.body?.cupons)) return res.json({ cupons: cml.salvarCupons(req.body.cupons) });
+    if (Array.isArray(req.body?.cupons)) {
+      const cupons = cml.salvarCupons(req.body.cupons);
+      if (cupons > 0) require('../aviso-ml').registrar('cupons');
+      return res.json({ cupons });
+    }
     res.json(cml.importarProdutos(req.body?.campanha, req.body?.itens));
   } catch (err) { res.status(400).json({ error: err.message }); }
 });

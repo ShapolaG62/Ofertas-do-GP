@@ -17,6 +17,17 @@
       await chrome.storage.local.set({ autoAte: Date.now() + 10 * 60 * 1000, rolagens });
       avisar({ tipo: 'pode-ir' });
     }
+    // Coleta completa: primeiro as ofertas (relâmpago e gerais), depois os cupons
+    if (e.data.tipo === 'coletar-tudo') {
+      const n = (v, min, max, pad) => Math.min(Math.max(parseInt(v, 10) || pad, min), max);
+      await chrome.storage.local.set({ ofertasJob: {
+        ate: Date.now() + 30 * 60 * 1000, painel: ORIGEM, fase: 'relampago', pagina: 1, paginas: 3, itens: {},
+        cupons: { painel: ORIGEM, fase: 'cupons', pagina: 1, cupons: {}, produtos: {},
+          paginas: n(e.data.paginas, 1, 100, 70), maxCupons: n(e.data.cupons, 0, 2000, 60), paginasProd: n(e.data.paginasProd, 1, 10, 2),
+          aplicar: e.data.aplicar === true, maxAplicar: n(e.data.maxAplicar, 0, 2000, 300), aplicados: 0 },
+      } });
+      avisar({ tipo: 'pode-ir-ofertas' });
+    }
     // Minerar cupons: páginas da central de cupons, quantos cupons ativos abrir e quantas páginas de produtos por cupom
     if (e.data.tipo === 'buscar-cupons') {
       const n = (v, min, max, pad) => Math.min(Math.max(parseInt(v, 10) || pad, min), max);
@@ -37,11 +48,13 @@
   });
 
   // Cupons do Mercado Livre trazidos pelo minerador de cupons (vale 30 min): entrega ao Painel uma vez só
-  chrome.storage.local.get('cuponsResultado').then(async ({ cuponsResultado: r }) => {
+  // A coleta completa traz as ofertas junto: o Painel grava os cupons primeiro, para as ofertas relâmpago já saírem com o cupom
+  chrome.storage.local.get(['cuponsResultado', 'ofertasResultado']).then(async ({ cuponsResultado: r, ofertasResultado: o }) => {
     if (!r) return;
-    await chrome.storage.local.remove('cuponsResultado');
+    await chrome.storage.local.remove(['cuponsResultado', 'ofertasResultado']);
     if (Date.now() - r.em > 30 * 60 * 1000) return;
-    avisar({ tipo: 'cupons', cupons: r.cupons, esgotados: r.esgotados || [], produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0 });
+    const ofertas = o && Date.now() - o.em < 4 * 60 * 60 * 1000 ? o.itens : [];
+    avisar({ tipo: 'cupons', cupons: r.cupons, esgotados: r.esgotados || [], produtos: r.produtos, motivo: r.motivo, aplicados: r.aplicados || 0, ofertas });
   });
 
   // Página do Mercado Livre trazida pela extensão (vale 15 min): entrega ao Painel uma vez só

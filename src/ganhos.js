@@ -151,10 +151,11 @@ const painel = () => db.all('SELECT id FROM ganhos_plataformas ORDER BY ordem, n
 // ── Avisos ───────────────────────────────────────────────────────────────────
 const fmt = (n, moeda) => Number(n).toLocaleString('pt-BR', { style: 'currency', currency: moeda || 'BRL' });
 
-function notificar({ chave, tipo, titulo, texto, link }) {
+function notificar({ chave, tipo, titulo, texto, link, semEmail = false }) {
   const r = db.run('INSERT OR IGNORE INTO admin_notificacoes (chave, tipo, titulo, texto, link) VALUES (?, ?, ?, ?, ?)',
     chave, tipo, titulo, texto || null, link || null);
   if (!r.changes) return false;
+  if (semEmail) return true;
   // Também por e-mail, se o SMTP estiver configurado (vai para o e-mail do remetente configurado no painel).
   try {
     const email = require('./email');

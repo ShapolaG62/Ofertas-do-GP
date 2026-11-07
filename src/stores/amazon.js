@@ -48,7 +48,51 @@ async function search(query) {
   return { status: 'ok', deals: parse(html) };
 }
 
+// Página de ofertas (/gp/goldbox): os produtos vêm em JSON na própria página. Só a oferta do tipo LIGHTNING_DEAL é relâmpago.
+function jsonEm(txt, inicio) {
+  let d = 0, str = false, esc = false;
+  for (let i = inicio; i < txt.length; i++) {
+    const c = txt[i];
+    if (str) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') str = false; continue; }
+    if (c === '"') str = true;
+    else if (c === '{') d++;
+    else if (c === '}' && !--d) { try { return JSON.parse(txt.slice(inicio, i + 1)); } catch { return null; } }
+  }
+  return null;
+}
+function parseOfertas(html) {
+  const marca = String(html).indexOf('"productSearchResponse":');
+  if (marca < 0) return [];
+  const dados = jsonEm(html, html.indexOf('{', marca));
+  const deals = [];
+  for (const p of dados?.products || []) {
+    const atual = Number(p.price?.priceToPay?.price), anterior = Number(p.price?.basisPrice?.price);
+    const asin = String(p.asin || '');
+    if (!/^[A-Z0-9]{10}$/.test(asin) || !p.title || !(atual > 0) || !(anterior > atual) || p.dealDetails?.state !== 'AVAILABLE') continue;
+    const img = p.image?.hiRes || p.image?.lowRes;
+    const fim = Number(p.dealDetails?.endTime || p.dealDetails?.dealEndTime) || 0;
+    deals.push({
+      ...(p.dealDetails?.type === 'LIGHTNING_DEAL' ? { relampago: { fim: fim > 1e12 ? fim : fim ? fim * 1000 : 0 } } : {}),
+      store_product_id: asin, produto: String(p.title).trim(), preco_atual: atual, preco_anterior: anterior,
+      imagem: img?.baseUrl && img.extension ? `${img.baseUrl}.${img.extension}` : null,
+      original_url: `${BASE}/dp/${asin}`,
+    });
+  }
+  return deals;
+}
+async function radar() {
+  const res = await http.get(`${BASE}/gp/goldbox`, { validateStatus: () => true, timeout: 25000 });
+  const html = String(res.data || '');
+  if (res.status === 503 || /validateCaptcha|bm-verify|_sec\/verify/i.test(html.slice(0, 20000))) {
+    return { status: 'blocked', message: 'A Amazon pediu verificação anti-robô para este IP.', deals: [] };
+  }
+  if (res.status >= 400) return { status: 'error', message: `HTTP ${res.status}`, deals: [] };
+  return { status: 'ok', deals: parseOfertas(html) };
+}
+
 module.exports = {
+  radar,
+  parseOfertas,
   id: 'amazon',
   name: 'Amazon',
   method: 'Leitura da busca pública',

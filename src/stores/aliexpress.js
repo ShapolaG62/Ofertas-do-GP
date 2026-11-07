@@ -93,6 +93,40 @@ async function searchApi(query, s) {
   }));
 }
 
+// Promoções em destaque da API de afiliados. As de nome "flash" contam como relâmpago; se a conta não tiver esse acesso, o radar
+// segue só com a detecção de queda de preço.
+let promocoes = { em: 0, nomes: [] };
+async function chamada(method, extra, s) {
+  const params = { app_key: s.aliexpress_app_key, method, sign_method: 'sha256', timestamp: String(Date.now()), format: 'json', v: '2.0', ...extra };
+  params.sign = sign(params, s.aliexpress_app_secret);
+  const res = await http.get('https://api-sg.aliexpress.com/sync', { params, validateStatus: () => true });
+  if (res.data?.error_response) throw new Error(res.data.error_response.msg || res.data.error_response.code);
+  return Object.values(res.data || {})[0]?.resp_result || {};
+}
+async function radar(s) {
+  if (!s.aliexpress_app_key || !s.aliexpress_app_secret) return { status: 'ok', deals: [] };
+  if (Date.now() - promocoes.em > 6 * 3600000) {
+    const r = await chamada('aliexpress.affiliate.featuredpromo.get', { fields: 'promotion_name' }, s);
+    promocoes = { em: Date.now(), nomes: (r.result?.promos?.promo || []).map(p => p.promotion_name).filter(n => /flash|lightning|rel[âa]mpago|super ?deal/i.test(n)) };
+  }
+  const deals = [];
+  for (const nome of promocoes.nomes.slice(0, 2)) {
+    const r = await chamada('aliexpress.affiliate.featuredpromo.products.get', {
+      promotion_name: nome, tracking_id: s.aliexpress_tracking_id, target_currency: 'BRL', target_language: 'PT', ship_to_country: 'BR', page_size: '50',
+      fields: 'product_id,product_title,target_sale_price,target_original_price,product_main_image_url,promotion_link,commission_rate,hot_product_commission_rate',
+    }, s);
+    for (const p of r.result?.products?.product || []) {
+      deals.push({
+        relampago: { fim: 0 },
+        store_product_id: String(p.product_id), produto: p.product_title,
+        preco_atual: round2(Number(p.target_sale_price)), preco_anterior: round2(Number(p.target_original_price)),
+        imagem: p.product_main_image_url, original_url: `${SITE}/item/${p.product_id}.html`, affiliate_url: p.promotion_link || null, ...comissaoAli(p),
+      });
+    }
+  }
+  return { status: 'ok', deals };
+}
+
 // Link de comissão de um produto já minerado, com as chaves de afiliado informadas (usado pelos clientes).
 async function gerarLink(url, s) {
   const params = {
@@ -134,6 +168,7 @@ async function search(query, s) {
 }
 
 module.exports = {
+  radar,
   id: 'aliexpress',
   name: 'AliExpress',
   method: 'API de afiliados (se configurada) ou leitura da busca pública',

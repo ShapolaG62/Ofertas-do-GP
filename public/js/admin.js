@@ -841,10 +841,13 @@ $('#mlx-cola').addEventListener('paste', e => {
   e.preventDefault();
   mlxProcessar(e.clipboardData.getData('text/html'));
 });
+let extensaoInstalada = false;
 // Extensão do Chrome "Ofertou! Comissão extra ML" (pasta extensao-comissao/): conversa por mensagens nesta janela
 const ML_HUB = 'https://www.mercadolivre.com.br/afiliados/hub?is_affiliate=true';
 window.addEventListener('message', e => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
+  if (e.data.tipo === 'pode-ir-ofertas') window.top.location.href = 'https://www.mercadolivre.com.br/ofertas?promotion_type=lightning';
+  if (e.data.tipo === 'instalada') { extensaoInstalada = true; }
   if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; $('#mlc-auto').hidden = false; $('#mlc-sem-ext').hidden = true; }
   if (e.data.tipo === 'pode-ir') window.top.location.href = ML_HUB;
   if (e.data.tipo === 'pode-ir-cupons') window.top.location.href = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
@@ -889,6 +892,16 @@ async function mlcImportar(d) {
     out.innerHTML = `<b>${lista.length}</b> cupons lidos (${ativos} ativos na sua conta${d.aplicados ? `, ${d.aplicados} aplicados agora pela extensão` : ''}) · <b>${gravados}</b> ofertas gravadas com cupom de ${recebidos} produtos "com Cupom" em ${produtos.length} cupons`
       + (esgotados.length ? ` · ${esgotados.length} esgotados ignorados${fora.ofertas ? ` (${fora.ofertas} ofertas perderam o cupom)` : ''}` : '')
       + (d.motivo === 'parado' ? ' · mineração parada por você' : d.motivo === 'sem-dados' ? ' · a central de cupons não abriu (faça login no Mercado Livre)' : '');
+    // Ofertas por último: assim as relâmpago já saem com o cupom
+    const ofertas = Array.isArray(d.ofertas) ? d.ofertas : [];
+    let rel = 0, grav = 0;
+    for (let i = 0; i < ofertas.length; i += 200) {
+      const r = await api('/api/admin/mineracao/ml-ofertas', { method: 'POST', body: { itens: ofertas.slice(i, i + 200) } });
+      grav += r.gravados; rel += r.relampagos;
+    }
+    if (ofertas.length) out.innerHTML += ` · <b>${grav}</b> ofertas lidas, <b>${rel}</b> relâmpago`;
+    else if (d.ofertas) out.innerHTML += ' · nenhuma oferta lida (confira se o Chrome está logado no Mercado Livre)';
+    carregarRadar();
   } catch (err) { out.textContent = `Erro ao gravar: ${err.message}`; }
   mlcCarregar();
   loadStores();
@@ -922,6 +935,34 @@ $('#mlc-buscar').addEventListener('click', () => {
   setTimeout(() => { $('#mlc-buscar').disabled = false; }, 3000);
 });
 mlcCarregar();
+
+// Coleta completa do Mercado Livre (botão do aviso e da Mineração)
+function coletarMl() {
+  if (!extensaoInstalada) {
+    abrirAba('mining');
+    $('#mlc-sem-ext').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return globalMsg('Instale a extensão do Chrome para coletar o Mercado Livre: as instruções estão aqui em Mineração.', false);
+  }
+  window.postMessage({ ofertouPainel: true, tipo: 'coletar-tudo', paginas: mlcN('#mlc-paginas', 1, 100, 70), cupons: mlcN('#mlc-cupons', 0, 2000, 100),
+    paginasProd: mlcN('#mlc-pagprod', 1, 10, 2), aplicar: $('#mlc-aplicar').checked, maxAplicar: mlcN('#mlc-maxaplicar', 0, 2000, 300) }, location.origin);
+}
+$('#ml-coleta-ir').addEventListener('click', coletarMl);
+$('#ml-coleta-botao').addEventListener('click', coletarMl);
+const RL_SIT = { ok: 'Funcionando', blocked: 'Bloqueada: tenta de novo em 2 horas', error: 'Com erro', off: 'Desligada', aguardando: 'Aguardando a primeira leitura' };
+async function carregarRadar() {
+  let d;
+  try { d = await api('/api/admin/relampago'); } catch { return; }
+  const c = d.coleta;
+  $('#ml-coleta-aviso').hidden = !c.pendente;
+  const nomes = { ofertas: 'as ofertas', cupons: 'os cupons' };
+  $('#ml-coleta-texto').textContent = c.pendente ? `Faltam ${c.falta.map(k => nomes[k]).join(' e ')} das ${c.hora}h. O aviso some quando a extensão entregar a coleta.` : '';
+  const quando = ms => (ms ? new Date(ms).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'nunca');
+  $('#ml-coleta-resumo').textContent = `Última coleta: ofertas ${quando(c.ofertas_em)}; cupons ${quando(c.cupons_em)}.`;
+  $('#rl-no-ar').textContent = `${d.no_ar} oferta(s) relâmpago no ar agora.`;
+  $('#rl-lojas').innerHTML = d.lojas.map(l => `<tr><td>${esc(l.nome)}</td><td>${l.minutos} min</td><td>${esc(RL_SIT[l.status] || l.status)}${l.mensagem ? `<br><small>${esc(l.mensagem).slice(0, 140)}</small>` : ''}</td><td>${l.em ? `${quando(l.em)}: ${l.lidas} lidas, ${l.relampagos} marcadas pela loja` : '—'}</td></tr>`).join('');
+}
+carregarRadar();
+setInterval(carregarRadar, 5 * 60 * 1000);
 
 window.postMessage({ ofertouPainel: true, tipo: 'ola' }, location.origin);
 if (new URLSearchParams(location.search).has('ml-importar') || new URLSearchParams(location.search).has('ml-cupons')) history.replaceState(null, '', `${location.pathname}${location.hash}`);

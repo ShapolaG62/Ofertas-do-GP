@@ -338,6 +338,22 @@
     return '';
   }
 
+  // Selo da oferta relâmpago: com contagem regressiva só quando a loja informa a hora do fim
+  const faltaTxt = fim => {
+    const s = Math.floor((Date.parse(`${String(fim).replace(' ', 'T')}Z`) - Date.now()) / 1000);
+    if (s <= 0) return 'terminou';
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : h ? `${h}h ${String(m).padStart(2, '0')}` : `${m || 1} min`;
+  };
+  function relampagoHtml(o) {
+    if (!o.relampago_fim || Date.parse(`${String(o.relampago_fim).replace(' ', 'T')}Z`) <= Date.now()) return '';
+    if (o.relampago_tipo !== 'loja') return `<span class="card-relampago queda${o.cupom ? ' com-cupom' : ''}">🚨 Preço caiu agora</span>`;
+    return `<span class="card-relampago${o.cupom ? ' com-cupom' : ''}"${o.relampago_fim_real ? ` data-relampago-fim="${esc(o.relampago_fim)}"` : ''}>⚡ Relâmpago${o.relampago_fim_real ? ` · <b>${faltaTxt(o.relampago_fim)}</b>` : ''}</span>`;
+  }
+  setInterval(() => {
+    document.querySelectorAll('[data-relampago-fim] b').forEach(b => { b.textContent = faltaTxt(b.parentElement.dataset.relampagoFim); });
+  }, 30000);
+
   function cardHtml(o) {
     const isSel = selected.has(o.id);
     const minerada = !o.loja_slug && o.fonte !== 'manual' && o.fonte !== 'empresa'; // preço conferido pela mineração
@@ -346,6 +362,7 @@
     return `<a class="card${isSel ? ' is-selected' : ''}" ${link} data-id="${o.id}">
       <div class="card-media">
         <img src="/img/p/${o.id}.webp" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/pet-capi-head.png';this.style.opacity='.35'">
+        ${relampagoHtml(o)}
         <div class="card-tags"><span class="card-off">-${Math.round(o.desconto_pct)}%</span>${Number(o.menor_preco_30d) === 1 ? '<span class="badge-low" title="Menor preço em 30 dias">Menor preço</span>' : ''}${comissaoHtml(o)}</div>
         <button class="card-select poster-only" type="button" data-select="${o.id}" aria-label="Escolher para postar"><svg><use href="#i-check"/></svg></button>
         ${o.cupom ? (cupomMl(o.cupom)

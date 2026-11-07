@@ -125,4 +125,27 @@ function listar() {
     .map(r => ({ ...r, previa: (() => { try { return JSON.parse(r.previa || '[]'); } catch { return []; } })() }));
 }
 
-module.exports = { salvarCupons, removerEsgotados, importarProdutos, listar };
+// Ofertas lidas pela extensão na página de ofertas do Mercado Livre. As marcadas "relâmpago" entram com a hora do fim, se a página mostrar.
+function importarOfertas(itens) {
+  const s = settings.getAll();
+  const out = { recebidos: 0, gravados: 0, relampagos: 0 };
+  for (const it of (Array.isArray(itens) ? itens : []).slice(0, 500)) {
+    out.recebidos++;
+    const id = String(it.produto || it.item || '').toUpperCase().match(/^MLB-?(\d{6,})$/);
+    const nome = txt(it.nome, 200);
+    const atual = preco(it.preco), anterior = preco(it.preco_anterior);
+    let url;
+    try { url = new URL(it.link); } catch { continue; }
+    if (!id || !nome || !atual || !anterior || !/(^|\.)mercadoli(vre|bre)\.com(\.br)?$/i.test(url.hostname)) continue;
+    const resta = Number(it.resta_s);
+    const deal = {
+      store_product_id: `MLB${id[1]}`, produto: nome, preco_atual: atual, preco_anterior: anterior,
+      imagem: /^https:\/\//.test(it.imagem || '') ? it.imagem : null, original_url: `${url.origin}${url.pathname}`,
+      ...(it.relampago ? { relampago: { fim: resta > 0 && resta < 7 * 86400 ? Date.now() + resta * 1000 : 0 } } : {}),
+    };
+    if (offers.saveDeal(ml, deal, { settings: s, manterCupom: true })) { out.gravados++; if (it.relampago) out.relampagos++; }
+  }
+  return out;
+}
+
+module.exports = { salvarCupons, removerEsgotados, importarProdutos, importarOfertas, listar };

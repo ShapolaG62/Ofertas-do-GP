@@ -72,6 +72,9 @@ app.use(require('compression')({ threshold: 1024 }));
 app.use(require('./src/routes/whatsapp-api')); // WhatsApp: API própria (conexão pelo QR code)
 
 app.use(['/api/cliente/comissao/previa', '/api/cliente/comissao/importar'], express.json({ limit: '12mb' })); // planilha de vendas
+// A coleta do Mercado Livre entrega milhares de cupons e produtos em lotes grandes: limite maior só para o admin logado
+const jsonMineracao = express.json({ limit: '5mb' });
+app.use('/api/admin/mineracao', (req, res, next) => (auth.isLoggedIn(req) ? jsonMineracao(req, res, next) : next()));
 app.use(express.json({ limit: '100kb' }));
 
 // Login obrigatório para ver as ofertas (configurável no painel).
@@ -348,7 +351,7 @@ app.get('*', (req, res) => {
 app.use((err, req, res, next) => {
   console.error('[SERVER]', err);
   if ((err.status || 500) >= 500) require('./src/erros-site').registrar(err, `${req.method} ${req.path}`);
-  res.status(err.status || 500).json({ error: 'Erro interno.' });
+  res.status(err.status || 500).json({ error: err.status === 413 ? 'Os dados enviados são grandes demais para este envio.' : 'Erro interno.' });
 });
 
 // Na Vercel o servidor não fica ligado: cada acesso executa o app exportado e não há mineração agendada.

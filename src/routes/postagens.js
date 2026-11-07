@@ -46,6 +46,13 @@ router.get('/api/postagens/permissao', (req, res) => {
 
 router.use('/api/postagens', requirePoster);
 
+// Para escolher no agendamento: os termos da mineração e as lojas de onde saem as ofertas automáticas
+router.get('/api/postagens/termos', (req, res) => {
+  const termos = [...new Set(settings.getSearchTerms().map(t => t.query))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const lojas = require('../stores').STORES.filter(l => l.automatic !== false).map(l => ({ id: l.id, nome: l.name }));
+  res.json({ termos, lojas });
+});
+
 // Lista de cupons ativos: a próxima mensagem e o envio para os grupos salvos de quem está usando
 router.get('/api/postagens/cupons', (req, res) => res.json(require('../lista-cupons').previa(req.poster.clienteId)));
 router.post('/api/postagens/cupons/postar', async (req, res) => {

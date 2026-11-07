@@ -3625,3 +3625,13 @@ body .tabs-line:not(.cli-nav) button[aria-selected="true"] { background: var(--a
   .card-cupom { min-height: 36px; }
   .badge-low, .tag, th, .modelo-card-ex, .cli-sug-tags em, .cli-kpi small, .cli-legenda, .cli-legenda span { font-size: 12px !important; }
 }
+
+/* Vista de cupons na página de ofertas */
+.cupom-cartao { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; box-shadow: var(--shadow-sm); }
+.cupom-nome { font-size: 17px; font-weight: 800; color: var(--azul-texto, var(--brand)); overflow-wrap: anywhere; letter-spacing: .01em; }
+.cupom-cartao p { margin: 0; font-size: 14px; color: var(--ink-2); }
+.cupom-botoes { display: grid; gap: 8px; margin-top: auto; }
+.cupom-botoes .btn { width: 100%; min-height: 44px; justify-content: center; }
+#sort[hidden] { display: none; }
+#ofertas { scroll-margin-top: 130px; }
+@media (max-width: 900px) { #ofertas { scroll-margin-top: 175px; } .cupom-nome { font-size: 15px; } .cupom-cartao { padding: 12px; } }

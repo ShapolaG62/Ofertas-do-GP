@@ -28,11 +28,12 @@ test('lista de cupons: um por linha, com onde usar e Ver mais no fim', () => {
   settings.set('site_url', 'https://exemplo.test');
   const t = lista.mensagem([cupom(1), cupom(2, 'magalu'), { codigo: 'ML55', ml: true, texto: '15% OFF', minimo: 100, store_id: 'mercadolivre', loja: 'Mercado Livre', ofertas: 0 }]);
   const linhas = t.split('\n');
-  assert.ok(linhas.includes('*CUPOM1* — 10% OFF — use na KaBuM!'));
-  assert.ok(linhas.includes('*CUPOM2* — 10% OFF — use na Magalu'));
-  assert.ok(linhas.includes('*15% OFF* acima de R$ 100 — ative no Mercado Livre, em Cupons'));
+  assert.ok(linhas.includes('🏷️ *CUPOM1* — 10% OFF — 🛒 use na KaBuM!'));
+  assert.ok(linhas.includes('🏷️ *CUPOM2* — 10% OFF — 🛒 use na Magalu'));
+  assert.ok(linhas.includes('🏷️ *15% OFF* acima de R$ 100 — 🛒 ative no Mercado Livre, em Cupons'));
   assert.ok(!t.includes('ML55'), 'o código interno do Mercado Livre não aparece');
-  assert.equal(linhas.at(-1), '*Ver mais:* https://exemplo.test/cupons');
+  assert.equal(linhas.at(-1), '👉 *Ver mais:* https://exemplo.test/cupons');
+  assert.ok(linhas[0].includes('CUPONS ATIVOS'));
 });
 
 test('lista de cupons: 20 por envio, continuando de onde parou', () => {
@@ -111,7 +112,9 @@ test('lista de cupons: Ver mais do afiliado leva à página com os links dele', 
   assert.ok(a.includes('/cupons?de=42&cupom=CUPOM1'));
   assert.ok(!a.includes('href="/?cupom='), 'não leva às ofertas com os links do site');
   assert.ok(!a.includes('href="/"'), 'nem à página inicial do site');
-  assert.ok(paginas.pagina([{ ...cupom(1), ofertas: 2 }]).includes('href="/?cupom=CUPOM1"'), 'a página do site continua como era');
+  const site = paginas.paginaSite('https://exemplo.test');
+  assert.ok(site.includes('id="grid"'), 'sem afiliado, é a própria página de ofertas');
+  assert.ok(site.includes('<title>Cupons ativos') && site.includes('https://exemplo.test/cupons'));
   assert.ok(paginas.paginaOfertas(cupom(1), [{ id: 7, produto: 'P', preco_atual: 9, preco_anterior: 10 }], 42).includes('/ir/42-7'));
 });
 
@@ -190,7 +193,7 @@ test('Capi: senha, conectar o WhatsApp, cupons e apagar conversa', () => {
   assert.match(r('esqueci minha senha'), /1 hora/);
   for (const q of ['como conecto meu whatsapp para postar nos grupos', 'como conecto meu whatsapp', 'como postar nos meus grupos de whatsapp']) assert.match(r(q), /QR code/, q);
   for (const q of ['como recebo alertas de ofertas no whatsapp', 'quero receber ofertas no whatsapp']) assert.match(r(q), /Sim, quero/, q);
-  for (const q of ['como usar cupom', 'onde vejo os cupons']) assert.match(r(q), /\/cupons/, q);
+  for (const q of ['como usar cupom', 'onde vejo os cupons']) assert.match(r(q), /Copiar cupom/, q);
   assert.match(r('como apago uma conversa'), /Apagar conversa/);
   assert.match(r('como bloquear alguém'), /bloqueia/);
 });

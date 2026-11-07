@@ -38,7 +38,7 @@ function visualizar(req) {
 // Só quem tem uma área de trabalho usa a central; quem apenas compra continua no site normal.
 const temTrabalho = lista => lista.some(a => ['afiliado', 'loja', 'equipe', 'admin'].includes(a.id));
 
-const PAGINAS = /^\/($|admin\/?$|cliente\/?$|conta\/?$|postagens\/?$|ajuda\/?$|cosmeticos\/?$|trabalho\/?$|perfil(\/|$)|loja\/|anuncio\/)/;
+const PAGINAS = /^\/($|admin\/?$|cliente\/?$|conta\/?$|postagens\/?$|cupons\/?$|ajuda\/?$|cosmeticos\/?$|trabalho\/?$|perfil(\/|$)|loja\/|anuncio\/)/;
 
 // Abrir uma dessas páginas direto na barra de endereço leva para a central. Dentro de um quadro o navegador
 // manda "Sec-Fetch-Dest: iframe", então isso nunca entra em repetição. O app instalado continua como está.

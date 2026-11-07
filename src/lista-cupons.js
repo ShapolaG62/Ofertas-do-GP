@@ -45,22 +45,22 @@ function ativos() {
 }
 
 function linha(c) {
-  if (c.ml) return `*${c.texto || 'Cupom'}*${c.minimo ? ` acima de R$ ${reais(c.minimo)}` : ''} — ative no Mercado Livre, em Cupons`;
-  return `*${c.codigo}*${c.texto ? ` — ${c.texto}` : ''} — use ${NA_LOJA[c.store_id] || `na ${c.loja}`}`;
+  if (c.ml) return `🏷️ *${c.texto || 'Cupom'}*${c.minimo ? ` acima de R$ ${reais(c.minimo)}` : ''} — 🛒 ative no Mercado Livre, em Cupons`;
+  return `🏷️ *${c.codigo}*${c.texto ? ` — ${c.texto}` : ''} — 🛒 use ${NA_LOJA[c.store_id] || `na ${c.loja}`}`;
 }
 
 const enderecoSite = s => String(s?.site_url || settings.get('site_url') || '').trim().replace(/\/+$/, '') || 'https://tanoofertou.com.br';
 const linkVerMais = (s, cid = null) => `${enderecoSite(s)}/cupons${cid ? `?de=${Number(cid)}` : ''}`;
 
 function mensagem(itens, s = null, cid = null, { verMais = true } = {}) {
-  const corpo = `*Cupons ativos*\n\n${itens.map(linha).join('\n')}\n\nRegras e validade na própria loja.`;
-  return verMais ? `${corpo}\n\n*Ver mais:* ${linkVerMais(s, cid)}` : corpo;
+  const corpo = `🔥 *CUPONS ATIVOS* 🔥\n💸 Copie o código e use no pagamento da loja 👇\n\n${itens.map(linha).join('\n')}\n\n⚠️ Regras e validade na própria loja.`;
+  return verMais ? `${corpo}\n\n👉 *Ver mais:* ${linkVerMais(s, cid)}` : corpo;
 }
 
 // X: até 280 caracteres, e todo link conta como 23. Entram os cupons que couberem, inteiros.
 function textoCurto(itens, s = null, cid = null) {
   const curta = c => (c.ml ? `${c.texto || 'Cupom'} no Mercado Livre` : `${c.codigo}${c.texto ? ` ${c.texto}` : ''} ${NA_LOJA[c.store_id] || `na ${c.loja}`}`);
-  const inicio = 'Cupons ativos\n', fim = '\nVer mais: ';
+  const inicio = '🔥 Cupons ativos\n', fim = '\n👉 Ver mais: ';
   let espaco = 280 - inicio.length - fim.length - 23;
   const linhas = [];
   for (const c of itens) {

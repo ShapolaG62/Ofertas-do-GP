@@ -1,27 +1,41 @@
-// Página pública /cupons: o destino do "Ver mais" da lista de cupons postada nas redes. Mostra todos os cupons ativos,
-// separados por loja, para copiar o código e ver as ofertas em que ele vale.
-// Com ?de=<afiliado>: as ofertas abrem com os links de afiliado dele (/ir/...) e a página não leva às ofertas do site.
+// /cupons é a própria página de ofertas, mostrando os cupons no lugar dos produtos (public/js/site.js).
+// Com ?de=<afiliado>: página à parte, em que as ofertas abrem com os links de afiliado dele (/ir/...) e nada leva às ofertas do site.
+const fs = require('fs');
+const path = require('path');
 const h = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const CENTRAL_ML = 'https://www.mercadolivre.com.br/cupons';
 const reais = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: Number(v) % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const preco = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const NA = { mercadolivre: 'no Mercado Livre', amazon: 'na Amazon', shopee: 'na Shopee', magalu: 'na Magalu', aliexpress: 'no AliExpress', kabum: 'na KaBuM!', shein: 'na Shein', temu: 'na Temu' };
 
-function documento({ titulo, descricao, corpo, cid = null }) {
-  const topo = cid
-    ? `<header class="cp-topo"><span class="cp-marca"><img src="/images/capi-76.png" alt="" width="34" height="34"><span>Ofertou<b>!</b></span></span></header>`
-    : `<header class="cp-topo"><a class="cp-marca" href="/"><img src="/images/capi-76.png" alt="" width="34" height="34"><span>Ofertou<b>!</b></span></a><a class="btn" href="/">Ver ofertas</a></header>`;
+// Página de ofertas com o título e o endereço dos cupons
+const INDEX = path.join(__dirname, '..', '..', 'public', 'index.html');
+function paginaSite(site) {
+  const base = String(site || '').trim().replace(/\/+$/, '');
+  const titulo = 'Cupons ativos — Ofertou!';
+  const descricao = 'Cupons de desconto ativos no Mercado Livre, Amazon, Shopee, Magalu, AliExpress e KaBuM!, com onde usar cada um.';
+  return fs.readFileSync(INDEX, 'utf8')
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${h(titulo)}</title>`)
+    .replace(/<meta name="description"[^>]*>/, () => `<meta name="description" content="${h(descricao)}">`)
+    .replace(/<link rel="canonical"[^>]*>/, () => `<link rel="canonical" href="${h(base)}/cupons">`)
+    .replace(/<meta property="og:title"[^>]*>/, () => `<meta property="og:title" content="${h(titulo)}">`)
+    .replace(/<meta property="og:description"[^>]*>/, () => `<meta property="og:description" content="${h(descricao)}">`)
+    .replace(/<meta property="og:url"[^>]*>/, () => `<meta property="og:url" content="${h(base)}/cupons">`);
+}
+
+function documento({ titulo, descricao, corpo }) {
+  const topo = `<header class="cp-topo"><span class="cp-marca"><img src="/images/capi-76.png" alt="" width="34" height="34"><span>Ofertou<b>!</b></span></span></header>`;
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${h(titulo)} — Ofertou!</title>
 <meta name="description" content="${h(descricao)}">
-${cid ? '<meta name="robots" content="noindex">' : ''}
+<meta name="robots" content="noindex">
 <meta property="og:title" content="${h(titulo)} — Ofertou!"><meta property="og:description" content="${h(descricao)}"><meta property="og:image" content="/images/icon-512.png">
 <link rel="canonical" href="/cupons"><link rel="icon" href="/images/favicon-32x32.png">
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261300">
-<script src="/js/tema.js?v=20261300"></script>
-<script src="/js/rodape-legal.js?v=20261300" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261301">
+<script src="/js/tema.js?v=20261301"></script>
+<script src="/js/rodape-legal.js?v=20261301" defer></script>
 <style>
   body { background: var(--bg); }
   .cp-faixa { height: 3px; background: linear-gradient(90deg, #0a7a43, #0d6985 60%, #0b6bb5); }
@@ -67,7 +81,7 @@ document.addEventListener('click', async e => {
 function cartao(c, cid) {
   const nome = c.ml ? (c.texto || 'Cupom') : c.codigo;
   const det = c.ml ? `${c.minimo ? `Em compras acima de R$ ${reais(c.minimo)}. ` : ''}Sem código: ative em Cupons, no Mercado Livre.` : `${c.texto ? `${c.texto}. ` : ''}Use no pagamento ${c.na}`;
-  const destino = cid ? `/cupons?de=${Number(cid)}&cupom=${encodeURIComponent(c.codigo)}` : `/?cupom=${encodeURIComponent(c.codigo)}`;
+  const destino = `/cupons?de=${Number(cid)}&cupom=${encodeURIComponent(c.codigo)}`;
   const ofertas = c.ofertas ? `<a class="btn" href="${destino}">Ver ${c.ofertas === 1 ? '1 oferta' : `${c.ofertas} ofertas`}</a>` : '';
   const principal = c.ml
     ? `<a class="btn btn-primary" href="${CENTRAL_ML}" target="_blank" rel="noopener">Ativar no Mercado Livre</a>`
@@ -75,7 +89,7 @@ function cartao(c, cid) {
   return `<li class="cp-cartao"><b class="cp-nome">${h(nome)}</b><p>${h(det)}</p><div class="cp-botoes">${principal}${ofertas}</div></li>`;
 }
 
-function pagina(lista, { cid = null } = {}) {
+function pagina(lista, { cid }) {
   const lojas = new Map();
   for (const c of lista) {
     if (!lojas.has(c.loja)) lojas.set(c.loja, []);
@@ -83,7 +97,7 @@ function pagina(lista, { cid = null } = {}) {
   }
   const blocos = [...lojas.entries()].map(([loja, itens]) => `<section><h2>${h(loja)} <small>${itens.length === 1 ? '1 cupom' : `${itens.length} cupons`}</small></h2><ul class="cp-lista">${itens.map(c => cartao(c, cid)).join('')}</ul></section>`).join('');
   return documento({
-    titulo: 'Cupons ativos', cid,
+    titulo: 'Cupons ativos',
     descricao: 'Cupons de desconto ativos no Mercado Livre, Amazon, Shopee, Magalu, AliExpress e KaBuM!, com onde usar cada um.',
     corpo: `<h1>Cupons ativos</h1>
   <p class="cp-sub">Copie o código e use no pagamento da loja. A validade e as regras de cada cupom são definidas pela loja.</p>
@@ -99,7 +113,7 @@ function paginaOfertas(cupom, ofertas, cid) {
     <div><span class="cp-prod">${h(o.produto)}</span><div class="cp-preco">${Number(o.preco_anterior) > Number(o.preco_atual) ? `<s>R$ ${preco(o.preco_anterior)}</s>` : ''}R$ ${preco(o.preco_atual)}</div></div>
     <a class="btn btn-primary" href="/ir/${Number(cid)}-${Number(o.id)}" target="_blank" rel="noopener nofollow">Ver oferta</a></li>`).join('');
   return documento({
-    titulo: `Ofertas com o cupom ${nome}`, cid,
+    titulo: `Ofertas com o cupom ${nome}`,
     descricao: `Ofertas em que vale o cupom ${nome}.`,
     corpo: `<a class="cp-volta" href="/cupons?de=${Number(cid)}">‹ Todos os cupons</a>
   <h1>Ofertas com o cupom ${h(nome)}</h1>
@@ -108,4 +122,4 @@ function paginaOfertas(cupom, ofertas, cid) {
   });
 }
 
-module.exports = { pagina, paginaOfertas };
+module.exports = { pagina, paginaOfertas, paginaSite };

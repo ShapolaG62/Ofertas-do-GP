@@ -101,3 +101,12 @@
 .cup-rede.fora { color: var(--ink-3, var(--muted)); cursor: default; font-weight: 500; }
 .cup-rede small { font-size: 12px; font-weight: 500; }
 @media (max-width: 900px) { .cup-rede { min-height: 44px; } }
+
+.pal-mais { display: grid; gap: 8px; min-width: 0; }
+.pal-mais-btn { justify-self: start; }
+.pal-mais-caixa { display: grid; gap: 8px; border: 1px solid var(--line, var(--border)); border-radius: 10px; padding: 10px; min-width: 0; }
+.pal-mais-caixa[hidden] { display: none; }
+.pal-mais-caixa input { width: 100%; box-sizing: border-box; min-height: 40px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line-strong, var(--border-strong)); background: var(--surface, transparent); color: var(--ink, var(--text)); font: inherit; font-size: 16px; }
+.pal-mais-info { margin: 0; font-size: 12.5px; color: var(--ink-3, var(--muted)); }
+.pal-mais-lista { max-height: 260px; overflow: auto; align-content: flex-start; }
+.pal-chip:focus-visible { outline: 2px solid var(--azul-texto); outline-offset: 2px; }

@@ -32,6 +32,14 @@
   const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const palavras = campo => String(campo.value || '').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
 
+  // O painel preenche os campos por código depois de abrir: assim as marcações acompanham
+  function vigiar(campo, aoMudar) {
+    const original = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    Object.defineProperty(campo, 'value', { configurable: true, get() { return original.get.call(this); }, set(v) { original.set.call(this, v); aoMudar(); } });
+  }
+  let dadosTermos = null;
+  const lerTermos = () => (dadosTermos ||= fetch('/api/postagens/termos').then(r => (r.ok ? r.json() : Promise.reject(new Error('Não foi possível carregar a lista.')))).catch(err => { dadosTermos = null; throw err; }));
+
   function montarSugestoes(campo, dados) {
     const rotulo = campo.closest('label');
     if (!rotulo || rotulo.parentElement.classList.contains('pal-campo')) return;
@@ -44,20 +52,41 @@
     painel.innerHTML = `<summary>${esc(dados.titulo)} <span class="pal-conta"></span></summary>
       ${dados.grupos.map(([nome, lista]) => `<div class="pal-grupo"><span class="pal-nome">${esc(nome)}</span><div class="pal-chips">${lista.map(p => `<button type="button" class="pal-chip" data-pal="${esc(p)}" aria-pressed="false">${esc(p)}</button>`).join('')}</div></div>`).join('')}`;
     caixa.append(painel);
-    const chips = [...painel.querySelectorAll('[data-pal]')];
+    const mais = document.createElement('div');
+    mais.className = 'pal-mais';
+    mais.innerHTML = `<button type="button" class="btn pal-mais-btn" data-pal-mais aria-expanded="false">+ Acrescentar mais palavras</button>
+      <div class="pal-mais-caixa" hidden><input type="search" data-pal-busca aria-label="Procurar nos termos da mineração" placeholder="Procurar nos termos da mineração…" autocomplete="off"><p class="pal-mais-info" role="status"></p><div class="pal-chips pal-mais-lista"></div></div>`;
+    caixa.append(mais);
     const sincronizar = () => {
       const marcadas = new Set(palavras(campo).map(semAcento));
-      let n = 0;
-      for (const c of chips) {
-        const sim = marcadas.has(semAcento(c.dataset.pal));
-        c.setAttribute('aria-pressed', String(sim));
-        if (sim) n++;
-      }
-      painel.querySelector('.pal-conta').textContent = n ? `(${n})` : '';
+      for (const c of caixa.querySelectorAll('[data-pal]')) c.setAttribute('aria-pressed', String(marcadas.has(semAcento(c.dataset.pal))));
+      painel.querySelector('.pal-conta').textContent = marcadas.size ? `(${marcadas.size})` : '';
     };
+    const busca = mais.querySelector('[data-pal-busca]'), info = mais.querySelector('.pal-mais-info'), lista = mais.querySelector('.pal-mais-lista');
+    let termos = null;
+    const desenharTermos = () => {
+      const q = semAcento(busca.value);
+      const achados = termos.filter(t => semAcento(t).includes(q));
+      lista.innerHTML = achados.map(t => `<button type="button" class="pal-chip" data-pal="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join('');
+      info.textContent = achados.length ? (q ? `${achados.length} de ${termos.length} termos` : `${termos.length} termos usados na mineração`) : 'Nenhum termo com esse nome. Você também pode digitar a palavra no campo acima.';
+      sincronizar();
+    };
+    mais.querySelector('[data-pal-mais]').addEventListener('click', async e => {
+      const caixaMais = mais.querySelector('.pal-mais-caixa');
+      caixaMais.hidden = !caixaMais.hidden;
+      e.currentTarget.setAttribute('aria-expanded', String(!caixaMais.hidden));
+      if (caixaMais.hidden) return;
+      busca.focus();
+      if (termos) return;
+      info.textContent = 'Carregando…';
+      try { termos = (await lerTermos()).termos; desenharTermos(); } catch (err) { info.textContent = err.message; }
+    });
+    busca.addEventListener('input', () => { if (termos) desenharTermos(); });
+    busca.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); }); // Enter aqui não salva o formulário
     painel.addEventListener('toggle', sincronizar);
     campo.addEventListener('input', sincronizar);
-    painel.addEventListener('click', e => {
+    vigiar(campo, sincronizar);
+    caixa.addEventListener('click', e => {
       const c = e.target.closest('[data-pal]');
       if (!c) return;
       const alvo = semAcento(c.dataset.pal);
@@ -65,6 +94,35 @@
       const resto = lista.filter(p => semAcento(p) !== alvo);
       campo.value = (resto.length === lista.length ? [...lista, c.dataset.pal] : resto).join(', ');
       campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    sincronizar();
+  }
+
+  // "Só destas lojas": tocar para marcar. O campo continua guardando os identificadores das lojas.
+  async function montarLojas(campo) {
+    const rotulo = campo.closest('label');
+    if (!rotulo) return;
+    let lojas;
+    try { lojas = (await lerTermos()).lojas; } catch { return; } // sem a lista, o campo de texto continua valendo
+    const caixa = document.createElement('div');
+    caixa.className = 'pal-campo';
+    rotulo.replaceWith(caixa);
+    caixa.append(rotulo);
+    campo.type = 'hidden';
+    const area = document.createElement('div');
+    area.className = 'pal-chips pal-lojas';
+    area.setAttribute('role', 'group');
+    area.setAttribute('aria-label', 'Lojas das ofertas automáticas');
+    area.innerHTML = lojas.map(l => `<button type="button" class="pal-chip" data-pal-loja="${esc(l.id)}" aria-pressed="false">${esc(l.nome)}</button>`).join('');
+    caixa.append(area);
+    const marcadas = () => String(campo.value || '').split(/[,;\s]+/).filter(Boolean);
+    const sincronizar = () => { const m = marcadas(); area.querySelectorAll('[data-pal-loja]').forEach(b => b.setAttribute('aria-pressed', String(m.includes(b.dataset.palLoja)))); };
+    vigiar(campo, sincronizar);
+    area.addEventListener('click', e => {
+      const b = e.target.closest('[data-pal-loja]');
+      if (!b) return;
+      const m = marcadas();
+      campo.value = (m.includes(b.dataset.palLoja) ? m.filter(x => x !== b.dataset.palLoja) : [...m, b.dataset.palLoja]).join(', ');
     });
     sincronizar();
   }
@@ -86,7 +144,8 @@
     let dados = null;
     const oculto = el.closest('form')?.querySelector('[name="agenda_cupons_redes"]');
     const marcadas = () => [...el.querySelectorAll('[data-cup-rede]:checked')].map(c => c.dataset.cupRede);
-    const guardar = () => { if (oculto) oculto.value = JSON.stringify(marcadas()); };
+    // Rede marcada que está fora do ar agora continua marcada ao salvar
+    const guardar = () => { if (oculto) oculto.value = JSON.stringify([...marcadas(), ...dados.redes.filter(r => r.marcada && !r.pronta).map(r => r.id)]); };
     function desenharRedes() {
       el.querySelector('[data-cup-redes]').innerHTML = dados.redes.map(r => `<label class="cup-rede${r.pronta ? '' : ' fora'}"><input type="checkbox" data-cup-rede="${esc(r.id)}"${r.marcada && r.pronta ? ' checked' : ''}${r.pronta ? '' : ' disabled'}> ${esc(r.nome)}${r.pronta ? '' : ' <small>não configurada</small>'}</label>`).join('');
       guardar();
@@ -124,6 +183,7 @@
     for (const [nome, dados] of Object.entries(SUGESTOES)) {
       document.querySelectorAll(`input[name="${nome}"]`).forEach(c => montarSugestoes(c, dados));
     }
+    document.querySelectorAll('input[name="agenda_lojas"]').forEach(montarLojas);
     document.querySelectorAll('[data-lista-cupons]').forEach(montarCupons);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);

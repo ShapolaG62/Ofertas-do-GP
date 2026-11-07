@@ -50,7 +50,8 @@
 
   // ── Estado (espelhado na URL para links compartilháveis) ─────────────────
   const PAGINA_SEO = window.OFERTOU_PAGINA || null; // /ofertas/celulares etc. (src/paginas/ofertas-seo.js)
-  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', ordem: 'destaques', pagina: 1 };
+  const state = { loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', ordem: 'destaques', pagina: 1, vista: '' };
+  let CUPONS = null; // lista de cupons ativos (a vista "Cupons" troca os produtos por ela)
   // Resposta do servidor para os filtros atuais: { total, pagina, paginas, itens, contagens, grupos, resumo }
   let DATA = { total: 0, pagina: 1, paginas: 1, itens: [], contagens: { lojas: {}, parceiros: 0, categorias: {}, categorias_total: 0, subcategorias: {} }, grupos: null, resumo: null };
   let carregou = false;
@@ -73,6 +74,7 @@
     state.cupom = (p.get('cupom') || '').toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30);
     state.ordem = p.get('ordem') || 'destaques';
     state.pagina = Math.max(1, Number(p.get('pagina')) || 1);
+    state.vista = location.pathname.replace(/\/+$/, '') === '/cupons' ? 'cupons' : '';
     if (PAGINA_SEO) for (const k of ['cat', 'tipo', 'q']) if (!p.has(k)) state[k] = PAGINA_SEO[k] || '';
   }
 
@@ -89,11 +91,13 @@
     if (state.ordem !== 'destaques') p.set('ordem', state.ordem);
     if (state.pagina > 1) p.set('pagina', state.pagina);
     const qs = p.toString();
-    const base = naPagina ? PAGINA_SEO.caminho : PAGINA_SEO ? '/' : location.pathname;
+    const base = state.vista === 'cupons' ? '/cupons' : naPagina ? PAGINA_SEO.caminho : PAGINA_SEO || location.pathname.replace(/\/+$/, '') === '/cupons' ? '/' : location.pathname;
     history.replaceState(null, '', qs ? `${base}?${qs}` : base);
   }
 
   function setFilter(changes, { keepPage = false } = {}) {
+    // Na vista de cupons só a loja continua valendo; qualquer outro filtro volta para os produtos
+    if (state.vista && !('vista' in changes) && Object.keys(changes).some(k => k !== 'loja')) state.vista = '';
     Object.assign(state, changes);
     if ('cat' in changes && !('tipo' in changes)) state.tipo = '';
     if (!keepPage) state.pagina = 1;
@@ -269,8 +273,8 @@
       <span>${cupomMl(k.codigo) ? `<b>${esc(k.texto || 'Cupom')}</b> <small>Mercado Livre</small>` : `<b class="cupom-cod">${esc(k.codigo)}</b>${k.texto ? ` <small>${esc(k.texto)}</small>` : ''}`}</span><span class="count">${k.n}</span></button></li>`).join('');
     const aberto = cuponsAberto || Boolean(state.cupom);
     return `<li class="rl-item">
-        <div class="rl-linha${state.cupom ? ' is-ativa' : ''}">
-          <button class="rl-nome" type="button" data-abrir-cupons aria-expanded="${aberto}">${rlIco('cupom')}<span>Cupons</span></button>
+        <div class="rl-linha${state.cupom || state.vista ? ' is-ativa' : ''}">
+          <button class="rl-nome" type="button" data-ver-cupons aria-pressed="${Boolean(state.vista)}">${rlIco('cupom')}<span>Cupons</span></button>
           <button class="rl-abrir" type="button" data-abrir-cupons aria-expanded="${aberto}" aria-label="Ver os cupons">${RL_SETA}</button>
         </div>${aberto ? `<ul class="filter-list cupons-list rl-sub">
         <li><button class="filter-option" type="button" data-cupom="" aria-pressed="${!state.cupom}"><span>Com ou sem cupom</span></button></li>
@@ -316,6 +320,7 @@
     }
     if (state.desc) items.push(['desc', `${state.desc}% ou mais`]);
     if (state.com) items.push(['com', 'Comissão extra']);
+    if (state.vista) items.push(['vista', 'Cupons ativos']);
     if (state.cupom) items.push(['cupom', state.cupom === '1' ? 'Com cupom' : cupomMl(state.cupom) ? 'Cupom do Mercado Livre' : `Cupom ${state.cupom}`]);
     const any = items.length || state.loja || state.cat;
     $('#active-filters').innerHTML = items.map(([k, label]) =>
@@ -371,7 +376,46 @@
       ${hasFilters ? '<button class="btn" type="button" data-clear>Limpar filtros</button>' : ''}</div>`;
   }
 
+  // Vista "Cupons": os cupons ativos no lugar dos produtos, separados por loja
+  function cupomHtml(c) {
+    const nome = c.ml ? (c.texto || 'Cupom') : c.codigo;
+    const det = c.ml ? `${c.minimo ? `Acima de R$ ${Number(c.minimo).toLocaleString('pt-BR')}. ` : ''}Sem código: ative em Cupons, no Mercado Livre` : `${c.texto ? `${c.texto}. ` : ''}Use no pagamento da loja`;
+    const principal = c.ml
+      ? `<button class="btn btn-primary" type="button" data-cupom-ml="${esc(c.texto || '')}">Ativar cupom</button>`
+      : `<button class="btn btn-primary" type="button" data-copiar-cupom="${esc(c.codigo)}">Copiar cupom</button>`;
+    const ofertas = c.ofertas ? `<button class="btn" type="button" data-ver-ofertas-cupom="${esc(c.codigo)}">Ver ${c.ofertas === 1 ? '1 oferta' : `${Number(c.ofertas).toLocaleString('pt-BR')} ofertas`}</button>` : '';
+    return `<article class="cupom-cartao"><b class="cupom-nome">${esc(nome)}</b><p>${esc(det)}</p><div class="cupom-botoes">${principal}${ofertas}</div></article>`;
+  }
+  async function carregarCupons() {
+    try {
+      const r = await fetch('/api/cupons');
+      if (!r.ok) throw new Error(String(r.status));
+      CUPONS = (await r.json()).cupons;
+    } catch { CUPONS = []; }
+    if (state.vista) renderCupons();
+  }
+  function renderCupons() {
+    $('#results-title').textContent = state.loja && STORE_BY_ID[state.loja] ? `Cupons da ${STORE_BY_ID[state.loja].name}` : 'Cupons ativos';
+    $('#pagination').innerHTML = '';
+    if (!CUPONS) {
+      $('#results-count').textContent = '';
+      $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join('');
+      return carregarCupons();
+    }
+    const lista = CUPONS.filter(c => !state.loja || c.store_id === state.loja);
+    $('#results-count').textContent = `${lista.length} cupo${lista.length === 1 ? 'm' : 'ns'} · regras e validade na própria loja`;
+    if (!lista.length) {
+      $('#grid').innerHTML = `<div class="empty"><img src="/images/pet-capi.png" alt="" width="120"><h3>Nenhum cupom ativo${state.loja ? ' nesta loja' : ''} agora</h3><p>A lista é atualizada várias vezes por dia. Volte mais tarde.</p><button class="btn" type="button" data-clear>Ver as ofertas</button></div>`;
+      return;
+    }
+    const lojas = new Map();
+    for (const c of lista) { if (!lojas.has(c.loja)) lojas.set(c.loja, []); lojas.get(c.loja).push(c); }
+    $('#grid').innerHTML = [...lojas.entries()].map(([loja, itens]) => `<div class="group-title">${esc(loja)} <span>${itens.length} cupo${itens.length === 1 ? 'm' : 'ns'}</span></div>${itens.map(cupomHtml).join('')}`).join('');
+  }
+
   function renderGrid() {
+    $('#sort').hidden = Boolean(state.vista);
+    if (state.vista) return renderCupons();
     const pages = DATA.paginas;
     state.pagina = DATA.pagina;
     const pageItems = DATA.itens;
@@ -560,6 +604,12 @@
     if (t.dataset.loja !== undefined) return setFilter({ loja: t.dataset.loja });
     if (t.dataset.abrirCat !== undefined) return abrirCategoria(t.dataset.abrirCat);
     if (t.dataset.abrirCupons !== undefined) { cuponsAberto = !(cuponsAberto || state.cupom); return renderFilters(); }
+    if (t.dataset.verCupons !== undefined) {
+      if ($('#filters-dialog').open) $('#filters-dialog').close();
+      setFilter({ vista: 'cupons', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', loja: STORE_BY_ID[state.loja] ? state.loja : '' });
+      $('#ofertas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     if (t.dataset.verCats !== undefined) { verTodasCats = !verTodasCats; return renderFilters(); }
     if (t.dataset.subCat !== undefined) {
       const mesmo = state.cat === t.dataset.subCat && state.tipo === t.dataset.subTipo;
@@ -579,7 +629,7 @@
       return setFilter(k === 'preco' ? { min: null, max: null } : { [k]: k === 'desc' ? 0 : '' });
     }
     if (t.dataset.clear !== undefined) {
-      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '' });
+      return setFilter({ loja: '', cat: '', tipo: '', q: '', min: null, max: null, desc: 0, com: '', cupom: '', vista: '' });
     }
   }
 
@@ -782,6 +832,12 @@
   }
   $('#grid').addEventListener('click', e => {
     if (e.target.closest('[data-select], [data-enviar]')) return;
+    const verOfertas = e.target.closest('[data-ver-ofertas-cupom]');
+    if (verOfertas) {
+      setFilter({ vista: '', cupom: verOfertas.dataset.verOfertasCupom, loja: '' });
+      $('#ofertas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const b = e.target.closest('[data-copiar-cupom]');
     if (b) { e.preventDefault(); e.stopPropagation(); return copiarCupom(b.dataset.copiarCupom); }
     // Cupom do Mercado Livre: o botão abre a central de cupons (lá a pessoa toca em "Aplicar"); o cartão só avisa
@@ -962,6 +1018,7 @@
     $('#expired-notice').hidden = false;
     history.replaceState(null, '', location.pathname);
   }
+  if (state.vista) setTimeout(() => $('#ofertas')?.scrollIntoView({ block: 'start' }), 0); // veio do "Ver mais" da lista de cupons
   if (!$('#grid').children.length) $('#grid').innerHTML = Array.from({ length: 8 }, () => '<div class="skeleton"></div>').join(''); // (a página de categoria já vem com as ofertas)
 
   fetch('/api/settings/public').then(r => r.json()).then(applySettings).catch(() => {});

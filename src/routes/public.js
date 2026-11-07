@@ -15,18 +15,23 @@ const router = express.Router();
 // Todos os cupons ativos: o destino do "Ver mais" da lista postada nos grupos
 // Com ?de=<afiliado> as ofertas abrem com os links de afiliado dele.
 router.get('/cupons', (req, res) => {
-  res.setHeader('Cache-Control', 'public, max-age=300');
-  const lista = require('../lista-cupons').ativos();
   const paginas = require('../paginas/cupons');
   const de = /^\d{1,12}$/.test(String(req.query.de || '')) ? Number(req.query.de) : null;
   const cid = de && db.get(`SELECT id FROM clientes WHERE id = ? AND status = 'ativo' AND validade >= datetime('now')`, de)?.id;
-  if (!cid) return res.type('html').send(paginas.pagina(lista));
+  // Sem afiliado: é a própria página de ofertas, já mostrando os cupons
+  if (!cid) { res.setHeader('Cache-Control', 'no-cache'); return res.type('html').send(paginas.paginaSite(settings.get('site_url'))); }
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  const lista = require('../lista-cupons').ativos();
   const cupom = lista.find(c => c.codigo === String(req.query.cupom || ''));
   if (!cupom) return res.type('html').send(paginas.pagina(lista, { cid }));
   const ativo = offers.activeClause();
   const itens = db.all(`SELECT o.id, o.produto, o.preco_atual, o.preco_anterior FROM offers o
     WHERE o.cupom_codigo = ? AND o.store_id = ? AND ${ativo.sql} ORDER BY o.desconto_pct DESC LIMIT 60`, cupom.codigo, cupom.store_id, ...ativo.params);
   res.type('html').send(paginas.paginaOfertas(cupom, itens, cid));
+});
+router.get('/api/cupons', (req, res) => {
+  res.setHeader('Cache-Control', 'private, no-cache');
+  res.json({ cupons: require('../lista-cupons').ativos() });
 });
 // Imagem da lista para o Instagram, que só publica com foto
 router.get('/cupons/imagem.jpg', async (req, res) => {

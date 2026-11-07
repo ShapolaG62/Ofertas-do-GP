@@ -848,7 +848,8 @@ window.addEventListener('message', e => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
   if (e.data.tipo === 'pode-ir-ofertas') clearTimeout(coletaEspera);
   if (e.data.tipo === 'pode-ir-ofertas') window.top.location.href = 'https://www.mercadolivre.com.br/ofertas?container_id=MLB779362-1&promotion_type=lightning';
-  if (e.data.tipo === 'instalada') { extensaoInstalada = true; extensaoVersao = String(e.data.versao || ''); mostrarExtensao(); }
+  if (e.data.tipo === 'instalada') { extensaoInstalada = true; extensaoVersao = String(e.data.versao || ''); mostrarExtensao(); portaisAoAbrir(); }
+  if (e.data.tipo === 'ganhos-portal') receberPortais(e.data.resultados);
   if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; $('#mlc-auto').hidden = false; $('#mlc-sem-ext').hidden = true; }
   if (e.data.tipo === 'pode-ir') window.top.location.href = ML_HUB;
   if (e.data.tipo === 'pode-ir-cupons') window.top.location.href = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
@@ -1965,17 +1966,17 @@ async function loadGanhos() {
   $('#gn-sync-lista').innerHTML = Object.entries(GN.sync.plataformas).map(([id, x]) => `<div class="gn-sync-item">
     <span class="gn-ponto ${!x.automatica ? 'manual' : x.ok === true ? 'ok' : x.ok === false ? 'erro' : ''}"></span>
     <div><b>${esc(nomes[id] || id)}</b><small>${esc(x.mensagem || '')}</small>
-    <span class="gn-tag">${x.automatica ? `🔄 Automática${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : '📄 Pela planilha do portal'}</span></div></div>`).join('');
+    <span class="gn-tag">${x.extensao ? `🧩 Pela extensão do Chrome${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : x.automatica ? `🔄 Automática${x.em ? ` · ${fmtDate(x.em.replace('T', ' ').slice(0, 19))}` : ''}` : '📄 Pela planilha do portal'}</span></div></div>`).join('');
   // Cartões das plataformas
   $('#gn-plataformas').innerHTML = GN.plataformas.map(p => {
     const pct = p.minimo > 0 ? Math.min(100, Math.round((p.disponivel / p.minimo) * 100)) : (p.disponivel > 0 ? 100 : 0);
     return `<div class="gn-card${p.pode_sacar ? ' is-pronto' : ''}${p.ativo ? '' : ' is-off'}">
       <div class="gn-card-topo"><b>${lojaLogo(p.id, p.nome)}</b>${p.pode_sacar ? '<span class="badge b-active">Pode sacar</span>' : ''}</div>
-      <div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div>
+      <div class="gn-saldos"><div class="gn-saldo">${gnMoeda(p.disponivel, p.moeda)}<small>disponível</small></div><div class="gn-saldo gn-saldo-liberar">${gnMoeda(p.a_liberar, p.moeda)}<small>a liberar</small></div></div>
       <div class="gn-barra" title="${pct}% do mínimo"><span style="width:${pct}%"></span></div>
       <div class="hint" style="margin:6px 0 0">Mínimo: <b>${p.minimo ? gnMoeda(p.minimo, p.moeda) : 'não informado'}</b>${p.falta > 0 ? ` · faltam ${gnMoeda(p.falta, p.moeda)}` : ''}</div>
-      <div class="hint" style="margin:2px 0 0">A liberar: <b>${gnMoeda(p.a_liberar, p.moeda)}</b>${p.proxima_liberacao ? ` (próxima em ${gnDia(p.proxima_liberacao)})` : ''} · Recebido: ${gnMoeda(p.recebido, p.moeda)}</div>
-      ${p.estimado ? `<div class="hint gn-estimado">📡 Disponível = ganho estimado no painel do Mercado Livre, lido em ${fmtDate(p.estimado.em)}</div>` : ''}
+      <div class="hint" style="margin:2px 0 0">Recebido: <b>${gnMoeda(p.recebido, p.moeda)}</b>${p.proxima_liberacao ? ` · próxima liberação: ${/^\d{4}-/.test(p.proxima_liberacao) ? gnDia(p.proxima_liberacao) : esc(p.proxima_liberacao)}` : ''}</div>
+      ${p.leitura?.em ? `<div class="hint gn-estimado">📡 Saldo lido do portal em ${fmtDate(p.leitura.em)}</div>` : p.estimado ? `<div class="hint gn-estimado">📡 A liberar = ganho estimado no painel do Mercado Livre, lido em ${fmtDate(p.estimado.em)}</div>` : ''}
       <div class="hint" style="margin:2px 0 0">${p.vendas} venda(s) · libera em ${p.dias_liberacao} dias</div>
       <div class="gn-card-acoes">
         <button class="btn small${p.pode_sacar ? ' primary' : ''}" data-gn-saque="${p.id}">Registrar saque</button>
@@ -2008,6 +2009,49 @@ async function loadGanhos() {
     <td class="num"><button class="btn small danger" data-gn-del-saque="${s.id}">✕</button></td></tr>`).join('')
     : '<tr><td colspan="5" class="hint">Nenhum saque registrado.</td></tr>';
   atualizarSino(GN.notificacoes.length);
+  portaisSeVelhos(30);
+}
+
+// Mercado Livre e Magalu: a extensão lê o saldo e as vendas no portal, sem abrir página nenhuma
+const NOME_PORTAL = { mercadolivre: 'Mercado Livre', magalu: 'Magalu' };
+let portalLendo = false, portalEspera = null, portalAvisar = false, portalTentou = 0, portalAbriu = false;
+const extensaoLeGanhos = () => { const [a, b] = extensaoVersao.split('.').map(Number); return a > 2 || (a === 2 && b >= 12); };
+function lerPortais(avisar = false) {
+  if (!extensaoInstalada || !extensaoLeGanhos() || portalLendo) return false;
+  portalLendo = true; portalAvisar = avisar; portalTentou = Date.now();
+  clearTimeout(portalEspera);
+  portalEspera = setTimeout(() => { portalLendo = false; if (avisar) globalMsg('A extensão não respondeu. Recarregue a extensão em chrome://extensions e atualize esta página.', false); }, 180000);
+  window.postMessage({ ofertouPainel: true, tipo: 'ler-ganhos' }, location.origin);
+  return true;
+}
+function portaisSeVelhos(minutos) {
+  if (!GN || Date.now() - portalTentou < 30 * 60000) return;
+  const velho = GN.plataformas.filter(p => ['mercadolivre', 'magalu'].includes(p.id)).some(p => {
+    const em = p.leitura?.lido_em;
+    return !em || Date.now() - new Date(`${em.replace(' ', 'T')}Z`).getTime() > minutos * 60000;
+  });
+  if (velho) lerPortais();
+}
+// Ao abrir o painel, mesmo sem entrar em Ganhos: mantém o saldo e os avisos de saque em dia
+async function portaisAoAbrir() {
+  if (portalAbriu || !extensaoLeGanhos()) return;
+  portalAbriu = true;
+  try { GN = GN || await api('/api/admin/ganhos'); portaisSeVelhos(6 * 60); } catch { /* tenta ao abrir Ganhos */ }
+}
+async function receberPortais(resultados = {}) {
+  clearTimeout(portalEspera);
+  const partes = [];
+  let erros = 0;
+  for (const id of ['mercadolivre', 'magalu']) {
+    const r = resultados[id] || { erro: resultados.erro || 'A extensão não respondeu.' };
+    try {
+      const x = await api('/api/admin/ganhos/portal', { method: 'POST', body: { plataforma: id, ...r } });
+      if (r.erro) { erros++; partes.push(`${NOME_PORTAL[id]}: ${r.erro}`); } else partes.push(`${NOME_PORTAL[id]}: ${x.novas} venda(s) nova(s), ${x.atualizadas} atualizada(s)`);
+    } catch (err) { erros++; partes.push(`${NOME_PORTAL[id]}: ${err.message}`); }
+  }
+  portalLendo = false;
+  if (portalAvisar) globalMsg(partes.join(' · '), !erros);
+  if (!$('[data-body="ganhos"]')?.classList.contains('hidden')) loadGanhos(); else GN = null;
 }
 
 // Janela simples para saque e regras
@@ -2034,6 +2078,9 @@ $('#gn-sync').addEventListener('click', async () => {
       globalMsg(`Sincronização concluída: ${total} venda(s) nova(s).`);
     }
   } catch (err) { globalMsg(err.message, false); }
+  if (extensaoInstalada && !extensaoLeGanhos()) globalMsg('Para ler o Mercado Livre e a Magalu, atualize a extensão: baixe de novo em Mineração, descompacte por cima da mesma pasta e toque em recarregar em chrome://extensions.', false);
+  else if (!extensaoInstalada) globalMsg('Para ler o Mercado Livre e a Magalu, abra este painel no Chrome com a extensão instalada (Mineração → Extensão do Chrome).', false);
+  else lerPortais(true);
   loadGanhos();
 });
 

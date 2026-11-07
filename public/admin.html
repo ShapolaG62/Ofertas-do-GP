@@ -114,7 +114,10 @@
   .gn-card.is-pronto { border-color: var(--green-line); box-shadow: 0 0 0 1px var(--green-line); }
   .gn-card.is-off { opacity: .55; }
   .gn-card-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .gn-saldo { font-size: 24px; font-weight: 800; margin-top: 6px; }
+  .gn-saldos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .gn-saldos > * { min-width: 0; overflow-wrap: anywhere; }
+  .gn-saldo { font-size: clamp(19px, 5.4vw, 24px); font-weight: 800; margin-top: 6px; }
+  .gn-saldo-liberar { color: var(--muted); }
   .gn-saldo small { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); }
   .gn-barra { height: 6px; border-radius: 6px; background: var(--border); overflow: hidden; margin-top: 6px; }
   .gn-barra span { display: block; height: 100%; background: var(--green); }
@@ -694,14 +697,14 @@
     .side.menu-cel-aberto .tab { width: 100%; white-space: normal; font-size: 15px; }
   }
 </style>
-<script src="/js/tema.js?v=20261310"></script>
-<script src="/js/dialogo.js?v=20261310"></script>
-<script src="/js/modelo-post.js?v=20261310"></script>
-<script src="/js/avisos-entrada.js?v=20261310"></script>
-<script src="/js/capi-minerando.js?v=20261310" defer></script>
-<script src="/js/cadastro-auto.js?v=20261310" defer></script>
-<script src="/js/seletor.js?v=20261310" defer></script>
-<link rel="stylesheet" href="/css/envio.css?v=20261310">
+<script src="/js/tema.js?v=20261311"></script>
+<script src="/js/dialogo.js?v=20261311"></script>
+<script src="/js/modelo-post.js?v=20261311"></script>
+<script src="/js/avisos-entrada.js?v=20261311"></script>
+<script src="/js/capi-minerando.js?v=20261311" defer></script>
+<script src="/js/cadastro-auto.js?v=20261311" defer></script>
+<script src="/js/seletor.js?v=20261311" defer></script>
+<link rel="stylesheet" href="/css/envio.css?v=20261311">
 </head>
 <body>
 <div class="wrap">
@@ -1349,7 +1352,7 @@
         <div class="panel">
           <div class="row" style="gap:10px;align-items:center"><h2 style="flex:1;margin:0">Sincronização das vendas</h2>
             <button class="btn primary" type="button" id="gn-sync">Sincronizar agora</button></div>
-          <p class="hint">O site busca sozinho (a cada 6 horas) as vendas dos programas que têm API de relatório. Os outros não oferecem esse acesso: as vendas deles entram importando a planilha do portal, logo abaixo.</p>
+          <p class="hint">Shopee e KaBuM! entram sozinhos, a cada 6 horas. Mercado Livre e Magalu são lidos pela extensão do Chrome quando este painel está aberto, com o portal logado no mesmo Chrome; a extensão não pede senha e não guarda nome de cliente. Amazon e AliExpress entram pela planilha, logo abaixo.</p>
           <div class="gn-sync-lista" id="gn-sync-lista"></div>
           <details class="hint" style="margin-top:10px"><summary><b>KaBuM! (Awin): ligar a sincronização</b></summary>
             <p style="margin:8px 0">Na Awin, abra <b>Ferramentas → API</b> (ou <i>Toolbox → API Credentials</i>), gere a chave e copie também o seu <b>ID de publisher</b> (o número da sua conta).</p>
@@ -2234,11 +2237,11 @@ GET    /api/wa/colecoes              (?numero=)</pre></details>
   </form>
 </dialog>
 
-<script src="/js/menu-celular.js?v=20261310"></script>
-<script src="/js/admin.js?v=20261310"></script>
-<script src="/js/wa-temas.js?v=20261310"></script>
-<script src="/js/envio-resultados.js?v=20261310"></script>
-<script src="/js/wa-proprio.js?v=20261310"></script>
-<script src="/js/agenda-extras.js?v=20261310"></script>
+<script src="/js/menu-celular.js?v=20261311"></script>
+<script src="/js/admin.js?v=20261311"></script>
+<script src="/js/wa-temas.js?v=20261311"></script>
+<script src="/js/envio-resultados.js?v=20261311"></script>
+<script src="/js/wa-proprio.js?v=20261311"></script>
+<script src="/js/agenda-extras.js?v=20261311"></script>
 </body>
 </html>

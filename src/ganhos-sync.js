@@ -1,8 +1,8 @@
 // Sincronização automática dos ganhos de afiliados com os programas que têm API de relatório:
 //  • Shopee Afiliados: relatório de conversões da Open API (as mesmas chaves da mineração: App ID e Senha da API);
 //  • KaBuM! (Awin): API de transações da Awin (ID de publisher + chave da API, em Painel → Ganhos de afiliados).
-// Mercado Livre, Amazon e Magalu não oferecem API de relatório para afiliados: as vendas deles entram pela
-// importação da planilha exportada do portal (Painel → Ganhos de afiliados → Importar vendas).
+// Mercado Livre e Magalu não oferecem API aberta: a extensão do Chrome lê o saldo e as vendas no portal, com a sua sessão.
+// Amazon e AliExpress entram pela planilha exportada do portal (Painel → Ganhos de afiliados → Importar vendas).
 // Roda a cada 6 horas e pelo botão "Sincronizar agora". Cada venda é gravada uma vez (e atualizada se mudar de situação).
 const crypto = require('crypto');
 const settings = require('./settings');
@@ -91,9 +91,7 @@ async function awin(s, dias = 90) {
 
 const FONTES = { shopee, kabum: awin };
 const SEM_API = {
-  mercadolivre: 'O Mercado Livre não tem API de relatório para afiliados: registre a venda em "Adicionar venda" (com a comissão que aparece no portal) ou importe a planilha, se o portal permitir exportar.',
   amazon: 'A Amazon não tem API de ganhos para associados no Brasil: importe o Relatório de ganhos (CSV) abaixo.',
-  magalu: 'O Parceiro Magalu não tem API de relatório: registre a venda em "Adicionar venda" ou importe a planilha do portal.',
   aliexpress: 'Importe o relatório de pedidos do AliExpress Portals (CSV) abaixo.',
 };
 
@@ -124,6 +122,15 @@ function estado() {
   const lista = {};
   for (const id of Object.keys(FONTES)) lista[id] = { automatica: true, ...(e[id] || { ok: null, mensagem: 'Ainda não sincronizou.' }) };
   for (const [id, msg] of Object.entries(SEM_API)) lista[id] = { automatica: false, ok: null, mensagem: msg };
+  const portais = ganhos.portais();
+  for (const id of ganhos.PORTAIS_ACEITOS) {
+    const p = portais[id] || {};
+    const comErro = p.erro && (!p.lido_em || p.erro_em > p.lido_em);
+    lista[id] = {
+      automatica: true, extensao: true, ok: comErro ? false : p.lido_em ? true : null, em: p.lido_em ? `${p.lido_em.replace(' ', 'T')}Z` : undefined,
+      mensagem: comErro ? p.erro : p.lido_em ? `Saldo e ${p.vendas_lidas} venda(s) lidos do portal.` : 'Ainda não leu. Abra este painel no Chrome com a extensão 2.12 ou mais nova e logado no portal.',
+    };
+  }
   return { rodando, plataformas: lista };
 }
 

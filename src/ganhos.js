@@ -74,6 +74,9 @@ for (const [id, nome, moeda, minimo, dias, pagamento, portal, ordem] of PADRAO) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, id, nome, moeda, minimo, dias, pagamento, portal, ordem);
 }
 
+// Saques registrados depois de uma leitura do portal descontam o saldo até a leitura seguinte
+if (!db.all('PRAGMA table_info(ganhos_saques)').some(c => c.name === 'registrado_em')) db.db.exec('ALTER TABLE ganhos_saques ADD COLUMN registrado_em TEXT');
+
 const plataforma = id => db.get('SELECT * FROM ganhos_plataformas WHERE id = ?', String(id || ''));
 const r2 = n => Math.round(Number(n || 0) * 100) / 100;
 const somaDias = (dataSql, dias) => new Date(new Date(dataSql.replace(' ', 'T') + 'Z').getTime() + dias * 86400000)
@@ -106,6 +109,7 @@ function statusDe(v) {
   const t = String(v ?? '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
   if (!t) return 'pendente';
   if (/cancel|devol|recus|rejeit|invalid|estorn|reemb|refund|reject|void/.test(t)) return 'cancelada';
+  if (/unpaid|nao pag|sem pag|aguard|pendent|pending|a pagar|process|analis|revis|review/.test(t)) return 'pendente'; // antes do "pago": "não pago", "aguardando pagamento"
   if (/\bpag[oa]\b|paid|pagament|transferid|sacad/.test(t)) return 'paga';
   if (/confirm|aprov|conclu|complet|valid|liberad|aceit|approved|settled|disponivel/.test(t)) return 'confirmada';
   return 'pendente';
@@ -123,6 +127,10 @@ function salvarGanhoEstimadoMl(valor) {
   settings.set(ESTIMADO_ML, JSON.stringify({ valor: r2(v), em: nowSql() }));
   return ganhoEstimadoMl();
 }
+// Saldo lido do próprio portal pela extensão do Chrome (Mercado Livre e Magalu): { plataforma: { em, disponivel, a_liberar, recebido, proximo_pagamento, vendas_lidas, erro } }
+const PORTAIS = 'ganhos_portal';
+const PORTAIS_ACEITOS = ['mercadolivre', 'magalu'];
+function portais() { try { return JSON.parse(settings.get(PORTAIS) || '{}') || {}; } catch { return {}; } }
 function resumo(id) {
   const p = plataforma(id);
   const agora = nowSql();
@@ -134,14 +142,25 @@ function resumo(id) {
       MIN(CASE WHEN status = 'confirmada' AND liberada_em > ? THEN liberada_em END) proxima_liberacao
     FROM ganhos_vendas WHERE plataforma = ?`, agora, agora, agora, p.id);
   const sacado = db.get('SELECT COALESCE(SUM(valor), 0) n FROM ganhos_saques WHERE plataforma = ?', p.id).n;
-  // Mercado Livre: o "Ganho estimado" lido no painel de afiliado (extensão do Chrome) é o saldo disponível; cada
-  // leitura substitui a anterior (não soma)
-  const estimado = p.id === 'mercadolivre' ? ganhoEstimadoMl() : null;
-  const disponivel = estimado ? estimado.valor : r2(Math.max(0, v.liberado - sacado));
+  // Venda paga e saque registrado podem ser o mesmo dinheiro: o que passa das vendas pagas é que abate o saldo
+  const recebidoLocal = Math.max(v.pago, sacado);
+  let disponivel = r2(Math.max(0, v.liberado - Math.max(0, sacado - v.pago)));
+  let aLiberar = v.a_liberar, recebido = recebidoLocal, proxima = v.proxima_liberacao;
+  const leitura = portais()[p.id];
+  const lido = leitura?.em ? leitura : null;
+  // Sem leitura do portal, o "Ganho estimado" do Mercado Livre é dinheiro ainda em revisão, não saldo para sacar
+  const estimado = p.id === 'mercadolivre' && !lido ? ganhoEstimadoMl() : null;
+  if (lido) {
+    const depois = db.get('SELECT COALESCE(SUM(valor), 0) n FROM ganhos_saques WHERE plataforma = ? AND registrado_em > ?', p.id, lido.em).n;
+    disponivel = r2(Math.max(0, lido.disponivel - depois));
+    aLiberar = lido.a_liberar;
+    recebido = Math.max(sacado, (lido.recebido || 0) + depois, v.pago);
+    proxima = lido.proximo_pagamento || proxima;
+  } else if (estimado) aLiberar = Math.max(aLiberar, estimado.valor);
   return {
-    ...p, ativo: Boolean(p.ativo), estimado,
-    disponivel, a_liberar: r2(v.a_liberar), recebido: r2(v.pago + sacado), vendas: v.vendas,
-    proxima_liberacao: v.proxima_liberacao,
+    ...p, ativo: Boolean(p.ativo), estimado, leitura: leitura || null,
+    disponivel, a_liberar: r2(aLiberar), recebido: r2(recebido), vendas: v.vendas,
+    proxima_liberacao: proxima,
     pode_sacar: disponivel > 0 && disponivel >= p.minimo,
     falta: r2(Math.max(0, p.minimo - disponivel)),
   };
@@ -238,8 +257,8 @@ function registrarSaque(b) {
   if (!p) throw fail('Plataforma inválida.');
   const valor = numero(b.valor);
   if (!valor || valor <= 0) throw fail('Informe o valor sacado ou recebido.');
-  db.run('INSERT INTO ganhos_saques (plataforma, valor, data, observacao) VALUES (?, ?, ?, ?)',
-    p.id, r2(valor), data(b.data) || nowSql(), String(b.observacao || '').slice(0, 200) || null);
+  db.run('INSERT INTO ganhos_saques (plataforma, valor, data, observacao, registrado_em) VALUES (?, ?, ?, ?, ?)',
+    p.id, r2(valor), data(b.data) || nowSql(), String(b.observacao || '').slice(0, 200) || null, nowSql());
   // Marca como lido o aviso de saldo desta plataforma
   db.run(`UPDATE admin_notificacoes SET lida = 1 WHERE tipo = 'saldo' AND chave LIKE ? AND lida = 0`, `saldo:${p.id}:%`);
   return resumo(p.id);
@@ -339,6 +358,43 @@ function importar(texto, plat, mapa) {
   return { novas, atualizadas, ignoradas };
 }
 
+// ── Leitura do portal pela extensão do Chrome ───────────────────────────────
+// Recebe o saldo e as vendas que a extensão leu no portal, com a sessão do admin. Sem nome de cliente: só pedido, produto e valores.
+function importarPortal(id, b = {}) {
+  const p = plataforma(id);
+  if (!p || !PORTAIS_ACEITOS.includes(p.id)) throw fail('Plataforma inválida.');
+  const todos = portais();
+  if (b.erro) {
+    todos[p.id] = { ...todos[p.id], erro: String(b.erro).slice(0, 200), erro_em: nowSql() };
+    settings.set(PORTAIS, JSON.stringify(todos));
+    return resumo(p.id);
+  }
+  let novas = 0, atualizadas = 0, ignoradas = 0;
+  const vendas = Array.isArray(b.vendas) ? b.vendas.slice(0, 5000) : [];
+  db.transaction(() => {
+    for (const v of vendas) {
+      try {
+        const r = registrar({ plataforma: p.id, externo: v.externo, data_venda: v.data_venda, pedido: v.pedido, produto: v.produto, valor_venda: v.valor_venda, comissao: v.comissao, status: v.status }, 'portal');
+        if (r.novo) novas++; else atualizadas++;
+      } catch { ignoradas++; }
+    }
+  });
+  const valor = v => { const n = Number(v); return v !== null && v !== undefined && v !== '' && Number.isFinite(n) && n >= 0 && n < 1e7 ? r2(n) : null; };
+  const anterior = todos[p.id];
+  const s = b.saldo;
+  const disponivel = s ? valor(s.disponivel) : null;
+  // Saldo fora do ar no portal: as vendas entram e fica o último saldo lido
+  const saldo = disponivel !== null ? {
+    disponivel, a_liberar: valor(s.a_liberar) || 0, recebido: valor(s.recebido),
+    proximo_pagamento: String(s.proximo_pagamento || '').slice(0, 30) || null, em: nowSql(),
+  } : { disponivel: anterior?.disponivel, a_liberar: anterior?.a_liberar, recebido: anterior?.recebido, proximo_pagamento: anterior?.proximo_pagamento, em: anterior?.em };
+  todos[p.id] = { ...saldo, vendas_lidas: vendas.length, lido_em: nowSql() };
+  settings.set(PORTAIS, JSON.stringify(todos));
+  if (s && valor(s.minimo) > 0) db.run('UPDATE ganhos_plataformas SET minimo = ? WHERE id = ?', valor(s.minimo), p.id);
+  verificar();
+  return { novas, atualizadas, ignoradas, saldo_lido: disponivel !== null, plataforma: resumo(p.id) };
+}
+
 // Vendas confirmadas do site (para as conquistas do perfil do admin)
 const vendasConfirmadas = () => db.get(`SELECT COUNT(*) n FROM ganhos_vendas WHERE status IN ('confirmada', 'paga')`).n;
 
@@ -353,5 +409,6 @@ module.exports = {
   salvarGanhoEstimadoMl,
   notificar, painel, resumo, verificar, iniciar, notificacoes, marcarLida, marcarTodasLidas,
   registrar, atualizarStatus, excluir, listar, registrarSaque, saques, excluirSaque, editarPlataforma,
+  portais, importarPortal, PORTAIS_ACEITOS,
   previa, importar, lerCsv, vendasConfirmadas, statusDe, numero, data, STATUS,
 };

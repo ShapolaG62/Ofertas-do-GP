@@ -1,9 +1,123 @@
-// Ofertou! — lê as listas de produtos dos cupons para o minerador de cupons, com a sessão do seu Chrome.
-// Fica aqui porque a central de cupons (www.) não pode ler páginas de lista.mercadolivre.com.br diretamente.
+// Ofertou! — parte da extensão que lê páginas de outros endereços, com a sessão do seu Chrome:
+//  • as listas de produtos dos cupons, para o minerador de cupons;
+//  • o saldo e as vendas de afiliado do Mercado Livre e da Magalu, para Painel → Ganhos.
+// Só lê. Se o portal pedir login ou verificação, para e avisa: quem resolve é você, no próprio portal.
 const TEMPO_MAXIMO = 25000;
+const DIAS_DE_VENDAS = 180; // o Mercado Livre não aceita períodos bem maiores
+const espera = ms => new Promise(r => setTimeout(r, ms));
+const RE_BARRADO = /account-verification|negative_traffic|captcha|\/login|\/lgz\//i;
+
+async function buscar(url) {
+  const parar = new AbortController();
+  const relogio = setTimeout(() => parar.abort(), TEMPO_MAXIMO);
+  try {
+    const r = await fetch(url, { credentials: 'include', signal: parar.signal });
+    if ([401, 403, 429].includes(r.status) || RE_BARRADO.test(r.url)) throw new Error('Entre no portal neste Chrome (ele pediu login ou verificação) e tente de novo.');
+    if (!r.ok) throw new Error(`O portal respondeu com o erro ${r.status}.`);
+    return await r.text();
+  } finally { clearTimeout(relogio); }
+}
+const buscarJson = async url => JSON.parse(await buscar(url));
+
+// Dados prontos que o Mercado Livre manda na própria página
+function estadoDaPagina(html) {
+  const marca = html.indexOf('__NORDIC_RENDERING_CTX__');
+  if (marca < 0) return null;
+  const ini = html.indexOf('{', marca);
+  let d = 0, str = false, esc = false;
+  for (let i = ini; i >= 0 && i < html.length; i++) {
+    const c = html[i];
+    if (str) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') str = false; continue; }
+    if (c === '"') str = true;
+    else if (c === '{') d++;
+    else if (c === '}' && !--d) { try { return JSON.parse(html.slice(ini, i + 1)); } catch { return null; } }
+  }
+  return null;
+}
+// "205" + "6" = 205,60 (o Mercado Livre manda a parte inteira e os centavos separados)
+const valorMl = v => (v?.amount_integer === '' || v?.amount_integer === undefined ? 0 : Number(`${v.amount_integer || 0}.${v.amount_decimal || 0}`) || 0);
+
+function saldoMl(pp) {
+  const b = pp?.pendingBalance?.payment_balance;
+  if (!b || pp.balanceDegraded) return null;
+  const pago = /PAID|PAGO|TRANSFER|COMPLETE|DONE/i;
+  const recebido = (pp.receivedPayments?.items || []).filter(x => pago.test(String(x.status || ''))).reduce((t, x) => t + (Number(x.total_earning) || 0), 0);
+  const d = pp.pendingBalance.payment_date || {};
+  return {
+    disponivel: valorMl(b.approved_amount),
+    a_liberar: Math.max(valorMl(b.pending_amount), valorMl(b.review_amount)) + valorMl(b.shipping_process_amount),
+    recebido: pp.paymentsDegraded ? null : Math.round(recebido * 100) / 100,
+    minimo: Number(`${d.minimum_amount_integer || 0}.${d.minimum_amount_decimal || 0}`) || null,
+    proximo_pagamento: d.payment_day || null,
+  };
+}
+
+const dataMl = d => `${new Date(d.getTime() - 3 * 3600000).toISOString().slice(0, 10)}T00:00:00.000-03:00`;
+async function vendasMl() {
+  const fim = new Date(Date.now() + 86400000), ini = new Date(Date.now() - DIAS_DE_VENDAS * 86400000);
+  const q = new URLSearchParams({ metric_tab: 'general', type: 'GENERAL' });
+  const base = `https://www.mercadolivre.com.br/affiliate-program/api/dashboard/sales/general?${q}&filter_time_range=${dataMl(ini)}--${dataMl(fim)}`;
+  const lista = [];
+  for (let pagina = 1; pagina <= 200; pagina++) {
+    const j = await buscarJson(`${base}&page=${pagina}`);
+    const itens = j.item_list || [];
+    for (const v of itens) {
+      lista.push({
+        externo: `${v.id}-${(String(v.link || '').match(/MLB-?\d+/i) || [v.productName || ''])[0]}`.slice(0, 120),
+        data_venda: v.date, pedido: String(v.id || ''), produto: v.productName || '', valor_venda: v.saleValue,
+        comissao: v.commissionValue, status: v.status,
+      });
+    }
+    if (!itens.length || lista.length >= (Number(j.total_results) || 0)) break;
+    await espera(300);
+  }
+  return lista;
+}
+
+async function mercadoLivre() {
+  const html = await buscar('https://www.mercadolivre.com.br/afiliados/payments');
+  const pp = estadoDaPagina(html)?.appProps?.pageProps;
+  if (!pp) throw new Error('A página Receita não abriu. Entre no Mercado Livre neste Chrome e tente de novo.');
+  return { saldo: saldoMl(pp), vendas: await vendasMl() };
+}
+
+const MAGALU = 'https://rochelle.magazinevoce.com.br/v1';
+async function magalu() {
+  const soma = await buscarJson(`${MAGALU}/checkout/commission/summary`);
+  const vendas = [];
+  let url = `${MAGALU}/showcase/orders`;
+  for (let pagina = 0; url && pagina < 50; pagina++) {
+    const j = await buscarJson(url);
+    // Só o que o Painel precisa: o nome de quem comprou não sai daqui
+    for (const o of j.objects || []) {
+      vendas.push({
+        externo: String(o.id), data_venda: o.created_at, pedido: String(o.ml_order_id || o.id),
+        produto: (o.products || []).map(p => p.title).filter(Boolean).join(' + ').slice(0, 200),
+        valor_venda: o.total, comissao: o.commission, status: o.billed ? 'confirmada' : 'pendente',
+      });
+    }
+    url = j.meta?.next ? new URL(j.meta.next, `${MAGALU}/`).href : null;
+    if (url && new URL(url).hostname !== 'rochelle.magazinevoce.com.br') url = null;
+    if (url) await espera(300);
+  }
+  return { saldo: { disponivel: Number(soma.total_commission) || 0, a_liberar: 0, recebido: null }, vendas };
+}
+
+async function lerGanhos() {
+  const out = {};
+  for (const [id, fn] of [['mercadolivre', mercadoLivre], ['magalu', magalu]]) {
+    try { out[id] = await fn(); } catch (err) { out[id] = { erro: String(err?.message || err).slice(0, 200) }; }
+  }
+  return out;
+}
 
 chrome.runtime.onMessage.addListener((m, sender, responder) => {
-  if (m?.tipo !== 'ler-lista' || sender.id !== chrome.runtime.id) return false;
+  if (sender.id !== chrome.runtime.id) return false;
+  if (m?.tipo === 'ler-ganhos') {
+    lerGanhos().then(responder);
+    return true; // a resposta vem depois
+  }
+  if (m?.tipo !== 'ler-lista') return false;
   let url;
   try { url = new URL(m.url); } catch { responder({ erro: 'endereço inválido' }); return false; }
   if (url.protocol !== 'https:' || url.hostname !== 'lista.mercadolivre.com.br') { responder({ erro: 'endereço fora da lista do Mercado Livre' }); return false; }
@@ -13,5 +127,5 @@ chrome.runtime.onMessage.addListener((m, sender, responder) => {
     .then(async r => responder({ status: r.status, url: r.url, html: r.ok ? await r.text() : '' }))
     .catch(err => responder({ erro: String(err?.message || err) })) // inclui redirecionamento sem fim: esse cupom é pulado
     .finally(() => clearTimeout(relogio));
-  return true; // a resposta vem depois
+  return true;
 });

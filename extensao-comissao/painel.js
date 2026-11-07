@@ -29,6 +29,12 @@
       } });
       avisar({ tipo: 'pode-ir-ofertas' });
     }
+    // Saldo e vendas de afiliado do Mercado Livre e da Magalu, lidos sem abrir página nenhuma
+    if (e.data.tipo === 'ler-ganhos') {
+      let resultados;
+      try { resultados = await chrome.runtime.sendMessage({ tipo: 'ler-ganhos' }); } catch (err) { resultados = { erro: String(err?.message || err) }; }
+      avisar({ tipo: 'ganhos-portal', resultados });
+    }
     // Minerar cupons: páginas da central de cupons, quantos cupons ativos abrir e quantas páginas de produtos por cupom
     if (e.data.tipo === 'buscar-cupons') {
       const n = (v, min, max, pad) => Math.min(Math.max(parseInt(v, 10) || pad, min), max);

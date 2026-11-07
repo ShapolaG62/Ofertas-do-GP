@@ -22,6 +22,8 @@ router.post('/api/admin/ganhos/ml-estimado', tentar(req => ganhos.salvarGanhoEst
 router.post('/api/admin/ganhos/sincronizar', async (req, res) => {
   try { res.json(await require('../ganhos-sync').sincronizar()); } catch (err) { sendError(res, err); }
 });
+// Saldo e vendas lidos no portal pela extensão do Chrome (Mercado Livre e Magalu)
+router.post('/api/admin/ganhos/portal', tentar(req => ganhos.importarPortal(req.body?.plataforma, req.body || {})));
 router.post('/api/admin/ganhos/vendas', tentar(req => { const r = ganhos.registrar(req.body || {}); ganhos.verificar(); return r; }));
 router.patch('/api/admin/ganhos/vendas/:id', tentar(req => { ganhos.atualizarStatus(req.params.id, req.body?.status); return { ok: true }; }));
 router.delete('/api/admin/ganhos/vendas/:id', tentar(req => { ganhos.excluir(req.params.id); return { ok: true }; }));

@@ -74,7 +74,7 @@ app.use(require('./src/routes/whatsapp-api')); // WhatsApp: API própria (conex�
 app.use(['/api/cliente/comissao/previa', '/api/cliente/comissao/importar'], express.json({ limit: '12mb' })); // planilha de vendas
 // A coleta do Mercado Livre entrega milhares de cupons e produtos em lotes grandes: limite maior só para o admin logado
 const jsonMineracao = express.json({ limit: '5mb' });
-app.use('/api/admin/mineracao', (req, res, next) => (auth.isLoggedIn(req) ? jsonMineracao(req, res, next) : next()));
+app.use(['/api/admin/mineracao', '/api/admin/ganhos/portal'], (req, res, next) => (auth.isLoggedIn(req) ? jsonMineracao(req, res, next) : next()));
 app.use(express.json({ limit: '100kb' }));
 
 // Login obrigatório para ver as ofertas (configurável no painel).

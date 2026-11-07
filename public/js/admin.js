@@ -928,9 +928,9 @@ function mlcMostrar() {
 }
 $('#mlc-so-ativos').addEventListener('change', mlcMostrar);
 const mlcN = (id, min, max, pad) => Math.min(Math.max(parseInt($(id).value, 10) || pad, min), max);
-try { const g = JSON.parse(localStorage.getItem('ofertou_ml_cupons') || '{}'); for (const k of ['paginas', 'cupons', 'pagprod', 'maxaplicar']) if (g[k] != null) $(`#mlc-${k}`).value = g[k]; if (g.aplicar != null) $('#mlc-aplicar').checked = g.aplicar; } catch { /* sem armazenamento */ }
+try { const g = JSON.parse(localStorage.getItem('ofertou_ml_cupons') || '{}'); if (g.cupons === 100) delete g.cupons; /* padrão antigo: agora são 300 */ for (const k of ['paginas', 'cupons', 'pagprod', 'maxaplicar']) if (g[k] != null) $(`#mlc-${k}`).value = g[k]; if (g.aplicar != null) $('#mlc-aplicar').checked = g.aplicar; } catch { /* sem armazenamento */ }
 $('#mlc-buscar').addEventListener('click', () => {
-  const p = { paginas: mlcN('#mlc-paginas', 1, 100, 70), cupons: mlcN('#mlc-cupons', 0, 2000, 100), paginasProd: mlcN('#mlc-pagprod', 1, 10, 2),
+  const p = { paginas: mlcN('#mlc-paginas', 1, 100, 70), cupons: mlcN('#mlc-cupons', 0, 2000, 300), paginasProd: mlcN('#mlc-pagprod', 1, 10, 2),
     aplicar: $('#mlc-aplicar').checked, maxAplicar: mlcN('#mlc-maxaplicar', 0, 2000, 300) };
   try { localStorage.setItem('ofertou_ml_cupons', JSON.stringify({ paginas: p.paginas, cupons: p.cupons, pagprod: p.paginasProd, aplicar: p.aplicar, maxaplicar: p.maxAplicar })); } catch { /* */ }
   $('#mlc-buscar').disabled = true;
@@ -955,7 +955,7 @@ function coletarMl() {
   }
   clearTimeout(coletaEspera);
   coletaEspera = setTimeout(() => globalMsg(`A extensão não respondeu. ${RECARREGAR}`, false), 3000);
-  window.postMessage({ ofertouPainel: true, tipo: 'coletar-tudo', paginas: 100, cupons: mlcN('#mlc-cupons', 0, 2000, 100),
+  window.postMessage({ ofertouPainel: true, tipo: 'coletar-tudo', paginas: 100, cupons: mlcN('#mlc-cupons', 0, 2000, 300),
     paginasProd: mlcN('#mlc-pagprod', 1, 10, 2) }, location.origin);
 }
 $('#ml-coleta-ir').addEventListener('click', coletarMl);

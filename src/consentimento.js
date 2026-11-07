@@ -6,7 +6,7 @@
 const db = require('./db');
 
 // Mude a versão sempre que os Termos ou a Política mudarem de forma relevante (aparece na página /privacidade).
-const VERSAO = '2026-11-06';
+const VERSAO = '2026-11-07';
 
 db.db.exec(`
   CREATE TABLE IF NOT EXISTS consentimentos (
@@ -66,7 +66,7 @@ function historico(userId, email) {
 
 // Versão dos Termos do Parceiro (item 6-A). Quem é parceiro e não aceitou esta versão ou uma mais nova (cadastrado antes,
 // criado pelo painel...) aceita ao entrar: Minha conta ou painel do afiliado. Mude só quando o item 6-A mudar.
-const VERSAO_PARCEIRO = '2026-10-20';
+const VERSAO_PARCEIRO = '2026-11-07';
 function pendentesParceiro({ dono, email, papeis }) {
   return papeis.filter(p => !db.get(`SELECT 1 FROM consentimentos WHERE (dono = ? OR (email IS NOT NULL AND email = ?)) AND versao >= ?
     AND ',' || parceiro || ',' LIKE ?`, dono, String(email || '').toLowerCase(), VERSAO_PARCEIRO, `%,${p},%`));

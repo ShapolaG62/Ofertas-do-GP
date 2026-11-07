@@ -3667,3 +3667,7 @@ body .tabs-line:not(.cli-nav) button[aria-selected="true"] { background: var(--a
 .mp-adicionar { display: grid; gap: 6px; padding-top: 4px; }
 .mp-adicionar h3 { margin: 0; font-size: 16px; }
 .mp-adicionar .muted { margin: 0; }
+
+.ass-coluna { display: grid; gap: 16px; min-width: 0; align-content: start; }
+.ass-coluna > .ass-cartao { display: grid; gap: 10px; }
+.ass-coluna > .ass-cartao[hidden] { display: none; }

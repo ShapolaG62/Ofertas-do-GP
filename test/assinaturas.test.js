@@ -34,7 +34,7 @@ test.before(async () => {
       const manda = (o, st = 200) => { res.writeHead(st, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
       if (req.method === 'POST' && url.pathname === '/preapproval') {
         const id = `pre${Object.keys(MP.preapproval).length + 1}xyz`;
-        MP.preapproval[id] = { id, ...dados, init_point: `https://mp.test/checkout/${id}` };
+        MP.preapproval[id] = { id, ...dados, ...(MP.statusForcado ? { status: MP.statusForcado } : {}), init_point: `https://mp.test/checkout/${id}` };
         return manda(MP.preapproval[id]);
       }
       let m;
@@ -155,13 +155,18 @@ test('renovação automática: desconto, autorização no Mercado Pago e cobran�
   // Valor diferente: não libera
   MP.pagamentos[7001] = { id: 7001, status: 'approved', transaction_amount: 1 };
   MP.cobrancas[pre.id] = [{ id: 1, payment: { id: 7001, status: 'approved' } }];
-  await pagamentos.verificar(pedido(r.token));
+  await assinaturas.conferirTodas();
   assert.equal(pedido(r.token).status, 'pendente');
 
   // Primeira cobrança aprovada: libera 90 dias
   MP.pagamentos[7002] = { id: 7002, status: 'approved', transaction_amount: 143.91 };
   MP.cobrancas[pre.id] = [{ id: 2, payment: { id: 7002, status: 'approved' } }];
+  // (a página pergunta a cada 5 s: logo depois de consultar, o Mercado Pago não é chamado de novo)
+  const antesDaEspera = MP.pedidos.length;
   await pagamentos.verificar(pedido(r.token));
+  assert.equal(MP.pedidos.length, antesDaEspera);
+  assert.equal(pedido(r.token).status, 'pendente');
+  await assinaturas.conferirTodas();
   const ok = pedido(r.token);
   assert.equal(ok.status, 'aprovado');
   assert.equal(clientes.getById(ok.conta_id).plano, 'pro');
@@ -315,4 +320,73 @@ test('troca para de cobrar o plano antigo no Mercado Pago', async () => {
     await new Promise(r => setTimeout(r, 200));
     assert.equal(MP.preapproval[preId].status, 'cancelled');
   } finally { volta(); }
+});
+
+test('renovação com cartão salvo: autoriza no site, sem sair, e só libera com a cobrança aprovada', async () => {
+  const u = contaLogada();
+  const volta = logar(u);
+  const perfis = require('../src/perfis'), cartoes = require('../src/cartoes');
+  const donoOriginal = perfis.donoDe, cartaoOriginal = cartoes.paraPagamento;
+  perfis.donoDe = () => `u:${u.id}`;
+  const pedidos = [];
+  cartoes.paraPagamento = async (dono, id) => { pedidos.push([dono, id]); return { customer_id: 'c1', payment_method_id: 'visa', cartao: { bandeira: 'Visa', final: '1234' } }; };
+  try {
+    await assert.rejects(pagamentos.criarPedido({ plano: 'pro', metodo: 'mercadopago', renovacao_auto: true, cartao: { card_id: '77' }, ...ACEITES }, req()), /código de segurança/);
+    const r = await pagamentos.criarPedido({ plano: 'pro', metodo: 'mercadopago', renovacao_auto: true, ciclo: 'anual', cartao: { card_id: '77', token: 'tok-12345678' }, ...ACEITES }, req());
+    assert.equal(r.checkout_url, undefined, 'não sai do site');
+    assert.deepEqual(pedidos[0], [`u:${u.id}`, '77']);
+    const p = pedido(r.token);
+    const pre = MP.preapproval[p.mp_preference_id];
+    assert.deepEqual([pre.status, pre.card_token_id, pre.auto_recurring.transaction_amount, pre.auto_recurring.frequency], ['authorized', 'tok-12345678', 539.1, 12]);
+    assert.equal(p.status, 'pendente');
+    const pub = pagamentos.publico(p);
+    assert.deepEqual([pub.cartao_salvo, pub.renovacao_auto, pub.recusado], [true, true, false]);
+    assert.ok(!JSON.stringify(pub).includes('tok-12345678') && !p.dados.includes('tok-12345678'), 'o token do cartão não fica guardado');
+
+    // Cartão recusado: avisa e não libera
+    MP.cobrancas[pre.id] = [{ id: 20, status: 'recycling', payment: { id: 9001, status: 'rejected' } }];
+    MP.pagamentos[9001] = { id: 9001, status: 'rejected', transaction_amount: 539.1 };
+    await assinaturas.conferirTodas();
+    assert.equal(pedido(r.token).status, 'pendente');
+    assert.equal(pagamentos.publico(pedido(r.token)).recusado, true);
+
+    // Aprovada: libera
+    MP.pagamentos[9002] = { id: 9002, status: 'approved', transaction_amount: 539.1 };
+    MP.cobrancas[pre.id] = [{ id: 21, status: 'processed', payment: { id: 9002, status: 'approved' } }];
+    await assinaturas.conferirTodas();
+    assert.equal(pedido(r.token).status, 'aprovado');
+    assert.equal(clientes.getById(users.getById(u.id).cliente_id).plano, 'pro');
+  } finally { perfis.donoDe = donoOriginal; cartoes.paraPagamento = cartaoOriginal; volta(); }
+});
+
+test('cartão salvo não autorizado pelo Mercado Pago cancela o pedido', async () => {
+  const u = contaLogada();
+  const volta = logar(u);
+  const perfis = require('../src/perfis'), cartoes = require('../src/cartoes');
+  const donoOriginal = perfis.donoDe, cartaoOriginal = cartoes.paraPagamento;
+  perfis.donoDe = () => `u:${u.id}`;
+  cartoes.paraPagamento = async () => ({ customer_id: 'c1', payment_method_id: 'visa', cartao: { bandeira: 'Visa', final: '1' } });
+  const antes = process.env.MP_API_URL;
+  try {
+    MP.statusForcado = 'pending';
+    await assert.rejects(pagamentos.criarPedido({ plano: 'pro', metodo: 'mercadopago', renovacao_auto: true, cartao: { card_id: '77', token: 'tok-12345678' }, ...ACEITES }, req()), /não autorizou/);
+    assert.equal(db.get(`SELECT status FROM pagamentos WHERE email = ? ORDER BY id DESC LIMIT 1`, u.email).status, 'cancelado');
+  } finally { MP.statusForcado = null; process.env.MP_API_URL = antes; perfis.donoDe = donoOriginal; cartoes.paraPagamento = cartaoOriginal; volta(); }
+});
+
+test('sem cobrança em 3 dias, desiste e para no Mercado Pago', async () => {
+  const r = await pagamentos.criarPedido(novoAfiliado({ metodo: 'mercadopago', renovacao_auto: true }), req());
+  const p = pedido(r.token);
+  MP.preapproval[p.mp_preference_id].status = 'authorized';
+  db.run(`UPDATE assinaturas_auto SET criada_em = datetime('now', '-4 days') WHERE token = ?`, r.token);
+  await assinaturas.conferirTodas();
+  assert.equal(pedido(r.token).status, 'cancelado');
+  assert.equal(MP.preapproval[p.mp_preference_id].status, 'cancelled');
+  assert.equal(db.get('SELECT status FROM assinaturas_auto WHERE token = ?', r.token).status, 'cancelada');
+});
+
+test('versão nova dos Termos fica registrada na compra', () => {
+  const cons = require('../src/consentimento');
+  assert.equal(cons.VERSAO, '2026-11-07');
+  assert.ok(fs.readFileSync(path.join(__dirname, '../public/privacidade.html'), 'utf8').includes(`Versão <b>${cons.VERSAO}</b>`));
 });

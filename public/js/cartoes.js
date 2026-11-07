@@ -158,7 +158,7 @@
   }
 
   // ── Na compra do plano: cartão salvo já escolhido, "Trocar cartão" e "Cadastrar cartão novo" ──
-  // opcoes: { publicKey, total(), maxParcelas, aoPagar({ token, card_id, installments }), outroCartao() }
+  // opcoes: { publicKey, total(), maxParcelas, renovacao, aoPagar({ token, card_id, installments }), outroCartao() }
   // Devolve false quando a pessoa não pode usar cartões salvos (aí a loja mostra o formulário comum).
   async function escolherNoPedido(area, opcoes) {
     let d;
@@ -168,7 +168,7 @@
     let sel = (lista.find(c => c.id === ultimo()) || lista[0])?.id || null;
     let modo = lista.length ? 'pagar' : 'novo';
     let atualizarParcelas = () => {};
-    const semSalvar = '<p class="ct-nota" style="justify-content:center"><button class="ct-link" type="button" data-ct-sem-salvar>Pagar com um cartão sem salvar</button></p>';
+    const semSalvar = `<p class="ct-nota" style="justify-content:center"><button class="ct-link" type="button" data-ct-sem-salvar>${opcoes.renovacao ? 'Usar um cartão sem salvar, na página do Mercado Pago' : 'Pagar com um cartão sem salvar'}</button></p>`;
 
     area._ctOuvinte?.abort(); // a mesma área pode ser reaproveitada: só o último escolherNoPedido responde
     area._ctOuvinte = new AbortController();
@@ -196,6 +196,7 @@
         const c = lista.find(x => x.id === sel) || lista[0];
         sel = c.id;
         const n = ++seq;
+        const textoPagar = opcoes.renovacao ? 'Autorizar renovação neste cartão' : 'Pagar com este cartão';
         area.innerHTML = `<p class="ct-titulo">Pagar com</p>
           <div class="ct-escolhido">${resumoCartao(c)}</div>
           <div class="ct-acoes">${lista.length > 1 ? '<button class="btn btn-sm" type="button" data-ct-trocar>Trocar cartão</button>' : ''}
@@ -203,11 +204,11 @@
           <form class="ct-pagar" novalidate>
             <div class="ct-linha">
               <label class="ct-rotulo">Código de segurança (CVV)<div class="ct-campo" id="ct-cvv-pedido-${n}"></div></label>
-              <label class="ct-rotulo">Parcelas<select class="ct-campo" name="parcelas"><option value="1">1x</option></select></label>
+              ${opcoes.renovacao ? '' : '<label class="ct-rotulo">Parcelas<select class="ct-campo" name="parcelas"><option value="1">1x</option></select></label>'}
             </div>
-            <p class="ct-nota">${cadeado}<span>Por segurança, o código de segurança é pedido a cada compra (regra do Mercado Pago e das bandeiras).</span></p>
+            <p class="ct-nota">${cadeado}<span>${opcoes.renovacao ? 'O Mercado Pago faz um teste de valor mínimo para validar o cartão e o devolve em seguida. A primeira cobrança sai em cerca de 1 hora, e o acesso é liberado quando ela for aprovada.' : 'Por segurança, o código de segurança é pedido a cada compra (regra do Mercado Pago e das bandeiras).'}</span></p>
             <p class="form-msg err" data-ct-msg hidden></p>
-            <button class="btn btn-primary btn-block" type="submit">Pagar com este cartão</button>
+            <button class="btn btn-primary btn-block" type="submit">${esc(textoPagar)}</button>
           </form>${semSalvar}`;
         area.querySelector('[data-ct-trocar]')?.addEventListener('click', () => { modo = 'trocar'; render(); });
         const form = area.querySelector('.ct-pagar');
@@ -217,6 +218,7 @@
         catch { msg('Não foi possível carregar o Mercado Pago. Recarregue a página.'); return; }
         atualizarParcelas = async () => {
           const s = form.parcelas;
+          if (!s) return; // renovação automática: sem parcelas
           s.innerHTML = '<option value="1">1x</option>';
           if (!c.bin) return;
           try {
@@ -234,11 +236,11 @@
           try {
             const t = await mp.fields.createCardToken({ cardId: c.id });
             lembrar(c.id);
-            await opcoes.aoPagar({ token: t.id, card_id: c.id, installments: Number(form.parcelas.value) || 1 });
+            await opcoes.aoPagar({ token: t.id, card_id: c.id, installments: Number(form.parcelas?.value) || 1 });
             desmontar();
           } catch (err) {
             msg(erroCartao(err, 'Confira o código de segurança do cartão.'));
-            btn.disabled = false; btn.textContent = 'Pagar com este cartão';
+            btn.disabled = false; btn.textContent = textoPagar;
           }
         });
       }

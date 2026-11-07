@@ -10,17 +10,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/site.css?v=20261312">
-<script src="/js/tema.js?v=20261312"></script>
-<script src="/js/app-nativo.js?v=20261312"></script>
-<script src="/js/dialogo.js?v=20261312"></script>
-<script src="/js/cadastro-auto.js?v=20261312" defer></script>
-<script src="/js/cartoes.js?v=20261312" defer></script>
-<script src="/js/voltar.js?v=20261312" data-padrao="/conta#planos" defer></script>
-<script src="/js/rodape-legal.js?v=20261312" defer></script>
-<script src="/js/instalar-app.js?v=20261312" defer></script>
-<script src="/js/cookies.js?v=20261312"></script>
-<script src="/js/seletor.js?v=20261312" defer></script>
+<link rel="stylesheet" href="/css/site.css?v=20261314">
+<script src="/js/tema.js?v=20261314"></script>
+<script src="/js/app-nativo.js?v=20261314"></script>
+<script src="/js/dialogo.js?v=20261314"></script>
+<script src="/js/cadastro-auto.js?v=20261314" defer></script>
+<script src="/js/cartoes.js?v=20261314" defer></script>
+<script src="/js/voltar.js?v=20261314" data-padrao="/conta#planos" defer></script>
+<script src="/js/rodape-legal.js?v=20261314" defer></script>
+<script src="/js/instalar-app.js?v=20261314" defer></script>
+<script src="/js/cookies.js?v=20261314"></script>
+<script src="/js/seletor.js?v=20261314" defer></script>
 </head>
 <body>
 <header class="site-header">
@@ -39,6 +39,7 @@
   <!-- DADOS + PAGAMENTO -->
   <section id="view-form" hidden>
     <div class="ass-grid">
+      <div class="ass-coluna">
       <form class="panel-card ass-form" id="ass-form" novalidate>
         <h1>Finalizar assinatura</h1>
         <p class="cli-sub">Confira o plano, preencha seus dados para criarmos o seu acesso e escolha como pagar.</p>
@@ -157,9 +158,11 @@
               <span><b>Termos do Afiliado.</b> Li e aceito os <a href="/privacidade#parceiros" target="_blank" rel="noopener">Termos do Parceiro</a>. Sou o <b>único responsável</b> pelo que divulgo nos meus canais e pelos meus links, inclusive pelas regras dos programas de afiliados, da publicidade e da LGPD. O Ofertou! <b>não responde</b> por violações minhas e terá <b>direito de regresso</b> contra mim por qualquer valor que tiver de pagar por causa delas. O acesso é <b>pessoal e intransferível</b>: <b>não posso revender, alugar, emprestar, ceder ou compartilhar</b> a minha conta, o painel ou a ferramenta com outras pessoas, sob pena de encerramento do acesso sem reembolso e de responder pelos prejuízos. Sei que a conexão do WhatsApp por QR code <b>não é a API oficial</b> e que o número pode ser restrito ou banido pelo WhatsApp.</span></label>
           </div>
         <div class="form-msg err" id="ass-msg" hidden></div>
-        <div class="ass-cartao" id="ass-cartao" hidden></div>
         <button class="btn btn-primary btn-block" type="submit" id="ass-enviar">Finalizar compra</button>
       </form>
+      <!-- Fora do formulário acima: os campos do cartão têm um formulário próprio, e o navegador não aceita um dentro do outro -->
+      <div class="panel-card ass-cartao" id="ass-cartao" hidden></div>
+      </div>
 
       <aside class="panel-card ass-resumo" id="resumo"></aside>
     </div>
@@ -178,6 +181,6 @@
 </main>
 
 <div class="toast" id="toast" role="status"></div>
-<script src="/js/assinar.js?v=20261312" defer></script>
+<script src="/js/assinar.js?v=20261314" defer></script>
 </body>
 </html>

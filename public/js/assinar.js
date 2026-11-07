@@ -202,10 +202,14 @@
 
   // Cartão com conta logada: usa os cartões salvos (Minha conta → Meus cartões) e paga aqui mesmo, digitando só o
   // código de segurança. "Pagar com um cartão sem salvar" volta para o checkout do Mercado Pago.
-  let semSalvo = false, cartaoAtivo = null, carregandoCartao = false, seqCartao = 0;
+  let semSalvo = false, cartaoAtivo = null, carregandoCartao = false, seqCartao = 0, cartaoRenovacao = false;
   async function atualizarCartao() {
     const area = $('#ass-cartao');
-    const usar = Boolean(LOGADO && !PLANO.gratis && !emTeste() && !comAuto() && !semSalvo && window.OfertouCartoes && $('#metodos [name=metodo]:checked')?.value === 'mercadopago');
+    const renovacao = comAuto();
+    const usar = Boolean(LOGADO && !PLANO.gratis && !emTeste() && !semSalvo && window.OfertouCartoes && (renovacao || $('#metodos [name=metodo]:checked')?.value === 'mercadopago'));
+    // Ligou ou desligou a renovação: a escolha do cartão muda (com ou sem parcelas)
+    if (usar && cartaoAtivo && cartaoRenovacao !== renovacao) { seqCartao++; carregandoCartao = false; cartaoAtivo.desmontar?.(); cartaoAtivo = null; }
+    cartaoRenovacao = renovacao;
     if (!usar) {
       seqCartao++; carregandoCartao = false;
       cartaoAtivo?.desmontar?.(); cartaoAtivo = null;
@@ -221,9 +225,11 @@
     $('#ass-enviar').hidden = true;
     const escolha = await OfertouCartoes.escolherNoPedido(area, {
       total: () => valorAtual(),
+      renovacao,
       aoPagar: async cartao => {
-        const f = $('#ass-form');
-        if (!f.reportValidity()) throw new Error('Preencha os dados e marque os aceites acima antes de pagar.');
+        // Só o que está na tela conta: quem já está logado não vê e-mail e senha, que continuam como obrigatórios no formulário
+        const faltando = [...$('#ass-form').elements].find(el => !el.disabled && !el.closest('[hidden]') && !el.checkValidity());
+        if (faltando) { faltando.reportValidity(); throw new Error('Preencha os dados e marque os aceites acima antes de pagar.'); }
         await enviar({ ...coletar(), cartao });
       },
       outroCartao: () => { semSalvo = true; cartaoAtivo = null; atualizarCartao(); },
@@ -388,7 +394,11 @@
       return;
     }
     if (p.renovacao_auto) {
-      box.innerHTML = `<h1>Aguardando o Mercado Pago</h1>${valor}
+      box.innerHTML = p.cartao_salvo ? `<div class="ass-ok">✓</div><h1>Renovação autorizada</h1>${valor}
+        <p class="ass-aguarde"><span class="live-dot"></span> O Mercado Pago faz a primeira cobrança em cerca de 1 hora. Quando ela for aprovada, seu acesso é liberado e você recebe um e-mail${p.email ? ` em <b>${esc(p.email)}</b>` : ''}. Pode fechar esta página.</p>
+        ${p.recusado ? '<p class="form-msg err">O Mercado Pago recusou o cartão e vai tentar de novo. Se preferir, use outro cartão em uma nova compra.</p>' : ''}
+        <a class="btn" href="/">Ver as ofertas enquanto isso</a>`
+        : `<h1>Aguardando o Mercado Pago</h1>${valor}
         <p class="ass-aguarde"><span class="live-dot"></span> Assim que o Mercado Pago aprovar a primeira cobrança, seu acesso é liberado e esta página atualiza sozinha. Pode levar alguns minutos.</p>
         <p class="cli-hint">Fechou a janela sem autorizar? <a class="link-btn" href="/conta#planos">Comece de novo</a>.</p>`;
       return;

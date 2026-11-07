@@ -188,6 +188,10 @@ async function conferir(a) {
   if (String(pre.external_reference || '') !== a.token) return a; // não é desta compra
   const r = await mp('get', `/authorized_payments/search?preapproval_id=${encodeURIComponent(a.mp_preapproval_id)}`, null, s).catch(() => ({ results: [] }));
   for (const c of r.results || []) {
+    // Cartão recusado na primeira cobrança: o Mercado Pago tenta de novo, e a página de pagamento avisa
+    if (c.status === 'recycling' || c.payment?.status === 'rejected') {
+      db.run(`UPDATE pagamentos SET observacao = 'O Mercado Pago recusou o cartão e vai tentar de novo.' WHERE token = ? AND status = 'pendente'`, a.token);
+    }
     const pagamentoId = c.payment?.id;
     if (!pagamentoId || db.get('SELECT 1 FROM assinaturas_cobrancas WHERE mp_payment_id = ?', String(pagamentoId))) continue;
     const pay = await mp('get', `/v1/payments/${pagamentoId}`, null, s).catch(() => null);
@@ -217,9 +221,13 @@ async function conferir(a) {
   }
   return db.get('SELECT * FROM assinaturas_auto WHERE id = ?', a.id);
 }
+// A página de pagamento pergunta a cada 5 segundos: o Mercado Pago é consultado no máximo a cada 20
+const consultados = new Map();
 const conferirPedido = async pedido => {
   const a = db.get('SELECT * FROM assinaturas_auto WHERE token = ?', pedido.token);
-  if (a) await conferir(a);
+  if (!a || Date.now() - (consultados.get(a.id) || 0) < 20000) return;
+  consultados.set(a.id, Date.now());
+  await conferir(a);
 };
 const conferirPorId = async id => {
   const a = db.get('SELECT * FROM assinaturas_auto WHERE mp_preapproval_id = ?', String(id));
@@ -256,6 +264,13 @@ async function pararDaConta(contas, planoId, menosToken = null) {
 async function conferirTodas() {
   for (const a of db.all(`SELECT * FROM assinaturas_auto WHERE status = 'ativa' OR (status = 'pendente' AND criada_em >= datetime('now', '-3 days'))`)) {
     await conferir(a).catch(err => console.error('[ASSINATURA]', err.message));
+  }
+  // Três dias sem nenhuma cobrança aprovada: desiste, para o Mercado Pago não cobrar depois por um pedido já esquecido
+  for (const a of db.all(`SELECT * FROM assinaturas_auto WHERE status = 'pendente' AND criada_em < datetime('now', '-3 days')`)) {
+    const atual = await conferir(a).catch(() => a);
+    if (atual?.status !== 'pendente') continue;
+    await pararNoMercadoPago(a).catch(err => console.error('[ASSINATURA]', err.message));
+    db.run(`UPDATE pagamentos SET status = 'cancelado', observacao = 'sem cobrança aprovada em 3 dias' WHERE token = ? AND status = 'pendente'`, a.token);
   }
 }
 // Avisa por e-mail dois dias antes do fim do período grátis

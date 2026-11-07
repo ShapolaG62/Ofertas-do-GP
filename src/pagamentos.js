@@ -245,12 +245,27 @@ async function criarPedido(b, req) {
   try {
     // Renovação automática: a pessoa autoriza no Mercado Pago, que cobra sozinho a cada período
     if (auto) {
+      // Com cartão salvo: autoriza aqui mesmo, sem sair do site, e o Mercado Pago faz a primeira cobrança em cerca de 1 hora.
+      // Sem cartão salvo: a pessoa autoriza e paga na página do Mercado Pago.
+      let cartaoAuto = null;
+      if (b.cartao?.card_id) {
+        const dono = require('./perfis').donoDe(req);
+        if (!dono) throw fail('Entre na sua conta para usar um cartão salvo.', 401);
+        if (!b.cartao.token) throw fail('Digite o código de segurança do cartão.');
+        cartaoAuto = await require('./cartoes').paraPagamento(dono, b.cartao.card_id);
+      }
       const pre = await mp('post', '/preapproval', {
-        reason: descricao, external_reference: token, payer_email: dados.email, back_url: `${base}/assinar?pedido=${token}`, status: 'pending',
+        reason: descricao, external_reference: token, payer_email: dados.email, back_url: `${base}/assinar?pedido=${token}`,
+        ...(cartaoAuto ? { card_token_id: String(b.cartao.token), status: 'authorized' } : { status: 'pending' }),
         auto_recurring: { frequency: ciclo.id === 'mensal' && ciclo.dias !== 30 ? ciclo.dias : ciclo.meses, frequency_type: ciclo.id === 'mensal' && ciclo.dias !== 30 ? 'days' : 'months', transaction_amount: valor, currency_id: 'BRL' },
       }, s, { 'X-Idempotency-Key': token });
       db.run('UPDATE pagamentos SET mp_preference_id = ? WHERE id = ?', String(pre.id), id);
       assinaturas.criarAuto({ token, preapproval: pre.id, plano: p.id, ciclo: ciclo.id, valor, dias: ciclo.dias, email: dados.email });
+      if (cartaoAuto) {
+        if (pre.status !== 'authorized') throw fail('O Mercado Pago não autorizou este cartão. Confira o código de segurança ou use outro cartão.', 402);
+        db.run('UPDATE pagamentos SET dados = ?, observacao = ? WHERE id = ?', JSON.stringify({ ...dados, cartao_salvo: true }), `Cartão salvo ${cartaoAuto.cartao.bandeira || ''} final ${cartaoAuto.cartao.final || ''}`.slice(0, 300), id);
+        return { token };
+      }
       return { token, checkout_url: pre.init_point };
     }
     if (metodo === 'pix' && disp.pix_automatico) {
@@ -499,6 +514,7 @@ function publico(pedido) {
   const s = settings.getAll();
   return {
     status: pedido.status, plano: p.nome, valor: pedido.valor, dias: pedido.dias, metodo: pedido.metodo, email: pedido.email,
+    cartao_salvo: pedido.metodo === 'assinatura' && /"cartao_salvo":true/.test(pedido.dados || ''), recusado: /recusou o cartão/.test(pedido.observacao || ''),
     validade_ate: pedido.validade_ate, gratis: pedido.metodo === 'gratis' || pedido.metodo === 'teste', teste: pedido.metodo === 'teste', renovacao_auto: Boolean(pedido.renovacao_auto), ciclo: pedido.ciclo || 'mensal', sem_vencimento: pedido.validade_ate === planos.SEM_VENCIMENTO,
     pix: pedido.metodo === 'pix' ? { copia_cola: pedido.pix_qr, qr_base64: pedido.pix_qr_base64, expira: pedido.pix_expira } : null,
     manual: MANUAIS.includes(pedido.metodo) ? instrucoesManuais(pedido, s) : null,

@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Ofertou! Mercado Livre",
   "short_name": "Ofertou ML",
-  "version": "2.9.2",
-  "description": "Leva para o Painel do Ofertou! os produtos com comissão extra, o ganho estimado do seu painel de afiliado e os cupons do Mercado Livre (com os produtos em que valem), sem copiar e colar.",
+  "version": "2.9.3",
+  "description": "Leva do Mercado Livre para o Ofertou! as ofertas relâmpago, os cupons, os produtos com comissão extra e o ganho estimado de afiliado, sem copiar e colar.",
   "icons": {
     "16": "icone.png",
     "48": "icone.png",

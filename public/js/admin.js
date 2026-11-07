@@ -233,7 +233,7 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
 const semAcentoP = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 // ── Seções que abrem e fecham: o trabalho do dia fica aberto, as configurações recolhidas ────
 // Títulos abertos da primeira vez; a escolha de cada pessoa fica guardada neste navegador
-const DOBRA_ABERTAS = ['Ofertas cadastradas', 'Links de afiliado', 'Situação das lojas', 'Busca pontual', 'Usuários', 'Pedidos de assinatura', 'Planos à venda',
+const DOBRA_ABERTAS = ['Extensão do Chrome', 'Ofertas cadastradas', 'Links de afiliado', 'Situação das lojas', 'Busca pontual', 'Usuários', 'Pedidos de assinatura', 'Planos à venda',
   'Saldo por plataforma', 'Vendas registradas', 'Buscar ticket', 'Pedidos às lojas', 'Clientes da ferramenta', 'Postagens agendadas',
   'Histórico de postagens', 'Campanhas de anunciantes', 'Pedidos de empresas', 'Varredura de IP', 'Avisos', 'Backup do banco de dados', 'Trocar senha'];
 const DOBRA_CHAVE = 'ofertou-painel-dobras';
@@ -848,7 +848,7 @@ window.addEventListener('message', e => {
   if (e.source !== window || e.origin !== location.origin || !e.data || e.data.ofertouExt !== true) return;
   if (e.data.tipo === 'pode-ir-ofertas') clearTimeout(coletaEspera);
   if (e.data.tipo === 'pode-ir-ofertas') window.top.location.href = 'https://www.mercadolivre.com.br/ofertas?container_id=MLB779362-1&promotion_type=lightning';
-  if (e.data.tipo === 'instalada') { extensaoInstalada = true; extensaoVersao = String(e.data.versao || ''); }
+  if (e.data.tipo === 'instalada') { extensaoInstalada = true; extensaoVersao = String(e.data.versao || ''); mostrarExtensao(); }
   if (e.data.tipo === 'instalada') { $('#mlx-auto').hidden = false; $('#mlx-ext').hidden = true; $('#mlc-auto').hidden = false; $('#mlc-sem-ext').hidden = true; }
   if (e.data.tipo === 'pode-ir') window.top.location.href = ML_HUB;
   if (e.data.tipo === 'pode-ir-cupons') window.top.location.href = 'https://www.mercadolivre.com.br/cupons/filter?all=true&page=1';
@@ -941,11 +941,12 @@ mlcCarregar();
 function coletarMl() {
   if (!extensaoInstalada) {
     abrirAba('mining');
-    $('#mlc-sem-ext').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return globalMsg('Instale a extensão do Chrome para coletar o Mercado Livre: as instruções estão aqui em Mineração.', false);
+    dobraAbrir('mining', 'Extensão do Chrome');
+    $('#ext-painel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return globalMsg('Baixe e instale a extensão do Chrome para coletar o Mercado Livre: o passo a passo está aqui em Mineração.', false);
   }
   const [maior, menor] = extensaoVersao.split('.').map(Number);
-  const RECARREGAR = 'Abra chrome://extensions, toque em recarregar na extensão Ofertou! e atualize esta página.';
+  const RECARREGAR = 'Baixe a extensão de novo em Mineração, descompacte por cima da mesma pasta, toque em recarregar em chrome://extensions e atualize esta página.';
   if (!(maior > 2 || (maior === 2 && menor >= 9))) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return globalMsg(`Sua extensão está desatualizada e ainda não sabe coletar as ofertas. ${RECARREGAR}`, false);
@@ -957,10 +958,24 @@ function coletarMl() {
 }
 $('#ml-coleta-ir').addEventListener('click', coletarMl);
 $('#ml-coleta-botao').addEventListener('click', coletarMl);
+// Situação da extensão neste navegador, comparada com a versão disponível para baixar
+let extensaoDisponivel = '';
+const numVersao = v => String(v || '').split('.').reduce((t, n) => t * 1000 + (Number(n) || 0), 0);
+function mostrarExtensao() {
+  const el = $('#ext-status');
+  if (!el) return;
+  const disp = extensaoDisponivel ? `versão ${extensaoDisponivel}` : 'versão mais nova';
+  if (!extensaoInstalada) { el.textContent = `Não instalada neste navegador. Disponível: ${disp}.`; el.className = 'ext-status atencao'; return; }
+  const atual = extensaoVersao && (!extensaoDisponivel || numVersao(extensaoVersao) >= numVersao(extensaoDisponivel));
+  el.textContent = atual ? `Instalada e atualizada (versão ${extensaoVersao}).` : `Instalada, mas desatualizada (versão ${extensaoVersao || 'antiga'}). Disponível: ${disp}.`;
+  el.className = `ext-status ${atual ? 'ok' : 'atencao'}`;
+}
 const RL_SIT = { ok: 'Funcionando', blocked: 'Bloqueada: tenta de novo em 2 horas', error: 'Com erro', off: 'Desligada', aguardando: 'Aguardando a primeira leitura' };
 async function carregarRadar() {
   let d;
   try { d = await api('/api/admin/relampago'); } catch { return; }
+  extensaoDisponivel = d.extensao?.versao || '';
+  mostrarExtensao();
   const c = d.coleta;
   $('#ml-coleta-aviso').hidden = !c.pendente;
   const nomes = { ofertas: 'as ofertas', cupons: 'os cupons' };
@@ -970,6 +985,7 @@ async function carregarRadar() {
   $('#rl-no-ar').textContent = `${d.no_ar} oferta(s) relâmpago no ar agora.`;
   $('#rl-lojas').innerHTML = d.lojas.map(l => `<tr><td>${esc(l.nome)}</td><td>${l.minutos} min</td><td>${esc(RL_SIT[l.status] || l.status)}${l.mensagem ? `<br><small>${esc(l.mensagem).slice(0, 140)}</small>` : ''}</td><td>${l.em ? `${quando(l.em)}: ${l.lidas} lidas, ${l.relampagos} marcadas pela loja` : '—'}</td></tr>`).join('');
 }
+mostrarExtensao();
 carregarRadar();
 setInterval(carregarRadar, 5 * 60 * 1000);
 

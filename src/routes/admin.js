@@ -186,7 +186,7 @@ router.post('/api/admin/mineracao/ml-ofertas', (req, res) => {
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 // Radar de relâmpago e lembrete da coleta do Mercado Livre
-router.get('/api/admin/relampago', (req, res) => res.json({ ...require('../relampago').estado(), coleta: require('../aviso-ml').estado() }));
+router.get('/api/admin/relampago', (req, res) => res.json({ ...require('../relampago').estado(), coleta: require('../aviso-ml').estado(), extensao: { versao: require('../extensao').versao() } }));
 
 // Cupons do Mercado Livre lidos pela extensão: { cupons: [...] } grava a lista; { campanha, itens } grava os produtos
 router.get('/api/admin/mineracao/ml-cupons', (req, res) => res.json(require('../cupons-ml').listar()));

@@ -234,3 +234,32 @@ test('lembrete do Mercado Livre: 3 vezes ao dia e só some com ofertas e cupons'
   assert.equal(avisoMl.ultimoHorario(horario(11, 3)).hora, 20, 'de madrugada vale o das 20h de ontem');
   assert.equal(contar(), inicio + 3);
 });
+
+test('extensão: o .zip sai completo, íntegro e na versão atual', () => {
+  const zlib = require('zlib');
+  const ext = require('../src/extensao');
+  const zip = ext.zip();
+  const pasta = path.join(__dirname, '..', 'extensao-comissao');
+  const fim = zip.length - 22;
+  assert.equal(zip.readUInt32LE(fim), 0x06054b50);
+  const total = zip.readUInt16LE(fim + 10);
+  let p = zip.readUInt32LE(fim + 16);
+  const nomes = [];
+  for (let i = 0; i < total; i++) {
+    assert.equal(zip.readUInt32LE(p), 0x02014b50);
+    const tam = zip.readUInt32LE(p + 24), crc = zip.readUInt32LE(p + 16), n = zip.readUInt16LE(p + 28), local = zip.readUInt32LE(p + 42);
+    const nome = zip.subarray(p + 46, p + 46 + n).toString();
+    nomes.push(nome);
+    const nl = zip.readUInt16LE(local + 26), comprimido = zip.readUInt32LE(local + 18);
+    const dados = zlib.inflateRawSync(zip.subarray(local + 30 + nl, local + 30 + nl + comprimido));
+    assert.equal(dados.length, tam);
+    assert.equal(zlib.crc32(dados), crc);
+    assert.ok(dados.equals(fs.readFileSync(path.join(pasta, nome.split('/')[1]))), nome);
+    p += 46 + n;
+  }
+  for (const f of ['manifest.json', 'ofertas.js', 'cupons.js', 'mercadolivre.js', 'painel.js', 'painel-cliente.js', 'icone.png']) assert.ok(nomes.includes(`ofertou-extensao/${f}`), f);
+  assert.equal(ext.versao(), JSON.parse(fs.readFileSync(path.join(pasta, 'manifest.json'), 'utf8')).version);
+  const manifesto = JSON.parse(fs.readFileSync(path.join(pasta, 'manifest.json'), 'utf8'));
+  const usados = manifesto.content_scripts.flatMap(c => c.js);
+  for (const j of usados) assert.ok(fs.existsSync(path.join(pasta, j)), j);
+});

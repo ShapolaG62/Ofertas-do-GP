@@ -12,6 +12,16 @@ const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|avif)/i;
 
 const router = express.Router();
 
+// Extensão do Chrome: sempre na versão atual
+router.get('/extensao/ofertou.zip', (req, res) => {
+  try {
+    const ext = require('../extensao');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Content-Disposition', `attachment; filename="ofertou-extensao-${ext.versao()}.zip"`);
+    res.type('application/zip').send(ext.zip());
+  } catch (err) { res.status(500).type('text').send('Não foi possível montar a extensão.'); }
+});
+
 // Todos os cupons ativos: o destino do "Ver mais" da lista postada nos grupos
 // Com ?de=<afiliado> as ofertas abrem com os links de afiliado dele.
 router.get('/cupons', (req, res) => {
